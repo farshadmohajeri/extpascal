@@ -6,8 +6,12 @@ type
   ExtObject = class end;
   ArrayOfVariant = array of Variant;
   HTMLElement = class end;
-  NodeList = string;
   Element = string;
+  StyleSheet = string;
+  RegExp = class end;
+  CSSRule = string;
+  XMLDocument = string;
+  NodeList = string;
 
 implementation
 
