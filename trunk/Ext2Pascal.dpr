@@ -5,7 +5,7 @@ uses
 
 function FixReserved(S : string) : string;
 const
-  Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
+  Reserved = '.and.array.as.asm.begin.case.class.const.constructor.create.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
     'file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.'+
     'mod.nil.not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.string.then.'+
     'threadvar.to.try.type.unit.until.uses.var.while.with.xor.';
@@ -21,11 +21,6 @@ var
   I : integer;
 begin
   Result := '';
-  I := LastDelimiter('.', Ident);
-  if I <> 0 then begin
-    Ident := copy(Ident, I+1, length(Ident));
-    if Ident <> '' then Ident[1] := UpCase(Ident[1]);
-  end;
   for I := 1 to length(Ident) do
     if Ident[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '_'] then
       Result := Result + Ident[I]
@@ -40,17 +35,17 @@ var
   I : integer;
 begin
   T := LowerCase(Ident);
-  if T = 'string'   then begin Result := 'string';          exit end else
-  if T = 'number'   then begin Result := 'Integer';         exit end else
-  if T = 'boolean'  then begin Result := 'Boolean';         exit end else
-  if T = 'object'   then begin Result := 'ExtObject';       exit end else
-  if T = 'date'     then begin Result := 'TDateTime';       exit end else
-  if T = 'float'    then begin Result := 'Double';          exit end else
-  if T = 'mixed'    then begin Result := 'Variant';         exit end else
-  if T = 'array'    then begin Result := 'ArrayOfVariant'; exit end else
-  if T = '{string}' then begin Result := 'string';          exit end else
-  if T = 'int'      then begin Result := 'Integer';         exit end else
-  if pos('array of ', T) = 1 then begin Result := Ident;    exit end
+  if T = 'string'    then begin Result := 'string';             exit end else
+  if T = 'number'    then begin Result := 'Integer';            exit end else
+  if T = 'boolean'   then begin Result := 'Boolean';            exit end else
+  if T = 'object'    then begin Result := 'ExtObject';          exit end else
+  if T = 'date'      then begin Result := 'TDateTime';          exit end else
+  if T = 'float'     then begin Result := 'Double';             exit end else
+  if T = 'mixed'     then begin Result := 'Variant';            exit end else
+  if T = 'array'     then begin Result := 'ArrayOfVariant';     exit end else
+  if T = 'int'       then begin Result := 'Integer';            exit end else
+  if T = 'object...' then begin Result := 'array of ExtObject'; exit end else
+  if pos('array of ', T) = 1 then begin Result := Ident;        exit end
   else begin
     I := LastDelimiter('/[:', Ident);
     if I <> 0 then begin
@@ -70,6 +65,7 @@ type
     Classes : TStringList;
     constructor Create(pName : string);
     function UsesList : string;
+    procedure ReviewTypes;
   end;
 
   TClassDef = class
@@ -126,6 +122,42 @@ begin
             Result := Result + ', ' + UName
         end;
       end;
+end;
+
+procedure TUnitDef.ReviewTypes;
+
+  procedure InsertNamespace(var Typ : string);
+  var
+    T : string;
+    I : integer;
+  begin
+    if Typ <> '' then begin
+      T := Typ;
+      if T[1] = '_' then T := copy(T, 2, length(T));
+(*      if Classes.IndexOf(Name + T) <> -1 then
+        Typ := Name + T
+      else*)
+        for I := 0 to Units.Count-1 do
+          if AllClasses.IndexOf(Units[I] + T) <> -1 then
+            Typ := Units[I] + T;
+    end;
+  end;
+
+var
+  I, J, K : integer;
+begin
+  writeln(Name);
+  for I := 0 to Classes.Count-1 do
+    with TClassDef(Classes.Objects[I]) do begin
+      for J := 0 to Properties.Count-1 do
+        InsertNamespace(TPropDef(Properties.Objects[J]).Typ);
+      for J := 0 to Methods.Count-1 do
+        with TMethodDef(Methods.Objects[J]) do begin
+          InsertNamespace(Return);
+          for K := 0 to Params.Count-1 do
+            InsertNamespace(TParamDef(Params.Objects[K]).Typ);
+        end;
+    end;
 end;
 
 constructor TClassDef.Create(pName : string); begin
@@ -295,7 +327,7 @@ begin
         end
         else begin
           PackName := FixIdent(Matches[1]);
-          if PackName <> 'Ext' then PackName := 'Ext' + PackName;
+          if pos('Ext', PackName) <> 1 then PackName := 'Ext' + PackName;
         end;
         CurClass.UnitName := PackName;
         I := Units.IndexOf(PackName);
@@ -316,8 +348,8 @@ begin
 			if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
         PropName := Matches[0];
         I := LastDelimiter('.', PropName);
-        if I <> 0 then PropName := copy(PropName, I+1, length(PropName));
-        if PropName <> 'config' then begin // config object are deleted, sugar coding non pratical in Pascal
+        if I <> 0 then PropName := copy(PropName, I+1, length(PropName)); //Static
+        if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non pratical in Pascal
           CurProp := TPropDef.Create(PropName, I <> 0, Matches[2]);
           CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
         end;
@@ -337,7 +369,8 @@ begin
            Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
 					MetName:= Matches[0];
 					Params := Explode(',', Matches[1]);
-          Return := Matches[2];
+          Return := FixType(Matches[2]);
+          if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
           Args   := TStringList.Create;
 					for I := 0 to Params.Count-1 do
 						if Extract(['<code>', ' ', '</code>'], Params[I], Matches) then begin
@@ -349,8 +382,8 @@ begin
                 Args.Clear;
               end
 							else
-								if not IsValidIdent(Matches[1]) then begin // documentation fault
-									Arg := Matches[1];
+								if not IsValidIdent(Matches[1]) and (Matches[1][1] = '{') then begin // documentation fault
+									Arg := copy(Matches[1], 2, length(Matches[1])-2);
 									Matches[1] := Matches[0];
 									Matches[0] := Arg;
 								end;
@@ -422,61 +455,89 @@ begin
   for J := 2 to I do Result := Result + '  '
 end;
 
-procedure WriteClassType(var Pas : text; Cls : TClassDef);
+function WriteOptional(Optional : boolean; Typ : string) : string; begin
+  if Optional then begin
+    if Typ = 'string'    then Result := ' = '''''  else
+    if Typ = 'Integer'   then Result := ' = 0'     else
+    if Typ = 'Boolean'   then Result := ' = false' else
+    if Typ = 'Double'    then Result := ' = 0.0'   else
+    if Typ = 'TDateTime' then Result := ' = 0'     else
+    if Typ = 'Variant'   then Result := ''  else ###########
+    Result := ' = nil';
+  end
+  else
+    Result := ''
+end;
 
-  function WriteOptional(Optional : boolean; Typ : string) : string; begin
-    if Optional then begin
-      if Typ = 'string'    then Result := ' = '''''  else
-      if Typ = 'Integer'   then Result := ' = 0'     else
-      if Typ = 'Boolean'   then Result := ' = false' else
-      if Typ = 'Double'    then Result := ' = 0.0'   else
-      if Typ = 'TDateTime' then Result := ' = 0'     else
-      if Typ = 'Variant'   then Result := ' = null'  else
-      Result := ' = nil';
+var
+  Pas : text;
+
+procedure WriteParams(Params : TStringList);
+var
+  I  : integer;
+  Op : boolean;
+begin
+  Op := false;
+  for I := 0 to Params.Count-1 do begin
+    with TParamDef(Params.Objects[I]) do begin
+      if Optional then Op := true;
+      write(Pas, Name, ' : ', Typ, WriteOptional(Op, Typ));
+    end;
+    if I <> Params.Count-1 then write(Pas, '; ');
+  end;
+end;
+
+function WriteMethodSignature(Method : TMethodDef; pClassName : string = '') : boolean;
+var
+  T : string;
+begin
+  Result := false;
+  with Method do begin
+    if pClassName <> '' then begin
+      pClassName := pClassName + '.';
+      T := ''
     end
     else
-      Result := ''
-  end;
-
-  procedure WriteParams(Params : TStringList);
-  var
-    I  : integer;
-    Op : boolean;
-  begin
-    Op := false;
-    for I := 0 to Params.Count-1 do begin
-      with TParamDef(Params.Objects[I]) do begin
-        if Optional then Op := true;
-        write(Pas, Name, ' : ', Typ, WriteOptional(Op, Typ));
-      end;
-      if I <> Params.Count-1 then write(Pas, '; ');
+      T := Tab(2);
+    if Return = '' then begin
+      if Params.Count = 0 then exit;
+      write(Pas, T, 'constructor ', pClassName, 'Create')
+    end
+    else
+      write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'void', 'procedure ', 'function '), pClassName, Name);
+    if Params.Count <> 0 then begin
+      write(Pas, '(');
+      WriteParams(Params);
+      write(Pas, ')');
     end;
+    write(Pas, IfThen((Return = 'void') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
+      IfThen(pClassName = '', ^M^J, ''));
   end;
+  Result := true;
+end;
 
+procedure WriteClassType(Cls : TClassDef);
+const
+  GlobalTypes : string = '';
 var
   I : integer;
 begin
   with Cls do begin
+    for I := 0 to Methods.Count-1 do
+      with TMethodDef(Methods.Objects[I]) do
+        if pos('array of ', Return) <> 0 then begin // Pascal requires proper type instead of "array of" as return type
+          if pos(Return + '.', GlobalTypes) = 0 then begin
+            writeln(Pas, Tab, FixIdent(Return), ' = ', Return, ';'^M^J);
+            GlobalTypes := GlobalTypes + Return + '.';
+          end;
+          Return := FixIdent(Return);
+        end;
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtObject', Parent), ')');
     for I := 0 to Properties.Count-1 do
       with TPropDef(Properties.Objects[I]) do
         writeln(Pas, Tab(2), IfThen(Static, 'class function ', ''), Name, ' : ', Typ, ';', IfThen(Default <> '', ' // ' + Default, ''));
     for I := 0 to Methods.Count-1 do
-      with TMethodDef(Methods.Objects[I]) do begin
-        if Return = '' then begin
-          if Params.Count = 0 then continue;
-          write(Pas, Tab(2), 'constructor Create')
-        end
-        else
-          write(Pas, Tab(2), IfThen(Static, 'class ', ''), IfThen(Return = 'void', 'procedure ', 'function '), Name);
-        // Quando de classe lembrar de mandar o nome da classe quando mandar o json, idem para propriedade
-        if Params.Count <> 0 then begin
-          write(Pas, '(');
-          WriteParams(Params);
-          write(Pas, ')');
-        end;
-        writeln(Pas, IfThen((Return = 'void') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload, ' overload;', ''));
-      end;
+      WriteMethodSignature(TMethodDef(Methods.Objects[I]));
     writeln(Pas, Tab, 'end;'^M^J);
   end;
 end;
@@ -487,8 +548,8 @@ end;
 
 procedure WriteUnits;
 var
-  I, J : integer;
-  Pas : text;
+  I, J, K : integer;
+  CName : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnitDef(Units.Objects[I]) do begin
@@ -497,13 +558,33 @@ begin
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'ExtPascal', UsesList, ';'^M^J);
       writeln(Pas, 'type');
+      ReviewTypes;
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClassDef(Classes.Objects[J]).Name, ' = class;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
-        WriteClassType(Pas, TClassDef(Classes.Objects[J]));
-      write(Pas, 'implementation'^M^J'end.');
+        WriteClassType(TClassDef(Classes.Objects[J]));
+      writeln(Pas, 'implementation'^M^J);
+      for J := 0 to Classes.Count-1 do
+        with TClassDef(Classes.Objects[J]) do begin
+          CName := Name;
+          for K := 0 to Properties.Count-1 do
+            with TPropDef(Properties.Objects[K]) do
+              if Static then begin
+                writeln(Pas, 'class function ', CName, '.', Name, ' : ', Typ, '; begin');
+                writeln(Pas, Tab, 'writeln;');
+                writeln(Pas, 'end;'^M^J);
+              end;
+          for K := 0 to Methods.Count-1 do
+            if WriteMethodSignature(TMethodDef(Methods.Objects[K]), Name) then begin
+              writeln(Pas, ' begin');
+              // Quando de classe lembrar de mandar o nome da classe quando mandar o json, idem para propriedade
+              writeln(Pas, Tab, 'writeln;');
+              writeln(Pas, 'end;'^M^J);
+            end;
+        end;
+      write(Pas, 'end.');
       close(Pas);
     end;
 end;
