@@ -61,10 +61,10 @@ end;
 
 type
   TUnitDef = class
-    Name : string;
+    Name, UsesList : string;
     Classes : TStringList;
     constructor Create(pName : string);
-    function UsesList : string;
+    function InitUsesList : string;
     procedure ReviewTypes;
   end;
 
@@ -103,7 +103,7 @@ constructor TUnitDef.Create(pName : string); begin
   Classes := TStringList.Create;
 end;
 
-function TUnitDef.UsesList: string;
+function TUnitDef.InitUsesList: string;
 var
   I, J : integer;
   UName : string;
@@ -127,19 +127,32 @@ end;
 procedure TUnitDef.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
+  const
+    Types = 'string.Integer.Boolean.Double.TDateTime.Variant.ExtObject.ArrayOfVariant.void._Function.Event.HTMLElement.RegExp';
   var
     T : string;
-    I : integer;
+    I, J : integer;
   begin
-    if Typ <> '' then begin
+    if (Typ <> '') and (pos(Typ, Types) = 0) then begin
       T := Typ;
+      if (Name <> 'Ext') and (pos('Ext', T) = 1) and (pos('Ext,', UsesList + ',') = 0) then begin // uses Ext?
+        I := AllClasses.IndexOf(T);
+        if (I <> -1) and (TClassDef(AllClasses.Objects[I]).UnitName = 'Ext') then begin
+          UsesList := UsesList + ', Ext';
+          exit;
+        end;
+      end;
+      J := pos('array of ', T);
+      if J = 1 then T := copy(T, 10, length(T));
       if T[1] = '_' then T := copy(T, 2, length(T));
-(*      if Classes.IndexOf(Name + T) <> -1 then
-        Typ := Name + T
-      else*)
-        for I := 0 to Units.Count-1 do
-          if AllClasses.IndexOf(Units[I] + T) <> -1 then
-            Typ := Units[I] + T;
+      for I := 0 to Units.Count-1 do
+        if AllClasses.IndexOf(Units[I] + T) <> -1 then begin
+          Typ := Units[I] + T;
+          if J = 1 then Typ := 'array of ' + Typ;
+          if (Name = 'Ext') and (Units[I] = 'ExtLayout') then exit; // Exception to resolve circular reference
+          if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
+          exit;
+        end;
     end;
   end;
 
@@ -147,6 +160,7 @@ var
   I, J, K : integer;
 begin
   writeln(Name);
+  UsesList := InitUsesList;
   for I := 0 to Classes.Count-1 do
     with TClassDef(Classes.Objects[I]) do begin
       for J := 0 to Properties.Count-1 do
@@ -297,6 +311,11 @@ begin
   end;
 end;
 
+function Unique(S : string; List : TStringList) : string; begin
+  Result := S;
+  while List.IndexOf(Result) <> -1 do Result := Result + '_'
+end;
+
 var
   State : (Initial, InClass, InProperties, InMethods);
 
@@ -321,7 +340,7 @@ begin
 			end;
     InClass :
       if Extract(['Package:', '<td class="hd-info">', '<'], Line, Matches) then begin
-        if CurClass.Name = 'Ext' then begin
+        if CurClass.Name = 'Ext' then begin // Pascal requires this exception: move Ext class to Unit class and rename Ext class to Ext_
           PackName := 'Ext';
           CurClass.Name := '_Ext';
         end
@@ -337,7 +356,7 @@ begin
         end
         else
           Package := TUnitDef(Units.Objects[I]);
-        Package.Classes.AddObject(CurClass.Name, CurClass)
+        Package.Classes.AddObject(PackName, CurClass)
       end
       else
         if Extract(['Extends:', '<a ext:cls="', '"'], Line, Matches) then
@@ -367,7 +386,8 @@ begin
     InMethods :
 				if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
            Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
-					MetName:= Matches[0];
+					MetName:= Unique(FixIdent(Matches[0]), CurClass.Properties);
+          if pos('init', MetName) = 1 then exit; // delete init functions, usualy private
 					Params := Explode(',', Matches[1]);
           Return := FixType(Matches[2]);
           if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
@@ -387,8 +407,10 @@ begin
 									Matches[1] := Matches[0];
 									Matches[0] := Arg;
 								end;
-              if Matches[1] <> 'config' then // config object are deleted, sugar coding non pratical in Pascal
-							  Args.AddObject(FixIdent(Matches[1]), TParamDef.Create(Matches[1], Matches[0], (pos('>[', Params[I]) <> 0) and (pos('array of ', Matches[0]) = 0)));
+              if Matches[1] <> 'config' then begin// config object are deleted, sugar coding non pratical in Pascal
+                Matches[1] := Unique(FixIdent(Matches[1]), Args);
+							  Args.AddObject(Matches[1], TParamDef.Create(Matches[1], Matches[0], (pos('>[', Params[I]) <> 0) and (pos('array of ', Matches[0]) = 0)));
+              end;
             end;
           Params.Free;
           I := LastDelimiter('.', MetName);
@@ -462,7 +484,6 @@ function WriteOptional(Optional : boolean; Typ : string) : string; begin
     if Typ = 'Boolean'   then Result := ' = false' else
     if Typ = 'Double'    then Result := ' = 0.0'   else
     if Typ = 'TDateTime' then Result := ' = 0'     else
-    if Typ = 'Variant'   then Result := ''  else ###########
     Result := ' = nil';
   end
   else
@@ -477,6 +498,12 @@ var
   I  : integer;
   Op : boolean;
 begin
+  Op := true;
+  for I := Params.Count-1 downto 0 do // Variant could not be optional
+    with TParamDef(Params.Objects[I]) do begin
+      if Optional and (Typ = 'Variant') then Op := false;
+      if not Op then Optional := false;
+    end;
   Op := false;
   for I := 0 to Params.Count-1 do begin
     with TParamDef(Params.Objects[I]) do begin
@@ -535,7 +562,12 @@ begin
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtObject', Parent), ')');
     for I := 0 to Properties.Count-1 do
       with TPropDef(Properties.Objects[I]) do
-        writeln(Pas, Tab(2), IfThen(Static, 'class function ', ''), Name, ' : ', Typ, ';', IfThen(Default <> '', ' // ' + Default, ''));
+        if not Static then
+          writeln(Pas, Tab(2), Name, ' : ', Typ, ';', IfThen(Default <> '', ' // ' + Default, ''));
+    for I := 0 to Properties.Count-1 do
+      with TPropDef(Properties.Objects[I]) do
+        if Static then
+          writeln(Pas, Tab(2), 'class function ', Name, ' : ', Typ, ';');
     for I := 0 to Methods.Count-1 do
       WriteMethodSignature(TMethodDef(Methods.Objects[I]));
     writeln(Pas, Tab, 'end;'^M^J);
@@ -553,15 +585,17 @@ var
 begin
   for I := 0 to Units.Count-1 do
     with TUnitDef(Units.Objects[I]) do begin
+      ReviewTypes;
       assign(Pas, Name + '.pas');
       rewrite(Pas);
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'ExtPascal', UsesList, ';'^M^J);
       writeln(Pas, 'type');
-      ReviewTypes;
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClassDef(Classes.Objects[J]).Name, ' = class;');
+      if Units[I] = 'Ext' then // Exception, this workaround to resolve circular reference in Ext Unit
+        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtObject;'^M^J, Tab, 'ExtMenuCheckItem = ExtComponent;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClassDef(Classes.Objects[J]));
@@ -597,9 +631,11 @@ begin
     AllClasses := TStringList.Create;
     Units := TStringList.Create;
     T := now;
+    writeln('Reading HTML files...');
     repeat
   		ReadHtml(paramstr(1) + '\' + F.Name)
     until FindNext(F) <> 0;
+    writeln('Writing Unit files...');
     FindClose(F);
     WriteUnits;
     writeln(AllClasses.Count, ' ExtJS classes wrapped to Object Pascal.', formatdatetime('ss:zzz', Now-t));
