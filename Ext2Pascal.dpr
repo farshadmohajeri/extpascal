@@ -214,12 +214,15 @@ end;
 
 function TMethodDef.CreateOverloadParams(P : integer; NewType : string): TStringList;
 var
-  I : integer;
+  I, J : integer;
 begin
   Result := TStringList.Create;
   for I := 0 to Params.Count-1 do
-    with TParamDef(Params.Objects[I]) do
+    with TParamDef(Params.Objects[I]) do begin
       Result.AddObject(Name, TParamDef.Create(Name, IfThen(I = P, FixType(NewType), Typ), Optional));
+      if (I = P) and Optional then // Remove unnecessary optional params
+        for J := P downto 0 do TParamDef(Result.Objects[J]).Optional := false;
+    end;
 end;
 
 // Mimics preg_match php function
