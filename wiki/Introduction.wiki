@@ -3,7 +3,7 @@
 
 = Introduction =
 
-ExtPascal is an another ExtJS wrapper. ExtPascal lets you use the ExtJS from Object Pascal commands issued by the server. That brings the structure and rigor of the Object Pascal for programming the web browser. 
+ExtPascal is an another ExtJS wrapper. ExtPascal lets you use the ExtJS from Object Pascal commands issued by the server. That brings the structure and strict syntax of the Object Pascal for programming the web browser. 
 
 The main advantages are:
 
