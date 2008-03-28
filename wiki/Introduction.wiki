@@ -1,0 +1,13 @@
+#Using ExtPascal concepts and first steps
+
+= Introduction =
+
+ExtPascal is an another ExtJS wrapper. ExtPascal lets you use the ExtJS from Object Pascal commands issued by the server. That brings the structure and rigor of the Object Pascal for programming the web browser. 
+
+The main advantages are:
+
+ * Use your preferred language and where you are more productive instead of using Javascript.
+ * Use of native and compiled code with a strongly typed language. That is, many errors are directly appointed by the compiler, without waste time testing in the browser.
+ * Use of the editor's intelisense, available in moderns IDEs (Delphi/Lazarus) more productivity in the coding.
+ * Centering the programming on the server, where Javascript is generated dynamically, makes development easier and less dispersed.
+ * The business rules can be encapsulated in the server, in Object Pascal, instead of being visible in Javascript.
