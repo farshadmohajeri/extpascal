@@ -3,19 +3,38 @@ unit ExtPascal;
 interface
 
 type
-  ExtObject = class end;
-  ArrayOfVariant = array of Variant;
-  MixedCollection = ArrayOfVariant;
+  ArrayOfString  = array of string;
+  ArrayOfInteger = array of Integer;
+
+  ExtObject = class;
+  ArrayOfExtObject = array of ExtObject;
+
+  ExtObject = class
+  protected
+    JSON : string;
+    procedure AddJSON(S : string);
+    function VarToJSON(A : array of const) : string; overload;
+    function VarToJSON(Exts : ArrayOfExtObject) : string; overload;
+    function VarToJSON(Strs : ArrayOfString) : string; overload;
+    function VarToJSON(Ints : ArrayOfInteger) : string; overload;
+    function ToJSON : string;
+  public
+    procedure WriteBrowser(S : string = '');
+    procedure JSVar(V : string; Value : string = '');
+    constructor Create(pJSON : string = '');
+    constructor JSFunction(Params, Body : string);
+    procedure SetLength(A : pointer; L : integer);
+  end;
+
   HTMLElement = class(ExtObject) end;
-  Element = class(ExtObject) end;
   StyleSheet = class(ExtObject) end;
   RegExp = class(ExtObject) end;
   CSSRule = class(ExtObject) end;
   XMLDocument = class(ExtObject) end;
   NodeList = class(ExtObject) end;
-  Region = class(ExtObject) end;
+  Region = type string;
   NativeMenu = ExtObject;
-  el = type string;
+  el = type string; // doc fault
   Event = class(ExtObject) end;
   HTMLNode = ExtObject;
   _Constructor = class(ExtObject) end;
@@ -39,5 +58,92 @@ type
 
 implementation
 
-end.
+uses
+  SysUtils, StrUtils, Variants;
 
+{ ExtObject }
+
+procedure ExtObject.AddJSON(S : string); begin
+  JSON := JSON + S;
+end;
+
+constructor ExtObject.Create(pJSON: string); begin
+  JSON := pJSON
+end;
+
+constructor ExtObject.JSFunction(Params, Body: string); begin
+  JSON := 'function (' + Params + '){' + Body + '}'
+end;
+
+procedure ExtObject.JSVar(V: string; Value : string = ''); begin
+  AddJSON('var ' + V + '=' + IfThen(Value = '', JSON, Value));
+end;
+
+procedure ExtObject.SetLength(A : pointer; L: integer);
+begin
+  writeln(integer(A));
+//  system.Setlength(, L);
+end;
+
+function ExtObject.ToJSON: string; begin
+  Result := ''
+end;
+
+function ExtObject.VarToJSON(A : array of const): string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 0 to high(A) do begin
+    with A[I] do
+      case VType of
+        vtInteger:    Result := Result + IntToStr(VInteger);
+        vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
+        vtExtended:   Result := Result + FloatToStr(VExtended^);
+        vtString:     Result := Result + '"' + VString^ + '"';
+        vtObject:     Result := Result + IfThen(VObject <> nil, ExtObject(VObject).ToJSON, '{}');
+        vtAnsiString: Result := Result + '"' + string(VAnsiString) + '"';
+        vtVariant:    Result := Result + string(VVariant^);
+      end;
+    if I < high(A) then Result := Result + ', ';
+  end;
+end;
+
+function ExtObject.VarToJSON(Exts : ArrayOfExtObject): string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 0 to high(Exts) do begin
+    Result := Result + Exts[I].ToJSON;
+    if I < high(Exts) then Result := Result + ', ';
+  end;
+end;
+
+function ExtObject.VarToJSON(Strs : ArrayOfString): string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 0 to high(Strs) do begin
+    Result := Result + '"' + Strs[I] + '"';
+    if I < high(Strs) then Result := Result + ', ';
+  end;
+end;
+
+function ExtObject.VarToJSON(Ints : ArrayOfInteger): string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 0 to high(Ints) do begin
+    Result := Result + IntToStr(Ints[I]);
+    if I < high(Ints) then Result := Result + ', ';
+  end;
+end;
+
+procedure ExtObject.WriteBrowser(S: string); begin
+  if S <> '' then AddJSON(S);
+end;
+
+end.
