@@ -8,6 +8,7 @@ type
 
   ExtObject = class;
   ArrayOfExtObject = array of ExtObject;
+  TExtObjectClass = class of ExtObject;
 
   ExtObject = class
   protected
@@ -18,12 +19,12 @@ type
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     function ToJSON : string;
+    procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
   public
     procedure WriteBrowser(S : string = '');
     procedure JSVar(V : string; Value : string = '');
     constructor Create(pJSON : string = '');
     constructor JSFunction(Params, Body : string);
-    procedure SetLength(A : pointer; L : integer);
   end;
 
   HTMLElement = class(ExtObject) end;
@@ -79,10 +80,14 @@ procedure ExtObject.JSVar(V: string; Value : string = ''); begin
   AddJSON('var ' + V + '=' + IfThen(Value = '', JSON, Value));
 end;
 
-procedure ExtObject.SetLength(A : pointer; L: integer);
+procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer);
+var
+  I, OldLen : integer;
 begin
-  writeln(integer(A));
-//  system.Setlength(, L);
+  OldLen := high(A) + 1;
+  for I := NewLength to high(A) do A[I].Free;
+  System.SetLength(A, NewLength);
+  for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
 end;
 
 function ExtObject.ToJSON: string; begin

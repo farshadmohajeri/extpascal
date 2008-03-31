@@ -8,50 +8,68 @@ uses
 var
   W : ExtWindow;
   Connection : ExtDataConnection;
+  DataRecord : ExtDataRecord;
+  Fields : ArrayOfExtDataField;
 begin
   W := ExtWindow.Create;
   with W do begin
-    layout := 'fit';
-    width := 300;
-    height:= 150;
-    closable := false;
-    resizable := false;
-    plain := true;
-    items := 'dsdsd'; // Verificar
-    show;
+    Layout := 'fit';
+    Width := 300;
+    Height:= 150;
+    Closable := false;
+    Resizable := false;
+    Plain := true;
+    Items := 'dsdsd'; // Verificar
+    Show;
   end;
   with ExtButton.Create do begin
-    renderTo := 'button1-div';
-    text := 'Button 1';
-    handler := _Function.JSFunction('', 'alert("You clicked the button 1");');
+    RenderTo := 'button1-div';
+    Text := 'Button 1';
+    Handler := _Function.JSFunction('', 'alert("You clicked the button 1");');
     WriteBrowser;
   end;
   Connection := ExtDataConnection.Create;
   with Connection do begin
-    url := 'docs/samples/data.txt';
-    method := 'GET';
+    Url := 'docs/samples/data.txt';
+    Method := 'GET';
   end;
+  SetLength(Fields, 3);
+  Fields[0].Create.Name := 'status';
+  Fields[1].Create.Name := 'report';
+  Fields[2].Create.Name := 'duration';
+  DataRecord := ExtDataRecord.Create(Fields);
   with ExtGridGridPanel.Create do begin
-    renderTo := 'grid-div';
-    title := 'my Grid';
-    width := 300;
-    height := 200;
-    frame := true;
-    store := ExtDataStore.Create;
+    RenderTo := 'grid-div';
+    Title := 'my Grid';
+    Width := 300;
+    Height := 200;
+    Frame := true;
+    Store := ExtDataStore.Create;
     with Store do begin
-      autoLoad := true;
-      proxy := ExtDataHttpProxy.Create(Connection);
-      reader := ExtDataJsonReader.Create;
-      with ExtDataJsonReader(reader) do begin
-        root := 'rows';
-        totalProperty := 'totalCount';
+      AutoLoad := true;
+      Proxy := ExtDataHttpProxy.Create(Connection);
+      Reader := ExtDataJsonReader.Create(nil, DataRecord);
+      with ExtDataJsonReader(Reader) do begin
+        Root := 'rows';
+        TotalProperty := 'totalCount';
       end;
     end;
     SetLengthColumns(3);
-    with columns[0] do begin header := ''; width := 1212; sortable := true; dataIndex := 'status'; id := dataIndex; end;
-    with columns[1] do begin header := ''; width := 1212; sortable := true; dataIndex := 'status'; id := dataIndex; end;
-    with columns[2] do begin header := ''; width := 1212; sortable := true; dataIndex := 'status'; id := dataIndex; end;
-    WriteBrowser
+    with Columns[0] do begin Header := '';         Width := 30;  Sortable := true; DataIndex := 'status';   Id := DataIndex; end;
+    with Columns[1] do begin Header := 'Name';     Width := 160; Sortable := true; DataIndex := 'report';   Id := DataIndex; end;
+    with Columns[2] do begin Header := 'Duration'; Width := 70;  Sortable := true; DataIndex := 'duration'; Id := DataIndex; end;
+    WriteBrowser;
+    Free;
+  end;
+  with ExtFormFormPanel.Create do begin
+    LabelWidth := 80;
+    Frame := true;
+    Title := 'Login';
+    Width := 230;
+    DefaultType := 'textfield';
+		MonitorValid := true;
+    SetLengthButtons(1);
+    Buttons[0].Text := 'Login';
   end;
 end.
 
