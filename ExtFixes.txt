@@ -2,3 +2,14 @@ ExtElement, region, string, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
 ExtGridGridPanel, columns, ArrayOfExtGridColumnModel, false,
+ExtDataField,, ExtData
+ExtDataField, Name, string, false,
+ExtDataField, Mapping, string, false,
+ExtDataField, Type, string, false,
+ExtDataField, SortTypes, string, false,
+ExtDataField, SortDir, string, false,
+ExtDataField, Convert, _Function, false,
+ExtDataField, DateFormat, string, false,
+ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
+ExtDataRecord, Create,, true, false, Data, ArrayOfExtDataField, false
+ExtFormFormPanel, Buttons, ArrayOfExtButton, false,

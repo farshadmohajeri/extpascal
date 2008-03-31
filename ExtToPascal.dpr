@@ -1,4 +1,4 @@
-program ExtToPascal;
+program ExtToPascal; {$APPTYPE CONSOLE}
 
 uses
   SysUtils, StrUtils, Classes, Math;
@@ -23,7 +23,10 @@ begin
   Result := '';
   for I := 1 to length(Ident) do
     if Ident[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '_'] then
-      Result := Result + Ident[I]
+      if I = 1 then
+        Result := UpCase(Ident[1])
+      else
+        Result := Result + Ident[I]
     else
       if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
   Result := FixReserved(Result);
@@ -69,9 +72,9 @@ type
 
   TClass = class
     Name, Parent, UnitName : string;
-    Defaults : boolean;
+    Defaults, Arrays : boolean;
     Properties, Methods : TStringList;
-    constructor Create(pName : string);
+    constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
   end;
 
@@ -116,7 +119,7 @@ begin
     with TClass(Classes.Objects[I]) do
       if Parent <> '' then begin
         J := AllClasses.IndexOf(Parent);
-        if J <> 0 then begin
+        if J <> -1 then begin
           UName := TClass(AllClasses.Objects[J]).UnitName;
           if (UName <> UnitName) and (pos(', ' + UName + ',', Result + ',') = 0) then
             Result := Result + ', ' + UName
@@ -128,7 +131,7 @@ procedure TUnit.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
   const
-    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ArrayOfExtObject.void._Function.Event.HTMLElement.RegExp.';
+    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ArrayOfExtObject.Void._Function.Event.HTMLElement.RegExp.';
   var
     T : string;
     I, J : integer;
@@ -174,8 +177,10 @@ begin
     end;
 end;
 
-constructor TClass.Create(pName : string); begin
+constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Name := FixIdent(pName);
+  Parent := FixIdent(pParent);
+  UnitName := FixIdent(pUnitName);
   Properties := TStringList.Create;
   Methods := TStringList.Create;
 end;
@@ -402,7 +407,7 @@ begin
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
             MetName := Unique(FixIdent(Matches[0]), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            if pos('init', MetName) = 1 then exit; // delete init functions, usualy private
+            if pos('Init', MetName) = 1 then exit; // delete init functions, usualy private
             Return := FixType(Matches[2]);
             if Return = '' then begin
               MetName := 'Create';
@@ -497,6 +502,7 @@ var
   Fix : string;
   Fields, Params : TStringList;
   I, J, K : integer;
+  NewClass : TClass;
 begin
   if FileExists('ExtFixes.txt') then begin
     assign(Fixes, 'ExtFixes.txt');
@@ -505,7 +511,7 @@ begin
       readln(Fixes, Fix);
       Fields := Explode(',', Fix);
       I := AllClasses.IndexOf(Fields[0]);
-      if I <> -1 then
+      if I <> -1 then begin
         with TClass(AllClasses.Objects[I]) do
           if Fields.Count = 5 then begin // props
             J := Properties.IndexOf(Fields[1]);
@@ -538,6 +544,12 @@ begin
                   end;
               end;
           end;
+      end
+      else begin// Create new Class
+        NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+        AllClasses.AddObject(Fields[0], NewClass);
+        TUnit(Units.Objects[Units.IndexOf(Fields[2])]).Classes.AddObject(Fields[0], NewClass)
+      end;
       Fields.Free;
     until SeekEOF(Fixes);
     close(Fixes);
@@ -603,13 +615,13 @@ begin
       write(Pas, T, 'constructor ', pClassName, 'Create')
     end
     else
-      write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'void', 'procedure ', 'function '), pClassName, Name);
+      write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'Void', 'procedure ', 'function '), pClassName, Name);
     if Params.Count <> 0 then begin
       write(Pas, '(');
       WriteParams(Params);
       write(Pas, ')');
     end;
-    write(Pas, IfThen((Return = 'void') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
+    write(Pas, IfThen((Return = 'Void') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
       IfThen(pClassName = '', ^M^J, ''));
   end;
   Result := true;
@@ -665,6 +677,13 @@ begin
           writeln(Pas, Tab(2), 'class function ', Name, ' : ', Typ, ';');
     for I := 0 to Methods.Count-1 do // Write methods
       WriteMethodSignature(TMethod(Methods.Objects[I]), Defaults);
+    for I := 0 to Properties.Count-1 do // Write SetLength Methods
+      with TProp(Properties.Objects[I]) do
+        if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
+          Arrays := true;
+          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Integer);');
+        end;
+    if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
     writeln(Pas, Tab, 'end;'^M^J);
   end;
 end;
@@ -748,7 +767,7 @@ end;
 procedure WriteUnits;
 var
   I, J, K, L : integer;
-  CName, Value : string;
+  CName, Value, DestructorBody : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -810,10 +829,25 @@ begin
                 end
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'AddJSON(''', IfThen(Static, CName + '.', ''), Name, ParamsToJSON(Params), ''');');
-                  if Return <> 'void' then writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
+                  if Return <> 'Void' then writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
+          DestructorBody := '';
+          for K := 0 to Properties.Count-1 do // Write SetLength Methods
+            with TProp(Properties.Objects[K]) do
+              if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
+                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Integer); begin');
+                writeln(Pas, Tab, 'SetLength(ArrayOfExtObject(F', Name, '), ', copy(Typ, length(ArrayOf)+1, length(Typ)), ', NewLength)');
+                DestructorBody := DestructorBody + Tab + 'SetLength' + Name + '(0);'^M^J;
+                writeln(Pas, 'end;'^M^J);
+              end;
+          if Arrays then begin // Write destructor
+            writeln(Pas, 'destructor ', CName, '.Destroy; begin');
+            writeln(Pas, Tab, 'inherited;');
+            write(Pas, DestructorBody);
+            writeln(Pas, 'end;'^M^J);
+          end;
         end;
       write(Pas, 'end.');
       close(Pas);
