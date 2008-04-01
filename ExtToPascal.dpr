@@ -40,16 +40,16 @@ var
   I : integer;
 begin
   T := LowerCase(Ident);
-  if T = 'string'    then begin Result := 'string';             exit end else
-  if T = 'number'    then begin Result := 'Integer';            exit end else
-  if T = 'boolean'   then begin Result := 'Boolean';            exit end else
-  if T = 'object'    then begin Result := 'ExtObject';          exit end else
-  if T = 'date'      then begin Result := 'TDateTime';          exit end else
-  if T = 'float'     then begin Result := 'Double';             exit end else
-  if T = 'mixed'     then begin Result := 'string';             exit end else
-  if T = 'array'     then begin Result := 'ArrayOfExtObject';   exit end else
-  if T = 'int'       then begin Result := 'Integer';            exit end else
-  if T = 'object...' then begin Result := 'ArrayOfExtObject';   exit end
+  if T = 'string'    then begin Result := 'string';           exit end else
+  if T = 'number'    then begin Result := 'Integer';          exit end else
+  if T = 'boolean'   then begin Result := 'Boolean';          exit end else
+  if T = 'object'    then begin Result := 'ExtObject';        exit end else
+  if T = 'date'      then begin Result := 'TDateTime';        exit end else
+  if T = 'float'     then begin Result := 'Double';           exit end else
+  if T = 'mixed'     then begin Result := 'string';           exit end else
+  if T = 'array'     then begin Result := 'ArrayOfExtObject'; exit end else
+  if T = 'int'       then begin Result := 'Integer';          exit end else
+  if T = 'object...' then begin Result := 'ArrayOfExtObject'; exit end
   else begin
     I := LastDelimiter('/[:', Ident);
     if I <> 0 then begin
@@ -334,10 +334,11 @@ var
 
 procedure LoadElements(Line : string);
 const
-  CurClass : TClass = nil;
-  CurProp  : TProp  = nil;
-  PropName : string    = '';
-  MetName  : string    = '';
+  CurClass : TClass  = nil;
+  CurProp  : TProp   = nil;
+  CurMethod: TMethod = nil;
+  PropName : string  = '';
+  MetName  : string  = '';
 var
   PackName, Arg, Return : string;
   Matches, Params, Args : TStringList;
@@ -401,7 +402,10 @@ begin
                 with CurClass.Properties do Delete(IndexOf(FixIdent(PropName))); // delete property inherited
             end
             else
-              if pos('<h2>Public Methods</h2>', Line) <> 0 then State := InMethods;
+              if pos('<h2>Public Methods</h2>', Line) <> 0 then
+                State := InMethods
+              else
+                if pos('<static>', lowercase(Line)) <> 0 then CurProp.Static := true;
       InMethods :
           if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
@@ -440,7 +444,8 @@ begin
             Params.Free;
             I := LastDelimiter('.', MetName);
             if I <> 0 then MetName := copy(MetName, I+1, length(MetName));
-            DoOverloads(CurClass, TMethod.Create(MetName, Return, Args, I <> 0, false));
+            CurMethod := TMethod.Create(MetName, Return, Args, I <> 0, false);
+            DoOverloads(CurClass, CurMethod);
           end
           else
             if Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
@@ -454,10 +459,13 @@ begin
                 end;
             end
             else
-              if pos('<h2>Public Events</h2>', Line) <> 0 then begin
-                AllClasses.AddObject(CurClass.Name, CurClass);
-                State := Initial;
-              end;
+              if pos('<static>', lowercase(Line)) <> 0 then
+                CurMethod.Static := true
+              else
+                if pos('<h2>Public Events</h2>', Line) <> 0 then begin
+                  AllClasses.AddObject(CurClass.Name, CurClass);
+                  State := Initial;
+                end;
     end;
   finally
     Matches.Free;
@@ -681,7 +689,7 @@ begin
       with TProp(Properties.Objects[I]) do
         if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
           Arrays := true;
-          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Integer);');
+          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Integer; OtherClass : TExtObjectClass = nil);');
         end;
     if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
     writeln(Pas, Tab, 'end;'^M^J);
@@ -837,8 +845,9 @@ begin
           for K := 0 to Properties.Count-1 do // Write SetLength Methods
             with TProp(Properties.Objects[K]) do
               if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
-                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Integer); begin');
-                writeln(Pas, Tab, 'SetLength(ArrayOfExtObject(F', Name, '), ', copy(Typ, length(ArrayOf)+1, length(Typ)), ', NewLength)');
+                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Integer; OtherClass : TExtObjectClass); begin');
+                writeln(Pas, Tab, 'SetLength(ArrayOfExtObject(F', Name, '), IfOtherClass(OtherClass = nil, ',
+                  copy(Typ, length(ArrayOf)+1, length(Typ)), ', OtherClass), NewLength)');
                 DestructorBody := DestructorBody + Tab + 'SetLength' + Name + '(0);'^M^J;
                 writeln(Pas, 'end;'^M^J);
               end;

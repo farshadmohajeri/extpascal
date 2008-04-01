@@ -6,22 +6,13 @@ uses
   Classes, ExtPascal, Ext, ExtGlobal, ExtUtil, ExtAir, ExtData, ExtDD, ExtForm, ExtLayout, ExtMenu, ExtState, ExtTree, ExtGrid;
 
 var
-  W : ExtWindow;
   Connection : ExtDataConnection;
   DataRecord : ExtDataRecord;
   Fields : ArrayOfExtDataField;
+  Login : ExtFormFormPanel;
+  TabActions, ActionPanel : ExtPanel;
+  TabPanel : ExtTabPanel;
 begin
-  W := ExtWindow.Create;
-  with W do begin
-    Layout := 'fit';
-    Width := 300;
-    Height:= 150;
-    Closable := false;
-    Resizable := false;
-    Plain := true;
-    Items := 'dsdsd'; // Verificar
-    Show;
-  end;
   with ExtButton.Create do begin
     RenderTo := 'button1-div';
     Text := 'Button 1';
@@ -33,10 +24,10 @@ begin
     Url := 'docs/samples/data.txt';
     Method := 'GET';
   end;
-  SetLength(Fields, 3);
-  Fields[0].Create.Name := 'status';
-  Fields[1].Create.Name := 'report';
-  Fields[2].Create.Name := 'duration';
+  SetLength(Fields, 3, ExtDataField);
+  Fields[0].Name := 'status';
+  Fields[1].Name := 'report';
+  Fields[2].Name := 'duration';
   DataRecord := ExtDataRecord.Create(Fields);
   with ExtGridGridPanel.Create do begin
     RenderTo := 'grid-div';
@@ -61,7 +52,8 @@ begin
     WriteBrowser;
     Free;
   end;
-  with ExtFormFormPanel.Create do begin
+  Login := ExtFormFormPanel.Create;
+  with Login do begin
     LabelWidth := 80;
     Frame := true;
     Title := 'Login';
@@ -70,6 +62,69 @@ begin
 		MonitorValid := true;
     SetLengthButtons(1);
     Buttons[0].Text := 'Login';
+    SetLengthItems(2, ExtFormTextField);
+    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
+    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
+  end;
+  with ExtWindow.Create do begin
+    Layout := 'fit';
+    Width := 300;
+    Height:= 150;
+    Closable := false;
+    Resizable := false;
+    Plain := true;
+    SetLengthItems(1, NoCreate);
+    Items[0] := Login;
+    Show;
+  end;
+  TabActions := ExtPanel.Create;
+  with TabActions do begin
+    Frame := true;
+    Title := 'Actions';
+    Collapsible:= true;
+    ContentEl := 'actions';
+    TitleCollapse := true;
+  end;
+  ActionPanel := ExtPanel.Create;
+  with ActionPanel do begin
+    Id := 'action-panel';
+    Collapsible := true;
+    Width := 340;
+    Border := false;
+    BaseCls := 'x-plain';
+    SetLengthItems(1, NoCreate);
+    Items[0] := TabActions;
+    Region := 'west';
+    Split := true;
+    CollapseMode := 'mini';
+    MinWidth := 150;
+  end;
+  TabPanel := ExtTabPanel.Create;
+  with TabPanel do begin
+    DeferredRender := false;
+    AutoScroll := true;
+    ActiveTab := 'tab1'; // variant
+    Region := 'center';
+    Title := 'Main';
+    Closable := false;
+    Margins := '0 4 4 0';
+    SetLengthItems(2);
+    with Items[0] do begin Id := 'tab1'; ContentEl := 'tabs'; Title := 'Button';     Closable := false; AutoScroll := true end;
+    with Items[1] do begin Id := 'tab2'; ContentEl := 'tabs'; Title := 'Grid Panel'; Closable := false; AutoScroll := true end;
+  end;
+  with ExtViewPort.Create do begin
+    Layout := 'border';
+    SetLengthItems(2, NoCreate);
+    Items[0] := ActionPanel;
+    Items[1] := TabPanel;
+    WriteBrowser;
+  end;
+  with TabPanel do begin
+    Title := 'New Tab';
+    IconCls := 'tabs';
+    AutoLoad := ExtFormAction.Create;
+    ExtFormAction(AutoLoad).Url := 'TestExtPascal.exe?content1';
+    Closable := true;
   end;
 end.
 

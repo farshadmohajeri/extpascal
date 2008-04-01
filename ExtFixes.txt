@@ -1,4 +1,9 @@
-ExtElement, region, string, false,
+ExtComponent, Region, string, false,
+ExtComponent, Split, Boolean, false,
+ExtComponent, CollapseMode, string, false,
+ExtComponent, MinWidth, Integer, false,
+ExtComponent, Margins, string, false,
+ExtComponent, Closable, Boolean, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
 ExtGridGridPanel, columns, ArrayOfExtGridColumnModel, false,
@@ -13,3 +18,7 @@ ExtDataField, DateFormat, string, false,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ArrayOfExtDataField, false
 ExtFormFormPanel, Buttons, ArrayOfExtButton, false,
+ExtFormFormPanel, Items, ArrayOfExtComponent, false,
+ExtWindow, Items, ArrayOfExtComponent, false,
+ExtPanel, Items, ArrayOfExtComponent, false,
+ExtViewPort, Items, ArrayOfExtComponent, false,

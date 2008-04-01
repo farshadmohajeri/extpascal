@@ -20,6 +20,7 @@ type
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     function ToJSON : string;
     procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
+    function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
   public
     procedure WriteBrowser(S : string = '');
     procedure JSVar(V : string; Value : string = '');
@@ -57,10 +58,15 @@ type
   SelectionModel = ExtObject; // doc fault
   DataSource = ExtObject; // doc fault
 
+const
+  NoCreate = pointer(1);
+
+procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
+
 implementation
 
 uses
-  SysUtils, StrUtils, Variants;
+  SysUtils, StrUtils;
 
 { ExtObject }
 
@@ -70,6 +76,13 @@ end;
 
 constructor ExtObject.Create(pJSON: string); begin
   JSON := pJSON
+end;
+
+function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjectClass): TExtObjectClass; begin
+  if B then
+    Result := DefaultClass
+  else
+    Result := OtherClass
 end;
 
 constructor ExtObject.JSFunction(Params, Body: string); begin
@@ -85,9 +98,20 @@ var
   I, OldLen : integer;
 begin
   OldLen := high(A) + 1;
-  for I := NewLength to high(A) do A[I].Free;
+  if ExtObjectClass <> NoCreate then for I := NewLength to high(A) do A[I].Free;
   System.SetLength(A, NewLength);
-  for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
+  if ExtObjectClass <> NoCreate then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
+end;
+
+procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
+var
+  A : ArrayOfExtObject absolute Arr;
+  I, OldLen : integer;
+begin
+  OldLen := high(A) + 1;
+  if ExtObjectClass <> nil then for I := NewLength to high(A) do A[I].Free;
+  System.SetLength(A, NewLength);
+  if ExtObjectClass <> nil then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
 end;
 
 function ExtObject.ToJSON: string; begin
