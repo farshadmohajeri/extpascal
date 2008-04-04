@@ -1,0 +1,23 @@
+= Introduction =
+
+ExtPascal is an another ExtJS wrapper. ExtPascal lets you use the ExtJS from Object Pascal commands issued by the server. That brings the structure and strict syntax of the Object Pascal for programming the web browser. 
+
+The main advantages are:
+
+ * Use your preferred language and where you are more productive instead of using Javascript.
+ * Use of native and compiled code with a strongly typed language. That is, many errors are directly appointed by the compiler, without waste time testing in the browser.
+ * Use of the editor's intellisense, available in moderns IDEs (Delphi/Lazarus) more productivity in the coding.
+ * Centering the programming on the server, where Javascript is generated dynamically, makes development easier and less dispersed.
+ * The business rules can be encapsulated in the server, in Object Pascal, instead of being visible in Javascript.
+
+= Prerequisites =
+
+ * Download and install ExtJS 2.02 or later, _*with the documentation*_.
+ * Install Delphi 7 or later (should work on previous versions with little or no changes), I use Turbo Delphi Win32 *OR* download and install Lazarus/FreePascal 0.9.24 or later.
+ * Download ExtPascal files from svn to a working directory, for example: C:\ExtPascal 
+
+= First Steps =
+ # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
+ # Run it informing the path of the ExtJS documentation, the HTML files. For example: ExtToPascal C:\Ext\docs\output
+ # ExtToPascal will generate a Pascal Unit for each Javascript Package. A total of 12 units in version 2.0.2 of ExtJS.
+ # Use TextExtPascal as example.
