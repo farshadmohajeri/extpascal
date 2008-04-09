@@ -31,14 +31,19 @@ type
     destructor Destroy; override;
     procedure SendRecord(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
+    procedure ProcessMessage(Message : string); virtual; abstract;
+    procedure DoIdle; virtual;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
   end;
+  TFastCGIThreadClass = class of TFastCGIThread;
 
   TFastCGIApplication = class
   private
     WebServers : TStringList;
+    FFastCGIThreadClass : TFastCGIThreadClass;
   public
-    constructor Create;
+    Terminated : boolean;
+    constructor Create(pFastCGIThreadClass : TFastCGIThreadClass);
     destructor Destroy; override;
     procedure Run;
     function CanConnection(Address : string) : boolean;
@@ -50,7 +55,7 @@ var
 implementation
 
 uses
-  SysUtils;
+  SysUtils, ShellAPI, windows;
 
 type
   THeader = packed record
@@ -81,6 +86,8 @@ destructor TFastCGIThread.Destroy; begin
   FSocket.Free;
   inherited;
 end;
+
+procedure TFastCGIThread.DoIdle; begin end;
 
 procedure TFastCGIThread.SendRecord(S : string; pRecType : TRecType = rtStdOut);
 var
@@ -200,27 +207,31 @@ var
 begin
   try
     if FastCGIApplication.CanConnection(FSocket.GetHostAddress) then
-      while not Terminated and FSocket.CanRead(200) do begin
-        Buffer := FSocket.RecvString;
-        if FSocket.SocketError = 0 then begin
-          move(Buffer[1], Header, sizeof(Header));
-          if (RequestID <> 0) and (Header.ID <> 0) and (Header.ID <> RequestID) then
-            SendEndRequest(psCantMPXConn)
-          else
-            case Header.RecType of
-              rtBeginRequest : ReadBeginRequest(Buffer);
-              rtAbortRequest : SendEndRequest;
-              rtParams       : ReadParams(Variables, copy(Buffer, sizeof(Header) + 1, Header.Len));
-              rtStdIn,
-              rtData         : ;//Result := copy(Buffer, sizeof(Header) + 1, Header.Len);
-              rtGetValues    : GetValues(copy(Buffer, sizeof(Header) + 1, Header.Len));
+      repeat
+        if FSocket.CanRead(100) then begin
+          Buffer := FSocket.RecvString;
+          if FSocket.SocketError = 0 then begin
+            move(Buffer[1], Header, sizeof(Header));
+            if (RequestID <> 0) and (Header.ID <> 0) and (Header.ID <> RequestID) then
+              SendEndRequest(psCantMPXConn)
             else
-              SendRecord(char(Header.RecType), rtUnknown);
-            end;
+              case Header.RecType of
+                rtBeginRequest : ReadBeginRequest(Buffer);
+                rtAbortRequest : SendEndRequest;
+                rtParams       : ReadParams(Variables, copy(Buffer, sizeof(Header) + 1, Header.Len));
+                rtStdIn,
+                rtData         : ProcessMessage(copy(Buffer, sizeof(Header) + 1, Header.Len));
+                rtGetValues    : GetValues(copy(Buffer, sizeof(Header) + 1, Header.Len));
+              else
+                SendRecord(char(Header.RecType), rtUnknown);
+              end;
+          end
+          else
+            FSocket.Purge;
         end
         else
-          FSocket.Purge;
-      end
+          DoIdle;
+      until Terminated
     else
       Terminate;
   except
@@ -237,10 +248,11 @@ function TFastCGIApplication.CanConnection(Address: string): boolean; begin
   Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
 end;
 
-constructor TFastCGIApplication.Create;
+constructor TFastCGIApplication.Create(pFastCGIThreadClass : TFastCGIThreadClass);
 var
   WS : string;
 begin
+  FFastCGIThreadClass := pFastCGIThreadClass;
   WS := GetEnvironmentVariable('FCGI_WEB_SERVER_ADDRS');
   if WS <> '' then begin
     WebServers := TStringList.Create;
@@ -257,21 +269,13 @@ procedure TFastCGIApplication.Run;
 var
   NewThread : integer;
 begin
-  try
-    with TBlockSocket.Create do
-      try
-        Bind(0, 10);
-        repeat
-          NewThread := Accept(200);
-          if NewThread <> 0 then TFastCGIThread.Create(NewThread);
-        until Terminated;
-      finally
-        FreeThreads;
-        Free;
-      end;
-  finally
-    fThreadListLock.Free;
-    FreeAndNil(fThreadList);
+  ShellExecute(0, 'open', pchar(GetEnvironmentVariable('ComSpec')), '', '', SW_SHOWNormal); readln;
+  with TBlockSocket.Create do begin
+    Bind(0, 10);
+    repeat
+      NewThread := Accept(200);
+      if NewThread <> 0 then FFastCGIThreadClass.Create(NewThread);
+    until Terminated;
   end;
 end;
 

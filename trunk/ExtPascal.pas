@@ -12,7 +12,6 @@ type
 
   ExtObject = class
   protected
-    JSON : string;
     procedure AddJSON(S : string);
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ArrayOfExtObject) : string; overload;
@@ -22,7 +21,6 @@ type
     procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
     function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
   public
-    procedure WriteBrowser(S : string = '');
     procedure JSVar(V : string; Value : string = '');
     constructor Create(pJSON : string = '');
     constructor JSFunction(Params, Body : string);
@@ -62,11 +60,15 @@ const
   NoCreate = pointer(1);
 
 procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
+function GetJSON : string;
 
 implementation
 
 uses
   SysUtils, StrUtils;
+
+threadvar
+  JSON : string;
 
 { ExtObject }
 
@@ -171,8 +173,8 @@ begin
   end;
 end;
 
-procedure ExtObject.WriteBrowser(S: string); begin
-  if S <> '' then AddJSON(S);
+function GetJSON : string; begin
+  Result := JSON
 end;
 
 end.
