@@ -1,5 +1,5 @@
 unit FCGIApp;
-// This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: multi-threaded, blocking and non-multiplexed behaviour.
+// This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed behaviour.
 // Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
 
 interface
@@ -25,8 +25,12 @@ type
     procedure ReadParamList(var ParamList : TStringList; Stream : string);
     procedure ReadBeginRequest(var Header; Content : string);
     procedure GetValues(Content : string);
+    function GetResponse: string; virtual; abstract;
+    procedure SetResponse(const Value: string); virtual; abstract;
   public
-    Params : TStringList;
+    Params, Query : TStringList;
+    PathInfo, RequestMethod : string; // some alias for most used Params
+    property Response : string read GetResponse write SetResponse;
     property RequestID : word read FRequestID;
     property Role : TRole read FRole;
     constructor Create(NewSocket : integer);
@@ -43,10 +47,11 @@ type
   private
     WebServers : TStringList;
     FCGIThreadClass : TFCGIThreadClass;
-    Response : string;
+    Port : word;
+    ThreadTimeout : TDateTime;
   public
     Terminated : boolean;
-    constructor Create(pFCGIThreadClass : TFCGIThreadClass; pResponse : string);
+    constructor Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pThreadTimeout : word = 20 {minutes});
     destructor Destroy; override;
     procedure Run;
     function CanConnection(Address : string) : boolean;
@@ -77,13 +82,13 @@ type
     Filler2 : array[1..5] of byte;
   end;
 
-procedure MoveToHeader(var Buffer; var Header : THeader); begin
+procedure MoveToHeader(var Buffer : char; var Header : THeader); begin
   move(Buffer, Header, sizeof(THeader));
   Header.ID  := swap(Header.ID);
   Header.Len := swap(Header.Len);
 end;
 
-procedure MoveFromHeader(Header : THeader; var Buffer); begin
+procedure MoveFromHeader(Header : THeader; var Buffer : char); begin
   Header.ID  := swap(Header.ID);
   Header.Len := swap(Header.Len);
   move(Header, Buffer, sizeof(THeader));
@@ -92,12 +97,14 @@ end;
 constructor TFCGIThread.Create(NewSocket : integer); begin
   FSocket := TBlockSocket.Create(NewSocket);
   Params  := TStringList.Create;
+  Query   := TStringList.Create;
   FreeOnTerminate := true;
   inherited Create(false);
 end;
 
 destructor TFCGIThread.Destroy; begin
   Params.Free;
+  Query.Free;
   FSocket.Free;
   inherited;
 end;
@@ -109,6 +116,7 @@ var
   Header : THeader;
   Buffer : string;
 begin
+  if (pRecType = rtStdOut) and (S <> '') then S := 'content-type: text/html'^M^J^M^J + S; //'<html><body>' + S + '</body></html>';
   fillchar(Header, sizeof(Header), 0);
   with Header do begin
     Version := 1;
@@ -119,14 +127,14 @@ begin
     SetLength(Buffer, sizeof(Header) + Len + PadLen);
   end;
   MoveFromHeader(Header, Buffer[1]);
-  move(S[1], Buffer[sizeof(Header) + 1], length(S));
+  if S <> '' then move(S[1], Buffer[sizeof(Header) + 1], length(S));
   FSocket.SendString(Buffer);
-  if (S <> '') and (pRecType in [rtStdOut, rtStdErr]) then SendRecord('', pRecType);
+  //if (S <> '') and (pRecType in [rtStdOut, rtStdErr]) then SendRecord('', pRecType);
 end;
 
 procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplete); begin
-  SendRecord(#0#0#0 + char(Status) + char(Status), rtEndRequest);
-  Terminate;
+  SendRecord(#0#0#0 + char(Status) + char(Status) + #0#0#0, rtEndRequest);
+  if Status <> psRequestComplete then Terminate;
 end;
 
 procedure TFCGIThread.ReadBeginRequest(var Header; Content : string);
@@ -134,7 +142,7 @@ var
   BeginRequest : TBeginRequest;
 begin
   BeginRequest.Header := THeader(Header);
-  move(Content[1], BeginRequest.Filler, sizeof(BeginRequest)-sizeof(Header));
+  move(Content[1], BeginRequest.Filler, sizeof(BeginRequest)-sizeof(THeader));
   if BeginRequest.Role in [rResponder..rFilter] then begin
     FRequestID := BeginRequest.Header.ID;
     FRole      := BeginRequest.Role;
@@ -162,13 +170,16 @@ begin
         inc(Pos);
       SetLength(Param[I], Len[I]);
     end;
-    move(Stream[Pos], Param[0][1], Len[0]);
+    if Len[0] > 0 then move(Stream[Pos], Param[0][1], Len[0]);
     inc(Pos, Len[0]);
-    move(Stream[Pos], Param[1][1], Len[1]);
+    if Len[1] > 0 then move(Stream[Pos], Param[1][1], Len[1]);
     inc(Pos, Len[1]);
-    if ParamList.IndexOf(Param[0]) = -1 then ParamList.Add(Param[0]);
     ParamList.Values[Param[0]] := Param[1];
   end;
+  PathInfo := Params.Values['PATH_INFO'];
+  RequestMethod := Params.Values['REQUEST_METHOD'];
+  Query.Delimiter := '&';
+  Query.DelimitedText := Params.Values['QUERY_STRING'];
 end;
 
 procedure TFCGIThread.AddParam(var S : string; Param : array of string);
@@ -222,19 +233,20 @@ procedure TFCGIThread.Execute;
 var
   Header : THeader;
   Buffer, Stream, Content : string;
-  I : integer;
+  I, SleepTime : integer;
+  LastResponseTime : TDateTime;
 begin
-  Stream := '';
+  Stream := ''; SleepTime := 1; LastResponseTime := Now;
   try
     if Application.CanConnection(FSocket.GetHostAddress) then
       repeat
-        if FSocket.CanRead(200) and (FSocket.WaitingData > 0) then begin
+        if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
           if FSocket.SocketError <> 0 then begin
-            FSocket.Purge;
-            continue;
+            Terminate;
+            exit;
           end;
-          I := 1;
+          I := 1; SleepTime := 1;
           while I <= length(Buffer) do begin
             MoveToHeader(Buffer[I], Header);
             if (RequestID <> 0) and (Header.ID <> 0) and (Header.ID <> RequestID) then
@@ -244,7 +256,10 @@ begin
               Content := copy(Buffer, I, Header.Len);
               case Header.RecType of
                 rtBeginRequest : ReadBeginRequest(Header, Content);
-                rtAbortRequest : SendEndRequest;
+                rtAbortRequest : begin
+                  SendEndRequest;
+                  Terminate;
+                end;
                 rtGetValues    : GetValues(Content);
                 rtParams, rtStdIn, rtData:
                   if Content = '' then begin
@@ -252,9 +267,10 @@ begin
                       ReadParamList(Params, Stream)
                     else begin
                       ProcessMessage(Stream);
-                      if Application.Response <> '' then begin
-                        SendRecord(Application.Response);
-                        Application.Response := '';
+                      if Response <> '' then begin
+                        SendRecord(Response);
+                        SendEndRequest;
+                        Response := '';
                       end;
                     end;
                     Stream := '';
@@ -263,13 +279,24 @@ begin
                     Stream := Stream + Content;
               else
                 SendRecord(char(Header.RecType), rtUnknown);
+                Buffer := '';
+                sleep(20);
+                break;
               end;
             end;
             inc(I, Header.Len);
-          end
+          end;
+          LastResponseTime := Now;
         end
-        else
+        else begin
+          sleep(SleepTime);
+          if SleepTime < 256 then inc(SleepTime, 2); // optimize sleep time
           DoIdle;
+          if (Now - LastResponseTime) > Application.ThreadTimeout then begin // Expire session
+            SendEndRequest;
+            Terminate;
+          end;
+        end;
       until Terminated
     else
       Terminate;
@@ -287,12 +314,13 @@ function TFCGIApplication.CanConnection(Address: string): boolean; begin
   Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
 end;
 
-constructor TFCGIApplication.Create(pFCGIThreadClass : TFCGIThreadClass; pResponse : string);
+constructor TFCGIApplication.Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pThreadTimeout : word = 20 {minutes});
 var
   WS : string;
 begin
   FCGIThreadClass := pFCGIThreadClass;
-  Response := pResponse;
+  Port := pPort;
+  ThreadTimeOut := pThreadTimeout * 0.0007; // 0.0007 ~= 1 minute
   WS := GetEnvironmentVariable('FCGI_WEB_SERVER_ADDRS');
   if WS <> '' then begin
     WebServers := TStringList.Create;
@@ -310,9 +338,9 @@ var
   NewThread : integer;
 begin
   with TBlockSocket.Create do begin
-    Bind(2014, 10);
+    Bind(Port, 100);
     repeat
-      NewThread := Accept(200);
+      NewThread := Accept(256);
       if NewThread <> 0 then FCGIThreadClass.Create(NewThread);
     until Terminated;
   end;

@@ -2,7 +2,16 @@ unit ExtPascal;
 
 interface
 
+uses
+  FCGIApp;
+
 type
+  TExtPascalThread = class(TFCGIThread)
+  protected
+    function GetResponse: string; override;
+    procedure SetResponse(const Value: string); override;
+  end;
+
   ArrayOfString  = array of string;
   ArrayOfInteger = array of Integer;
 
@@ -21,7 +30,7 @@ type
     procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
     function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
   public
-    procedure JSVar(V : string; Value : string = '');
+    procedure JSVar(V : string; Value : string);
     constructor Create(pJSON : string = '');
     constructor JSFunction(Params, Body : string);
   end;
@@ -60,7 +69,6 @@ const
   NoCreate = pointer(1);
 
 procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
-function GetJSON : string;
 
 implementation
 
@@ -70,6 +78,16 @@ uses
 threadvar
   JSON : string;
 
+{ TExtPascalThread }
+
+function TExtPascalThread.GetResponse: string; begin
+  Result := JSON
+end;
+
+procedure TExtPascalThread.SetResponse(const Value: string); begin
+  JSON := Value
+end;
+
 { ExtObject }
 
 procedure ExtObject.AddJSON(S : string); begin
@@ -77,7 +95,7 @@ procedure ExtObject.AddJSON(S : string); begin
 end;
 
 constructor ExtObject.Create(pJSON: string); begin
-  JSON := pJSON
+  AddJSON(pJSON)
 end;
 
 function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjectClass): TExtObjectClass; begin
@@ -88,11 +106,11 @@ function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjec
 end;
 
 constructor ExtObject.JSFunction(Params, Body: string); begin
-  JSON := 'function (' + Params + '){' + Body + '}'
+  AddJSON('function (' + Params + '){' + Body + '}')
 end;
 
-procedure ExtObject.JSVar(V: string; Value : string = ''); begin
-  AddJSON('var ' + V + '=' + IfThen(Value = '', JSON, Value));
+procedure ExtObject.JSVar(V: string; Value : string); begin
+  AddJSON('var ' + V + '=' + Value);
 end;
 
 procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer);
@@ -171,10 +189,6 @@ begin
     Result := Result + IntToStr(Ints[I]);
     if I < high(Ints) then Result := Result + ', ';
   end;
-end;
-
-function GetJSON : string; begin
-  Result := JSON
 end;
 
 end.
