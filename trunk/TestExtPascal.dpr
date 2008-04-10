@@ -8,7 +8,7 @@ uses
   FCGIApp;
 
 type
-  TTestExtPascal = class(TFCGIThread)
+  TTestExtPascal = class(TExtPascalThread)
     Connection : ExtDataConnection;
     DataRecord : ExtDataRecord;
     Fields : ArrayOfExtDataField;
@@ -127,14 +127,14 @@ procedure TTestExtPascal.ProcessMessage(Message : string); begin
       Title := 'New Tab';
       IconCls := 'tabs';
       AutoLoad := ExtFormAction.Create;
-      ExtFormAction(AutoLoad).Url := 'TestExtPascal?content1';
+      ExtFormAction(AutoLoad).Url := 'TestExtPascal.exe?content1';
       Closable := true;
     end;
   end;
 end;
 
 begin
-  Application := TFCGIApplication.Create(TTestExtPascal, GetJSON);
+  Application := TFCGIApplication.Create(TTestExtPascal);
   Application.Run;
 end.
 
