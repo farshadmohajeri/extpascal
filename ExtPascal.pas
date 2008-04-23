@@ -6,10 +6,9 @@ uses
   FCGIApp;
 
 type
-  TExtPascalThread = class(TFCGIThread)
-  protected
-    function GetResponse: string; override;
-    procedure SetResponse(const Value: string); override;
+  TExtThread = class(TFCGIThread)
+  public
+    procedure AddJSON(S : string);
   end;
 
   ArrayOfString  = array of string;
@@ -75,26 +74,19 @@ implementation
 uses
   SysUtils, StrUtils;
 
-threadvar
-  JSON : string;
+{ TExtThread }
 
-{ TExtPascalThread }
-
-function TExtPascalThread.GetResponse: string; begin
-  Result := JSON
-end;
-
-procedure TExtPascalThread.SetResponse(const Value: string); begin
-  JSON := Value
+procedure TExtThread.AddJSON(S : string); begin
+  FResponse := FResponse + S
 end;
 
 { ExtObject }
 
 procedure ExtObject.AddJSON(S : string); begin
-  JSON := JSON + S;
+  TExtThread(FCGIThread).AddJSON(S);
 end;
 
-constructor ExtObject.Create(pJSON: string); begin
+constructor ExtObject.Create(pJSON : string); begin
   AddJSON(pJSON)
 end;
 
