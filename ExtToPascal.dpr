@@ -1,7 +1,7 @@
 program ExtToPascal; {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, StrUtils, Classes, Math;
+  SysUtils, StrUtils, Classes, Math, ExtPascal;
 
 function FixReserved(S : string) : string;
 const
@@ -229,42 +229,6 @@ begin
       if (I = P) and Optional then // Remove unnecessary optional params
         for J := P downto 0 do TParam(Result.Objects[J]).Optional := false;
     end;
-end;
-
-// Mimics preg_match php function
-function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
-var
-  I, J : integer;
-begin
-  Result := false;
-  if Matches <> nil then Matches.Clear;
-  J := 1;
-  for I := 0 to high(Delims) do begin
-    J := posex(Delims[I], S, J);
-    if J = 0 then
-      exit
-    else
-      inc(J, length(Delims[I]));
-  end;
-  J := 1;
-  for I := 0 to high(Delims)-1 do begin
-    J := posex(Delims[I], S, J);
-    inc(J, length(Delims[I]));
-    Matches.Add(trim(copy(S, J, posex(Delims[I+1], S, J)-J)));
-  end;
-  Result := true
-end;
-
-// Mimics explode php function
-function Explode(Delim : char; S : string) : TStringList;
-var
-  I : integer;
-begin
-  Result := TStringList.Create;
-  Result.StrictDelimiter := true;
-  Result.Delimiter := Delim;
-  Result.DelimitedText := S;
-  for I := 0 to Result.Count-1 do Result[I] := trim(Result[I]);
 end;
 
 procedure DoOverloads(Cls : TClass; Method : TMethod);

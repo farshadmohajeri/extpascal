@@ -3,7 +3,7 @@ program TestExtPascal;
 {$APPTYPE CONSOLE}
 
 uses
-  FCGIApp, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
+  FCGIApp, SysUtils, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
   //ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -17,7 +17,12 @@ type
     TabPanel : ExtTabPanel;
   published
     procedure Home; override;
+    procedure Animal;
   end;
+
+procedure TTestExtPascal.Animal; begin
+  FResponse := IntToStr(ThreadID) + ': ' + Query['color'] + '; ' + Query['type']
+end;
 
 procedure TTestExtPascal.Home; begin
   with ExtButton.Create do begin
