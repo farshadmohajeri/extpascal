@@ -9,6 +9,7 @@ uses
 type
   TTestExtPascal = class(TExtThread)
   public
+    I : integer;
     Connection : ExtDataConnection;
     DataRecord : ExtDataRecord;
     Fields : ArrayOfExtDataField;
@@ -21,7 +22,8 @@ type
   end;
 
 procedure TTestExtPascal.Animal; begin
-  FResponse := IntToStr(ThreadID) + ': ' + Query['color'] + '; ' + Query['type']
+  FResponse := IntToStr(int64(Self)) + ': ' + Query['color'] + '; ' + Query['type'] + '; ' + IntToStr(I);
+  inc(I);
 end;
 
 procedure TTestExtPascal.Home; begin
@@ -138,6 +140,6 @@ procedure TTestExtPascal.Home; begin
 end;
 
 begin
-  Application := TFCGIApplication.Create(TTestExtPascal);
+  Application := TFCGIApplication.Create(TTestExtPascal, 2014, 1);
   Application.Run;
 end.

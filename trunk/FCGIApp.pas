@@ -7,16 +7,13 @@ unit FCGIApp;
 interface
 
 uses
-  Classes, BlockSocket;
-
-const
-  MaxConns = '1000';
+  Classes, BlockSocket, SysUtils;
 
 type
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
   TRole = (rResponder = 1, rAuthorizer, rFilter);
   TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole);
-  TRequestMethod = (rmGet, rmPost, rmHead, rmPut);
+  TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
   {$M+}
   TFCGIThread = class(TThread)
   private
@@ -27,36 +24,40 @@ type
     function GetRequestHeader(Name: string): string;
     function GetQuery(Name: string): string;
     procedure CompleteRequestHeaderInfo;
-    function URLDecode(Encoded: string): string;
+    function GetCookie(Name: string): string;
   protected
     FSocket : TBlockSocket;
     FKeepConn : boolean;
     FResponse, FResponseHeader : string;
-    FRequestHeader, FQuery : TStringList;
+    FRequestHeader, FQuery, FCookie : TStringList;
+    FLastAccess : TDateTime;
+    function URLDecode(Encoded: string): string;
+    function URLEncode(Decoded: string): string;
     procedure AddParam(var S: string; Param: array of string);
-    procedure ReadParamList(var ParamList : TStringList; Stream : string);
-    procedure ReadBeginRequest(var Header; Content : string);
+    procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
+    procedure ReadBeginRequest(var FCGIHeader; Content : string);
     procedure GetValues(Content : string);
-    procedure HandleRequest;
-    procedure DoIdle; virtual;
+    function HandleRequest(pRequest : string) : string;
     procedure NotFoundError; virtual;
   public
     BrowserCache : boolean;
     ContentType : string;
-    property RequestID : word read FRequestID;
     property Role : TRole read FRole;
     property Request : string read FRequest;
     property Response : string read FResponse;
     property PathInfo : string read FPathInfo;
+    property LastAccess : TDateTime read FLastAccess;
     property RequestMethod : TRequestMethod read FRequestMethod;
     property RequestHeader[Name : string] : string read GetRequestHeader;
     property Query[Name : string] : string read GetQuery;
+    property Cookie[Name : string] : string read GetCookie;
     constructor Create(NewSocket : integer);
     destructor Destroy; override;
     procedure SendRecord(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
     procedure SetResponseHeader(Header : string);
+    procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
     procedure Home; virtual; abstract;
   end;
@@ -68,10 +69,14 @@ type
     WebServers : TStringList;
     FCGIThreadClass : TFCGIThreadClass;
     Port : word;
+    MaxConns : string;
+    USLocale : TFormatSettings;
     Threads : TStringList;
+    MaxIdleTime : TDateTime;
+    procedure GarbageThreads;
   public
     Terminated : boolean;
-    constructor Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014);
+    constructor Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
     destructor Destroy; override;
     procedure Run;
     function CanConnection(Address : string) : boolean;
@@ -86,10 +91,10 @@ threadvar
 implementation
 
 uses
-  SysUtils;
+  StrUtils;
 
 type
-  THeader = packed record
+  TFCGIHeader = packed record
     Version : byte; // 1
     RecType : TRecType;
     ID, Len : word;
@@ -98,23 +103,23 @@ type
   end;
 
   TBeginRequest = packed record
-    Header  : THeader;
+    Header  : TFCGIHeader;
     Filler  : byte;
     Role    : TRole;
     KeepConn: boolean; // Keep connection
     Filler2 : array[1..5] of byte;
   end;
 
-procedure MoveToHeader(var Buffer : char; var Header : THeader); begin
-  move(Buffer, Header, sizeof(THeader));
-  Header.ID  := swap(Header.ID);
-  Header.Len := swap(Header.Len);
+procedure MoveToFCGIHeader(var Buffer : char; var FCGIHeader : TFCGIHeader); begin
+  move(Buffer, FCGIHeader, sizeof(TFCGIHeader));
+  FCGIHeader.ID  := swap(FCGIHeader.ID);
+  FCGIHeader.Len := swap(FCGIHeader.Len);
 end;
 
-procedure MoveFromHeader(Header : THeader; var Buffer : char); begin
-  Header.ID  := swap(Header.ID);
-  Header.Len := swap(Header.Len);
-  move(Header, Buffer, sizeof(THeader));
+procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
+  FCGIHeader.ID  := swap(FCGIHeader.ID);
+  FCGIHeader.Len := swap(FCGIHeader.Len);
+  move(FCGIHeader, Buffer, sizeof(TFCGIHeader));
 end;
 
 constructor TFCGIThread.Create(NewSocket : integer); begin
@@ -124,6 +129,9 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FQuery := TStringList.Create;
   FQuery.StrictDelimiter := true;
   FQuery.Delimiter := '&';
+  FCookie := TStringList.Create;
+  FCookie.StrictDelimiter := true;
+  FCookie.Delimiter := ';';
   ContentType  := 'text/html';
   FreeOnTerminate := true;
   inherited Create(false);
@@ -132,11 +140,9 @@ end;
 destructor TFCGIThread.Destroy; begin
   FRequestHeader.Free;
   FQuery.Free;
-  FSocket.Free;
+  FCookie.Free;
   inherited;
 end;
-
-procedure TFCGIThread.DoIdle; begin end;
 
 procedure TFCGIThread.SetResponseHeader(Header : string); begin
   if Header = '' then
@@ -145,9 +151,15 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := FResponseHeader + Header + ^M^J;
 end;
 
+procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
+  SetResponseHeader('Set-Cookie: ' + Name + '=' + URLEncode(Value) + ';' +
+    IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd mmm yyyy hh:nn:ss', Expires, Application.USLocale) + ' GMT;', '') +
+    IfThen(Domain <> '', ' domain=' + Domain + ';', '') + IfThen(Path <> '', ' path=' + Path + ';', '') + IfThen(Secure, ' secure', ''))
+end;
+
 procedure TFCGIThread.SendRecord(S : string; pRecType : TRecType = rtStdOut);
 var
-  Header : THeader;
+  FCGIHeader : TFCGIHeader;
   Buffer : string;
 begin
   if pRecType = rtStdOut then begin
@@ -156,20 +168,20 @@ begin
     if not BrowserCache then FResponseHeader := FResponseHeader + 'Cache-Control: no-cache'^M^J;
     S := FResponseHeader + ^M^J + S;
   end;
-  fillchar(Header, sizeof(Header), 0);
-  with Header do begin
+  fillchar(FCGIHeader, sizeof(FCGIHeader), 0);
+  with FCGIHeader do begin
     Version := 1;
     if pRecType in [rtGetValuesResult, rtUnknown] then
       ID := 0
     else
-      ID := RequestID;
+      ID := FRequestID;
     RecType := pRecType;
     Len := length(S);
     PadLen := 7 - ((Len + 7) and 7);
-    SetLength(Buffer, sizeof(Header) + Len + PadLen);
+    SetLength(Buffer, sizeof(FCGIHeader) + Len + PadLen);
   end;
-  MoveFromHeader(Header, Buffer[1]);
-  if S <> '' then move(S[1], Buffer[sizeof(Header) + 1], length(S));
+  MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
+  if S <> '' then move(S[1], Buffer[sizeof(FCGIHeader) + 1], length(S));
   FSocket.SendString(Buffer);
 end;
 
@@ -178,12 +190,13 @@ procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplet
   Terminate;
 end;
 
-procedure TFCGIThread.ReadBeginRequest(var Header; Content : string);
+procedure TFCGIThread.ReadBeginRequest(var FCGIHeader; Content : string);
 var
   BeginRequest : TBeginRequest;
 begin
-  BeginRequest.Header := THeader(Header);
-  move(Content[1], BeginRequest.Filler, sizeof(BeginRequest)-sizeof(THeader));
+  FLastAccess := Now;
+  BeginRequest.Header := TFCGIHeader(FCGIHeader);
+  move(Content[1], BeginRequest.Filler, sizeof(BeginRequest)-sizeof(TFCGIHeader));
   if BeginRequest.Role in [rResponder..rFilter] then begin
     FRequestID := BeginRequest.Header.ID;
     FRole      := BeginRequest.Role;
@@ -193,13 +206,14 @@ begin
     SendEndRequest(psUnknownRole);
 end;
 
-procedure TFCGIThread.ReadParamList(var ParamList : TStringList; Stream : string);
+procedure TFCGIThread.ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
 var
   I, Pos : integer;
   Len    : array[0..1] of integer;
   Param  : array[0..1] of string;
 begin
-  ParamList.Clear;
+  RequestHeader.Clear;
+  if Cookies <> nil then Cookies.Clear;
   Pos := 1;
   while Pos < length(Stream) do begin
     for I := 0 to 1 do begin
@@ -216,7 +230,11 @@ begin
     inc(Pos, Len[0]);
     if Len[1] > 0 then move(Stream[Pos], Param[1][1], Len[1]);
     inc(Pos, Len[1]);
-    ParamList.Values[Param[0]] := Param[1];
+    if Param[0] = 'HTTP_COOKIE' then begin
+      if Cookies <> nil then Cookies.DelimitedText := URLDecode(Param[1])
+    end
+    else
+      RequestHeader.Values[Param[0]] := Param[1];
   end;
 end;
 
@@ -233,10 +251,25 @@ begin
   end;
 end;
 
+function TFCGIThread.URLEncode(Decoded: string): string;
+const
+  Allowed = ['A'..'Z','a'..'z', '*', '@', '.', '_', '-', '0'..'9', '$', '!', '''', '(', ')'];
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 1 to length(Decoded) do
+    if Decoded[I] in Allowed then
+      Result := Result + Decoded[I]
+    else
+      Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
+end;
+
 procedure TFCGIThread.CompleteRequestHeaderInfo;
 var
   ReqMet : string;
 begin
+  FLastAccess := Now;
   FPathInfo := FRequestHeader.Values['PATH_INFO'];
   if FPathInfo <> '' then FPathInfo := copy(FPathInfo, 2, 100);
   ReqMet := FRequestHeader.Values['REQUEST_METHOD'];
@@ -246,9 +279,9 @@ begin
       if ReqMet = 'POST' then
         FRequestMethod := rmPost
       else
-        FRequestMethod := rmPut
-  else
-    FRequestMethod := rmHead;
+        FRequestMethod := rmPut;
+    'H' : FRequestMethod := rmHead;
+    'D' : FRequestMethod := rmDelete;
   end;
   FQuery.DelimitedText := URLDecode(FRequestHeader.Values['QUERY_STRING']);
 end;
@@ -292,6 +325,10 @@ function TFCGIThread.GetQuery(Name: string): string;  begin
   Result := FQuery.Values[Name]
 end;
 
+function TFCGIThread.GetCookie(Name: string): string; begin
+  Result := FCookie.Values[Name]
+end;
+
 procedure TFCGIThread.GetValues(Content : string);
 var
   Values : TStringList;
@@ -299,21 +336,21 @@ var
 begin
   if Content = '' then exit;
   Values := TStringList.Create;
-  ReadParamList(Values, Content);
+  ReadRequestHeader(Values, Content);
   GetValuesResult := '';
-  if Values.IndexOf('FCGI_MAX_CONNS')  <> -1 then AddParam(GetValuesResult, ['FCGI_MAX_CONNS', MaxConns]);
-  if Values.IndexOf('FCGI_MAX_REQS')   <> -1 then AddParam(GetValuesResult, ['FCGI_MAX_REQS',  MaxConns]);
+  if Values.IndexOf('FCGI_MAX_CONNS')  <> -1 then AddParam(GetValuesResult, ['FCGI_MAX_CONNS', Application.MaxConns]);
+  if Values.IndexOf('FCGI_MAX_REQS')   <> -1 then AddParam(GetValuesResult, ['FCGI_MAX_REQS',  Application.MaxConns]);
   if Values.IndexOf('FCGI_MPXS_CONNS') <> -1 then AddParam(GetValuesResult, ['FCGI_MPXS_CONNS', '0']);
   Values.Free;
   SendRecord(GetValuesResult, rtGetValuesResult);
 end;
 
 procedure TFCGIThread.NotFoundError; begin
-  SetResponseHeader('Status: 404 ''not found''');
+  SetResponseHeader('Status: 404 Method not found');
   FResponse := 'Method not found'
 end;
 
-procedure TFCGIThread.HandleRequest;
+function TFCGIThread.HandleRequest(pRequest : string) : string;
 type
   MethodCall = procedure of object;
 var
@@ -327,73 +364,83 @@ begin
     if MethodCode <> nil then begin
       PageMethod.Code := MethodCode;
       PageMethod.Data := Self;
-      if (FRequestMethod = rmPost) and (pos('=', FResponse) <> 0) then FQuery.DelimitedText := URLDecode(FRequest);
+      if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then FQuery.DelimitedText := URLDecode(pRequest);
       MethodCall(PageMethod); // Call published method
     end
     else
       NotFoundError;
   end;
-  if (FResponse <> '') or (FRequestMethod in [rmGet, rmHead]) then SendRecord(FResponse);
-  SendEndRequest;
+  Result := FResponse;
 end;
 
 procedure TFCGIThread.Execute;
 var
-  Header : THeader;
-  Buffer, Content : string;
-  I, SleepTime : integer;
+  FCGIHeader : TFCGIHeader;
+  Buffer, Content, Thread : string;
+  I : integer;
 begin
   FCGIThread := Self;
-  FRequest := ''; SleepTime := 1;
+  FRequest := '';
   try
     if Application.CanConnection(FSocket.GetHostAddress) then
       repeat
         if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
-          if FSocket.SocketError <> 0 then begin
-            Terminate;
-            exit;
-          end;
-          I := 1; SleepTime := 1;
-          while I <= length(Buffer) do begin
-            MoveToHeader(Buffer[I], Header);
-            if (RequestID <> 0) and (Header.ID <> 0) and (Header.ID <> RequestID) then
-              SendEndRequest(psCantMPXConn)
-            else begin
-              inc(I, sizeof(Header));
-              Content := copy(Buffer, I, Header.Len);
-              case Header.RecType of
-                rtBeginRequest : ReadBeginRequest(Header, Content);
-                rtAbortRequest : SendEndRequest;
-                rtGetValues    : GetValues(Content);
-                rtParams, rtStdIn, rtData :
-                  if Content = '' then begin
-                    if Header.RecType = rtParams then begin
-                      ReadParamList(FRequestHeader, FRequest);
-                      //FCGIThread.FRequestHeader := FRequestHeader;
-                      CompleteRequestHeaderInfo;
+          if FSocket.SocketError <> 0 then
+            Terminate
+          else begin
+            I := 1;
+            while I <= length(Buffer) do begin
+              MoveToFCGIHeader(Buffer[I], FCGIHeader);
+              if (FRequestID <> 0) and (FCGIHeader.ID <> 0) and (FCGIHeader.ID <> FRequestID) then
+                SendEndRequest(psCantMPXConn)
+              else begin
+                inc(I, sizeof(FCGIHeader));
+                Content := copy(Buffer, I, FCGIHeader.Len);
+                case FCGIHeader.RecType of
+                  rtBeginRequest : ReadBeginRequest(FCGIHeader, Content);
+                  rtAbortRequest : SendEndRequest;
+                  rtGetValues    : GetValues(Content);
+                  rtParams, rtStdIn, rtData :
+                    if Content = '' then begin
+                      if FCGIHeader.RecType = rtParams then begin
+                        ReadRequestHeader(FRequestHeader, FRequest, FCookie);
+                        Thread := Cookie['FCGIThread'];
+                        if (Thread = '') or (Application.Threads.IndexOf(Thread) = -1) then begin
+                          Thread := IntToStr(Int64(Self));
+                          SetCookie('FCGIThread', Thread);
+                          Application.Threads.AddObject(Thread, Self);
+                          FreeOnTerminate := false;
+                        end
+                        else begin
+                          FCGIThread := pointer(StrToInt64(Thread));
+                          FCGIThread.FRequestHeader.Assign(FRequestHeader);
+                          FCGIThread.FCookie.Assign(FCookie);
+                        end;
+                        FCGIThread.CompleteRequestHeaderInfo;
+                      end
+                      else begin
+                        FResponse := FCGIThread.HandleRequest(FRequest);
+                        if (FResponse <> '') or (FRequestMethod in [rmGet, rmHead]) then SendRecord(FResponse);
+                        SendEndRequest;
+                      end;
+                      FRequest := '';
                     end
                     else
-                      HandleRequest;
-                    FRequest := '';
-                  end
-                  else
-                    FRequest := FRequest + Content;
-              else
-                SendRecord(char(Header.RecType), rtUnknown);
-                Buffer := '';
-                sleep(20);
-                break;
+                      FRequest := FRequest + Content;
+                else
+                  SendRecord(char(FCGIHeader.RecType), rtUnknown);
+                  Buffer := '';
+                  sleep(200);
+                  break;
+                end;
               end;
+              inc(I, FCGIHeader.Len);
             end;
-            inc(I, Header.Len);
           end;
         end
-        else begin
-          sleep(SleepTime);
-          if SleepTime < 256 then inc(SleepTime);
-          DoIdle;
-        end;
+        else
+          sleep(200);
       until Terminated
     else
       Terminate;
@@ -404,6 +451,7 @@ begin
       SendEndRequest;
     end;
   end;
+  FSocket.Free;
 end;
 
 { TFCGIApplication }
@@ -412,12 +460,16 @@ function TFCGIApplication.CanConnection(Address: string): boolean; begin
   Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
 end;
 
-constructor TFCGIApplication.Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014);
+constructor TFCGIApplication.Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
 var
   WServers : string;
 begin
   FCGIThreadClass := pFCGIThreadClass;
   Port := pPort;
+  Threads := TStringList.Create;
+  GetLocaleFormatSettings(1, USLocale);
+  MaxIdleTime := EncodeTime(0, pMaxIdleMinutes, 0, 0);
+  MaxConns := IntToStr(pMaxConns);
   if ParamCount = 1 then
     WServers := ParamStr(1)
   else
@@ -429,19 +481,40 @@ begin
 end;
 
 destructor TFCGIApplication.Destroy; begin
+  Threads.Free;
   WebServers.Free;
   inherited;
 end;
 
+procedure TFCGIApplication.GarbageThreads;
+var
+  I : integer;
+  Thread : TFCGIThread;
+begin
+  for I := Threads.Count-1 downto 0 do begin
+    Thread := TFCGIThread(Threads.Objects[I]);
+    if (Now - Thread.LastAccess) > MaxIdleTime then begin
+      Thread.Free;
+      Threads.Delete(I);
+    end;
+  end;
+end;
+
 procedure TFCGIApplication.Run;
 var
-  NewSocket : integer;
+  NewSocket, I : integer;
 begin
+  I := 0;
   with TBlockSocket.Create do begin
     Bind(Port, 100);
     repeat
-      NewSocket := Accept(256);
+      NewSocket := Accept(250);
       if NewSocket <> 0 then FCGIThreadClass.Create(NewSocket);
+      if (I mod 120) = 0 then begin // A garbage for each 30 seconds
+        GarbageThreads;
+        I := 0;
+      end;
+      inc(I);
     until Terminated;
     Free;
   end;
