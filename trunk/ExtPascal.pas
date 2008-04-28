@@ -79,13 +79,13 @@ uses
 { TExtThread }
 
 procedure TExtThread.AddJSON(S : string); begin
-  FResponse := FResponse + S
+  Response := Response + S
 end;
 
 { ExtObject }
 
 procedure ExtObject.AddJSON(S : string); begin
-  TExtThread(FCGIThread).AddJSON(S);
+  TExtThread(CurrentFCGIThread).AddJSON(S);
 end;
 
 constructor ExtObject.Create(pJSON : string); begin

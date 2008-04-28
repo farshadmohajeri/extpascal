@@ -22,7 +22,7 @@ type
   end;
 
 procedure TTestExtPascal.Animal; begin
-  FResponse := IntToStr(int64(Self)) + ': ' + Query['color'] + '; ' + Query['type'] + '; ' + IntToStr(I);
+  Response := IntToStr(int64(Self)) + ': ' + Query['color'] + '; ' + Query['type'] + '; ' + IntToStr(I);
   inc(I);
 end;
 
@@ -140,6 +140,6 @@ procedure TTestExtPascal.Home; begin
 end;
 
 begin
-  Application := TFCGIApplication.Create(TTestExtPascal, 2014, 1);
+  Application := TFCGIApplication.Create(TTestExtPascal);
   Application.Run;
 end.
