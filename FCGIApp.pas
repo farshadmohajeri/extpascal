@@ -60,6 +60,7 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
     procedure Home; virtual; abstract;
+    procedure Logout;
   end;
   {$M-}
   TFCGIThreadClass = class of TFCGIThread;
@@ -76,7 +77,7 @@ type
     AccessThreads : TCriticalSection;
     procedure GarbageThreads;
   public
-    Terminated : boolean;
+    Terminated, GarbageNow : boolean;
     constructor Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
     destructor Destroy; override;
     procedure Run;
@@ -387,6 +388,13 @@ begin
   Result := Response;
 end;
 
+procedure TFCGIThread.Logout; begin
+  SendEndRequest;
+  sleep(0);
+  FLastAccess := 0;
+  Application.GarbageNow := true;
+end;
+
 function TFCGIThread.SetCurrentFCGIThread : boolean;
 var
   Thread : string;
@@ -444,7 +452,7 @@ begin
                 Content := copy(Buffer, I, FCGIHeader.Len);
                 case FCGIHeader.RecType of
                   rtBeginRequest : ReadBeginRequest(FCGIHeader, Content);
-                  rtAbortRequest : SendEndRequest;
+                  rtAbortRequest : Logout;
                   rtGetValues    : GetValues(Content);
                   rtParams, rtStdIn, rtData :
                     if Content = '' then begin
@@ -536,7 +544,7 @@ begin
   for I := Threads.Count-1 downto 0 do begin
     Thread := TFCGIThread(Threads.Objects[I]);
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
-      Thread.Free;
+      try Thread.Free except end;
       AccessThreads.Enter;
       Threads.Delete(I);
       AccessThreads.Leave;
@@ -558,8 +566,9 @@ begin
     repeat
       NewSocket := Accept(250);
       if NewSocket <> 0 then FCGIThreadClass.Create(NewSocket);
-      if (I mod 120) = 0 then begin // A garbage for each 30 seconds
+      if ((I mod 120) = 0) or GarbageNow then begin // A garbage for each 30 seconds
         GarbageThreads;
+        GarbageNow := false;
         I := 0;
       end;
       inc(I);
