@@ -7,8 +7,13 @@ uses
 
 type
   TExtThread = class(TFCGIThread)
+  private
+    PParser  : integer;
+    Sequence : cardinal;
   public
-    procedure AddJSON(S : string);
+    procedure AddJS(S : string);
+  published
+    procedure Home; override;
   end;
 
   ArrayOfString  = array of string;
@@ -20,16 +25,18 @@ type
 
   ExtObject = class
   protected
-    procedure AddJSON(S : string);
+    procedure CreateVar(S : string);
+    procedure AddJS(S : string);
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ArrayOfExtObject) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
-    function ToJSON : string;
     procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
     function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
+    function SetJSName : string;
   public
-    procedure JSVar(V : string; Value : string);
+    JSName : string;
+    procedure Init;
     constructor Create(pJSON : string = '');
     constructor JSFunction(Params, Body : string);
   end;
@@ -78,18 +85,42 @@ uses
 
 { TExtThread }
 
-procedure TExtThread.AddJSON(S : string); begin
-  Response := Response + S
+// Code Mirroring
+procedure TExtThread.AddJS(S : string); begin
+  if Response = '' then
+    PParser := 0
+  else
+    if S[length(S)] = ';' then begin // Command
+      if not(Response[PParser-1] in ['{', ';']) then
+        PParser := PosEx('}', Response, PParser+1)
+    end
+    else // set attribute
+      if Response[PParser-1] <> '{' then S := ',' + S;
+  insert(S, Response, PParser);
+  PParser := PosEx('}', Response, PParser+1);
+end;
+
+procedure TExtThread.Home; begin
+  AddJS('<html><title>' + Application.Title + '</title>' +
+    '<link rel=stylesheet href=/trabalho/extpascal/ext-all.css />' +
+    '<script src=/trabalho/extpascal/ext-base.js></script>' +
+    '<script src=/trabalho/extpascal/ext-all.js></script>'  +
+    '<script>Ext.onReady(function(){});</script>' +
+    '<body><div id=content></div></body></html>');
 end;
 
 { ExtObject }
 
-procedure ExtObject.AddJSON(S : string); begin
-  TExtThread(CurrentFCGIThread).AddJSON(S);
+procedure ExtObject.AddJS(S : string); begin
+  TExtThread(CurrentFCGIThread).AddJS(S);
 end;
 
 constructor ExtObject.Create(pJSON : string); begin
-  AddJSON(pJSON)
+  AddJS(pJSON)
+end;
+
+procedure ExtObject.CreateVar(S : string); begin
+  AddJS('var ' + SetJSName + '=new ' + S);
 end;
 
 function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjectClass): TExtObjectClass; begin
@@ -99,12 +130,18 @@ function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjec
     Result := OtherClass
 end;
 
-constructor ExtObject.JSFunction(Params, Body: string); begin
-  AddJSON('function (' + Params + '){' + Body + '}')
+procedure ExtObject.Init; begin end;
+
+function ExtObject.SetJSName : string; begin
+  with TExtThread(CurrentFCGIThread) do begin
+    JSName := Self.ClassName + IntToStr(Sequence);
+    Result := JSName;
+    inc(Sequence)
+  end;
 end;
 
-procedure ExtObject.JSVar(V: string; Value : string); begin
-  AddJSON('var ' + V + '=' + Value);
+constructor ExtObject.JSFunction(Params, Body: string); begin
+  JSName := 'function (' + Params + '){' + Body + '}'
 end;
 
 procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer);
@@ -128,10 +165,6 @@ begin
   if ExtObjectClass <> nil then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
 end;
 
-function ExtObject.ToJSON: string; begin
-  Result := ''
-end;
-
 function ExtObject.VarToJSON(A : array of const): string;
 var
   I : integer;
@@ -140,15 +173,31 @@ begin
   for I := 0 to high(A) do begin
     with A[I] do
       case VType of
-        vtInteger:    Result := Result + IntToStr(VInteger);
-        vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
-        vtExtended:   Result := Result + FloatToStr(VExtended^);
-        vtString:     Result := Result + '"' + VString^ + '"';
-        vtObject:     Result := Result + IfThen(VObject <> nil, ExtObject(VObject).ToJSON, '{}');
-        vtAnsiString: Result := Result + '"' + string(VAnsiString) + '"';
-        vtVariant:    Result := Result + string(VVariant^);
+        vtInteger: Result := Result + IntToStr(VInteger);
+        vtAnsiString:
+          if string(VAnsiString) <> '' then
+            Result := Result + '"' + string(VAnsiString) + '"'
+          else
+            continue;
+        vtObject:
+          if VObject <> nil then
+            Result := Result + ExtObject(VObject).JSName
+          else
+            continue;
+        vtBoolean: Result := Result + IfThen(VBoolean, 'true', 'false');
+        vtString:
+          if VString^ <> '' then
+            Result := Result + '"' + VString^ + '"'
+          else
+            continue;
+        vtExtended: Result := Result + FloatToStr(VExtended^);
+        vtVariant:
+          if string(VVariant^) <> '' then
+            Result := Result + string(VVariant^)
+          else
+            continue
       end;
-    if I < high(A) then Result := Result + ', ';
+    if I < high(A) then Result := Result + ',';
   end;
 end;
 
@@ -158,8 +207,8 @@ var
 begin
   Result := '';
   for I := 0 to high(Exts) do begin
-    Result := Result + Exts[I].ToJSON;
-    if I < high(Exts) then Result := Result + ', ';
+    Result := Result + Exts[I].JSName;
+    if I < high(Exts) then Result := Result + ',';
   end;
 end;
 
@@ -170,7 +219,7 @@ begin
   Result := '';
   for I := 0 to high(Strs) do begin
     Result := Result + '"' + Strs[I] + '"';
-    if I < high(Strs) then Result := Result + ', ';
+    if I < high(Strs) then Result := Result + ',';
   end;
 end;
 
@@ -181,7 +230,7 @@ begin
   Result := '';
   for I := 0 to high(Ints) do begin
     Result := Result + IntToStr(Ints[I]);
-    if I < high(Ints) then Result := Result + ', ';
+    if I < high(Ints) then Result := Result + ',';
   end;
 end;
 

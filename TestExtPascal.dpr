@@ -3,7 +3,7 @@ program TestExtPascal;
 {$APPTYPE CONSOLE}
 
 uses
-  FCGIApp, SysUtils, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
+  FCGIApp, SysUtils, strutils, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
   //ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -27,11 +27,40 @@ procedure TTestExtPascal.Animal; begin
 end;
 
 procedure TTestExtPascal.Home; begin
+  inherited;
   with ExtButton.Create do begin
-    RenderTo := 'button1-div';
-    Text := 'Button 1';
+    RenderTo := 'content';
     Handler := _Function.JSFunction('', 'alert("You clicked the button 1");');
+    Text := 'Button 1';
   end;
+
+  Login := ExtFormFormPanel.Create;
+  with Login do begin
+    LabelWidth := 80;
+    Frame := true;
+    Title := 'Login';
+    Width := 230;
+    DefaultType := 'textfield';
+    MonitorValid := true;
+    SetLengthButtons(1);
+    Buttons[0].Text := 'Login';
+    SetLengthItems(2, ExtFormTextField);
+    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
+    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
+  end;
+  with ExtWindow.Create do begin
+    Title := JSName;
+    Layout := 'fit';
+    Width := 300;
+    Height:= 150;
+    Closable := false;
+    Resizable := false;
+    Plain := true;
+    SetLengthItems(1, NoCreate);
+    Items[0] := Login;
+    Show;
+  end;
+
   Connection := ExtDataConnection.Create;
   with Connection do begin
     Url := 'docs/samples/data.txt';
@@ -64,31 +93,7 @@ procedure TTestExtPascal.Home; begin
     with Columns[2] do begin Header := 'Duration'; Width := 70;  Sortable := true; DataIndex := 'duration'; Id := DataIndex; end;
     Free;
   end;
-  Login := ExtFormFormPanel.Create;
-  with Login do begin
-    LabelWidth := 80;
-    Frame := true;
-    Title := 'Login';
-    Width := 230;
-    DefaultType := 'textfield';
-    MonitorValid := true;
-    SetLengthButtons(1);
-    Buttons[0].Text := 'Login';
-    SetLengthItems(2, ExtFormTextField);
-    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
-    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
-  end;
-  with ExtWindow.Create do begin
-    Layout := 'fit';
-    Width := 300;
-    Height:= 150;
-    Closable := false;
-    Resizable := false;
-    Plain := true;
-    SetLengthItems(1, NoCreate);
-    Items[0] := Login;
-    Show;
-  end;
+
   TabActions := ExtPanel.Create;
   with TabActions do begin
     Frame := true;
@@ -140,6 +145,6 @@ procedure TTestExtPascal.Home; begin
 end;
 
 begin
-  Application := TFCGIApplication.Create(TTestExtPascal);
+  Application := TFCGIApplication.Create('Test ExtPascal 1.0', TTestExtPascal);
   Application.Run;
 end.

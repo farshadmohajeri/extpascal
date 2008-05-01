@@ -71,7 +71,7 @@ type
   end;
 
   TClass = class
-    Name, Parent, UnitName : string;
+    Name, JSName, Parent, UnitName : string;
     Defaults, Arrays : boolean;
     Properties, Methods : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
@@ -79,16 +79,17 @@ type
   end;
 
   TProp = class
-    Name, Typ, Default : string;
+    Name, JSName, Typ, Default : string;
     Static : boolean;
     constructor Create(pName : string; pType : string; pStatic : boolean; pDefault : string = '');
   end;
 
   TMethod = class
-    Name, Return : string;
+    Name, JSName, Return : string;
     Params : TStringList;
 		Static, Overload : boolean;
-	  constructor Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean);
+	  constructor Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
+	  constructor Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean); overload;
     function CreateOverloadParams(P : integer; NewType : string) : TStringList;
   end;
 
@@ -102,7 +103,7 @@ var
   AllClasses, Units : TStringList;
 
 constructor TUnit.Create(pName : string); begin
-  Name := FixIdent(pName);
+  Name    := FixIdent(pName);
   Classes := TStringList.Create;
 end;
 
@@ -178,11 +179,12 @@ begin
 end;
 
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
-  Name := FixIdent(pName);
-  Parent := FixIdent(pParent);
-  UnitName := FixIdent(pUnitName);
+  Name       := FixIdent(pName);
+  JSName     := pName;
+  Parent     := FixIdent(pParent);
+  UnitName   := FixIdent(pUnitName);
   Properties := TStringList.Create;
-  Methods := TStringList.Create;
+  Methods    := TStringList.Create;
 end;
 
 function TClass.InheritLevel : integer;
@@ -198,24 +200,40 @@ begin
 end;
 
 constructor TProp.Create(pName : string; pType : string; pStatic : boolean; pDefault : string = ''); begin
-  Name   := FixIdent(pName);
-  Static := pStatic;
-  Typ    := FixType(pType);
-  Default:= pDefault;
+  Name    := FixIdent(pName);
+  JSName  := pName;
+  Static  := pStatic;
+  Typ     := FixType(pType);
+  Default := pDefault;
 end;
 
 constructor TParam.Create(pName, pType : string; pOptional : boolean); begin
-  Name := FixIdent(pName);
-  Typ  := pType;
+  Name     := FixIdent(pName);
+  Typ      := pType;
   Optional := pOptional;
 end;
 
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
   Name     := FixIdent(pName);
+  JSName   := pName;
   Return   := pReturn;
   Params   := pParams;
   Static   := pStatic;
   Overload := pOverload;
+end;
+
+constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
+var
+  I : integer;
+begin
+  Name     := pName;
+  JSName   := pJSName;
+  Return   := pReturn;
+  Params   := pParams;
+  Overload := pOverload;
+  I := LastDelimiter('.', Name);
+  if I <> 0 then Name := copy(Name, I+1, length(Name));
+  Static := I <> 0;
 end;
 
 function TMethod.CreateOverloadParams(P : integer; NewType : string): TStringList;
@@ -245,7 +263,7 @@ begin
           Types := Explode('/', Typ);
           Typ   := FixType(Types[0]);
           for J := 1 to Types.Count-1 do
-            DoOverloads(Cls, TMethod.Create(Method.Name, Return, CreateOverloadParams(I, Types[J]), Static, true));
+            DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
           Types.Free;
         end
         else
@@ -255,7 +273,7 @@ begin
       Types  := Explode('/', Return);
       Return := FixType(Types[0]);
       for J := 1 to Types.Count-1 do
-        DoOverloads(Cls, TMethod.Create(Method.Name, Types[J], Params, Static, true));
+        DoOverloads(Cls, TMethod.Create(Method.JSName, Types[J], Params, Static, true));
       Types.Free;
     end
     else
@@ -304,7 +322,7 @@ const
   PropName : string  = '';
   MetName  : string  = '';
 var
-  PackName, Arg, Return : string;
+  PackName, Arg, Return, JSName : string;
   Matches, Params, Args : TStringList;
   Package : TUnit;
   I : integer;
@@ -373,7 +391,8 @@ begin
       InMethods :
           if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
-            MetName := Unique(FixIdent(Matches[0]), CurClass.Properties);
+            JSName  := Matches[0];
+            MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
             if pos('Init', MetName) = 1 then exit; // delete init functions, usualy private
             Return := FixType(Matches[2]);
@@ -406,19 +425,17 @@ begin
                 end;
               end;
             Params.Free;
-            I := LastDelimiter('.', MetName);
-            if I <> 0 then MetName := copy(MetName, I+1, length(MetName));
-            CurMethod := TMethod.Create(MetName, Return, Args, I <> 0, false);
+            CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
             DoOverloads(CurClass, CurMethod);
           end
           else
             if Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
               if Matches[0][1] = '<' then
                 with CurClass.Methods do begin
-                  I := IndexOf(FixIdent(MetName));
+                  I := IndexOf(MetName);
                   while I <> -1 do begin
                     Delete(I);
-                    I := IndexOf(FixIdent(MetName)); // delete method inherited and overloads
+                    I := IndexOf(MetName); // delete method inherited and overloads
                   end;
                 end;
             end
@@ -647,6 +664,7 @@ begin
       with TProp(Properties.Objects[I]) do
         if Static then
           writeln(Pas, Tab(2), 'class function ', Name, ' : ', Typ, ';');
+    if Defaults then writeln(Pas, Tab(2), 'procedure Init;');
     for I := 0 to Methods.Count-1 do // Write methods
       WriteMethodSignature(TMethod(Methods.Objects[I]), Defaults);
     for I := 0 to Properties.Count-1 do // Write SetLength Methods
@@ -660,50 +678,14 @@ begin
   end;
 end;
 
-type
-  TCompatible = (tcIncompatible, tcCompatible, tcFullCompatible);
-
-function ConstructorParamsCompat(Cls : string; pParams : TStringList) : TCompatible;
-var
-  I, J : integer;
-begin
-  Result := tcCompatible;
-  while Cls <> '' do
-    with TClass(AllClasses.Objects[AllClasses.IndexOf(Cls)]) do begin
-      for I := 0 to Methods.Count-1 do
-        with TMethod(Methods.Objects[I]) do
-          if Return = '' then begin
-            Result := TcCompatible; // Parent constructor without params
-            if Params.Count = 0 then exit;
-            if pParams.Count <> Params.Count then begin
-              Result := tcIncompatible;
-              exit;// Parent constructor incompatible
-            end;
-            for J := 0 to pParams.Count-1 do
-              if TParam(pParams.Objects[J]).Typ <> TParam(Params.Objects[J]).Typ then begin
-                Result := tcIncompatible;
-                if Overload then
-                  break
-                else
-                  exit;
-              end;
-            if Result = tcCompatible then begin
-              Result := tcFullCompatible;
-              exit;
-            end;
-          end;
-      Cls := Parent;
-    end;
-end;
-
-function ParamsToJSON(Params : TStringList) : string;
+function ParamsToJSON(Params : TStringList; Config : boolean = true) : string;
 var
   I : integer;
   InitCommonParam : boolean;
 begin
   if Params.Count <> 0 then begin
     InitCommonParam := true;
-    Result := '(''';
+    Result := IfThen(Config, '({''', '(''');
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do begin
         if pos(ArrayOf, Typ) <> 1 then begin
@@ -726,10 +708,10 @@ begin
         end;
       end;
     if not InitCommonParam then Result := Result + '])';
-    Result := Result + ' + '');'
+    Result := Result + IfThen(Config, ' + ''});', ' + '');');
   end
   else
-    Result := '();'
+    Result := IfThen(Config, '({});', '();');
 end;
 
 function SortByInheritLevel(List : TStringList; I, J : integer) : integer; begin
@@ -739,7 +721,7 @@ end;
 procedure WriteUnits;
 var
   I, J, K, L : integer;
-  CName, Value, DestructorBody : string;
+  CName, CJSName, Value, DestructorBody : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -760,7 +742,8 @@ begin
       writeln(Pas, 'implementation'^M^J);
       for J := 0 to Classes.Count-1 do
         with TClass(Classes.Objects[J]) do begin
-          CName := Name;
+          CName   := Name;
+          CJSName := JSName;
           for K := 0 to Properties.Count-1 do // Write Set procedures implementation
             with TProp(Properties.Objects[K]) do begin
               if not Static then begin
@@ -773,7 +756,7 @@ begin
                     Value := 'Value'
                 else
                   Value := '[Value]';
-                writeln(Pas, Tab, 'AddJSON(''', Name, '='' + VarToJSON(', Value, '));');
+                writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON(', Value, '));');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -781,26 +764,28 @@ begin
             with TProp(Properties.Objects[K]) do
               if Static then begin
                 writeln(Pas, 'class function ', CName, '.', Name, ' : ', Typ, '; begin');
-                //writeln(Pas, Tab, 'AddJSON(''', CName + '.' + Name + '();'');');
+                //writeln(Pas, Tab, 'AddJS(''', CName + '.' + Name + '({});'');');
                 writeln(Pas, Tab, 'Result', WriteOptional(true, Typ, ' := '));
                 writeln(Pas, 'end;'^M^J);
               end;
+          if Defaults then begin // write Init method
+            writeln(Pas, 'procedure ', CName, '.Init; begin');
+            writeln(Pas, Tab, 'inherited;');
+            for L := 0 to Properties.Count-1 do
+              with TProp(Properties.Objects[L]) do
+                if Default <> '' then writeln(Pas, Tab, 'F', Name, ' := ', Default, ';');
+            writeln(Pas, 'end;'^M^J);
+          end;
           for K := 0 to Methods.Count-1 do // Write methods
             if WriteMethodSignature(TMethod(Methods.Objects[K]), Defaults, Name) then begin
               writeln(Pas, ' begin');
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
-                  case ConstructorParamsCompat(Parent, Params) of
-                    tcCompatible     : writeln(Pas, Tab, 'inherited Create;');
-                    tcFullCompatible : writeln(Pas, Tab, 'inherited;');
-                  end;
-                  for L := 0 to Properties.Count-1 do
-                    with TProp(Properties.Objects[L]) do
-                      if Default <> '' then writeln(Pas, Tab, 'F', Name, ' := ', Default, ';');
-                  writeln(Pas, Tab, 'AddJSON(''new ', CName, ParamsToJSON(Params), ''')');
+                  writeln(Pas, Tab, 'Init;');
+                  writeln(Pas, Tab, 'CreateVar(''', CJSName, ParamsToJSON(Params), ''')');
                 end
                 else begin // Write class and instance methods
-                  writeln(Pas, Tab, 'AddJSON(''', IfThen(Static, CName + '.', ''), Name, ParamsToJSON(Params), ''');');
+                  writeln(Pas, Tab, 'AddJS(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
                   if Return <> 'Void' then writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
                 end;
               writeln(Pas, 'end;'^M^J);
