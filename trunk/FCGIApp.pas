@@ -78,7 +78,8 @@ type
     procedure GarbageThreads;
   public
     Terminated, GarbageNow : boolean;
-    constructor Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
+    Title : string;
+    constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
     destructor Destroy; override;
     procedure Run;
     function CanConnection(Address : string) : boolean;
@@ -508,10 +509,11 @@ function TFCGIApplication.ReachedMaxConns : boolean; begin
   Result := Threads.Count >= MaxConns
 end;
 
-constructor TFCGIApplication.Create(pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
+constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
 var
   WServers : string;
 begin
+  Title := pTitle;
   FCGIThreadClass := pFCGIThreadClass;
   Port := pPort;
   Threads := TStringList.Create;
