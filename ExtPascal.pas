@@ -8,10 +8,13 @@ uses
 type
   TExtThread = class(TFCGIThread)
   private
-    PParser  : integer;
+    PJS      : integer;
     Sequence : cardinal;
+    JSName   : string;
+    JSClass  : TClass;
+    procedure SetItems(JS, pName : string; pClass : TClass);
   public
-    procedure AddJS(S : string);
+    procedure AddJS(JS : string);
   published
     procedure Home; override;
   end;
@@ -25,19 +28,19 @@ type
 
   ExtObject = class
   protected
-    procedure CreateVar(S : string);
-    procedure AddJS(S : string);
+    procedure CreateVar(JS : string);
+    procedure AddJS(JS : string);
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ArrayOfExtObject) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
-    procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer);
+    procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer; Attribute : string = '');
     function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
     function SetJSName : string;
   public
     JSName : string;
     procedure Init;
-    constructor Create(pJSON : string = '');
+    constructor Create(JS : string = '');
     constructor JSFunction(Params, Body : string);
   end;
 
@@ -85,19 +88,25 @@ uses
 
 { TExtThread }
 
-// Code Mirroring
-procedure TExtThread.AddJS(S : string); begin
+// Self-translating
+procedure TExtThread.AddJS(JS : string);
+var
+  I : integer;
+begin
+  I := 1;
   if Response = '' then
-    PParser := 0
+    PJS := 0
   else
-    if S[length(S)] = ';' then begin // Command
-      if not(Response[PParser-1] in ['{', ';']) then
-        PParser := PosEx('}', Response, PParser+1)
+    if JS[length(JS)] = ';' then begin // Command
+      if not(Response[PJS-1] in ['{', ';']) then
+        PJS := PosEx('}', Response, PJS + 1)
     end
-    else // set attribute
-      if Response[PParser-1] <> '{' then S := ',' + S;
-  insert(S, Response, PParser);
-  PParser := PosEx('}', Response, PParser+1);
+    else begin // set attribute
+      if Response[PJS -1] <> '{' then JS := ',' + JS;
+      I := pos('}', JS);
+    end;
+  insert(JS, Response, PJS);
+  PJS := PosEx('}', Response, PJS + I);
 end;
 
 procedure TExtThread.Home; begin
@@ -109,18 +118,24 @@ procedure TExtThread.Home; begin
     '<body><div id=content></div></body></html>');
 end;
 
+procedure TExtThread.SetItems(JS, pName: string; pClass: TClass); begin
+  JSName  := pName;
+  JSClass := pClass;
+  AddJS(JS);
+end;
+
 { ExtObject }
 
-procedure ExtObject.AddJS(S : string); begin
-  TExtThread(CurrentFCGIThread).AddJS(S);
+procedure ExtObject.AddJS(JS : string); begin
+  if JS <> '' then TExtThread(CurrentFCGIThread).AddJS(JS);
 end;
 
-constructor ExtObject.Create(pJSON : string); begin
-  AddJS(pJSON)
+constructor ExtObject.Create(JS : string); begin
+  AddJS(JS)
 end;
 
-procedure ExtObject.CreateVar(S : string); begin
-  AddJS('var ' + SetJSName + '=new ' + S);
+procedure ExtObject.CreateVar(JS : string); begin
+  AddJS('var ' + SetJSName + '=new ' + JS);
 end;
 
 function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjectClass): TExtObjectClass; begin
@@ -144,7 +159,7 @@ constructor ExtObject.JSFunction(Params, Body: string); begin
   JSName := 'function (' + Params + '){' + Body + '}'
 end;
 
-procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer);
+procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer; Attribute : string = '');
 var
   I, OldLen : integer;
 begin
@@ -152,6 +167,7 @@ begin
   if ExtObjectClass <> NoCreate then for I := NewLength to high(A) do A[I].Free;
   System.SetLength(A, NewLength);
   if ExtObjectClass <> NoCreate then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
+  if Attribute <> '' then TExtThread(CurrentFCGIThread).SetItems(Attribute + ':[]', JSName, ClassType);
 end;
 
 procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
