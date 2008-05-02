@@ -3,7 +3,7 @@ program TestExtPascal;
 {$APPTYPE CONSOLE}
 
 uses
-  FCGIApp, SysUtils, strutils, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
+  FCGIApp, SysUtils, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid;
   //ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -16,6 +16,7 @@ type
     Login : ExtFormFormPanel;
     TabActions, ActionPanel : ExtPanel;
     TabPanel : ExtTabPanel;
+    Button : ExtButton;
   published
     procedure Home; override;
     procedure Animal;
@@ -28,12 +29,12 @@ end;
 
 procedure TTestExtPascal.Home; begin
   inherited;
-  with ExtButton.Create do begin
+  Button := ExtButton.Create;
+  with Button do begin
     RenderTo := 'content';
-    Handler := _Function.JSFunction('', 'alert("You clicked the button 1");');
-    Text := 'Button 1';
+    Handler := _Function.JSFunction('', 'alert("You clicked ' + JSName + '");');
+    Text := JSName;
   end;
-
   Login := ExtFormFormPanel.Create;
   with Login do begin
     LabelWidth := 80;
@@ -43,10 +44,10 @@ procedure TTestExtPascal.Home; begin
     DefaultType := 'textfield';
     MonitorValid := true;
     SetLengthButtons(1);
-    Buttons[0].Text := 'Login';
+//    Buttons[0].Text := 'Login';
     SetLengthItems(2, ExtFormTextField);
-    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
-    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
+//    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
+//    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
   end;
   with ExtWindow.Create do begin
     Title := JSName;
@@ -57,10 +58,10 @@ procedure TTestExtPascal.Home; begin
     Resizable := false;
     Plain := true;
     SetLengthItems(1, NoCreate);
-    Items[0] := Login;
+//    Items[0] := Login;
     Show;
   end;
-
+  exit;
   Connection := ExtDataConnection.Create;
   with Connection do begin
     Url := 'docs/samples/data.txt';
