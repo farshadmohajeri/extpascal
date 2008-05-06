@@ -32,39 +32,44 @@ procedure TTestExtPascal.Home; begin
   Button := ExtButton.Create;
   with Button do begin
     RenderTo := 'content';
-    Handler := _Function.JSFunction('', 'alert("You clicked ' + JSName + '");');
-    Text := JSName;
+    Handler  := _Function.JSFunction('', 'alert("You clicked ' + JSName + '");');
+    Text     := JSName;
   end;
   Login := ExtFormFormPanel.Create;
   with Login do begin
-    LabelWidth := 80;
-    Frame := true;
-    Title := 'Login';
-    Width := 230;
-    DefaultType := 'textfield';
+    LabelWidth   := 80;
+    Frame        := true;
+    HideBorders := true;
+    Title        := 'Login';
+    Width        := 300;
+    DefaultType  := 'textfield';
     MonitorValid := true;
     SetLengthButtons(1);
-//    Buttons[0].Text := 'Login';
+    Buttons[0].Text := 'Login';
     SetLengthItems(2, ExtFormTextField);
-//    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
-//    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
+    with ExtFormTextField(Items[0]) do begin FieldLabel := 'UserName'; Name := 'loginUserName'; AllowBlank := false end;
+    with ExtFormTextField(Items[1]) do begin FieldLabel := 'Password'; Name := 'loginPassword'; AllowBlank := false; InputType := 'password' end;
   end;
   with ExtWindow.Create do begin
-    Title := JSName;
-    Layout := 'fit';
+    Title    := JSName;
+    Layout   := 'form';
+    Height:= 160;
     Width := 300;
-    Height:= 150;
-    Closable := false;
-    Resizable := false;
-    Plain := true;
+    Floating := true;
+    shim := false;
+    Shadow := true;
+    ShadowOffset := 10;
+    Closable := true;
+    Collapsible := true;
+    Resizable:= true;
+    Plain    := true;
     SetLengthItems(1, NoCreate);
-//    Items[0] := Login;
+    Items[0] := Login;
     Show;
   end;
-  exit;
   Connection := ExtDataConnection.Create;
   with Connection do begin
-    Url := 'docs/samples/data.txt';
+    Url := '/trabalho/extpascal/data.txt';
     Method := 'GET';
   end;
   SetLength(Fields, 3, ExtDataField);
@@ -73,7 +78,7 @@ procedure TTestExtPascal.Home; begin
   Fields[2].Name := 'duration';
   DataRecord := ExtDataRecord.Create(Fields);
   with ExtGridGridPanel.Create do begin
-    RenderTo := 'grid-div';
+    RenderTo := 'content';
     Title := 'my Grid';
     Width := 300;
     Height := 200;

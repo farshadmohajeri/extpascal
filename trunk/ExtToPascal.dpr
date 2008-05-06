@@ -600,7 +600,7 @@ begin
     else
       T := Tab(2);
     if Return = '' then begin
-      if (Params.Count = 0) and not Defaults then exit;
+//      if (Params.Count = 0) and not Defaults then exit;
       write(Pas, T, 'constructor ', pClassName, 'Create')
     end
     else
@@ -632,6 +632,7 @@ procedure WriteClassType(Cls : TClass);
 
 var
   I, J : integer;
+  ArrayType : string;
 begin
   with Cls do begin
     for I := 0 to Properties.Count-1 do // Write array types
@@ -652,13 +653,24 @@ begin
     for I := 0 to Properties.Count-1 do // Write Set procedures
       with TProp(Properties.Objects[I]) do begin
         if not Static then
-          writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
+          if pos(ArrayOf, Typ) = 1 then begin
+            ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
+            writeln(Pas, Tab(2), 'function  GetF', Name, '(I : Word) : ', ArrayType, ';');
+            writeln(Pas, Tab(2), 'procedure SetF', Name, '(I : Word; Value : ', ArrayType, ');');
+          end
+          else
+            writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
       end;
     if Properties.Count > 0 then writeln(Pas, Tab, 'public');
     for I := 0 to Properties.Count-1 do // Write properties
       with TProp(Properties.Objects[I]) do begin
         if not Static then
-          writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
+          if pos(ArrayOf, Typ) = 1 then begin
+            ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
+            writeln(Pas, Tab(2), 'property ', Name, '[I : Word] : ', ArrayType, ' read GetF', Name, ' write SetF', Name, ';');
+          end
+          else
+            writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
       end;
     for I := 0 to Properties.Count-1 do // Write class properties
       with TProp(Properties.Objects[I]) do
@@ -671,7 +683,7 @@ begin
       with TProp(Properties.Objects[I]) do
         if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
           Arrays := true;
-          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Integer; OtherClass : TExtObjectClass = nil);');
+          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Word; OtherClass : TExtObjectClass = nil);');
         end;
     if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
     writeln(Pas, Tab, 'end;'^M^J);
@@ -721,7 +733,7 @@ end;
 procedure WriteUnits;
 var
   I, J, K, L : integer;
-  CName, CJSName, Value, DestructorBody : string;
+  CName, CJSName, ArrayType, DestructorBody : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -747,16 +759,20 @@ begin
           for K := 0 to Properties.Count-1 do // Write Set procedures implementation
             with TProp(Properties.Objects[K]) do begin
               if not Static then begin
-                writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
-                writeln(Pas, Tab, 'F', Name, ' := Value;');
-                if pos(ArrayOf, Typ) = 1 then
-                  if pos(ArrayOf + 'Ext', Typ) = 1 then
-                    Value := 'ArrayOfExtObject(Value)'
-                  else
-                    Value := 'Value'
-                else
-                  Value := '[Value]';
-                writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON(', Value, '));');
+                if pos(ArrayOf, Typ) = 1 then begin
+                  ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
+                  writeln(Pas, 'function ', CName, '.GetF', Name, '(I : Word) : ', ArrayType, '; begin');
+                  writeln(Pas, Tab, 'Result := F', Name, '[I];');
+                  writeln(Pas, 'end;'^M^J);
+                  writeln(Pas, 'procedure ', CName, '.SetF', Name, '(I : Word; Value : ', ArrayType, '); begin');
+                  writeln(Pas, Tab, 'F', Name, '[I] := Value;');
+                  writeln(Pas, Tab, 'AddJS(Value.JSName, JSName + ''.' + JSName + ''');');
+                end
+                else begin
+                  writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
+                  writeln(Pas, Tab, 'F', Name, ' := Value;');
+                  writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON([Value]));');
+                end;
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -794,9 +810,9 @@ begin
           for K := 0 to Properties.Count-1 do // Write SetLength Methods
             with TProp(Properties.Objects[K]) do
               if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
-                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Integer; OtherClass : TExtObjectClass); begin');
+                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Word; OtherClass : TExtObjectClass); begin');
                 writeln(Pas, Tab, 'SetLength(ArrayOfExtObject(F', Name, '), IfOtherClass(OtherClass = nil, ',
-                  copy(Typ, length(ArrayOf)+1, length(Typ)), ', OtherClass), NewLength)');
+                  copy(Typ, length(ArrayOf)+1, length(Typ)), ', OtherClass), NewLength, ''', JSName,''')');
                 DestructorBody := DestructorBody + Tab + 'SetLength' + Name + '(0);'^M^J;
                 writeln(Pas, 'end;'^M^J);
               end;

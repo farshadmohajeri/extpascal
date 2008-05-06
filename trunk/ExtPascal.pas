@@ -8,13 +8,11 @@ uses
 type
   TExtThread = class(TFCGIThread)
   private
-    PJS      : integer;
     Sequence : cardinal;
-    JSName   : string;
-    JSClass  : TClass;
-    procedure SetItems(JS, pName : string; pClass : TClass);
+  protected
+    procedure AfterHandleRequest; override;
   public
-    procedure AddJS(JS : string);
+    procedure AddJS(JS, JSName : string);
   published
     procedure Home; override;
   end;
@@ -27,20 +25,22 @@ type
   TExtObjectClass = class of ExtObject;
 
   ExtObject = class
+  private
+    FJSName : string;
   protected
     procedure CreateVar(JS : string);
-    procedure AddJS(JS : string);
+    procedure AddJS(JS : string; pJSName : string = '');
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ArrayOfExtObject) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
-    procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Integer; Attribute : string = '');
+    procedure SetLength(var A : ArrayOfExtObject; ExtObjectClass : TExtObjectClass; NewLength : Word; Attribute : string = '');
     function IfOtherClass(B : Boolean; DefaultClass, OtherClass : TExtObjectClass) : TExtObjectClass;
     function SetJSName : string;
   public
-    JSName : string;
+    property JSName : string read FJSName;
     procedure Init;
-    constructor Create(JS : string = '');
+    constructor Create;
     constructor JSFunction(Params, Body : string);
   end;
 
@@ -77,7 +77,7 @@ type
 const
   NoCreate = pointer(1);
 
-procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
+procedure SetLength(var Arr; NewLength : Word; ExtObjectClass: TExtObjectClass = nil);
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean; // Mimics preg_match php function
 function Explode(Delim : char; S : string) : TStringList; // Mimics explode php function
 
@@ -89,53 +89,54 @@ uses
 { TExtThread }
 
 // Self-translating
-procedure TExtThread.AddJS(JS : string);
+procedure TExtThread.AddJS(JS, JSName : string);
 var
   I : integer;
 begin
-  I := 1;
-  if Response = '' then
-    PJS := 0
-  else
-    if JS[length(JS)] = ';' then begin // Command
-      if not(Response[PJS-1] in ['{', ';']) then
-        PJS := PosEx('}', Response, PJS + 1)
-    end
-    else begin // set attribute
-      if Response[PJS -1] <> '{' then JS := ',' + JS;
-      I := pos('}', JS);
-    end;
-  insert(JS, Response, PJS);
-  PJS := PosEx('}', Response, PJS + I);
+  if JS[length(JS)] = ';' then  // Command
+    I := pos('/**/', Response)
+  else begin // set attribute
+    I := pos('/*' + JSName + '*/', Response);
+    if I = 0 then I := pos('/**/', Response);
+    if not(Response[I-1] in ['{', '[']) then JS := ',' + JS;
+  end;
+  insert(JS, Response, I);
+end;
+
+// Extract Comments
+procedure TExtThread.AfterHandleRequest;
+var
+  I, J : integer;
+begin
+  I := pos('/*', Response);
+  while I <> 0 do begin
+    J := PosEx('*/', Response, I);
+    delete(Response, I, J - I + 2);
+    I := PosEx('/*', Response, I);
+  end;
 end;
 
 procedure TExtThread.Home; begin
-  AddJS('<html><title>' + Application.Title + '</title>' +
+  Response := '<html><title>' + Application.Title + '</title>' +
     '<link rel=stylesheet href=/trabalho/extpascal/ext-all.css />' +
     '<script src=/trabalho/extpascal/ext-base.js></script>' +
     '<script src=/trabalho/extpascal/ext-all.js></script>'  +
-    '<script>Ext.onReady(function(){});</script>' +
-    '<body><div id=content></div></body></html>');
-end;
-
-procedure TExtThread.SetItems(JS, pName: string; pClass: TClass); begin
-  JSName  := pName;
-  JSClass := pClass;
-  AddJS(JS);
+    '<script>Ext.onReady(function(){/**/});</script>' +
+    '<body><div id=content></div></body></html>';
 end;
 
 { ExtObject }
 
-procedure ExtObject.AddJS(JS : string); begin
-  if JS <> '' then TExtThread(CurrentFCGIThread).AddJS(JS);
+procedure ExtObject.AddJS(JS : string; pJSName : string = ''); begin
+  if JS <> '' then TExtThread(CurrentFCGIThread).AddJS(JS, IfThen(pJSName = '', JSName, pJSName));
 end;
 
-constructor ExtObject.Create(JS : string); begin
-  AddJS(JS)
+constructor ExtObject.Create; begin
+  CreateVar('Object({});')
 end;
 
 procedure ExtObject.CreateVar(JS : string); begin
-  AddJS('var ' + SetJSName + '=new ' + JS);
+  AddJS('var ' + SetJSName + '=new ' + AnsiReplaceStr(JS, '{}', '{/*' + JSName + '*/}'));
 end;
 
 function ExtObject.IfOtherClass(B: Boolean; DefaultClass, OtherClass : TExtObjectClass): TExtObjectClass; begin
@@ -149,36 +150,49 @@ procedure ExtObject.Init; begin end;
 
 function ExtObject.SetJSName : string; begin
   with TExtThread(CurrentFCGIThread) do begin
-    JSName := Self.ClassName + IntToStr(Sequence);
-    Result := JSName;
+    Self.FJSName := Self.ClassName + IntToStr(Sequence);
+    Result := Self.FJSName;
     inc(Sequence)
   end;
 end;
 
 constructor ExtObject.JSFunction(Params, Body: string); begin
-  JSName := 'function (' + Params + '){' + Body + '}'
+  FJSName := 'function(' + Params + '){' + Body + '}'
 end;
 
-procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Integer; Attribute : string = '');
+procedure ExtObject.SetLength(var A: ArrayOfExtObject; ExtObjectClass: TExtObjectClass; NewLength : Word; Attribute : string = '');
 var
   I, OldLen : integer;
+  JSON : string;
 begin
   OldLen := high(A) + 1;
-  if ExtObjectClass <> NoCreate then for I := NewLength to high(A) do A[I].Free;
+  if ExtObjectClass <> NoCreate then
+    for I := NewLength to high(A) do A[I].Free;
   System.SetLength(A, NewLength);
-  if ExtObjectClass <> NoCreate then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
-  if Attribute <> '' then TExtThread(CurrentFCGIThread).SetItems(Attribute + ':[]', JSName, ClassType);
+  JSON := '';
+  if ExtObjectClass <> NoCreate then begin
+    for I := OldLen to high(A) do begin
+      A[I] := ExtObjectClass.Create;
+      JSON := JSON + '{/*' + A[I].SetJSName + '*/}';
+      if I <> high(A) then JSON := JSON + ',';
+    end;
+  end
+  else
+    JSON := '/*' + JSName + '.' + Attribute + '*/';
+  if Attribute <> '' then TExtThread(CurrentFCGIThread).AddJS(Attribute + ':[' + JSON + ']', JSName);
 end;
 
-procedure SetLength(var Arr; NewLength : Integer; ExtObjectClass: TExtObjectClass = nil);
+procedure SetLength(var Arr; NewLength : Word; ExtObjectClass: TExtObjectClass = nil);
 var
   A : ArrayOfExtObject absolute Arr;
   I, OldLen : integer;
 begin
   OldLen := high(A) + 1;
-  if ExtObjectClass <> nil then for I := NewLength to high(A) do A[I].Free;
+  if ExtObjectClass <> nil then
+    for I := NewLength to high(A) do A[I].Free;
   System.SetLength(A, NewLength);
-  if ExtObjectClass <> nil then for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
+  if ExtObjectClass <> nil then
+    for I := OldLen to high(A) do A[I] := ExtObjectClass.Create;
 end;
 
 function ExtObject.VarToJSON(A : array of const): string;

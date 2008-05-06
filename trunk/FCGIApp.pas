@@ -40,6 +40,8 @@ type
     procedure GetValues(Content : string);
     function HandleRequest(pRequest : string) : string;
     procedure NotFoundError; virtual;
+    procedure BeforeHandleRequest; virtual;
+    procedure AfterHandleRequest; virtual;
   public
     BrowserCache : boolean;
     Response, ContentType : string;
@@ -51,7 +53,7 @@ type
     property RequestHeader[Name : string] : string read GetRequestHeader;
     property Query[Name : string] : string read GetQuery;
     property Cookie[Name : string] : string read GetCookie;
-    constructor Create(NewSocket : integer);
+    constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
@@ -84,7 +86,7 @@ type
     procedure Run;
     function CanConnection(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
-    function ThreadsCount : integer;
+    function ThreadsCount : cardinal;
     function ReachedMaxConns : boolean;
   end;
 
@@ -280,6 +282,10 @@ begin
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
+procedure TFCGIThread.AfterHandleRequest; begin end;
+
+procedure TFCGIThread.BeforeHandleRequest; begin end;
+
 procedure TFCGIThread.CompleteRequestHeaderInfo;
 var
   ReqMet : string;
@@ -372,7 +378,12 @@ var
   PageMethod : TMethod;
   MethodCode : pointer;
 begin
+  if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then
+    FQuery.DelimitedText := URLDecode(pRequest)
+  else
+    FRequest := pRequest;
   Response := '';
+  BeforeHandleRequest;
   if PathInfo = '' then
     Home
   else begin
@@ -380,12 +391,12 @@ begin
     if MethodCode <> nil then begin
       PageMethod.Code := MethodCode;
       PageMethod.Data := Self;
-      if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then FQuery.DelimitedText := URLDecode(pRequest);
       MethodCall(PageMethod); // Call published method
     end
     else
       NotFoundError;
   end;
+  AfterHandleRequest;
   Result := Response;
 end;
 
@@ -579,7 +590,7 @@ begin
   end;
 end;
 
-function TFCGIApplication.ThreadsCount: integer; begin
+function TFCGIApplication.ThreadsCount: cardinal; begin
   Result := Threads.Count
 end;
 
