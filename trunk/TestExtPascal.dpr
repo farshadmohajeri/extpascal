@@ -29,7 +29,7 @@ end;
 
 procedure TTestExtPascal.Home; begin
   inherited;
-  Button := ExtButton.Create;
+(*  Button := ExtButton.Create;
   with Button do begin
     RenderTo := 'content';
     Handler  := _Function.JSFunction('', 'alert("You clicked ' + JSName + '");');
@@ -53,12 +53,8 @@ procedure TTestExtPascal.Home; begin
   with ExtWindow.Create do begin
     Title    := JSName;
     Layout   := 'form';
-    Height:= 160;
-    Width := 300;
-    Floating := true;
-    shim := false;
-    Shadow := true;
-    ShadowOffset := 10;
+    Height   := 160;
+    Width    := 300;
     Closable := true;
     Collapsible := true;
     Resizable:= true;
@@ -66,7 +62,8 @@ procedure TTestExtPascal.Home; begin
     SetLengthItems(1, NoCreate);
     Items[0] := Login;
     Show;
-  end;
+  end;*)
+  (*
   Connection := ExtDataConnection.Create;
   with Connection do begin
     Url := '/trabalho/extpascal/data.txt';
@@ -75,7 +72,7 @@ procedure TTestExtPascal.Home; begin
   SetLength(Fields, 3, ExtDataField);
   Fields[0].Name := 'status';
   Fields[1].Name := 'report';
-  Fields[2].Name := 'duration';
+  with Fields[2] do begin Name := 'duration'; _Type := 'int'; end;
   DataRecord := ExtDataRecord.Create(Fields);
   with ExtGridGridPanel.Create do begin
     RenderTo := 'content';
@@ -87,6 +84,7 @@ procedure TTestExtPascal.Home; begin
     with Store do begin
       AutoLoad := true;
       Proxy := ExtDataHttpProxy.Create(Connection);
+      exit;
       Reader := ExtDataJsonReader.Create(nil, DataRecord);
       with ExtDataJsonReader(Reader) do begin
         Root := 'rows';
@@ -97,9 +95,8 @@ procedure TTestExtPascal.Home; begin
     with Columns[0] do begin Header := '';         Width := 30;  Sortable := true; DataIndex := 'status';   Id := DataIndex; end;
     with Columns[1] do begin Header := 'Name';     Width := 160; Sortable := true; DataIndex := 'report';   Id := DataIndex; end;
     with Columns[2] do begin Header := 'Duration'; Width := 70;  Sortable := true; DataIndex := 'duration'; Id := DataIndex; end;
-    Free;
   end;
-
+*)
   TabActions := ExtPanel.Create;
   with TabActions do begin
     Frame := true;
@@ -122,7 +119,7 @@ procedure TTestExtPascal.Home; begin
     CollapseMode := 'mini';
     MinWidth := 150;
   end;
-  TabPanel := ExtTabPanel.Create;
+(*  TabPanel := ExtTabPanel.Create;
   with TabPanel do begin
     DeferredRender := false;
     AutoScroll := true;
@@ -134,12 +131,12 @@ procedure TTestExtPascal.Home; begin
     SetLengthItems(2);
     with Items[0] do begin Id := 'tab1'; ContentEl := 'tabs'; Title := 'Button';     Closable := false; AutoScroll := true end;
     with Items[1] do begin Id := 'tab2'; ContentEl := 'tabs'; Title := 'Grid Panel'; Closable := false; AutoScroll := true end;
-  end;
+  end;*)
   with ExtViewPort.Create do begin
     Layout := 'border';
-    SetLengthItems(2, NoCreate);
+    SetLengthItems(1, NoCreate);
     Items[0] := ActionPanel;
-    Items[1] := TabPanel;
+//    Items[1] := TabPanel;
   end;
   with TabPanel do begin
     Title := 'New Tab';

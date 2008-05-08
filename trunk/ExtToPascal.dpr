@@ -591,7 +591,6 @@ function WriteMethodSignature(Method : TMethod; Defaults : boolean; pClassName :
 var
   T : string;
 begin
-  Result := false;
   with Method do begin
     if pClassName <> '' then begin
       pClassName := pClassName + '.';
@@ -691,13 +690,22 @@ begin
 end;
 
 function ParamsToJSON(Params : TStringList; Config : boolean = true) : string;
+
+  procedure OptionalParam(Param : TParam); begin
+    with Param do
+      if Optional then
+        Result := Result + ' + IfThen(' + Name + WriteOptional(Optional, Typ) + ', '''', '','')'
+      else
+        Result := Result + ' + '',''';
+  end;
+
 var
   I : integer;
   InitCommonParam : boolean;
 begin
   if Params.Count <> 0 then begin
     InitCommonParam := true;
-    Result := IfThen(Config, '({''', '(''');
+    Result := '(''';
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do begin
         if pos(ArrayOf, Typ) <> 1 then begin
@@ -710,17 +718,20 @@ begin
           Result := Result + Name;
         end
         else begin
-          if not InitCommonParam then Result := Result + ']) + '',''';
+          if not InitCommonParam then begin
+            Result := Result + '])';
+            OptionalParam(TParam(Params.Objects[I]));
+          end;
           if pos(ArrayOf + 'Ext', Typ) = 1 then
             Result := Result + ' + VarToJSON(ArrayOfExtObject(' + Name + '))'
           else
             Result := Result + ' + VarToJSON(' + Name + ')';
-          if I < (Params.Count-1) then Result := Result + ' + '',''';
+          if I < (Params.Count-1) then OptionalParam(TParam(Params.Objects[I+1]));
           InitCommonParam := true;
         end;
       end;
     if not InitCommonParam then Result := Result + '])';
-    Result := Result + IfThen(Config, ' + ''});', ' + '');');
+    Result := Result + ' + '');';
   end
   else
     Result := IfThen(Config, '({});', '();');
@@ -741,7 +752,7 @@ begin
       assign(Pas, Name + '.pas');
       rewrite(Pas);
       writeln(Pas, 'unit ', Name, ';'^M^J);
-      writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'ExtPascal', UsesList, ';'^M^J);
+      writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal', UsesList, ';'^M^J);
       writeln(Pas, 'type');
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
