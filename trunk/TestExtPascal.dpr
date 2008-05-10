@@ -48,6 +48,6 @@ procedure TTestExtPascal.Home; begin
 end;
 
 begin
-  Application := TFCGIApplication.Create('Test ExtPascal 1.0', TTestExtPascal);
+  Application := TFCGIApplication.Create('Test ExtPascal 0.7.1', TTestExtPascal);
   Application.Run;
 end.

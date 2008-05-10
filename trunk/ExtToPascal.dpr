@@ -138,7 +138,7 @@ procedure TUnit.ReviewTypes;
     Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ExtObjectList.Void._Function.Event.HTMLElement.RegExp.';
   var
     T : string;
-    I, J : integer;
+    I : integer;
   begin
     if (Typ <> '') and (pos('.' + Typ + '.', Types) = 0) then begin
       T := Typ;
@@ -149,13 +149,10 @@ procedure TUnit.ReviewTypes;
           exit;
         end;
       end;
-      J := pos(ArrayOf, T);
-      if J = 1 then T := copy(T, length(ArrayOf)+1, length(T));
-      if T[1] = '_' then T := copy(T, 2, length(T));
+      if T[1] = '_' then delete(T, 1, 1);
       for I := 0 to Units.Count-1 do
         if AllClasses.IndexOf(Units[I] + T) <> -1 then begin
           Typ := Units[I] + T;
-          if J = 1 then Typ := ArrayOf + Typ;
           if (Name = 'Ext') and (Units[I] = 'ExtLayout') then exit; // Exception to resolve circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
@@ -372,10 +369,10 @@ begin
         if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
           PropName := Matches[0];
           I := LastDelimiter('.', PropName);
-          if I <> 0 then PropName := copy(PropName, I+1, length(PropName)); //Static
+          if I <> 0 then PropName := copy(PropName, I+1, length(PropName)); // Static
           if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non sweet to Pascal
             CurProp := TProp.Create(PropName, Matches[2], I <> 0);
-            if CurProp.Typ = 'ExtObjectList' then begin
+            if (CurProp.Typ = 'ExtObjectList') and (I = 0) {Not Static} then begin
               CurClass.Arrays := true;
               CurClass.AddCreate;
             end;
@@ -410,7 +407,7 @@ begin
             Return := FixType(Matches[2]);
             if Return = '' then begin
               MetName := 'Create';
-              if CurClass.Defaults then exit; // already have Create
+              if CurClass.Defaults or CurClass.Arrays then exit; // already have Create
             end;
             if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
             Params := Explode(',', Matches[1]);
@@ -627,7 +624,7 @@ end;
 
 procedure WriteClassType(Cls : TClass);
 var
-  I, J : integer;
+  I : integer;
 begin
   with Cls do begin
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtObject', Parent), ')');
@@ -743,8 +740,8 @@ begin
                   writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                   writeln(Pas, Tab, 'F', Name, ' := Value;');
                   writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON([Value]));');
+                  writeln(Pas, 'end;'^M^J);
                 end;
-                writeln(Pas, 'end;'^M^J);
               end;
             end;
           for K := 0 to Properties.Count-1 do // Write class properties implementation
@@ -755,12 +752,16 @@ begin
                 writeln(Pas, Tab, 'Result', WriteOptional(true, Typ, ' := '));
                 writeln(Pas, 'end;'^M^J);
               end;
-          if Defaults then begin // write Init method
+          if Defaults or Arrays then begin // write Init method
             writeln(Pas, 'procedure ', CName, '.Init; begin');
             writeln(Pas, Tab, 'inherited;');
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
-                if Default <> '' then writeln(Pas, Tab, 'F', Name, ' := ', Default, ';');
+                if Default <> '' then
+                  writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
+                else
+                  if not Static and (Typ = 'ExtObjectList') then
+                    writeln(Pas, Tab, 'F', Name, ' := ExtObjectList.Create(Self, ''', JSName, ''');');
             writeln(Pas, 'end;'^M^J);
           end;
           for K := 0 to Methods.Count-1 do // Write methods
