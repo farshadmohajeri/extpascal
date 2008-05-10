@@ -32,8 +32,6 @@ begin
   Result := FixReserved(Result);
 end;
 
-const ArrayOf = 'ArrayOf';
-
 function FixType(Ident : string) : string;
 var
   T : string;
@@ -47,14 +45,18 @@ begin
   if T = 'date'      then begin Result := 'TDateTime';        exit end else
   if T = 'float'     then begin Result := 'Double';           exit end else
   if T = 'mixed'     then begin Result := 'string';           exit end else
-  if T = 'array'     then begin Result := 'ArrayOfExtObject'; exit end else
+  if T = 'array'     then begin Result := 'ExtObjectList';    exit end else
   if T = 'int'       then begin Result := 'Integer';          exit end else
-  if T = 'object...' then begin Result := 'ArrayOfExtObject'; exit end
+  if T = 'object...' then begin Result := 'ExtObjectList';    exit end
   else begin
     I := LastDelimiter('/[:', Ident);
     if I <> 0 then begin
       Result := FixType(copy(Ident, 1, I-1)); // alternative types: choose the first option
-      if Ident[I] <> '/' then Result := ArrayOf + Result;
+      if Ident[I] <> '/' then
+        if pos('Ext', Result) = 1 then
+          Result := 'ExtObjectList'
+        else
+          Result := 'ArrayOf' + Result;
       exit;
     end;
   end;
@@ -76,6 +78,7 @@ type
     Properties, Methods : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
+    procedure AddCreate;
   end;
 
   TProp = class
@@ -132,7 +135,7 @@ procedure TUnit.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
   const
-    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ArrayOfExtObject.Void._Function.Event.HTMLElement.RegExp.';
+    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ExtObjectList.Void._Function.Event.HTMLElement.RegExp.';
   var
     T : string;
     I, J : integer;
@@ -185,6 +188,11 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   UnitName   := FixIdent(pUnitName);
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
+end;
+
+procedure TClass.AddCreate; begin
+  if Methods.IndexOf('Create') = -1 then
+    Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
 end;
 
 function TClass.InheritLevel : integer;
@@ -367,6 +375,10 @@ begin
           if I <> 0 then PropName := copy(PropName, I+1, length(PropName)); //Static
           if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non sweet to Pascal
             CurProp := TProp.Create(PropName, Matches[2], I <> 0);
+            if CurProp.Typ = 'ExtObjectList' then begin
+              CurClass.Arrays := true;
+              CurClass.AddCreate;
+            end;
             CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
           end;
         end
@@ -375,7 +387,7 @@ begin
             SetDefault(CurProp, Matches[0], Matches);
             if (CurProp.Default <> '') and not CurClass.Defaults then begin
               CurClass.Defaults := true;
-              CurClass.Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
+              CurClass.AddCreate;
             end;
           end
           else
@@ -406,7 +418,7 @@ begin
             for I := 0 to Params.Count-1 do
               if Extract(['<code>', ' ', '</code>'], Params[I], Matches) then begin
                 if pos('etc', Matches[1]) = 1 then begin // variable parameter list
-                  Matches[0] := ArrayOf + FixType(Matches[0]);
+                  Matches[0] := 'ExtObjectList';
                   Arg := Args[0];
                   Arg[length(Arg)] := 's';
                   Matches[1] := Arg;
@@ -421,7 +433,7 @@ begin
                 if Matches[1] <> 'config' then begin// config object are deleted, sugar coding non pratical in Pascal
                   Matches[1] := Unique(FixIdent(Matches[1]), Args);
                   Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], (Return = '') or
-                    ((pos('>[', Params[I]) <> 0) and (pos(ArrayOf, Matches[0]) = 0))));
+                    ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'ExtObjecList'))));
                 end;
               end;
             Params.Free;
@@ -587,7 +599,7 @@ begin
   end;
 end;
 
-function WriteMethodSignature(Method : TMethod; Defaults : boolean; pClassName : string = '') : boolean;
+function WriteMethodSignature(Method : TMethod; pClassName : string = '') : boolean;
 var
   T : string;
 begin
@@ -598,10 +610,8 @@ begin
     end
     else
       T := Tab(2);
-    if Return = '' then begin
-//      if (Params.Count = 0) and not Defaults then exit;
+    if Return = '' then
       write(Pas, T, 'constructor ', pClassName, 'Create')
-    end
     else
       write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'Void', 'procedure ', 'function '), pClassName, Name);
     if Params.Count <> 0 then begin
@@ -616,32 +626,10 @@ begin
 end;
 
 procedure WriteClassType(Cls : TClass);
-
-  procedure WriteArrayType(T : string);
-  const
-    GlobalTypes : string = '.ArrayOfExtObject.ArrayOfstring.ArrayOfInteger.';
-  begin
-    if pos(ArrayOf, T) <> 0 then begin // Pascal requires proper type instead of "array of" as return type
-      if pos('.' + T + '.', GlobalTypes) = 0 then begin
-        writeln(Pas, Tab, T, ' = array of ', copy(T, length(ArrayOf)+1, length(T)), ';'^M^J);
-        GlobalTypes := GlobalTypes + T + '.';
-      end;
-    end;
-  end;
-
 var
   I, J : integer;
-  ArrayType : string;
 begin
   with Cls do begin
-    for I := 0 to Properties.Count-1 do // Write array types
-      WriteArrayType(TProp(Properties.Objects[I]).Typ);
-    for I := 0 to Methods.Count-1 do // Write array types
-      with TMethod(Methods.Objects[I]) do begin
-        WriteArrayType(Return);
-        for J := 0 to Params.Count-1 do
-          WriteArrayType(TParam(Params.Objects[J]).Typ);
-      end;
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtObject', Parent), ')');
     if Properties.Count > 0 then writeln(Pas, Tab, 'private');
     for I := 0 to Properties.Count-1 do // Write private fields
@@ -650,24 +638,14 @@ begin
           writeln(Pas, Tab(2), 'F', Name, ' : ', Typ, ';', IfThen(Default <> '', ' // ' + Default, ''));
       end;
     for I := 0 to Properties.Count-1 do // Write Set procedures
-      with TProp(Properties.Objects[I]) do begin
-        if not Static then
-          if pos(ArrayOf, Typ) = 1 then begin
-            ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
-            writeln(Pas, Tab(2), 'function  GetF', Name, '(I : Word) : ', ArrayType, ';');
-            writeln(Pas, Tab(2), 'procedure SetF', Name, '(I : Word; Value : ', ArrayType, ');');
-          end
-          else
-            writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
-      end;
+      with TProp(Properties.Objects[I]) do
+        if not Static and (Typ <> 'ExtObjectList') then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
     if Properties.Count > 0 then writeln(Pas, Tab, 'public');
     for I := 0 to Properties.Count-1 do // Write properties
       with TProp(Properties.Objects[I]) do begin
         if not Static then
-          if pos(ArrayOf, Typ) = 1 then begin
-            ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
-            writeln(Pas, Tab(2), 'property ', Name, '[I : Word] : ', ArrayType, ' read GetF', Name, ' write SetF', Name, ';');
-          end
+          if Typ = 'ExtObjectList' then
+            writeln(Pas, Tab(2), 'property ', Name, ' : ExtObjectList read F', Name, ';')
           else
             writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
       end;
@@ -675,15 +653,9 @@ begin
       with TProp(Properties.Objects[I]) do
         if Static then
           writeln(Pas, Tab(2), 'class function ', Name, ' : ', Typ, ';');
-    if Defaults then writeln(Pas, Tab(2), 'procedure Init;');
+    if Defaults or Arrays then writeln(Pas, Tab(2), 'procedure Init; override;');
     for I := 0 to Methods.Count-1 do // Write methods
-      WriteMethodSignature(TMethod(Methods.Objects[I]), Defaults);
-    for I := 0 to Properties.Count-1 do // Write SetLength Methods
-      with TProp(Properties.Objects[I]) do
-        if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
-          Arrays := true;
-          writeln(Pas, Tab(2), 'procedure SetLength', Name, '(NewLength : Word; OtherClass : TExtObjectClass = nil);');
-        end;
+      WriteMethodSignature(TMethod(Methods.Objects[I]));
     if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
     writeln(Pas, Tab, 'end;'^M^J);
   end;
@@ -708,7 +680,7 @@ begin
     Result := '(''';
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do begin
-        if pos(ArrayOf, Typ) <> 1 then begin
+        if Typ <> 'ExtObjectList' then begin
           if InitCommonParam then begin
             Result := Result + ' + VarToJSON([';
             InitCommonParam := false;
@@ -722,10 +694,7 @@ begin
             Result := Result + '])';
             OptionalParam(TParam(Params.Objects[I]));
           end;
-          if pos(ArrayOf + 'Ext', Typ) = 1 then
-            Result := Result + ' + VarToJSON(ArrayOfExtObject(' + Name + '))'
-          else
-            Result := Result + ' + VarToJSON(' + Name + ')';
+          Result := Result + ' + VarToJSON(' + Name + ')';
           if I < (Params.Count-1) then OptionalParam(TParam(Params.Objects[I+1]));
           InitCommonParam := true;
         end;
@@ -743,8 +712,8 @@ end;
 
 procedure WriteUnits;
 var
-  I, J, K, L : integer;
-  CName, CJSName, ArrayType, DestructorBody : string;
+  I, J, K : integer;
+  CName, CJSName : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -770,16 +739,7 @@ begin
           for K := 0 to Properties.Count-1 do // Write Set procedures implementation
             with TProp(Properties.Objects[K]) do begin
               if not Static then begin
-                if pos(ArrayOf, Typ) = 1 then begin
-                  ArrayType := copy(Typ, length(ArrayOf)+1, length(Typ));
-                  writeln(Pas, 'function ', CName, '.GetF', Name, '(I : Word) : ', ArrayType, '; begin');
-                  writeln(Pas, Tab, 'Result := F', Name, '[I];');
-                  writeln(Pas, 'end;'^M^J);
-                  writeln(Pas, 'procedure ', CName, '.SetF', Name, '(I : Word; Value : ', ArrayType, '); begin');
-                  writeln(Pas, Tab, 'F', Name, '[I] := Value;');
-                  writeln(Pas, Tab, 'AddJS(Value.JSName, JSName + ''.' + JSName + ''');');
-                end
-                else begin
+                if Typ <> 'ExtObjectList' then begin
                   writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                   writeln(Pas, Tab, 'F', Name, ' := Value;');
                   writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON([Value]));');
@@ -798,13 +758,13 @@ begin
           if Defaults then begin // write Init method
             writeln(Pas, 'procedure ', CName, '.Init; begin');
             writeln(Pas, Tab, 'inherited;');
-            for L := 0 to Properties.Count-1 do
-              with TProp(Properties.Objects[L]) do
+            for K := 0 to Properties.Count-1 do
+              with TProp(Properties.Objects[K]) do
                 if Default <> '' then writeln(Pas, Tab, 'F', Name, ' := ', Default, ';');
             writeln(Pas, 'end;'^M^J);
           end;
           for K := 0 to Methods.Count-1 do // Write methods
-            if WriteMethodSignature(TMethod(Methods.Objects[K]), Defaults, Name) then begin
+            if WriteMethodSignature(TMethod(Methods.Objects[K]), Name) then begin
               writeln(Pas, ' begin');
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
@@ -817,20 +777,13 @@ begin
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
-          DestructorBody := '';
-          for K := 0 to Properties.Count-1 do // Write SetLength Methods
-            with TProp(Properties.Objects[K]) do
-              if not Static and (pos(ArrayOf + 'Ext', Typ) = 1) then begin
-                writeln(Pas, 'procedure ', CName, '.SetLength', Name, '(NewLength : Word; OtherClass : TExtObjectClass); begin');
-                writeln(Pas, Tab, 'SetLength(ArrayOfExtObject(F', Name, '), IfOtherClass(OtherClass = nil, ',
-                  copy(Typ, length(ArrayOf)+1, length(Typ)), ', OtherClass), NewLength, ''', JSName,''')');
-                DestructorBody := DestructorBody + Tab + 'SetLength' + Name + '(0);'^M^J;
-                writeln(Pas, 'end;'^M^J);
-              end;
           if Arrays then begin // Write destructor
             writeln(Pas, 'destructor ', CName, '.Destroy; begin');
             writeln(Pas, Tab, 'inherited;');
-            write(Pas, DestructorBody);
+            for K := 0 to Properties.Count-1 do
+              with TProp(Properties.Objects[K]) do
+                if not Static and (Typ = 'ExtObjectList') then
+                  writeln(Pas, Tab, Name + '.Free;');
             writeln(Pas, 'end;'^M^J);
           end;
         end;
