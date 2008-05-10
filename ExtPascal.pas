@@ -36,7 +36,7 @@ type
     procedure CreateJSName;
   public
     constructor Create;
-    constructor AddTo(var List : ExtObjectList);
+    constructor AddTo(List : ExtObjectList);
     constructor JSFunction(Params, Body : string);
     procedure AddJS(JS : string; pJSName : string = ''; Owner : string = '');
     property JSName : string read FJSName;
@@ -225,7 +225,7 @@ procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = '
   if JS <> '' then TExtThread(CurrentFCGIThread).AddJS(JS, IfThen(pJSName = '', JSName, pJSName), Owner);
 end;
 
-constructor ExtObject.AddTo(var List : ExtObjectList); begin
+constructor ExtObject.AddTo(List : ExtObjectList); begin
   if JSName = '' then begin
     Init;
     CreateJSName;

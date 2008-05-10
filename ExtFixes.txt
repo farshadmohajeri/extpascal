@@ -6,7 +6,7 @@ ExtComponent, margins, string, false,
 ExtComponent, closable, Boolean, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
-ExtGridGridPanel, columns, ArrayOfExtGridColumnModel, false,
+ExtGridGridPanel, columns, ExtObjectList, false,
 ExtDataField,, ExtData
 ExtDataField, name, string, false,
 ExtDataField, mapping, string, false,
@@ -16,9 +16,9 @@ ExtDataField, sortDir, string, false,
 ExtDataField, convert, _Function, false,
 ExtDataField, dateFormat, string, false,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
-ExtDataRecord, Create,, true, false, Data, ArrayOfExtDataField, false
-ExtFormFormPanel, buttons, ArrayOfExtButton, false,
-ExtFormFormPanel, items, ArrayOfExtComponent, false,
-ExtWindow, items, ArrayOfExtComponent, false,
-ExtPanel, items, ArrayOfExtComponent, false,
-ExtViewPort, items, ArrayOfExtComponent, false,
+ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
+ExtFormFormPanel, buttons, ExtObjectList, false,
+ExtFormFormPanel, items, ExtObjectList, false,
+ExtWindow, items, ExtObjectList, false,
+ExtPanel, items, ExtObjectList, false,
+ExtViewPort, items, ExtObjectList, false,
