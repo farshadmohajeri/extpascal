@@ -53,7 +53,7 @@ begin
     if I <> 0 then begin
       Result := FixType(copy(Ident, 1, I-1)); // alternative types: choose the first option
       if Ident[I] <> '/' then
-        if pos('Ext', Result) = 1 then
+        if (Result <> 'Integer') and (Result <> 'string') then
           Result := 'ExtObjectList'
         else
           Result := 'ArrayOf' + Result;
@@ -74,7 +74,7 @@ type
 
   TClass = class
     Name, JSName, Parent, UnitName : string;
-    Defaults, Arrays : boolean;
+    Singleton, Defaults, Arrays : boolean;
     Properties, Methods : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
@@ -188,7 +188,7 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
 end;
 
 procedure TClass.AddCreate; begin
-  if Methods.IndexOf('Create') = -1 then
+  if not Singleton and (Methods.IndexOf('Create') = -1) then
     Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
 end;
 
@@ -204,10 +204,22 @@ begin
   end;
 end;
 
+function IsUpper(S : string) : boolean;
+var
+  I : integer;
+begin
+  Result := true;
+  for I := 1 to length(S) do
+    if S[I] in ['a'..'z'] then begin
+      Result := false;
+      exit;
+    end;
+end;
+
 constructor TProp.Create(pName : string; pType : string; pStatic : boolean; pDefault : string = ''); begin
   Name    := FixIdent(pName);
   JSName  := pName;
-  Static  := pStatic;
+  Static  := pStatic or IsUpper(pName);
   Typ     := FixType(pType);
   Default := pDefault;
 end;
@@ -364,12 +376,20 @@ begin
           if Extract(['Extends:', '<a ext:cls="', '"'], Line, Matches) then
             CurClass.Parent := FixIdent(Matches[1])
           else
-            if (pos('<h2>Config Options</h2>', Line) + pos('<h2>Public Properties</h2>', Line)) <> 0 then State := InProperties;
+            if pos('This class is a singleton', Line) <> 0 then begin
+              CurClass.Singleton := true;
+              CurClass.Name := CurClass.Name + 'Singleton';
+            end
+            else
+              if (pos('<h2>Config Options</h2>', Line) + pos('<h2>Public Properties</h2>', Line)) <> 0 then State := InProperties;
       InProperties :
         if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
           PropName := Matches[0];
           I := LastDelimiter('.', PropName);
-          if I <> 0 then PropName := copy(PropName, I+1, length(PropName)); // Static
+          if (I <> 0) and (I <> length(PropName)) then
+            PropName := copy(PropName, I+1, length(PropName)) // Static
+          else
+            I := 0;
           if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non sweet to Pascal
             CurProp := TProp.Create(PropName, Matches[2], I <> 0);
             if (CurProp.Typ = 'ExtObjectList') and (I = 0) {Not Static} then begin
@@ -407,7 +427,7 @@ begin
             Return := FixType(Matches[2]);
             if Return = '' then begin
               MetName := 'Create';
-              if CurClass.Defaults or CurClass.Arrays then exit; // already have Create
+              if CurClass.Defaults or CurClass.Arrays or CurClass.Singleton then exit; // already have Create
             end;
             if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
             Params := Explode(',', Matches[1]);
@@ -570,8 +590,8 @@ function WriteOptional(Optional : boolean; Typ : string; Equal : string = ' = ')
     if Typ = 'Double'       then Result := '0.0'   else
     if Typ = 'TDateTime'    then Result := '0'     else
     if Typ = 'Region'       then Result := ''''''  else
-    if Typ = 'ExtLibRegion' then Result := ''''''  else
-    Result := 'nil';
+    if Typ = 'ExtLibRegion' then Result := ''''''
+    else                         Result := 'nil';
     Result := Equal + Result;
   end
   else
@@ -637,7 +657,11 @@ begin
     for I := 0 to Properties.Count-1 do // Write Set procedures
       with TProp(Properties.Objects[I]) do
         if not Static and (Typ <> 'ExtObjectList') then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
-    if Properties.Count > 0 then writeln(Pas, Tab, 'public');
+    if Defaults or Arrays then begin
+      writeln(Pas, Tab, 'protected');
+      writeln(Pas, Tab(2), 'procedure Init; override;');
+    end;
+    writeln(Pas, Tab, 'public');
     for I := 0 to Properties.Count-1 do // Write properties
       with TProp(Properties.Objects[I]) do begin
         if not Static then
@@ -650,7 +674,10 @@ begin
       with TProp(Properties.Objects[I]) do
         if Static then
           writeln(Pas, Tab(2), 'class function ', Name, ' : ', Typ, ';');
-    if Defaults or Arrays then writeln(Pas, Tab(2), 'procedure Init; override;');
+    if Singleton then
+      for I := 0 to Methods.Count-1 do
+        with TMethod(Methods.Objects[I]) do
+          if (Return + 'Singleton') = Cls.Name then Return := Return + 'Singleton';
     for I := 0 to Methods.Count-1 do // Write methods
       WriteMethodSignature(TMethod(Methods.Objects[I]));
     if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
@@ -707,6 +734,44 @@ function SortByInheritLevel(List : TStringList; I, J : integer) : integer; begin
   Result := TClass(List.Objects[I]).InheritLevel - TClass(List.Objects[J]).InheritLevel
 end;
 
+procedure DeclareSingletons(pUnit : TUnit);
+var
+  I : integer;
+  HasSingleton : boolean;
+begin
+  HasSingleton := false;
+  with pUnit do
+    for I := 0 to Classes.Count-1 do
+      with TClass(Classes.Objects[I]) do begin
+        if Singleton then begin
+          if not HasSingleton then begin
+            writeln(Pas, 'var');
+            HasSingleton := true
+          end;
+          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' : ', Name, ';');
+        end;
+      end;
+  if HasSingleton then writeln(Pas);
+end;
+
+procedure CreateSingletons(pUnit : TUnit);
+var
+  I : integer;
+  HasSingleton : boolean;
+begin
+  HasSingleton := false;
+  with pUnit do
+    for I := 0 to Classes.Count-1 do
+      with TClass(Classes.Objects[I]) do
+        if Singleton then begin
+          if not HasSingleton then begin
+            writeln(Pas, 'begin');
+            HasSingleton := true
+          end;
+          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' := ', Name, '.CreateSingleton(''', JSName, ''');');
+        end;
+end;
+
 procedure WriteUnits;
 var
   I, J, K : integer;
@@ -724,10 +789,12 @@ begin
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
-        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtObject;'^M^J, Tab, 'ExtMenuCheckItem = ExtComponent;');
+        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtObject;'^M^J,
+          Tab, 'ExtMenuCheckItem = ExtComponent;'^M^J, Tab, 'ExtDdDragSource = ExtObject;'^M^J, Tab, 'ExtDdDD = ExtObject;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
+      DeclareSingletons(TUnit(Units.Objects[I]));
       writeln(Pas, 'implementation'^M^J);
       for J := 0 to Classes.Count-1 do
         with TClass(Classes.Objects[J]) do begin
@@ -747,9 +814,13 @@ begin
           for K := 0 to Properties.Count-1 do // Write class properties implementation
             with TProp(Properties.Objects[K]) do
               if Static then begin
-                writeln(Pas, 'class function ', CName, '.', Name, ' : ', Typ, '; begin');
-                //writeln(Pas, Tab, 'AddJS(''', CName + '.' + Name + '({});'');');
-                writeln(Pas, Tab, 'Result', WriteOptional(true, Typ, ' := '));
+                writeln(Pas, 'class function ', CName, '.', Name, ' : ', Typ, ';');
+                writeln(Pas, 'const');
+                writeln(Pas, Tab, 'l', Name, ' : ', Typ, WriteOptional(true, Typ, ' = '), ';');
+                writeln(Pas, 'begin');
+                if WriteOptional(true, Typ, '') = 'nil' then
+                  writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''', CJSName, '.', JSName, ''');');
+                writeln(Pas, Tab, 'Result := l', Name);
                 writeln(Pas, 'end;'^M^J);
               end;
           if Defaults or Arrays then begin // write Init method
@@ -774,7 +845,11 @@ begin
                 end
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'AddJS(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
-                  if Return <> 'Void' then writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
+                  if Return <> 'Void' then
+                    if (Return = CName) and (WriteOptional(true, Return, '') = 'nil') then
+                      writeln(Pas, Tab, 'Result := Self')
+                    else
+                      writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
@@ -788,6 +863,7 @@ begin
             writeln(Pas, 'end;'^M^J);
           end;
         end;
+      CreateSingletons(TUnit(Units.Objects[I]));
       write(Pas, 'end.');
       close(Pas);
     end;
