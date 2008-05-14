@@ -8,8 +8,11 @@ uses
 type
   TExtThread = class(TFCGIThread)
   private
+    Style : string;
     Sequence : cardinal;
     procedure RelocateVar(JS, JSName, Owner: string; I: integer);
+    procedure RemoveJS(JS : string);
+    function GetStyle: string;
   protected
     procedure BeforeHandleRequest; override;
     procedure AfterHandleRequest; override;
@@ -17,6 +20,7 @@ type
   public
     LongJSNames : boolean;
     procedure AddJS(JS : string; JSName : string = ''; Owner : string = '');
+    procedure SetStyle(pStyle : string = '');
   end;
 
   ArrayOfString  = array of string;
@@ -28,19 +32,22 @@ type
   private
     FJSName : string;
   protected
+    JSCommand : string;
     procedure CreateVar(JS : string);
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ExtObjectList) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     procedure CreateJSName;
+  protected
+    procedure Init; virtual;
   public
     constructor Create;
+    constructor CreateSingleton(pJSName : string);
     constructor AddTo(List : ExtObjectList);
     constructor JSFunction(Params, Body : string);
     procedure AddJS(JS : string; pJSName : string = ''; Owner : string = '');
     property JSName : string read FJSName;
-    procedure Init; virtual;
   end;
 
   ExtObjectList = class
@@ -51,6 +58,7 @@ type
     function GetFObjects(I: integer): ExtObject;
   public
     property Objects[I : integer] : ExtObject read GetFObjects; default;
+    constructor CreateSingleton(JSName: string);
     constructor Create(pOwner : ExtObject; pAttribute : string);
     destructor Destroy; override;
     procedure Add(Obj : ExtObject);
@@ -67,6 +75,7 @@ type
   NativeMenu = ExtObject;
   el = type string; // doc fault
   Event = class(ExtObject) end;
+  EventObject = Event;
   HTMLNode = ExtObject;
   _Constructor = class(ExtObject) end;
   _Class = class(ExtObject) end;
@@ -117,6 +126,28 @@ begin
   end;
 end;
 
+procedure TExtThread.RemoveJS(JS: string);
+var
+  I : integer;
+begin
+  I := pos(JS, Response);
+  if I <> 0 then delete(Response, I, length(JS))
+end;
+
+procedure TExtThread.SetStyle(pStyle: string); begin
+  if pStyle = '' then
+    Style := ''
+  else
+    Style := Style + ' ' + pStyle
+end;
+
+function TExtThread.GetStyle : string; begin
+  if Style = '' then
+    Result := ''
+  else
+    Result := '<style>' + Style + '</style>';
+end;
+
 // Self-translating
 procedure TExtThread.AddJS(JS : string; JSName : string = ''; Owner : string = '');
 var
@@ -127,7 +158,7 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then I := pos('/**/', Response);
-    if not(Response[I-1] in ['{', '[']) then JS := ',' + JS;
+    if not(Response[I-1] in ['{', '[', '(']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
   if JSName <> '' then RelocateVar(JS, JSName, Owner, I);
@@ -135,10 +166,10 @@ end;
 
 // Set ExtJS libraries and theme
 procedure TExtThread.BeforeHandleRequest; begin
-  Response := '<html><title>' + Application.Title + '</title>' +
+  Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
     '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
     '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
-    '<script src=/ext-2.1/ext-all.js></script>'  +
+    '<script src=/ext-2.1/ext-all.js></script><GetStyle>' +
     '<script>Ext.onReady(function(){/**/});</script>' +
     '<body><div id=content></div></body></html>';
 end;
@@ -154,6 +185,7 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
+  Response := AnsiReplaceText(Response, '<GetStyle>', GetStyle);
 end;
 
 function TExtThread.GetSequence: string; begin
@@ -167,6 +199,10 @@ constructor ExtObjectList.Create(pOwner : ExtObject; pAttribute : string); begin
   Attribute := pAttribute;
   Owner     := pOwner;
   Mark      := TExtThread(CurrentFCGIThread).GetSequence;
+end;
+
+constructor ExtObjectList.CreateSingleton(JSName : string); begin
+  Attribute := JSName;
 end;
 
 destructor ExtObjectList.Destroy;
@@ -208,6 +244,11 @@ procedure ExtObject.CreateJSName; begin
       FJSName := 'O' + GetSequence;
 end;
 
+constructor ExtObject.CreateSingleton(pJSName : string); begin
+  Init;
+  FJSName := pJSName;
+end;
+
 procedure ExtObject.CreateVar(JS : string); begin
   CreateJSName;
   if pos('{}', JS) <> 0 then
@@ -222,7 +263,15 @@ constructor ExtObject.Create; begin
 end;
 
 procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = ''); begin
-  if JS <> '' then TExtThread(CurrentFCGIThread).AddJS(JS, IfThen(pJSName = '', JSName, pJSName), Owner);
+  if JS <> '' then begin
+    if JS[length(JS)] = ';' then begin
+      JSCommand := '/*' + TExtThread(CurrentFCGIThread).GetSequence + '*/' + JS;
+      JS := JSCommand
+    end
+    else
+      JSCommand := '';
+    TExtThread(CurrentFCGIThread).AddJS(JS, IfThen(pJSName = '', JSName, pJSName), Owner);
+  end;
 end;
 
 constructor ExtObject.AddTo(List : ExtObjectList); begin
@@ -255,7 +304,12 @@ begin
             continue;
         vtObject:
           if VObject <> nil then
-            Result := Result + ExtObject(VObject).JSName
+            if ExtObject(VObject).JSCommand = '' then
+              Result := Result + ExtObject(VObject).JSName
+            else begin
+              Result := Result + 'function(){' + ExtObject(VObject).JSCommand + '}';
+              TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
+            end
           else
             continue;
         vtBoolean: Result := Result + IfThen(VBoolean, 'true', 'false');
@@ -273,6 +327,7 @@ begin
       end;
     if I < high(A) then Result := Result + ',';
   end;
+  if (Result <> '') and (Result[length(Result)] = ',') then delete(Result, length(Result), 1);
 end;
 
 function ExtObject.VarToJSON(Exts : ExtObjectList): string;
