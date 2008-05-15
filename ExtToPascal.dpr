@@ -51,7 +51,7 @@ begin
   else begin
     I := LastDelimiter('/[:', Ident);
     if I <> 0 then begin
-      Result := FixType(copy(Ident, 1, I-1)); // alternative types: choose the first option
+      Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
       if Ident[I] <> '/' then
         if (Result <> 'Integer') and (Result <> 'string') then
           Result := 'ExtObjectList'
@@ -84,7 +84,7 @@ type
   TProp = class
     Name, JSName, Typ, Default : string;
     Static : boolean;
-    constructor Create(pName : string; pType : string; pStatic : boolean; pDefault : string = '');
+    constructor Create(pName, pJSName, pType : string; pStatic : boolean; pDefault : string = '');
   end;
 
   TMethod = class
@@ -216,9 +216,9 @@ begin
     end;
 end;
 
-constructor TProp.Create(pName : string; pType : string; pStatic : boolean; pDefault : string = ''); begin
+constructor TProp.Create(pName, pJSName, pType : string; pStatic : boolean; pDefault : string = ''); begin
   Name    := FixIdent(pName);
-  JSName  := pName;
+  JSName  := pJSName;
   Static  := pStatic or IsUpper(pName);
   Typ     := FixType(pType);
   Default := pDefault;
@@ -233,10 +233,10 @@ end;
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
   Name     := FixIdent(pName);
   JSName   := pName;
-  Return   := pReturn;
   Params   := pParams;
   Static   := pStatic;
   Overload := pOverload;
+  if pReturn <> '' then Return := '_Function'; 
 end;
 
 constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
@@ -245,9 +245,9 @@ var
 begin
   Name     := pName;
   JSName   := pJSName;
-  Return   := pReturn;
   Params   := pParams;
   Overload := pOverload;
+  if pReturn <> '' then Return := '_Function';
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
   Static := I <> 0;
@@ -333,14 +333,16 @@ var
 
 procedure LoadElements(Line : string);
 const
-  CurClass : TClass  = nil;
-  CurProp  : TProp   = nil;
-  CurMethod: TMethod = nil;
-  PropName : string  = '';
-  MetName  : string  = '';
+  CurClass  : TClass      = nil;
+  CurProp   : TProp       = nil;
+  CurMethod : TMethod     = nil;
+  PropName  : string      = '';
+  MetName   : string      = '';
+  PropTypes : TStringList = nil;
 var
   PackName, Arg, Return, JSName : string;
   Matches, Params, Args : TStringList;
+  Static : boolean;
   Package : TUnit;
   I : integer;
 begin
@@ -386,17 +388,21 @@ begin
         if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
           PropName := Matches[0];
           I := LastDelimiter('.', PropName);
-          if (I <> 0) and (I <> length(PropName)) then
-            PropName := copy(PropName, I+1, length(PropName)) // Static
+          if (I <> 0) and (I <> length(PropName)) then begin
+            PropName := copy(PropName, I+1, length(PropName));
+            Static := true;
+          end
           else
-            I := 0;
+            Static := false;
           if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non sweet to Pascal
-            CurProp := TProp.Create(PropName, Matches[2], I <> 0);
-            if (CurProp.Typ = 'ExtObjectList') and (I = 0) {Not Static} then begin
-              CurClass.Arrays := true;
-              CurClass.AddCreate;
-            end;
-            CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+            PropTypes := Explode('/', Matches[2]);
+            for I := 0 to PropTypes.Count-1 do
+              if I = 0 then begin
+                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static);
+                CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+              end
+              else
+                CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static));
           end;
         end
         else
@@ -408,13 +414,24 @@ begin
             end;
           end
           else
-            if (PropName <> 'config') and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
+            if (PropTypes <> nil) and (PropName <> 'config') and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
               if Matches[0][1] = '<' then
-                with CurClass.Properties do Delete(IndexOf(FixIdent(PropName))); // delete property inherited
+                with CurClass.Properties do
+                  for I := 0 to PropTypes.Count-1 do
+                    Delete(IndexOf(FixIdent(PropName + IfThen(I = 0, '', PropTypes[I])))); // delete inherited properties
+              FreeAndNil(PropTypes);
             end
             else
-              if pos('<h2>Public Methods</h2>', Line) <> 0 then
+              if pos('<h2>Public Methods</h2>', Line) <> 0 then begin
+                for I := 0 to CurClass.Properties.Count-1 do
+                  with TProp(CurClass.Properties.Objects[I]) do
+                    if (Typ = 'ExtObjectList') and not Static then begin
+                      CurClass.Arrays := true;
+                      CurClass.AddCreate;
+                      break;
+                    end;
                 State := InMethods
+              end
               else
                 if pos('<static>', lowercase(Line)) <> 0 then CurProp.Static := true;
       InMethods :
@@ -449,7 +466,7 @@ begin
                   end;
                 if Matches[1] <> 'config' then begin// config object are deleted, sugar coding non pratical in Pascal
                   Matches[1] := Unique(FixIdent(Matches[1]), Args);
-                  Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], (Return = '') or
+                  Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], 
                     ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'ExtObjecList'))));
                 end;
               end;
@@ -534,7 +551,7 @@ begin
           if Fields.Count = 5 then begin // props
             J := Properties.IndexOf(Fields[1]);
             if J = -1 then // Add
-              Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
+              Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
             else // Update
               with TProp(Properties.Objects[J]) do begin
                 Typ := Fields[2];
@@ -846,10 +863,7 @@ begin
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'AddJS(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
                   if Return <> 'Void' then
-                    if (Return = CName) and (WriteOptional(true, Return, '') = 'nil') then
-                      writeln(Pas, Tab, 'Result := Self')
-                    else
-                      writeln(Pas, Tab, 'Result', WriteOptional(true, Return, ' := '));
+                    writeln(Pas, Tab, 'Result := _Function(Self)')
                 end;
               writeln(Pas, 'end;'^M^J);
             end;

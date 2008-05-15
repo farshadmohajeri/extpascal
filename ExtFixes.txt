@@ -4,6 +4,7 @@ ExtComponent, collapseMode, string, false,
 ExtComponent, minWidth, Integer, false,
 ExtComponent, margins, string, false,
 ExtComponent, closable, Boolean, false,
+ExtComponent, anchor, string, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
 ExtGridGridPanel, columns, ExtObjectList, false,

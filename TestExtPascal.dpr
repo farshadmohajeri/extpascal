@@ -19,34 +19,33 @@ var
 begin
   Window := ExtWindow.Create;
   with Window do begin
-    Title := 'Hello Dialog';
+    Title  := 'Hello Dialog';
     Layout := 'fit';
-    Width := 500;
+    Plain  := true;
+    Width  := 500;
     Height := 300;
     CloseAction := 'hide';
-    Plain := true;
     with ExtTabPanel.AddTo(Items) do begin
-      ActiveTab := 'tab1';
+      ActiveTabNumber := 0;
       with ExtPanel.AddTo(Items) do begin
-        Id := 'tab1';
         Title := 'Hello World 1';
-        Html := 'Hello...';
+        Html  := 'Hello...';
       end;
       with ExtPanel.AddTo(Items) do begin
         Title := 'Hello World 2';
-        Html := '...World';
+        Html  := '...World';
       end;
     end;
     with ExtButton.AddTo(Buttons) do begin
-      Text := 'Submit';
+      Text     := 'Submit';
       Disabled := true;
     end;
     with ExtButton.AddTo(Buttons) do begin
-      Text := 'Close';
-      Handler := _Function.JSFunction('', Window.JSName + '.hide()');
+      Text    := 'Close';
+      Handler := Window.Close;
     end;
     Show;
-    free;
+    Free;
   end;
 end;
 
@@ -63,21 +62,22 @@ var
 begin
   SetStyle('img:hover{border:1px solid blue}');
   with ExtPanel.Create do begin
-    RenderTo := 'content';
-    Title := 'ExtPascal Samples';
+    Title       := 'ExtPascal Samples';
+    RenderTo    := 'content';
+    Width       := 400;
+    floating    := true;
     Collapsible := true;
-    Width := 400;
-    floating := true;
+    SetPosition(300, 50);
     for I := 0 to high(Examples) do
       with Examples[I], ExtPanel.AddTo(Items) do begin
         Title := Name;
-        Collapsible := true;
         Frame := true;
+        Collapsible := true;
         //AddJS(JSName + '.on("click", "window.open();");');
-        html := '<center><a href=/extpascal/testextpascal.exe/' + Proc + ' target=_blank>'+
+        Html := '<center><a href=/extpascal/testextpascal.exe/' + Proc + ' target=_blank>'+
           '<img src=/ext-2.1/examples/shared/screens/' + Gif + '.gif /></a></center>';
       end;
-    SetPosition(300, 50);
+    Free;
   end;
 (*
     var catalog = [{
@@ -365,28 +365,28 @@ end;
 
 procedure TSamples.MessageBoxes; begin
   with ExtPanel.Create do begin
+    Title    := 'Message Boxes';
+    Width    := 300;
     RenderTo := 'content';
-    Title := 'Message Boxes';
-    Width := 300;
     Floating := true;
     SetPosition(300, 50);
     with ExtButton.AddTo(Buttons) do begin
-      Text := 'Confirm Message';
-      //handler := nil; // dá erro
-      Handler := _Function(ExtMessageBox.Confirm('Confirm', 'Are you sure?'));
+      Text    := 'Confirm Message';
+      Handler := ExtMessageBox.Confirm('Confirm', 'Are you sure?');
     end;
     with ExtButton.AddTo(Buttons) do begin
-      Text := 'Prompt Dialog';
-      Handler := _Function(ExtMessageBox.Prompt('Name', 'Please enter your name:'));
+      Text    := 'Prompt Dialog';
+      Handler := ExtMessageBox.Prompt('Name', 'Please enter your name:');
     end;
     with ExtButton.AddTo(Buttons) do begin
-      Text := 'Alert Dialog';
-      Handler := _Function(ExtMessageBox.Alert('Status', 'Changes saved succesfully'));
+      Text    := 'Alert Dialog';
+      Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully');
     end;
+    Free;
   end;
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.7.1', TSamples);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.1', TSamples);
   Application.Run;
 end.
