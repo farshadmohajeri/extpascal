@@ -311,7 +311,10 @@ begin
               TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
             end
           else
-            continue;
+            if Result = '' then
+              Result := 'null'
+            else
+              continue;
         vtBoolean: Result := Result + IfThen(VBoolean, 'true', 'false');
         vtString:
           if VString^ <> '' then
