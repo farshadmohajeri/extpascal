@@ -440,8 +440,7 @@ begin
             JSName  := Matches[0];
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            if pos('Init', MetName) = 1 then exit; // delete init functions, usualy private
-            Return := FixType(Matches[2]);
+            Return  := FixType(Matches[2]);
             if Return = '' then begin
               MetName := 'Create';
               if CurClass.Defaults or CurClass.Arrays or CurClass.Singleton then exit; // already have Create
@@ -464,11 +463,9 @@ begin
                     Matches[1] := Matches[0];
                     Matches[0] := Arg;
                   end;
-                if Matches[1] <> 'config' then begin// config object are deleted, sugar coding non pratical in Pascal
                   Matches[1] := Unique(FixIdent(Matches[1]), Args);
-                  Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], 
+                  Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], (Matches[1] = 'config') or
                     ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'ExtObjecList'))));
-                end;
               end;
             Params.Free;
             CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
@@ -555,7 +552,7 @@ begin
             else // Update
               with TProp(Properties.Objects[J]) do begin
                 Typ := Fields[2];
-                Static := lowercase(Fields[3]) = 't';
+                Static := lowercase(Fields[3]) = 'true';
                 Default := Fields[4]
               end;
           end
@@ -676,7 +673,7 @@ begin
         if not Static and (Typ <> 'ExtObjectList') then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
     if Defaults or Arrays then begin
       writeln(Pas, Tab, 'protected');
-      writeln(Pas, Tab(2), 'procedure Init; override;');
+      writeln(Pas, Tab(2), 'procedure InitDefaults; override;');
     end;
     writeln(Pas, Tab, 'public');
     for I := 0 to Properties.Count-1 do // Write properties
@@ -831,25 +828,31 @@ begin
           for K := 0 to Properties.Count-1 do // Write class properties implementation
             with TProp(Properties.Objects[K]) do
               if Static then begin
-                writeln(Pas, 'class function ', CName, '.', Name, ' : ', Typ, ';');
-                writeln(Pas, 'const');
-                writeln(Pas, Tab, 'l', Name, ' : ', Typ, WriteOptional(true, Typ, ' = '), ';');
-                writeln(Pas, 'begin');
-                if WriteOptional(true, Typ, '') = 'nil' then
+                write(Pas, 'class function ', CName, '.', Name, ' : ', Typ, ';');
+                if WriteOptional(true, Typ, '') = 'nil' then begin
+                  writeln(Pas, ^M^J'const');
+                  writeln(Pas, Tab, 'l', Name, ' : ', Typ, ' = nil;');
+                  writeln(Pas, 'begin');
                   writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''', CJSName, '.', JSName, ''');');
-                writeln(Pas, Tab, 'Result := l', Name);
+                  writeln(Pas, Tab, 'Result := l', Name);
+                end
+                else begin
+                  writeln(Pas, ' begin');
+                  writeln(Pas, Tab, 'Result := ', IfThen(Default <> '', Default, WriteOptional(true, Typ, '')));
+                end;
                 writeln(Pas, 'end;'^M^J);
               end;
           if Defaults or Arrays then begin // write Init method
-            writeln(Pas, 'procedure ', CName, '.Init; begin');
+            writeln(Pas, 'procedure ', CName, '.InitDefaults; begin');
             writeln(Pas, Tab, 'inherited;');
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
-                if Default <> '' then
-                  writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
-                else
-                  if not Static and (Typ = 'ExtObjectList') then
-                    writeln(Pas, Tab, 'F', Name, ' := ExtObjectList.Create(Self, ''', JSName, ''');');
+                if not Static then
+                  if Default <> '' then
+                    writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
+                  else
+                    if Typ = 'ExtObjectList' then
+                      writeln(Pas, Tab, 'F', Name, ' := ExtObjectList.Create(Self, ''', JSName, ''');');
             writeln(Pas, 'end;'^M^J);
           end;
           for K := 0 to Methods.Count-1 do // Write methods
@@ -857,7 +860,7 @@ begin
               writeln(Pas, ' begin');
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
-                  writeln(Pas, Tab, 'Init;');
+                  writeln(Pas, Tab, 'InitDefaults;');
                   writeln(Pas, Tab, 'CreateVar(''', CJSName, ParamsToJSON(Params), ''')');
                 end
                 else begin // Write class and instance methods

@@ -23,3 +23,38 @@ ExtFormFormPanel, items, ExtObjectList, false,
 ExtWindow, items, ExtObjectList, false,
 ExtPanel, items, ExtObjectList, false,
 ExtViewPort, items, ExtObjectList, false,
+ExtShowConfig,, Ext
+ExtShowConfig, animEl, string, false,
+ExtShowConfig, buttons, ExtObject, false,
+ExtShowConfig, closable, Boolean, false, true
+ExtShowConfig, cls, string, false,
+ExtShowConfig, defaultTextHeight, Integer, false, 75
+ExtShowConfig, fn, _Function, false,
+ExtShowConfig, scope, ExtObject, false,
+ExtShowConfig, icon, string, false,
+ExtShowConfig, iconCls, string, false,
+ExtShowConfig, maxWidth, Integer, false, 600
+ExtShowConfig, minWidth, Integer, false, 100
+ExtShowConfig, modal, Boolean, false, true
+ExtShowConfig, msg, string, false,
+ExtShowConfig, multiline, Boolean, false,
+ExtShowConfig, progress, Boolean, false,
+ExtShowConfig, progressText, string, false,
+ExtShowConfig, prompt, Boolean, false,
+ExtShowConfig, proxyDrag, Boolean, false,
+ExtShowConfig, title, string, false,
+ExtShowConfig, value, string, false,
+ExtShowConfig, wait, Boolean, false,
+ExtShowConfig, waitConfig, ExtProgressWaitConfig, false,
+ExtShowConfig, width, Integer, false,
+ExtMessageBoxSingleton, ERROR, string, true, 'ext-mb-error'
+ExtMessageBoxSingleton, INFO, string, true, 'ext-mb-info'
+ExtMessageBoxSingleton, QUESTION, string, true, 'ext-mb-question'
+ExtMessageBoxSingleton, WARNING, string, true, 'ext-mb-warning'
+ExtProgressWaitConfig,, Ext
+ExtProgressWaitConfig, duration, Integer, false,
+ExtProgressWaitConfig, interval, Integer, false, 1000
+ExtProgressWaitConfig, increment, Integer, false, 10
+ExtProgressWaitConfig, fn, _Function, false,
+ExtProgressWaitConfig, scope, ExtObject, false,
+
