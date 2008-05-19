@@ -32,8 +32,8 @@ type
     FResponseHeader : string;
     FRequestHeader, FQuery, FCookie : TStringList;
     FLastAccess : TDateTime;
-    function URLDecode(Encoded: string): string;
-    function URLEncode(Decoded: string): string;
+    class function URLDecode(Encoded: string): string;
+    class function URLEncode(Decoded: string): string;
     procedure AddParam(var S: string; Param: array of string);
     procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
     procedure ReadBeginRequest(var FCGIHeader; Content : string);
@@ -255,7 +255,7 @@ begin
   end;
 end;
 
-function TFCGIThread.URLDecode(Encoded : string) : string;
+class function TFCGIThread.URLDecode(Encoded : string) : string;
 var
   I : integer;
 begin
@@ -268,7 +268,7 @@ begin
   end;
 end;
 
-function TFCGIThread.URLEncode(Decoded: string): string;
+class function TFCGIThread.URLEncode(Decoded: string): string;
 const
   Allowed = ['A'..'Z','a'..'z', '*', '@', '.', '_', '-', '0'..'9', '$', '!', '''', '(', ')'];
 var

@@ -8,7 +8,7 @@ uses
 type
   TExtThread = class(TFCGIThread)
   private
-    Style : string;
+    Style, FLanguage : string;
     Sequence : cardinal;
     procedure RelocateVar(JS, JSName, Owner: string; I: integer);
     procedure RemoveJS(JS : string);
@@ -19,6 +19,8 @@ type
     function GetSequence : string;
   public
     LongJSNames : boolean;
+    Theme : string;
+    property Language : string read FLanguage;
     procedure AddJS(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
   end;
@@ -40,12 +42,14 @@ type
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     procedure CreateJSName;
   protected
-    procedure Init; virtual;
+    procedure InitDefaults; virtual;
   public
     constructor Create;
     constructor CreateSingleton(pJSName : string);
     constructor AddTo(List : ExtObjectList);
     constructor JSFunction(Params, Body : string);
+    function Ajax(Method : string; Params: string = '') : ExtObject;
+    function Config(Attributes : string) : ExtObject;
     procedure AddJS(JS : string; pJSName : string = ''; Owner : string = '');
     property JSName : string read FJSName;
   end;
@@ -79,6 +83,7 @@ type
   HTMLNode = ExtObject;
   _Constructor = class(ExtObject) end;
   _Class = class(ExtObject) end;
+  _Function = class(ExtObject) end;
   ExtLibRegion = Region; //doc fault
   visMode = Integer; // doc fault
   The = ExtObject; // doc fault
@@ -111,7 +116,7 @@ var
   VarName, VarBody : string;
   J, K : integer;
 begin
-  J := pos(':', JS);
+  J := LastDelimiter(':,', JS);
   if J <> 0 then
     VarName := copy(JS, J+1, length(JS))
   else
@@ -158,23 +163,39 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then I := pos('/**/', Response);
-    if not(Response[I-1] in ['{', '[', '(']) then JS := ',' + JS;
+    if ((I-1) > 0) and  not(Response[I-1] in ['{', '[', '(']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
   if JSName <> '' then RelocateVar(JS, JSName, Owner, I);
 end;
 
-// Set ExtJS libraries and theme
-procedure TExtThread.BeforeHandleRequest; begin
-  Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
-    '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
-    '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
-    '<script src=/ext-2.1/ext-all.js></script><GetStyle>' +
-    '<script>Ext.onReady(function(){/**/});</script>' +
-    '<body><div id=content></div></body></html>';
+// Set Title, charset, language, ExtJS libraries
+procedure TExtThread.BeforeHandleRequest;
+var
+  I : integer;
+begin
+  if Query['Ajax'] = '1' then
+    Response := '/**/'
+  else begin
+    FLanguage := RequestHeader['HTTP_ACCEPT_LANGUAGE'];
+    I := LastDelimiter('-', FLanguage);
+    if I <> 0 then begin
+      FLanguage := copy(FLanguage, I-2, 2) + '_' + Uppercase(copy(FLanguage, I+1, 2));
+      if not FileExists(RequestHeader['DOCUMENT_ROOT'] + '/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js') then
+        FLanguage := copy(FLanguage, 1, 2)
+    end;
+    Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
+      '<meta http-equiv="Content-Type" content="charset=utf-8">' +
+      '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
+      '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
+      '<script src=/ext-2.1/ext-all.js></script><GetStyle>' +
+      IfThen(FLanguage = 'en', '', '<script src=/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js></script>') +
+      '<script>Ext.onReady(function(){function AjaxSuccess(response, options){eval(response.responseText);};/**/});</script>' +
+      '<body><div id=content></div></body></html>';
+  end;
 end;
 
-// Extract Comments
+// Extract Comments, set style and theme
 procedure TExtThread.AfterHandleRequest;
 var
   I, J : integer;
@@ -185,6 +206,8 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
+  if Theme <> '' then
+    insert('<link rel=stylesheet href=/ext-2.1/resources/css/xtheme-' + Theme + '.css />', Response, pos('<GetStyle>', Response));
   Response := AnsiReplaceText(Response, '<GetStyle>', GetStyle);
 end;
 
@@ -215,7 +238,7 @@ end;
 
 procedure ExtObjectList.Add(Obj : ExtObject); begin
   if length(FObjects) = 0 then Owner.AddJS(Attribute + ':[/*' + Mark + '*/]', Owner.JSName);
-  System.SetLength(FObjects, length(FObjects) + 1);
+  SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then
     if Obj.Classname = 'ExtTabPanel' then // Generalize it if necessary
@@ -245,7 +268,7 @@ procedure ExtObject.CreateJSName; begin
 end;
 
 constructor ExtObject.CreateSingleton(pJSName : string); begin
-  Init;
+  InitDefaults;
   FJSName := pJSName;
 end;
 
@@ -258,13 +281,17 @@ procedure ExtObject.CreateVar(JS : string); begin
   AddJS('var ' + JSName + '=new ' + JS);
 end;
 
+function ExtObject.Config(Attributes: string) : ExtObject; begin
+  Result := Self;
+end;
+
 constructor ExtObject.Create; begin
   CreateVar('Object({});')
 end;
 
 procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = ''); begin
   if JS <> '' then begin
-    if JS[length(JS)] = ';' then begin
+    if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
       JSCommand := '/*' + TExtThread(CurrentFCGIThread).GetSequence + '*/' + JS;
       JS := JSCommand
     end
@@ -276,16 +303,23 @@ end;
 
 constructor ExtObject.AddTo(List : ExtObjectList); begin
   if JSName = '' then begin
-    Init;
+    InitDefaults;
     CreateJSName;
   end;
   List.Add(Self);
 end;
 
-procedure ExtObject.Init; begin end;
+procedure ExtObject.InitDefaults; begin end;
 
 constructor ExtObject.JSFunction(Params, Body: string); begin
   FJSName := 'function(' + Params + '){' + Body + '}'
+end;
+
+function ExtObject.Ajax(Method : string; Params: string = ''): ExtObject; begin
+  Result := Self;
+  if Params <> '' then Params := '&' + TExtThread.URLEncode(AnsiReplaceText(Params, '&', ','));
+  AddJS('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + Method +
+    '",params:"Ajax=1' + Params + '",success:AjaxSuccess});');
 end;
 
 function ExtObject.VarToJSON(A : array of const): string;
