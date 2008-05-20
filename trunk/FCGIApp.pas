@@ -42,6 +42,7 @@ type
     procedure NotFoundError; virtual;
     procedure BeforeHandleRequest; virtual;
     procedure AfterHandleRequest; virtual;
+    procedure OnError(Msg, Method, Params : string); virtual;
   public
     BrowserCache : boolean;
     Response, ContentType : string;
@@ -371,6 +372,10 @@ procedure TFCGIThread.NotFoundError; begin
   Response := 'Method not found'
 end;
 
+procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
+  Response := Msg
+end;
+
 function TFCGIThread.HandleRequest(pRequest : string) : string;
 type
   MethodCall = procedure of object;
@@ -391,7 +396,11 @@ begin
     if MethodCode <> nil then begin
       PageMethod.Code := MethodCode;
       PageMethod.Data := Self;
-      MethodCall(PageMethod); // Call published method
+      try
+        MethodCall(PageMethod); // Call published method
+      except
+        on E : Exception do OnError(E.Message, PathInfo, pRequest)
+      end;
     end
     else
       NotFoundError;

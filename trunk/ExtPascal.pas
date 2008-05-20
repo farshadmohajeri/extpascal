@@ -10,17 +10,20 @@ type
   private
     Style, FLanguage : string;
     Sequence : cardinal;
+    FIsAjax : boolean;
     procedure RelocateVar(JS, JSName, Owner: string; I: integer);
     procedure RemoveJS(JS : string);
     function GetStyle: string;
   protected
     procedure BeforeHandleRequest; override;
     procedure AfterHandleRequest; override;
+    procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
   public
     LongJSNames : boolean;
     Theme : string;
     property Language : string read FLanguage;
+    property IsAjax : boolean read FIsAjax;
     procedure AddJS(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
   end;
@@ -153,6 +156,12 @@ function TExtThread.GetStyle : string; begin
     Result := '<style>' + Style + '</style>';
 end;
 
+procedure TExtThread.OnError(Msg, Method, Params : string); begin
+  if pos('Access violation', Msg) <> 0 then
+    Msg := Msg + '<br/>Reloading this page (F5) perhaps fix this error.';
+  Response := 'Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><br/>Method: ' + Method + '<p>Params: ' + Params + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});';
+end;
+
 // Self-translating
 procedure TExtThread.AddJS(JS : string; JSName : string = ''; Owner : string = '');
 var
@@ -162,8 +171,11 @@ begin
     I := pos('/**/', Response)
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
-    if I = 0 then I := pos('/**/', Response);
-    if ((I-1) > 0) and  not(Response[I-1] in ['{', '[', '(']) then JS := ',' + JS;
+    if I = 0 then begin
+      if IsAjax then JS := JSName + '.' + AnsiReplaceText(JS, ':', '=') + ';';
+      I := pos('/**/', Response);
+    end;
+    if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
   if JSName <> '' then RelocateVar(JS, JSName, Owner, I);
@@ -174,7 +186,8 @@ procedure TExtThread.BeforeHandleRequest;
 var
   I : integer;
 begin
-  if Query['Ajax'] = '1' then
+  FIsAjax := Query['Ajax'] = '1';
+  if FIsAjax then
     Response := '/**/'
   else begin
     FLanguage := RequestHeader['HTTP_ACCEPT_LANGUAGE'];
@@ -190,8 +203,10 @@ begin
       '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
       '<script src=/ext-2.1/ext-all.js></script><GetStyle>' +
       IfThen(FLanguage = 'en', '', '<script src=/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js></script>') +
-      '<script>Ext.onReady(function(){function AjaxSuccess(response, options){eval(response.responseText);};/**/});</script>' +
-      '<body><div id=content></div></body></html>';
+      '<script>Ext.onReady(function(){' +
+      'function AjaxSuccess(response){/*Ext.Msg.alert("", response.responseText);*/eval(response.responseText);};' +
+      'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
+      '/**/});</script><body><div id=body></div></body></html>';
   end;
 end;
 
@@ -236,15 +251,27 @@ begin
   inherited;
 end;
 
-procedure ExtObjectList.Add(Obj : ExtObject); begin
+procedure ExtObjectList.Add(Obj : ExtObject);
+var
+  ListAdd : string;
+begin
   if length(FObjects) = 0 then Owner.AddJS(Attribute + ':[/*' + Mark + '*/]', Owner.JSName);
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
-  if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then
-    if Obj.Classname = 'ExtTabPanel' then // Generalize it if necessary
-      Obj.AddJS('new Ext.TabPanel({/*' + Obj.JSName + '*/})', Mark)
+  if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then begin
+    if TExtThread(CurrentFCGIThread).IsAjax then
+      ListAdd := 'var ' + OBJ.JSName + '=' + Owner.JSName + '.add(%s);'
     else
-      Obj.AddJS('{/*' + Obj.JSName + '*/}', Mark)
+      ListAdd := '%s';
+    if Obj.Classname = 'ExtTabPanel' then // Generalize it if necessary
+      ListAdd := Format(ListAdd, ['new Ext.TabPanel({/*' + Obj.JSName + '*/})'])
+    else
+    if Obj.Classname = 'ExtGridPropertyGrid' then // Generalize it if necessary
+      ListAdd := Format(ListAdd, ['new Ext.grid.PropertyGrid({/*' + Obj.JSName + '*/})'])
+    else
+      ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
+    Obj.AddJS(ListAdd, Mark);
+  end
   else
     Obj.AddJS(Obj.JSName, Mark, Owner.JSName)
 end;
@@ -317,9 +344,13 @@ end;
 
 function ExtObject.Ajax(Method : string; Params: string = ''): ExtObject; begin
   Result := Self;
-  if Params <> '' then Params := '&' + TExtThread.URLEncode(AnsiReplaceText(Params, '&', ','));
+  if Params <> '' then
+    if pos('&', Params) <> 0 then
+      Params := '&' + TExtThread.URLEncode(Params)
+    else
+      Params := '&' + TExtThread.URLEncode(AnsiReplaceText(Params, ',', '&'));
   AddJS('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + Method +
-    '",params:"Ajax=1' + Params + '",success:AjaxSuccess});');
+    '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
 
 function ExtObject.VarToJSON(A : array of const): string;
