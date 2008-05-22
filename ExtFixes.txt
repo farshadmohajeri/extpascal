@@ -5,6 +5,7 @@ ExtComponent, minWidth, Integer, false,
 ExtComponent, margins, string, false,
 ExtComponent, closable, Boolean, false,
 ExtComponent, anchor, string, false,
+ExtComponent, el, string, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
 ExtGridGridPanel, columns, ExtObjectList, false,
@@ -14,7 +15,7 @@ ExtDataField, mapping, string, false,
 ExtDataField, type, string, false,
 ExtDataField, sortTypes, string, false,
 ExtDataField, sortDir, string, false,
-ExtDataField, convert, _Function, false,
+ExtDataField, convert, ExtFunction, false,
 ExtDataField, dateFormat, string, false,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
@@ -29,7 +30,7 @@ ExtShowConfig, buttons, ExtObject, false,
 ExtShowConfig, closable, Boolean, false, true
 ExtShowConfig, cls, string, false,
 ExtShowConfig, defaultTextHeight, Integer, false, 75
-ExtShowConfig, fn, _Function, false,
+ExtShowConfig, fn, ExtFunction, false,
 ExtShowConfig, scope, ExtObject, false,
 ExtShowConfig, icon, string, false,
 ExtShowConfig, iconCls, string, false,
@@ -55,6 +56,6 @@ ExtProgressWaitConfig,, Ext
 ExtProgressWaitConfig, duration, Integer, false,
 ExtProgressWaitConfig, interval, Integer, false, 1000
 ExtProgressWaitConfig, increment, Integer, false, 10
-ExtProgressWaitConfig, fn, _Function, false,
+ExtProgressWaitConfig, fn, ExtFunction, false,
 ExtProgressWaitConfig, scope, ExtObject, false,
 

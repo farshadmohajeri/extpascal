@@ -40,14 +40,15 @@ begin
   T := LowerCase(Ident);
   if T = 'string'    then begin Result := 'string';           exit end else
   if T = 'number'    then begin Result := 'Integer';          exit end else
-  if T = 'boolean'   then begin Result := 'Boolean';          exit end else
   if T = 'object'    then begin Result := 'ExtObject';        exit end else
-  if T = 'date'      then begin Result := 'TDateTime';        exit end else
-  if T = 'float'     then begin Result := 'Double';           exit end else
+  if T = 'boolean'   then begin Result := 'Boolean';          exit end else
+  if T = 'function'  then begin Result := 'ExtFunction';      exit end else
   if T = 'mixed'     then begin Result := 'string';           exit end else
   if T = 'array'     then begin Result := 'ExtObjectList';    exit end else
-  if T = 'int'       then begin Result := 'Integer';          exit end else
-  if T = 'object...' then begin Result := 'ExtObjectList';    exit end
+  if T = 'object...' then begin Result := 'ExtObjectList';    exit end else
+  if T = 'date'      then begin Result := 'TDateTime';        exit end else
+  if T = 'float'     then begin Result := 'Double';           exit end else
+  if T = 'int'       then begin Result := 'Integer';          exit end 
   else begin
     I := LastDelimiter('/[:', Ident);
     if I <> 0 then begin
@@ -135,7 +136,7 @@ procedure TUnit.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
   const
-    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ExtObjectList.Void._Function.Event.HTMLElement.RegExp.';
+    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ExtObjectList.Void.ExtFunction.Event.HTMLElement.RegExp.';
   var
     T : string;
     I : integer;
@@ -236,7 +237,7 @@ constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStat
   Params   := pParams;
   Static   := pStatic;
   Overload := pOverload;
-  if pReturn <> '' then Return := '_Function'; 
+  if pReturn <> '' then Return := 'ExtFunction';
 end;
 
 constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
@@ -247,7 +248,7 @@ begin
   JSName   := pJSName;
   Params   := pParams;
   Overload := pOverload;
-  if pReturn <> '' then Return := '_Function';
+  if pReturn <> '' then Return := 'ExtFunction';
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
   Static := I <> 0;
@@ -866,7 +867,7 @@ begin
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'AddJS(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
                   if Return <> 'Void' then
-                    writeln(Pas, Tab, 'Result := _Function(Self)')
+                    writeln(Pas, Tab, 'Result := ExtFunction(Self)')
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
