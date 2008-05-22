@@ -41,16 +41,16 @@ begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';
     Width       := 400;
-    floating    := true;
+    Floating    := true;
     Collapsible := true;
-    SetPosition(300, 50);
+    SetPosition(300, 0);
     for I := 0 to high(Examples) do
       with Examples[I], ExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
         Collapsible := true;
-        Html := '<center><a href=/extpascal/testextpascal.exe/' + Proc + ' target=_blank>'+
-          '<img src=/ext-2.1/examples/shared/screens/' + Gif + '.gif /><p>' + Desc + '</a></center>';
+        Html := '<center><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=_blank>'+
+          '<img src=/ext-2.1/examples/shared/screens/' + Gif + '.gif /><br/>' + Desc + '</a></center>';
       end;
     Free;
   end;
@@ -124,22 +124,22 @@ begin
   SetStyle('.tabs{background-image:url(/ext-2.1/examples/desktop/images/tabs.gif) !important}');
   with ExtButton.Create do begin
     RenderTo := 'body';
-    Text := 'Add Tab';
-    IconCls := 'new-tab';
-    Handler := _Function(Ajax('AddTab'));
+    Text     := 'Add Tab';
+    IconCls  := 'new-tab';
+    Handler  := Ajax('AddTab');
   end;
   Tabs := ExtTabPanel.Create;
   with Tabs do begin
-    RenderTo := 'body';
+    RenderTo        := 'body';
     ActiveTabNumber := 0;
-    ResizeTabs := true; // turn on tab resizing
-    MinTabWidth:= 115;
-    TabWidth := 135;
-    EnableTabScroll :=true;
-    Width := 600;
-    Height := 250;
+    ResizeTabs      := true; // turn on tab resizing
+    MinTabWidth     := 115;
+    TabWidth        := 135;
+    EnableTabScroll := true;
+    Width           := 600;
+    Height          := 150;
     for I := 1 to 7 do AddTab;
-    // defaults: {autoScroll:true},
+    Defaults := JSObject('autoScroll:true');
     // plugins: new Ext.ux.TabCloseMenu()
   end;
 end;
@@ -181,10 +181,10 @@ begin
 end;
 
 procedure TSamples.BorderLayout; begin
-(*  SetStyle('html,body{font:normal 12px verdana;margin:0;padding:0;border:0 none;overflow:hidden;height:100%} ' +
+  SetStyle('html,body{font:normal 12px verdana;margin:0;padding:0;border:0 none;overflow:hidden;height:100%}' +
 	  'p{margin:5px}' +
-    '.settings{background-image:url(/ext-2.1/examples/shared/icons/fam/folder_wrench.png)}' +*)
-    SetStyle('.nav{background-image:url(/ext-2.1/examples/shared/icons/fam/folder_go.png)}');
+    '.settings{background-image:url(/ext-2.1/examples/shared/icons/fam/folder_wrench.png)}' +
+    '.nav{background-image:url(/ext-2.1/examples/shared/icons/fam/folder_go.png)}');
   with ExtViewport.Create do begin
     Layout := 'border';
     with ExtPanel.AddTo(Items) do begin
@@ -201,50 +201,50 @@ procedure TSamples.BorderLayout; begin
       //MinSize := 100;
       //MaxSize := 200;
       Collapsible := true;
-      Title := 'South';
+      Title   := 'South';
       Margins := '0 0 0 0';
     end;
     with ExtPanel.AddTo(Items) do begin
       Region := 'east';
 //      ContentEl := 'south';
-      Split := true;
+      Split  := true;
       Height := 100;
       //MinSize := 175;
       //MaxSize := 400;
       Collapsible := true;
-      Title := 'East Side';
+      Title   := 'East Side';
       Margins := '0 5 0 0';
-      Width := 225;
-      Layout := 'fit';
+      Width   := 225;
+      Layout  := 'fit';
       with ExtTabPanel.AddTo(Items) do begin
         Border := false;
         ActiveTabNumber := 1;
         TabPosition := 'bottom';
         with ExtPanel.AddTo(Items) do begin
-          Html := '<p>A TabPanel component can be a region.</p>';
+          Html  := '<p>A TabPanel component can be a region.</p>';
           Title := 'A Tab';
           AutoScroll := true;
         end;
         with ExtGridPropertyGrid.AddTo(Items) do begin
           Title := 'Property Grid';
           Closable := true;
-          AddJS('source:{"(name)": "Property Grid", grouping: false, autoFitColumns: true, productionQuality: false,' +
-            'created: new Date(Date.parse("10/15/2006")), tested: false, version: .01, borderWidth: 1}');
+          Source := JSObject('"(name)":"Property Grid",grouping:false,autoFitColumns:true,productionQuality:false,' +
+            'created:new Date(Date.parse("10/15/2006")),tested:false,version:.01,borderWidth:1');
         end;
       end;
     end;
     with ExtPanel.AddTo(Items) do begin
       Region := 'west';
-      Id := 'west-panel';
-      Split := true;
-      Width := 200;
+      Id     := 'west-panel';
+      Split  := true;
+      Width  := 200;
       //MinSize := 175;
       //MaxSize := 400;
       Collapsible := true;
-      Title := 'West';
+      Title   := 'West';
       Margins := '0 0 0 5';
-      Layout := 'accordion';
-      //layoutConfig:{animate:true},
+      Layout  := 'accordion';
+      LayoutConfig := JSObject('animate:true');
       with ExtPanel.AddTo(Items) do begin
 //        ContentEl := 'west';
         Title := 'Navigation';
@@ -264,8 +264,8 @@ procedure TSamples.BorderLayout; begin
       ActiveTabNumber := 0;
       with ExtPanel.AddTo(Items) do begin
 //        ContentEl := 'center1';
-        Title := 'Close Me';
-        Closable := true;
+        Title      := 'Close Me';
+        Closable   := true;
         AutoScroll := true
       end;
       with ExtPanel.AddTo(Items) do begin
@@ -274,6 +274,7 @@ procedure TSamples.BorderLayout; begin
         AutoScroll := true
       end;
     end;
+    Free;
   end;
 end;
 
@@ -319,7 +320,7 @@ begin
       ShowConfig := ExtShowConfig.Create;
       with ShowConfig do begin
         Title   := 'Save Changes?';
-        Msg     := 'You are closing a tab that has unsaved changes.<p>Would you like to save your changes?';
+        Msg     := 'You are closing a tab that has unsaved changes.<br/>Would you like to save your changes?';
         Icon    := ExtMessageBox.QUESTION;
         Buttons := ExtMessageBox.YESNOCANCEL;
         AnimEl  := Id;

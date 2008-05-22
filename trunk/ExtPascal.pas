@@ -22,6 +22,7 @@ type
   public
     LongJSNames : boolean;
     Theme : string;
+    ExtPath : string;
     property Language : string read FLanguage;
     property IsAjax : boolean read FIsAjax;
     procedure AddJS(JS : string; JSName : string = ''; Owner : string = '');
@@ -32,6 +33,7 @@ type
   ArrayOfInteger = array of Integer;
 
   ExtObjectList = class;
+  ExtFunction = class;
 
   ExtObject = class
   private
@@ -47,12 +49,14 @@ type
   protected
     procedure InitDefaults; virtual;
   public
-    constructor Create;
+    constructor Create(Owner : ExtObject = nil);
     constructor CreateSingleton(pJSName : string);
     constructor AddTo(List : ExtObjectList);
-    constructor JSFunction(Params, Body : string);
-    function Ajax(Method : string; Params: string = '') : ExtObject;
-    function Config(Attributes : string) : ExtObject;
+    function JSArray(JSON : string) : ExtObject;
+    function JSObject(JSON : string) : ExtObject;
+    function JSFunction(Params, Body : string) : ExtFunction; overload;
+    procedure JSFunction(Name, Params, Body : string); overload;
+    function Ajax(Method : string; Params: string = '') : ExtFunction;
     procedure AddJS(JS : string; pJSName : string = ''; Owner : string = '');
     property JSName : string read FJSName;
   end;
@@ -72,6 +76,7 @@ type
     function Count : integer;
   end;
 
+  ExtFunction = class(ExtObject) end;
   HTMLElement = class(ExtObject) end;
   StyleSheet = class(ExtObject) end;
   RegExp = class(ExtObject) end;
@@ -86,7 +91,6 @@ type
   HTMLNode = ExtObject;
   _Constructor = class(ExtObject) end;
   _Class = class(ExtObject) end;
-  _Function = class(ExtObject) end;
   ExtLibRegion = Region; //doc fault
   visMode = Integer; // doc fault
   The = ExtObject; // doc fault
@@ -157,9 +161,10 @@ function TExtThread.GetStyle : string; begin
 end;
 
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
-  if pos('Access violation', Msg) <> 0 then
-    Msg := Msg + '<br/>Reloading this page (F5) perhaps fix this error.';
-  Response := 'Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><br/>Method: ' + Method + '<p>Params: ' + Params + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});';
+  if IsAjax and (pos('Access violation', Msg) <> 0) then
+    Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
+  AddJS('Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><hr/>Method: ' + Method +
+    IfThen(Params = '', '', '<br/>Params: ' + Params) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
 end;
 
 // Self-translating
@@ -181,15 +186,11 @@ begin
   if JSName <> '' then RelocateVar(JS, JSName, Owner, I);
 end;
 
-// Set Title, charset, language, ExtJS libraries
 procedure TExtThread.BeforeHandleRequest;
 var
   I : integer;
 begin
-  FIsAjax := Query['Ajax'] = '1';
-  if FIsAjax then
-    Response := '/**/'
-  else begin
+  if FLanguage = '' then begin // Set language
     FLanguage := RequestHeader['HTTP_ACCEPT_LANGUAGE'];
     I := LastDelimiter('-', FLanguage);
     if I <> 0 then begin
@@ -197,33 +198,37 @@ begin
       if not FileExists(RequestHeader['DOCUMENT_ROOT'] + '/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js') then
         FLanguage := copy(FLanguage, 1, 2)
     end;
-    Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
-      '<meta http-equiv="Content-Type" content="charset=utf-8">' +
-      '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
-      '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
-      '<script src=/ext-2.1/ext-all.js></script><GetStyle>' +
-      IfThen(FLanguage = 'en', '', '<script src=/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js></script>') +
-      '<script>Ext.onReady(function(){' +
-      'function AjaxSuccess(response){/*Ext.Msg.alert("", response.responseText);*/eval(response.responseText);};' +
-      'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      '/**/});</script><body><div id=body></div></body></html>';
   end;
+  FIsAjax  := Query['Ajax'] = '1';
+  Response := '/**/'
 end;
 
-// Extract Comments, set style and theme
+// Extract Comments, set: HTML body, title, charset, ExtJS CSS, ExtJS libraries, ExtJS theme, ExtJS language, user styles, ExtJS invoke and Ajax response
 procedure TExtThread.AfterHandleRequest;
 var
   I, J : integer;
 begin
   I := pos('/*', Response);
-  while I <> 0 do begin
+  while I <> 0 do begin // Extract comments
     J := PosEx('*/', Response, I);
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
-  if Theme <> '' then
-    insert('<link rel=stylesheet href=/ext-2.1/resources/css/xtheme-' + Theme + '.css />', Response, pos('<GetStyle>', Response));
-  Response := AnsiReplaceText(Response, '<GetStyle>', GetStyle);
+  if not IsAjax then begin
+    Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
+      '<meta http-equiv="Content-Type" content="charset=utf-8">' +
+      '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
+      '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
+      '<script src=/ext-2.1/ext-all.js></script>' +
+      IfThen(Theme = '', '', '<link rel=stylesheet href=/ext-2.1/resources/css/xtheme-' + Theme + '.css />') +
+      IfThen(FLanguage = 'en', '', '<script src=/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js></script>') +
+      GetStyle +
+      '<script>Ext.onReady(function(){' +
+      'function AjaxSuccess(response){eval(response.responseText);};' +
+      'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
+      Response +
+      '});</script><body><div id=body></div></body></html>';
+  end;
 end;
 
 function TExtThread.GetSequence: string; begin
@@ -260,7 +265,7 @@ begin
   FObjects[high(FObjects)] := Obj;
   if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then begin
     if TExtThread(CurrentFCGIThread).IsAjax then
-      ListAdd := 'var ' + OBJ.JSName + '=' + Owner.JSName + '.add(%s);'
+      ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
     else
       ListAdd := '%s';
     if Obj.Classname = 'ExtTabPanel' then // Generalize it if necessary
@@ -308,12 +313,8 @@ procedure ExtObject.CreateVar(JS : string); begin
   AddJS('var ' + JSName + '=new ' + JS);
 end;
 
-function ExtObject.Config(Attributes: string) : ExtObject; begin
-  Result := Self;
-end;
-
-constructor ExtObject.Create; begin
-  CreateVar('Object({});')
+constructor ExtObject.Create(Owner : ExtObject = nil); begin
+  if Owner = nil then CreateVar('Object({});')
 end;
 
 procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = ''); begin
@@ -324,7 +325,8 @@ procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = '
     end
     else
       JSCommand := '';
-    TExtThread(CurrentFCGIThread).AddJS(JS, IfThen(pJSName = '', JSName, pJSName), Owner);
+    if pJSName = '' then pJSName := JSName;
+    TExtThread(CurrentFCGIThread).AddJS(JS, pJSName, Owner);
   end;
 end;
 
@@ -338,12 +340,27 @@ end;
 
 procedure ExtObject.InitDefaults; begin end;
 
-constructor ExtObject.JSFunction(Params, Body: string); begin
-  FJSName := 'function(' + Params + '){' + Body + '}'
+function ExtObject.JSArray(JSON: string): ExtObject; begin
+  Result := ExtObject.Create(Self);
+  Result.FJSName := '[' + JSON + ']';
 end;
 
-function ExtObject.Ajax(Method : string; Params: string = ''): ExtObject; begin
-  Result := Self;
+function ExtObject.JSObject(JSON: string): ExtObject; begin
+  Result := ExtObject.Create(Self);
+  Result.FJSName := '{' + JSON + '}';
+end;
+
+function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
+  Result := ExtFunction.Create(Self);
+  Result.FJSName := 'function(' + Params + '){' + Body + '}';
+end;
+
+procedure ExtObject.JSFunction(Name, Params, Body : string); begin
+  AddJS('function ' + Name + '(' + Params + '){' + Body + '};');
+end;
+
+function ExtObject.Ajax(Method : string; Params: string = ''): ExtFunction; begin
+  Result := ExtFunction(Self);
   if Params <> '' then
     if pos('&', Params) <> 0 then
       Params := '&' + TExtThread.URLEncode(Params)
