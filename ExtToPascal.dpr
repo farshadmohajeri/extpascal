@@ -671,7 +671,7 @@ begin
       end;
     for I := 0 to Properties.Count-1 do // Write Set procedures
       with TProp(Properties.Objects[I]) do
-        if not Static and (Typ <> 'ExtObjectList') then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
+        if not Static then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
     if Defaults or Arrays then begin
       writeln(Pas, Tab, 'protected');
       writeln(Pas, Tab(2), 'procedure InitDefaults; override;');
@@ -680,10 +680,7 @@ begin
     for I := 0 to Properties.Count-1 do // Write properties
       with TProp(Properties.Objects[I]) do begin
         if not Static then
-          if Typ = 'ExtObjectList' then
-            writeln(Pas, Tab(2), 'property ', Name, ' : ExtObjectList read F', Name, ';')
-          else
-            writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
+          writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
       end;
     for I := 0 to Properties.Count-1 do // Write class properties
       with TProp(Properties.Objects[I]) do
@@ -818,12 +815,10 @@ begin
           for K := 0 to Properties.Count-1 do // Write Set procedures implementation
             with TProp(Properties.Objects[K]) do begin
               if not Static then begin
-                if Typ <> 'ExtObjectList' then begin
-                  writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
-                  writeln(Pas, Tab, 'F', Name, ' := Value;');
-                  writeln(Pas, Tab, 'AddJS(''', JSName, ':'' + VarToJSON([Value]));');
-                  writeln(Pas, 'end;'^M^J);
-                end;
+                writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
+                writeln(Pas, Tab, 'F', Name, ' := Value;');
+                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON([Value]));');
+                writeln(Pas, 'end;'^M^J);
               end;
             end;
           for K := 0 to Properties.Count-1 do // Write class properties implementation
@@ -865,7 +860,7 @@ begin
                   writeln(Pas, Tab, 'CreateVar(''', CJSName, ParamsToJSON(Params), ''')');
                 end
                 else begin // Write class and instance methods
-                  writeln(Pas, Tab, 'AddJS(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
+                  writeln(Pas, Tab, 'JSCode(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
                   if Return <> 'Void' then
                     writeln(Pas, Tab, 'Result := ExtFunction(Self)')
                 end;
