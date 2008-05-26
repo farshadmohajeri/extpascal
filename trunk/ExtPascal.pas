@@ -5,12 +5,15 @@ interface
 uses
   Classes, FCGIApp;
 
+const
+  ExtPath = '/ext';
+
 type
   TExtThread = class(TFCGIThread)
   private
-    Style, FLanguage : string;
+    Style, Libraries, FLanguage : string;
     Sequence : cardinal;
-    FIsAjax : boolean;
+    FIsAjax  : boolean;
     procedure RelocateVar(JS, JSName, Owner: string; I: integer);
     procedure RemoveJS(JS : string);
     function GetStyle: string;
@@ -22,11 +25,11 @@ type
   public
     LongJSNames : boolean;
     Theme : string;
-    ExtPath : string;
     property Language : string read FLanguage;
     property IsAjax : boolean read FIsAjax;
-    procedure AddJS(JS : string; JSName : string = ''; Owner : string = '');
+    procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
+    procedure SetLibrary(pLibrary : string = '');
   end;
 
   ArrayOfString  = array of string;
@@ -40,11 +43,11 @@ type
     FJSName : string;
   protected
     JSCommand : string;
-    procedure CreateVar(JS : string);
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : ExtObjectList) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
+    procedure CreateVar(JS : string);
     procedure CreateJSName;
   protected
     procedure InitDefaults; virtual;
@@ -52,12 +55,13 @@ type
     constructor Create(Owner : ExtObject = nil);
     constructor CreateSingleton(pJSName : string);
     constructor AddTo(List : ExtObjectList);
-    function JSArray(JSON : string) : ExtObject;
-    function JSObject(JSON : string) : ExtObject;
+    function JSArray(JSON : string) : ExtObjectList;
+    function JSObject(JSON : string; ObjectConstructor : string = '') : ExtObject;
     function JSFunction(Params, Body : string) : ExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
+    function JSFunction(Name: string): ExtFunction; overload;
+    procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
     function Ajax(Method : string; Params: string = '') : ExtFunction;
-    procedure AddJS(JS : string; pJSName : string = ''; Owner : string = '');
     property JSName : string read FJSName;
   end;
 
@@ -146,11 +150,18 @@ begin
   if I <> 0 then delete(Response, I, length(JS))
 end;
 
+procedure TExtThread.SetLibrary(pLibrary: string); begin
+  if pLibrary = '' then
+    Libraries := ''
+  else
+    Libraries := Libraries + '<script src=' + pLibrary + '></script>';
+end;
+
 procedure TExtThread.SetStyle(pStyle: string); begin
   if pStyle = '' then
     Style := ''
   else
-    Style := Style + ' ' + pStyle
+    Style := Style + pStyle
 end;
 
 function TExtThread.GetStyle : string; begin
@@ -163,12 +174,12 @@ end;
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  AddJS('Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><hr/>Method: ' + Method +
+  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><hr/>Method: ' + Method +
     IfThen(Params = '', '', '<br/>Params: ' + Params) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
 end;
 
 // Self-translating
-procedure TExtThread.AddJS(JS : string; JSName : string = ''; Owner : string = '');
+procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
 var
   I : integer;
 begin
@@ -195,12 +206,17 @@ begin
     I := LastDelimiter('-', FLanguage);
     if I <> 0 then begin
       FLanguage := copy(FLanguage, I-2, 2) + '_' + Uppercase(copy(FLanguage, I+1, 2));
-      if not FileExists(RequestHeader['DOCUMENT_ROOT'] + '/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js') then
+      if not FileExists(RequestHeader['DOCUMENT_ROOT'] + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js') then
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
+  Response := '/**/';
   FIsAjax  := Query['Ajax'] = '1';
-  Response := '/**/'
+  if not IsAjax then begin
+    Sequence  := 0;
+    Style     := '';
+    Libraries := '';
+  end;
 end;
 
 // Extract Comments, set: HTML body, title, charset, ExtJS CSS, ExtJS libraries, ExtJS theme, ExtJS language, user styles, ExtJS invoke and Ajax response
@@ -215,15 +231,16 @@ begin
     I := PosEx('/*', Response, I);
   end;
   if not IsAjax then begin
-    Response := '<!DOCTYPE html><html><title>' + Application.Title + '</title>' +
+    Response := '<!doctype html public><html><title>' + Application.Title + '</title>' +
       '<meta http-equiv="Content-Type" content="charset=utf-8">' +
-      '<link rel=stylesheet href=/ext-2.1/resources/css/ext-all.css />' +
-      '<script src=/ext-2.1/adapter/ext/ext-base.js></script>' +
-      '<script src=/ext-2.1/ext-all.js></script>' +
-      IfThen(Theme = '', '', '<link rel=stylesheet href=/ext-2.1/resources/css/xtheme-' + Theme + '.css />') +
-      IfThen(FLanguage = 'en', '', '<script src=/ext-2.1/source/locale/ext-lang-' + FLanguage + '.js></script>') +
-      GetStyle +
+      '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
+      '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
+      '<script src=' + ExtPath + '/ext-all.js></script>' +
+      IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
+      IfThen(FLanguage = 'en', '', '<script src=' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js></script>') +
+      GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
+      'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";'+
       'function AjaxSuccess(response){eval(response.responseText);};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response +
@@ -260,7 +277,7 @@ procedure ExtObjectList.Add(Obj : ExtObject);
 var
   ListAdd : string;
 begin
-  if length(FObjects) = 0 then Owner.AddJS(Attribute + ':[/*' + Mark + '*/]', Owner.JSName);
+  if length(FObjects) = 0 then Owner.JSCode(Attribute + ':[/*' + Mark + '*/]', Owner.JSName);
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then begin
@@ -275,10 +292,10 @@ begin
       ListAdd := Format(ListAdd, ['new Ext.grid.PropertyGrid({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
-    Obj.AddJS(ListAdd, Mark);
+    Obj.JSCode(ListAdd, Mark);
   end
   else
-    Obj.AddJS(Obj.JSName, Mark, Owner.JSName)
+    Obj.JSCode(Obj.JSName, Mark, Owner.JSName)
 end;
 
 function ExtObjectList.GetFObjects(I: integer): ExtObject; begin
@@ -310,14 +327,14 @@ procedure ExtObject.CreateVar(JS : string); begin
     JS := AnsiReplaceStr(JS, '{}', '{/*' + JSName + '*/}')
   else
     JS := AnsiReplaceStr(JS, '()', '(/*' + JSName + '*/)');
-  AddJS('var ' + JSName + '=new ' + JS);
+  JSCode('var ' + JSName + '=new ' + JS);
 end;
 
 constructor ExtObject.Create(Owner : ExtObject = nil); begin
   if Owner = nil then CreateVar('Object({});')
 end;
 
-procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = ''); begin
+procedure ExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
       JSCommand := '/*' + TExtThread(CurrentFCGIThread).GetSequence + '*/' + JS;
@@ -326,7 +343,7 @@ procedure ExtObject.AddJS(JS : string; pJSName : string = ''; Owner : string = '
     else
       JSCommand := '';
     if pJSName = '' then pJSName := JSName;
-    TExtThread(CurrentFCGIThread).AddJS(JS, pJSName, Owner);
+    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, Owner);
   end;
 end;
 
@@ -340,14 +357,17 @@ end;
 
 procedure ExtObject.InitDefaults; begin end;
 
-function ExtObject.JSArray(JSON: string): ExtObject; begin
-  Result := ExtObject.Create(Self);
-  Result.FJSName := '[' + JSON + ']';
+function ExtObject.JSArray(JSON: string): ExtObjectList; begin
+  Result := ExtObjectList(ExtObject.Create(Self));
+  ExtObject(Result).FJSName := '[' + JSON + ']';
 end;
 
-function ExtObject.JSObject(JSON: string): ExtObject; begin
+function ExtObject.JSObject(JSON : string; ObjectConstructor : string = ''): ExtObject; begin
   Result := ExtObject.Create(Self);
-  Result.FJSName := '{' + JSON + '}';
+  if ObjectConstructor = '' then
+    Result.FJSName := '{' + JSON + '}'
+  else
+    Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
 end;
 
 function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
@@ -355,8 +375,13 @@ function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
   Result.FJSName := 'function(' + Params + '){' + Body + '}';
 end;
 
+function ExtObject.JSFunction(Name : string) : ExtFunction; begin
+  Result := ExtFunction.Create(Self);
+  Result.FJSName := Name;
+end;
+
 procedure ExtObject.JSFunction(Name, Params, Body : string); begin
-  AddJS('function ' + Name + '(' + Params + '){' + Body + '};');
+  JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
 function ExtObject.Ajax(Method : string; Params: string = ''): ExtFunction; begin
@@ -366,8 +391,32 @@ function ExtObject.Ajax(Method : string; Params: string = ''): ExtFunction; begi
       Params := '&' + TExtThread.URLEncode(Params)
     else
       Params := '&' + TExtThread.URLEncode(AnsiReplaceText(Params, ',', '&'));
-  AddJS('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + Method +
+  JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + Method +
     '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
+end;
+
+function WriteFunction(Command : string) : string;
+var
+  I, J : integer;
+  Params : string;
+begin
+  Params := '';
+  J := -1;
+  I := pos('%', Command);
+  while I <> 0 do begin
+    if Command[I+1] in ['0'..'9'] then begin
+      Command[I] := 'P';
+      delete(Command, I+2, 1);
+      delete(Command, I-1, 1);
+      inc(J);
+    end;
+    I := posex('%', Command, I);
+  end;
+  for I := 0 to J do begin
+    Params := 'P' + IntToStr(I);
+    if I <> J then Params := Params + ','
+  end;
+  Result := 'function(' + Params + '){return ' + Command + '}';
 end;
 
 function ExtObject.VarToJSON(A : array of const): string;
@@ -389,7 +438,7 @@ begin
             if ExtObject(VObject).JSCommand = '' then
               Result := Result + ExtObject(VObject).JSName
             else begin
-              Result := Result + 'function(){' + ExtObject(VObject).JSCommand + '}';
+              Result := Result + WriteFunction(ExtObject(VObject).JSCommand);
               TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
             end
           else
