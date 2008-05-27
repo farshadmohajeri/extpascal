@@ -55,7 +55,6 @@ type
     constructor Create(Owner : ExtObject = nil);
     constructor CreateSingleton(pJSName : string = '');
     constructor AddTo(List : ExtObjectList);
-    function PascalClassName : string; virtual;
     function JSClassName : string; virtual;
     function JSArray(JSON : string) : ExtObjectList;
     function JSObject(JSON : string; ObjectConstructor : string = '') : ExtObject;
@@ -391,10 +390,6 @@ function ExtObject.JSObject(JSON : string; ObjectConstructor : string = ''): Ext
     Result.FJSName := '{' + JSON + '}'
   else
     Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
-end;
-
-function ExtObject.PascalClassName: string; begin
-  Result := 'ExtObject'
 end;
 
 function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
