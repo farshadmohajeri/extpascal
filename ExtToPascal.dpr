@@ -546,17 +546,20 @@ begin
       I := AllClasses.IndexOf(Fields[0]);
       if I <> -1 then begin
         with TClass(AllClasses.Objects[I]) do
-          if Fields.Count = 5 then begin // props
-            J := Properties.IndexOf(Fields[1]);
-            if J = -1 then // Add
-              Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
-            else // Update
-              with TProp(Properties.Objects[J]) do begin
-                Typ := Fields[2];
-                Static := lowercase(Fields[3]) = 'true';
-                Default := Fields[4]
-              end;
-          end
+          if Fields.Count = 5 then // props
+            if Fields[4] = 'forceadd' then
+              Properties.AddObject(Fields[1] + Fields[2], TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', ''))
+            else begin
+              J := Properties.IndexOf(Fields[1]);
+              if J = -1 then // Add
+                Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
+              else // Update
+                with TProp(Properties.Objects[J]) do begin
+                  Typ := Fields[2];
+                  Static := lowercase(Fields[3]) = 'true';
+                  Default := Fields[4]
+                end;
+            end
           else begin // methods
             J := Methods.IndexOf(Fields[1]);
             if J = -1 then begin // Add
@@ -580,6 +583,7 @@ begin
       end
       else begin// Create new Class
         NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+        NewClass.JSName := 'Object';
         AllClasses.AddObject(Fields[0], NewClass);
         TUnit(Units.Objects[Units.IndexOf(Fields[2])]).Classes.AddObject(Fields[0], NewClass)
       end;
@@ -682,6 +686,7 @@ begin
         if not Static then
           writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
       end;
+    writeln(Pas, Tab(2), 'function JSClassName : string; override;');
     for I := 0 to Properties.Count-1 do // Write class properties
       with TProp(Properties.Objects[I]) do
         if Static then
@@ -780,7 +785,7 @@ begin
             writeln(Pas, 'begin');
             HasSingleton := true
           end;
-          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' := ', Name, '.CreateSingleton(''', JSName, ''');');
+          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' := ', Name, '.CreateSingleton;');
         end;
 end;
 
@@ -821,6 +826,9 @@ begin
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
+          writeln(Pas, 'function ' + Name + '.JSClassName : string; begin');
+          writeln(Pas, Tab, 'Result := ''' + JSName + ''';');
+          writeln(Pas, 'end;'^M^J);
           for K := 0 to Properties.Count-1 do // Write class properties implementation
             with TProp(Properties.Objects[K]) do
               if Static then begin
@@ -829,7 +837,7 @@ begin
                   writeln(Pas, ^M^J'const');
                   writeln(Pas, Tab, 'l', Name, ' : ', Typ, ' = nil;');
                   writeln(Pas, 'begin');
-                  writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''', CJSName, '.', JSName, ''');');
+                  writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''' + CJSName + '.', JSName, ''');');
                   writeln(Pas, Tab, 'Result := l', Name);
                 end
                 else begin
@@ -857,10 +865,11 @@ begin
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
                   writeln(Pas, Tab, 'InitDefaults;');
-                  writeln(Pas, Tab, 'CreateVar(''', CJSName, ParamsToJSON(Params), ''')');
+                  writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''')');
                 end
                 else begin // Write class and instance methods
-                  writeln(Pas, Tab, 'JSCode(', IfThen(Static, '''' + CJSName + '.', 'JSName' + ' + ''.'), JSName, ParamsToJSON(Params, false), ''');');
+                  writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
+                    ''', ''' + CName + ''');');
                   if Return <> 'Void' then
                     writeln(Pas, Tab, 'Result := ExtFunction(Self)')
                 end;

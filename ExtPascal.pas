@@ -22,8 +22,8 @@ type
     procedure AfterHandleRequest; override;
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
+    function JSConcat(OldCommand, NewCommand : string) : string;
   public
-    LongJSNames : boolean;
     Theme : string;
     property Language : string read FLanguage;
     property IsAjax : boolean read FIsAjax;
@@ -53,13 +53,15 @@ type
     procedure InitDefaults; virtual;
   public
     constructor Create(Owner : ExtObject = nil);
-    constructor CreateSingleton(pJSName : string);
+    constructor CreateSingleton(pJSName : string = '');
     constructor AddTo(List : ExtObjectList);
+    function PascalClassName : string; virtual;
+    function JSClassName : string; virtual;
     function JSArray(JSON : string) : ExtObjectList;
     function JSObject(JSON : string; ObjectConstructor : string = '') : ExtObject;
     function JSFunction(Params, Body : string) : ExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
-    function JSFunction(Name: string): ExtFunction; overload;
+    function JSFunction(Body: string): ExtFunction; overload;
     procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
     function Ajax(Method : string; Params: string = '') : ExtFunction;
     property JSName : string read FJSName;
@@ -127,16 +129,17 @@ var
   VarName, VarBody : string;
   J, K : integer;
 begin
+  if pos('O_', JS) = 0 then exit;
   J := LastDelimiter(':,', JS);
   if J <> 0 then
-    VarName := copy(JS, J+1, length(JS))
+    VarName := copy(JS, J+1, posex('_', JS, J+3)-J)
   else
-    VarName := JS;
-  J := pos('/*' + VarName + '*/', Response);
+    exit;
+  J := posex('/*' + VarName + '*/', Response, I);
   if J > I then begin
     K := pos('var ' + VarName + '=new', Response);
     VarBody := copy(Response, K, J-K+7+length(VarName));
-    delete(Response, K, J-K+7+length(VarName));
+    delete(Response, K, length(VarBody));
     if JSName[1] in ['0'..'9'] then JSName := Owner;
     insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
   end;
@@ -184,17 +187,33 @@ var
   I : integer;
 begin
   if JS[length(JS)] = ';' then // Command
-    I := pos('/**/', Response)
+    I := length(Response) + 1
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then begin
       if IsAjax then JS := JSName + '.' + AnsiReplaceText(JS, ':', '=') + ';';
-      I := pos('/**/', Response);
+      I := length(Response) + 1;
     end;
     if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
-  if JSName <> '' then RelocateVar(JS, JSName, Owner, I);
+  if JSName <> '' then RelocateVar(JS, JSName, Owner, I+length(JS));
+end;
+
+function TExtThread.JSConcat(OldCommand, NewCommand: string): string;
+var
+  I , J : integer;
+begin
+  J := pos(OldCommand, Response);
+  I := pos('.', NewCommand);
+  if (I <> 0) and (J <> 0) then begin
+    NewCommand := copy(NewCommand, I, length(NewCommand));
+    Result := copy(OldCommand, 1, length(OldCommand)-1) + NewCommand;
+    delete(Response, J + length(OldCommand)-1, 1);
+    insert(NewCommand, Response, J + length(OldCommand))
+  end
+  else
+    Result := OldCommand;
 end;
 
 procedure TExtThread.BeforeHandleRequest;
@@ -210,7 +229,7 @@ begin
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
-  Response := '/**/';
+  Response := '';
   FIsAjax  := Query['Ajax'] = '1';
   if not IsAjax then begin
     Sequence  := 0;
@@ -285,11 +304,8 @@ begin
       ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
     else
       ListAdd := '%s';
-    if Obj.Classname = 'ExtTabPanel' then // Generalize it if necessary
-      ListAdd := Format(ListAdd, ['new Ext.TabPanel({/*' + Obj.JSName + '*/})'])
-    else
-    if Obj.Classname = 'ExtGridPropertyGrid' then // Generalize it if necessary
-      ListAdd := Format(ListAdd, ['new Ext.grid.PropertyGrid({/*' + Obj.JSName + '*/})'])
+    if pos(Obj.Classname + '.', 'ExtTabPanel.ExtGridPropertyGrid.') <> 0 then // Generalize it if necessary
+      ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
     Obj.JSCode(ListAdd, Mark);
@@ -309,16 +325,15 @@ end;
 { ExtObject }
 
 procedure ExtObject.CreateJSName; begin
-  with TExtThread(CurrentFCGIThread) do
-    if LongJSNames then
-      FJSName := Self.ClassName + GetSequence
-    else
-      FJSName := 'O' + GetSequence;
+  FJSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
-constructor ExtObject.CreateSingleton(pJSName : string); begin
+constructor ExtObject.CreateSingleton(pJSName : string = ''); begin
   InitDefaults;
-  FJSName := pJSName;
+  if pJSName = '' then
+    FJSName := JSClassName
+  else
+    FJSName := pJSName;
 end;
 
 procedure ExtObject.CreateVar(JS : string); begin
@@ -331,12 +346,20 @@ procedure ExtObject.CreateVar(JS : string); begin
 end;
 
 constructor ExtObject.Create(Owner : ExtObject = nil); begin
-  if Owner = nil then CreateVar('Object({});')
+  if Owner = nil then CreateVar(JSClassName + '({});')
+end;
+
+function ExtObject.JSClassName: string; begin
+  Result := 'Object'
 end;
 
 procedure ExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
+      if (JSCommand <> '') and (pJSName <> '') and (pJSName <> Classname) then begin
+        JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
+        exit;
+      end;
       JSCommand := '/*' + TExtThread(CurrentFCGIThread).GetSequence + '*/' + JS;
       JS := JSCommand
     end
@@ -370,14 +393,17 @@ function ExtObject.JSObject(JSON : string; ObjectConstructor : string = ''): Ext
     Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
 end;
 
+function ExtObject.PascalClassName: string; begin
+  Result := 'ExtObject'
+end;
+
 function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
   Result := ExtFunction.Create(Self);
   Result.FJSName := 'function(' + Params + '){' + Body + '}';
 end;
 
-function ExtObject.JSFunction(Name : string) : ExtFunction; begin
-  Result := ExtFunction.Create(Self);
-  Result.FJSName := Name;
+function ExtObject.JSFunction(Body : string) : ExtFunction; begin
+  Result := JSFunction('', Body);
 end;
 
 procedure ExtObject.JSFunction(Name, Params, Body : string); begin
