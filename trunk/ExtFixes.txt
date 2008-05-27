@@ -12,6 +12,7 @@ ExtComponent, el, string, false,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false,
 ExtGridGridPanel, columns, ExtObjectList, false,
+ExtGridColumnModel, renderer, String, false, forceadd
 ExtDataField,, ExtData
 ExtDataField, name, string, false,
 ExtDataField, mapping, string, false,

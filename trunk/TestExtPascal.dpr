@@ -45,7 +45,7 @@ begin
     Width       := 400;
     Floating    := true;
     Collapsible := true;
-    SetPosition(300, 0);
+    SetPosition(300, 0); 
     for I := 0 to high(Examples) do
       with Examples[I], ExtPanel.AddTo(Items) do begin
         Title := Name;
@@ -206,32 +206,32 @@ begin
       DataIndex := Id;
     end;
     with ExtGridColumnModel.AddTo(Columns) do begin
-      Header := 'Price';
-      Width := 75;
-      Sortable := true;
+      Header    := 'Price';
+      Width     := 75;
+      Sortable  := true;
       DataIndex := 'price';
-      JSCode('renderer: "usMoney"');
+      RendererString := 'usMoney';
     end;
     with ExtGridColumnModel.AddTo(Columns) do begin
-      Header := 'Change';
-      Width := 75;
-      Sortable := true;
+      Header    := 'Change';
+      Width     := 75;
+      Sortable  := true;
       DataIndex := 'change';
-      Renderer := ColorValue;
+      Renderer  := ColorValue;
     end;
     with ExtGridColumnModel.AddTo(Columns) do begin
-      Header := '% Change';
-      Width := 75;
-      Sortable := true;
+      Header    := '% Change';
+      Width     := 75;
+      Sortable  := true;
       DataIndex := 'pctchange';
-      Renderer := ColorValue;
+      Renderer  := ColorValue;
     end;
     with ExtGridColumnModel.AddTo(Columns) do begin
-      Header := 'Last Updated';
-      Width := 85;
-      Sortable := true;
+      Header    := 'Last Updated';
+      Width     := 85;
+      Sortable  := true;
       DataIndex := 'lastchange';
-      Renderer := ExtUtilFormat.Date('%0', 'm/d/Y');
+      Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 handle internal parameters to events
     end;
     StripeRows := true;
     Height     := 350;
@@ -240,8 +240,7 @@ begin
     RenderTo   := 'body';
     Frame      := true;
     AutoExpandColumn := 'company';
-//    ExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
-    JSCode(JSName + '.getSelectionModel().selectFirstRow();');
+    ExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
   end;
 end;
 
@@ -274,7 +273,7 @@ begin
     end;
     with ExtButton.AddTo(Buttons) do begin
       Text    := 'Close';
-      Handler := Window.Close;
+      Handler := JSFunction('window.close()');// try this: Handler := Window.Close; for another effect.
     end;
     Show;
     Free;
