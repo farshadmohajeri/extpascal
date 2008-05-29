@@ -69,13 +69,13 @@ type
   ExtObjectList = class
   private
     FObjects : array of ExtObject;
-    Attribute, Mark : string;
+    Attribute, JSName : string;
     Owner : ExtObject;
     function GetFObjects(I: integer): ExtObject;
   public
     property Objects[I : integer] : ExtObject read GetFObjects; default;
     constructor CreateSingleton(JSName: string);
-    constructor Create(pOwner : ExtObject; pAttribute : string);
+    constructor Create(pOwner : ExtObject = nil; pAttribute : string = '');
     destructor Destroy; override;
     procedure Add(Obj : ExtObject);
     function Count : integer;
@@ -113,13 +113,10 @@ type
   SelectionModel = ExtObject; // doc fault
   DataSource = ExtObject; // doc fault
 
-function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean; // Mimics preg_match php function
-function Explode(Delim : char; S : string) : TStringList; // Mimics explode php function
-
 implementation
 
 uses
-  SysUtils, StrUtils;
+  SysUtils, StrUtils, Math;
 
 { TExtThread }
 
@@ -273,10 +270,10 @@ end;
 
 { ExtObjectList }
 
-constructor ExtObjectList.Create(pOwner : ExtObject; pAttribute : string); begin
+constructor ExtObjectList.Create(pOwner : ExtObject = nil; pAttribute : string = ''); begin
   Attribute := pAttribute;
   Owner     := pOwner;
-  Mark      := TExtThread(CurrentFCGIThread).GetSequence;
+  JSName    := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
 constructor ExtObjectList.CreateSingleton(JSName : string); begin
@@ -295,7 +292,11 @@ procedure ExtObjectList.Add(Obj : ExtObject);
 var
   ListAdd : string;
 begin
-  if length(FObjects) = 0 then Owner.JSCode(Attribute + ':[/*' + Mark + '*/]', Owner.JSName);
+  if length(FObjects) = 0 then
+    if Owner <> nil then
+      Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
+    else
+      TExtThread(CurrentFCGIThread).JSCode('var ' + JSName + '=[/*' + JSName + '*/];');
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then begin
@@ -307,10 +308,10 @@ begin
       ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
-    Obj.JSCode(ListAdd, Mark);
+    Obj.JSCode(ListAdd, JSName);
   end
   else
-    Obj.JSCode(Obj.JSName, Mark, Owner.JSName)
+    Obj.JSCode(Obj.JSName, JSName, Owner.JSName)
 end;
 
 function ExtObjectList.GetFObjects(I: integer): ExtObject; begin
@@ -337,10 +338,7 @@ end;
 
 procedure ExtObject.CreateVar(JS : string); begin
   CreateJSName;
-  if pos('{}', JS) <> 0 then
-    JS := AnsiReplaceStr(JS, '{}', '{/*' + JSName + '*/}')
-  else
-    JS := AnsiReplaceStr(JS, '()', '(/*' + JSName + '*/)');
+  insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '=new ' + JS);
 end;
 
@@ -463,7 +461,7 @@ begin
               TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
             end
           else
-            if Result = '' then
+            if (Result = '') and (I <> high(A)) then
               Result := 'null'
             else
               continue;
@@ -485,74 +483,32 @@ begin
   if (Result <> '') and (Result[length(Result)] = ',') then delete(Result, length(Result), 1);
 end;
 
-function ExtObject.VarToJSON(Exts : ExtObjectList): string;
-var
-  I : integer;
-begin
-  Result := '[';
-  for I := 0 to Exts.Count-1 do begin
-    Result := Result + Exts[I].JSName;
-    if I < (Exts.Count-1) then Result := Result + ',';
-  end;
-  Result := Result + ']';
+function ExtObject.VarToJSON(Exts : ExtObjectList): string; begin
+  Result := Exts.JSName
 end;
 
 function ExtObject.VarToJSON(Strs : ArrayOfString): string;
 var
   I : integer;
 begin
-  Result := '';
+  Result := '[';
   for I := 0 to high(Strs) do begin
     Result := Result + '"' + Strs[I] + '"';
     if I < high(Strs) then Result := Result + ',';
   end;
+  Result := Result + ']'
 end;
 
 function ExtObject.VarToJSON(Ints : ArrayOfInteger): string;
 var
   I : integer;
 begin
-  Result := '';
+  Result := '[';
   for I := 0 to high(Ints) do begin
     Result := Result + IntToStr(Ints[I]);
     if I < high(Ints) then Result := Result + ',';
   end;
-end;
-
-// Mimics preg_match php function
-function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
-var
-  I, J : integer;
-begin
-  Result := false;
-  if Matches <> nil then Matches.Clear;
-  J := 1;
-  for I := 0 to high(Delims) do begin
-    J := posex(Delims[I], S, J);
-    if J = 0 then
-      exit
-    else
-      inc(J, length(Delims[I]));
-  end;
-  J := 1;
-  for I := 0 to high(Delims)-1 do begin
-    J := posex(Delims[I], S, J);
-    inc(J, length(Delims[I]));
-    Matches.Add(trim(copy(S, J, posex(Delims[I+1], S, J)-J)));
-  end;
-  Result := true
-end;
-
-// Mimics explode php function
-function Explode(Delim : char; S : string) : TStringList;
-var
-  I : integer;
-begin
-  Result := TStringList.Create;
-  Result.StrictDelimiter := true;
-  Result.Delimiter := Delim;
-  Result.DelimitedText := S;
-  for I := 0 to Result.Count-1 do Result[I] := trim(Result[I]);
+  Result := Result + ']'
 end;
 
 end.
