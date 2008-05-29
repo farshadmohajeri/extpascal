@@ -3,36 +3,42 @@ program TestExtPascal;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, FCGIApp, ExtPascal, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid,
-  ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
+  SysUtils, FCGIApp, ExtPascal,
+  Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
   TSamples = class(TExtThread)
   public
     Tabs : ExtTabPanel;
     TabIndex : integer;
+    Grid : ExtGridEditorGridPanel;
+    DataStore : ExtDataStore;
+    Plant : ExtDataRecord;
   published
     procedure Home; override;
     procedure BasicTabPanel;
     procedure MessageBoxes;
     procedure Layout;
     procedure AdvancedTabs;
-    procedure AddTab;
+    procedure AddTab; // Ajax
     procedure BorderLayout;
     procedure ArrayGrid;
+    procedure EditableGrid;
+    procedure AddPlant; // Ajax
   end;
 
 procedure TSamples.Home;
 const
-  Examples : array[0..5] of record
+  Examples : array[0..6] of record
     Name, Proc, Gif, Desc : string
   end = (
-    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window'; Desc: 'Simple Hello World window that contains a basic TabPanel.'),
-    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box'; Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons.'),
+    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';        Desc: 'Simple Hello World window that contains a basic TabPanel.'),
+    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons.'),
     (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
-    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv'; Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically and a context menu plugin.'),
+    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
     (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components and sub-layouts.'),
-    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array'; Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.')
+    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.'),
+    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.')
   );
 var
   I : integer;
@@ -45,7 +51,7 @@ begin
     Width       := 400;
     Floating    := true;
     Collapsible := true;
-    SetPosition(300, 0); 
+    SetPosition(300, 0);
     for I := 0 to high(Examples) do
       with Examples[I], ExtPanel.AddTo(Items) do begin
         Title := Name;
@@ -106,7 +112,7 @@ begin
   end;
 end;
 
-procedure TSamples.AddTab; begin
+procedure TSamples.AddTab; begin // Ajax
   inc(TabIndex);
   with ExtPanel.AddTo(Tabs.Items) do begin
     Title    := 'New Tab ' + IntToStr(TabIndex);
@@ -127,9 +133,9 @@ begin
   SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu.js');
   with ExtButton.Create do begin
     RenderTo := 'body';
-    Text     := 'Add Tab';
+    Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
-    Handler  := Ajax('AddTab');
+    Handler  := Ajax(AddTab);
   end;
   Tabs := ExtTabPanel.Create;
   with Tabs do begin
@@ -375,6 +381,108 @@ procedure TSamples.BorderLayout; begin
     end;
     Free;
   end;
+end;
+
+procedure TSamples.AddPlant; begin // Ajax method
+  Grid.StopEditing;
+  with DataStore do
+    Insert(0, JSArray('new ' + Plant.JSName + '({common:"New Plant 1",light:"Mostly Shade",price:0,availDate:(new Date()).clearTime(),indoor:false})'));
+  Grid.StartEditing(0, 0);
+end;
+
+procedure TSamples.EditableGrid;
+var
+  Data : ExtObjectList;
+begin
+  ExtQuickTips.Init;
+  Data := ExtObjectList.Create;
+  // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
+  with ExtDataField.AddTo(Data) do begin Name := 'common';    _Type := 'string' end;
+  with ExtDataField.AddTo(Data) do begin Name := 'botanical'; _Type := 'string' end;
+  ExtDataField.AddTo(Data).Name := 'light';
+  with ExtDataField.AddTo(Data) do begin Name := 'price'; _Type := 'float' end; // automatic date conversions
+  with ExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; _Type := 'date'; DateFormat := 'm/d/Y' end;
+  with ExtDataField.AddTo(Data) do begin Name := 'indoor'; _Type := 'bool' end;
+  // this could be inline, but we want to define the Plant record, type so we can add records dynamically
+  Plant := ExtDataRecord.Create(Data);
+  // create the Data Store
+  DataStore := ExtDataStore.Create;
+  with DataStore do begin
+    URL := ExtPath + '/examples/grid/plants.xml';
+    // the return will be XML, so lets set up a reader, records will have a "plant" tag
+    Reader := ExtDataXmlReader.Create(JSObject('record:"plant"'), Plant);
+    SortInfo := JSObject('field:"common", direction:"ASC"');
+  end;
+  // create the editor grid
+  Grid := ExtGridEditorGridPanel.Create;
+  with Grid do begin
+    Store  := DataStore;
+    Width  := 600;
+    Height := 300;
+    Title  := 'Edit Plants?';
+    Frame  := true;
+    RenderTo := 'body';
+    ClicksToEdit := 1;
+    AutoExpandColumn := 'common';
+    with ExtGridColumnModel.AddTo(Columns) do begin
+      Id := 'common';
+      Header := 'Common Name';
+      Width  := 220;
+      DataIndex := 'common';
+      Editor := ExtFormTextField.Create;
+      ExtFormTextField(Editor).AllowBlank := false;
+    end;
+    with ExtGridColumnModel.AddTo(Columns) do begin
+      Header := 'Light';
+      Width  := 130;
+      DataIndex := 'light';
+      Editor := ExtFormComboBox.Create;
+      with ExtFormComboBox(Editor) do begin
+        StoreArray := JSArray('"Shade", "Mostly Shady", "Sun or Shade", "Mostly Sunny", "Sunny"');
+        TypeAhead  := true;
+        ListClass  := 'x-combo-list-small';
+        TriggerAction := 'all';
+      end;
+    end;
+    with ExtGridColumnModel.AddTo(Columns) do begin
+      Header := 'Price';
+      Width  := 70;
+      Align  := 'right';
+      DataIndex := 'price';
+      RendererString := 'usMoney';
+      Editor := ExtFormNumberField.Create;
+      with ExtFormNumberField(Editor) do begin
+        MaxValue      := 100000;
+        AllowBlank    := false;
+        AllowNegative := false;
+      end;
+    end;
+    with ExtGridColumnModel.AddTo(Columns) do begin
+      Header    := 'Available';
+      Width     := 95;
+      DataIndex := 'availDate';
+      Renderer  := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
+      Editor    := ExtFormDateField.Create;
+      with ExtFormDateField(Editor) do begin
+        Format := 'm/d/y';
+        MinValueString   := '01/01/06';
+        DisabledDays     := JSArray('0, 6');
+        DisabledDaysText := 'Plants are not available on the weekends'
+      end;
+    end;
+    with ExtGridColumnModel.AddTo(Columns) do begin
+      Header    := 'Indoor?';
+      DataIndex := 'indoor';
+      Width     := 55;
+      Editor    := ExtFormCheckbox.Create;
+      Renderer  := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
+    end;
+    with ExtButton.AddTo(TBarArray) do begin
+      Text    := 'Add Plant using AJAX!';
+      Handler := Ajax(AddPlant);
+    end;
+  end;
+  DataStore.Load(nil);
 end;
 
 procedure TSamples.MessageBoxes;

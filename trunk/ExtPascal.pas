@@ -37,6 +37,7 @@ type
 
   ExtObjectList = class;
   ExtFunction = class;
+  ExtAjaxMethod = procedure of object;
 
   ExtObject = class
   private
@@ -62,7 +63,7 @@ type
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body: string): ExtFunction; overload;
     procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
-    function Ajax(Method : string; Params: string = '') : ExtFunction;
+    function Ajax(Method : ExtAjaxMethod; Params: string = '') : ExtFunction;
     property JSName : string read FJSName;
   end;
 
@@ -134,7 +135,8 @@ begin
   J := posex('/*' + VarName + '*/', Response, I);
   if J > I then begin
     K := pos('var ' + VarName + '=new', Response);
-    VarBody := copy(Response, K, J-K+7+length(VarName));
+    J := posex(';', Response, J);
+    VarBody := copy(Response, K, J-K+1+length(VarName));
     delete(Response, K, length(VarBody));
     if JSName[1] in ['0'..'9'] then JSName := Owner;
     insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
@@ -187,7 +189,7 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then begin
-      if IsAjax then JS := JSName + '.' + AnsiReplaceText(JS, ':', '=') + ';';
+      if IsAjax then JS := JSName + '.' + ReplaceStr(JS, ':', '=') + ';';
       I := length(Response) + 1;
     end;
     if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
@@ -245,6 +247,7 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
+  Response := ReplaceStr(Response, '_', '');
   if not IsAjax then begin
     Response := '<!doctype html public><html><title>' + Application.Title + '</title>' +
       '<meta http-equiv="Content-Type" content="charset=utf-8">' +
@@ -339,7 +342,10 @@ end;
 procedure ExtObject.CreateVar(JS : string); begin
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  JSCode('var ' + JSName + '=new ' + JS);
+  if pos('.create(', JS) = 0 then
+    JSCode('var ' + JSName + '=new ' + JS)
+  else
+    JSCode('var ' + JSName + '= ' + JS) // Alternate create constructor, ExtJS fault
 end;
 
 constructor ExtObject.Create(Owner : ExtObject = nil); begin
@@ -403,15 +409,23 @@ procedure ExtObject.JSFunction(Name, Params, Body : string); begin
   JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
-function ExtObject.Ajax(Method : string; Params: string = ''): ExtFunction; begin
-  Result := ExtFunction(Self);
-  if Params <> '' then
-    if pos('&', Params) <> 0 then
-      Params := '&' + TExtThread.URLEncode(Params)
-    else
-      Params := '&' + TExtThread.URLEncode(AnsiReplaceText(Params, ',', '&'));
-  JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + Method +
-    '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
+function ExtObject.Ajax(Method : ExtAjaxMethod; Params : string = ''): ExtFunction;
+var
+  MetName : string;
+begin
+  Result  := ExtFunction(Self);
+  MetName := TExtThread(CurrentFCGIThread).MethodName(@Method);
+  if MetName <> '' then begin
+    if Params <> '' then
+      if pos('&', Params) <> 0 then
+        Params := '&' + TExtThread.URLEncode(Params)
+      else
+        Params := '&' + TExtThread.URLEncode(ReplaceStr(Params, ',', '&'));
+    JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + MetName +
+      '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
+  end
+  else
+    JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});')
 end;
 
 function WriteFunction(Command : string) : string;
@@ -446,12 +460,6 @@ begin
   for I := 0 to high(A) do begin
     with A[I] do
       case VType of
-        vtInteger: Result := Result + IntToStr(VInteger);
-        vtAnsiString:
-          if string(VAnsiString) <> '' then
-            Result := Result + '"' + string(VAnsiString) + '"'
-          else
-            continue;
         vtObject:
           if VObject <> nil then
             if ExtObject(VObject).JSCommand = '' then
@@ -461,22 +469,16 @@ begin
               TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
             end
           else
-            if (Result = '') and (I <> high(A)) then
+            if Result = '' then
               Result := 'null'
             else
               continue;
-        vtBoolean: Result := Result + IfThen(VBoolean, 'true', 'false');
-        vtString:
-          if VString^ <> '' then
-            Result := Result + '"' + VString^ + '"'
-          else
-            continue;
-        vtExtended: Result := Result + FloatToStr(VExtended^);
-        vtVariant:
-          if string(VVariant^) <> '' then
-            Result := Result + string(VVariant^)
-          else
-            continue
+        vtAnsiString: Result := Result + '"' + string(VAnsiString) + '"';
+        vtString:     Result := Result + '"' + VString^ + '"';
+        vtInteger:    Result := Result + IntToStr(VInteger);
+        vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
+        vtExtended:   Result := Result + FloatToStr(VExtended^);
+        vtVariant:    Result := Result + string(VVariant^)
       end;
     if I < high(A) then Result := Result + ',';
   end;
@@ -484,7 +486,10 @@ begin
 end;
 
 function ExtObject.VarToJSON(Exts : ExtObjectList): string; begin
-  Result := Exts.JSName
+  if ExtS.ClassName = 'ExtObjectList' then
+    Result := Exts.JSName
+  else
+    Result := ExtObject(Exts).JSName
 end;
 
 function ExtObject.VarToJSON(Strs : ArrayOfString): string;
