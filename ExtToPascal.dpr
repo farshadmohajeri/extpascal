@@ -75,7 +75,7 @@ type
 
   TClass = class
     Name, JSName, Parent, UnitName : string;
-    Singleton, Defaults, Arrays : boolean;
+    Singleton, Defaults, Arrays, AltCreate : boolean;
     Properties, Methods : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
@@ -438,7 +438,11 @@ begin
       InMethods :
           if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
-            JSName  := Matches[0];
+            JSName := Matches[0];
+            if JSName = 'create' then begin
+              CurClass.AltCreate := true;
+              exit;
+            end;
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
             Return  := FixType(Matches[2]);
@@ -705,10 +709,10 @@ end;
 function ParamsToJSON(Params : TStringList; Config : boolean = true) : string;
 
   procedure OptionalParam(Param : TParam); begin
-    with Param do
+(*    with Param do
       if Optional then
         Result := Result + ' + IfThen(' + Name + WriteOptional(Optional, Typ) + ', '''', '','')'
-      else
+      else*)
         Result := Result + ' + '',''';
   end;
 
@@ -865,7 +869,10 @@ begin
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
                   writeln(Pas, Tab, 'InitDefaults;');
-                  writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''')');
+                  if AltCreate then // ExtJS fault
+                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''.create', ParamsToJSON(Params), ''')')
+                  else
+                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''')');
                 end
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
