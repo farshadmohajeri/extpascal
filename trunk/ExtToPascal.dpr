@@ -1,7 +1,7 @@
 program ExtToPascal; {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, StrUtils, Classes, Math, ExtPascal;
+  SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 function FixReserved(S : string) : string;
 const
@@ -910,5 +910,7 @@ begin
     writeln(AllClasses.Count, ' ExtJS classes wrapped to Object Pascal at ', formatdatetime('ss.zzz', Now-T), ' seconds');
   end
   else
-    writeln('ExtJS HTML files not found at ' + paramstr(1) + '\*.html'); readln;
+    writeln('ExtJS HTML files not found at ' + paramstr(1) + '\*.html');
+  writeln('Press enter.');
+  readln;
 end.

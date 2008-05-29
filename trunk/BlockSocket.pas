@@ -29,7 +29,7 @@ type
 implementation
 
 uses
-  Windows, SysUtils{$ifdef MSWINDOWS}, Winsock2{$ELSE}, BaseUnix, TermIO{$ENDIF};
+  SysUtils{$ifdef MSWINDOWS}, Windows, Winsock2{$ELSE}, BaseUnix, TermIO{$ENDIF};
 
 procedure TBlockSocket.Bind(Porta, BackLog : integer); begin
   with RemoteSin do begin
