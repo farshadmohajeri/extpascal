@@ -189,7 +189,7 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then begin
-      if IsAjax then JS := JSName + '.' + ReplaceStr(JS, ':', '=') + ';';
+      if IsAjax then JS := JSName + '.' + AnsiReplaceStr(JS, ':', '=') + ';';
       I := length(Response) + 1;
     end;
     if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
@@ -247,7 +247,7 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
-  Response := ReplaceStr(Response, '_', '');
+  Response := AnsiReplaceStr(Response, '_', '');
   if not IsAjax then begin
     Response := '<!doctype html public><html><title>' + Application.Title + '</title>' +
       '<meta http-equiv="Content-Type" content="charset=utf-8">' +
@@ -420,7 +420,7 @@ begin
       if pos('&', Params) <> 0 then
         Params := '&' + TExtThread.URLEncode(Params)
       else
-        Params := '&' + TExtThread.URLEncode(ReplaceStr(Params, ',', '&'));
+        Params := '&' + TExtThread.URLEncode(AnsiReplaceStr(Params, ',', '&'));
     JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + MetName +
       '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
   end

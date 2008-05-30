@@ -6,9 +6,9 @@ uses
 function FixReserved(S : string) : string;
 const
   Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
-    'file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.'+
+    'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.'+
     'mod.nil.not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.string.then.'+
-    'threadvar.to.try.type.unit.until.uses.var.while.with.xor.';
+    'threadvar.to.try.true.type.unit.until.uses.var.while.with.xor.';
 begin
   if pos('.' + lowercase(S) + '.', Reserved) = 0 then
     Result := S
@@ -827,7 +827,7 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
-                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON([Value]));');
+                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('ArrayOf', Typ) = 0, '[Value]', 'Value'), '));');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
