@@ -5,7 +5,7 @@ interface
 uses
   Classes;
 
-{$IFDEF FPC}
+{$IF Defined(FPC) or (RTLVersion <= 17)}
 type
   TStringList = class(Classes.TStringList)
   private
@@ -15,7 +15,7 @@ type
     StrictDelimiter : boolean;
     property DelimitedText : string read GetDelimitedText write SetDelimitedText;
   end;
-{$ENDIF}
+{$IFEND}
 
 // Mimics preg_match php function
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
@@ -27,13 +27,13 @@ implementation
 uses
   StrUtils, SysUtils;
 
-{$IFDEF FPC}
+{$IF Defined(FPC) or (RTLVersion <= 17)}
 function TStringList.GetDelimitedText: string;
 var
   I : integer;
   p : pchar;
 begin
-  CheckSpecialChars;
+  {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
   result:='';
   for i:=0 to count-1 do begin
     p := pchar(strings[i]);
@@ -57,7 +57,7 @@ var
   I, J : integer;
   aNotFirst:boolean;
 begin
-  CheckSpecialChars;
+  {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
   BeginUpdate;
   i := 1;
   aNotFirst := false;
@@ -106,7 +106,7 @@ begin
     EndUpdate;
   end;
 end;
-{$ENDIF}
+{$IFEND}
 
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
 var
