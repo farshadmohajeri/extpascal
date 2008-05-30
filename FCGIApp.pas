@@ -7,7 +7,7 @@ unit FCGIApp;
 interface
 
 uses
-  Classes, BlockSocket, SysUtils, SyncObjs;
+  Classes, BlockSocket, SysUtils, SyncObjs, ExtPascalUtils;
 
 type
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
@@ -74,7 +74,6 @@ type
     FCGIThreadClass : TFCGIThreadClass;
     Port : word;
     MaxConns : integer;
-    USLocale : TFormatSettings;
     Threads : TStringList;
     MaxIdleTime : TDateTime;
     AccessThreads : TCriticalSection;
@@ -162,7 +161,7 @@ end;
 
 procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
   SetResponseHeader('Set-Cookie: ' + Name + '=' + Value + ';' +
-    IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd mmm yyyy hh:nn:ss', Expires, Application.USLocale) + ' GMT;', '') +
+    IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd-mmm-yyyy hh:nn:ss', Expires) + ' GMT;', '') +
     IfThen(Domain <> '', ' domain=' + Domain + ';', '') + IfThen(Path <> '', ' path=' + Path + ';', '') + IfThen(Secure, ' secure', ''))
 end;
 
@@ -434,7 +433,7 @@ begin
     else begin
       CreateGUID(GUID);
       Thread := GUIDToString(GUID);
-      SetCookie('FCGIThread', Thread);
+      SetCookie('FCGIThread', Thread,Now);
       Application.Threads.AddObject(Thread, Self);
       FreeOnTerminate := false;
     end
@@ -538,7 +537,6 @@ begin
   Port := pPort;
   Threads := TStringList.Create;
   AccessThreads := TCriticalSection.Create;
-  GetLocaleFormatSettings(1, USLocale);
   MaxIdleTime := EncodeTime(0, pMaxIdleMinutes, 0, 0);
   MaxConns := pMaxConns;
   if ParamCount = 1 then
@@ -603,4 +601,5 @@ function TFCGIApplication.ThreadsCount: cardinal; begin
   Result := Threads.Count
 end;
 
+begin
 end.
