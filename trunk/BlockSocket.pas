@@ -3,7 +3,7 @@ unit BlockSocket;
 interface
 
 uses
-  Sockets2;
+  {$IFDEF FPC}Sockets{$ELSE}SocketsDelphi{$ENDIF};
 
 type
   TBlockSocket = class
@@ -13,25 +13,27 @@ type
   public
     constructor Create(S : TSocket = 0);
 		destructor Destroy; override;
-    procedure Bind(Porta, BackLog : integer);
+    procedure Bind(Porta, BackLog : word);
 		function Accept(Timeout : integer) : integer;
-    procedure Connect(Host, Porta : string);
+    procedure Connect(Host : string; Porta : Word);
 		procedure Purge;
-		procedure CloseSocket;
+		procedure Close;
 		function RecvString : string;
     procedure SendString(const Data: string);
     function WaitingData : cardinal;
     function CanRead(Timeout: Integer): Boolean;
-    function SocketError : integer;
+    function Error : integer;
     function GetHostAddress : string;
   end;
 
 implementation
 
 uses
-  SysUtils{$ifdef MSWINDOWS}, Windows, Winsock2{$ELSE}, BaseUnix, TermIO{$ENDIF};
+  SysUtils{$IFDEF MSWINDOWS}, Windows, {$IFDEF FPC}WinSock2{$ELSE}WinSockDelphi{$ENDIF}{$ELSE}, cthreads, BaseUnix, TermIO{$ENDIF};
 
-procedure TBlockSocket.Bind(Porta, BackLog : integer); begin
+{$IFDEF UNIX}{$DEFINE IOCtlSocket:=fpIOCtl}{$DEFINE FD_Zero:=fpFD_Zero}{$DEFINE FD_Set:=fpFD_Set}{$DEFINE Select:=fpSelect}{$ENDIF}
+
+procedure TBlockSocket.Bind(Porta, BackLog : word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr.s_Addr := 0;
@@ -41,11 +43,11 @@ procedure TBlockSocket.Bind(Porta, BackLog : integer); begin
   fpListen(Socket, BackLog);
 end;
 
-procedure TBlockSocket.Connect(Host, Porta : string); begin
+procedure TBlockSocket.Connect(Host : string; Porta : Word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr   := StrToHostAddr(Host);
-    Sin_Port   := htons(StrToInt(Porta));
+    Sin_Port   := htons(Porta);
   end;
   fpConnect(Socket, @RemoteSin, sizeof(RemoteSin));
 end;
@@ -58,7 +60,7 @@ constructor TBlockSocket.Create(S : integer = 0); begin
 end;
 
 destructor TBlockSocket.Destroy; begin
-  CloseSocket;
+  Close;
 	inherited;
 end;
 
@@ -72,8 +74,8 @@ begin
   Result := NetAddrToStr(Addr.Sin_Addr);
 end;
 
-procedure TBlockSocket.CloseSocket; begin
-  Sockets2.CloseSocket(Socket);
+procedure TBlockSocket.Close; begin
+  CloseSocket(Socket);
 end;
 
 function TBlockSocket.Accept(Timeout : integer) : integer;
@@ -93,7 +95,7 @@ function TBlockSocket.WaitingData : cardinal;
 var
   Tam : dword;
 begin
-	if ioctlsocket(Socket, FIONREAD, @Tam) <> 0 then
+	if IOCtlSocket(Socket, FIONREAD, @Tam) <> 0 then
     Result := 0
   else
     Result := Tam;
@@ -104,8 +106,8 @@ var
   FDS: TFDSet;
   TimeV: TTimeVal;
 begin
-  fd_zero(FDS);
-  fd_set(Socket, FDS);
+  FD_Zero(FDS);
+  FD_Set(Socket, FDS);
   TimeV.tv_usec := (Timeout mod 1000) * 1000;
   TimeV.tv_sec := Timeout div 1000;
   Result := Select(Socket + 1, @FDS, nil, nil, @TimeV) > 0;
@@ -136,8 +138,8 @@ procedure TBlockSocket.SendString(const Data: string); begin
 	fpSend(Socket, @Data[1], length(Data), 0);
 end;
 
-function TBlockSocket.SocketError : integer; begin
-  Result := Sockets2.SocketError
+function TBlockSocket.Error : integer; begin
+  Result := SocketError
 end;
 
 end.

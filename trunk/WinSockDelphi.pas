@@ -4,11 +4,11 @@
         of the University of California. All rights reserved.
         The Berkeley Software License Agreement specifies the terms and
         conditions for redistribution. }
-
 // converted by Alex Konshin, mailto:alexk@msmt.spb.su
 // added FreePascal stuff: AlexS@freepage.de
+// renamed from winsock2.pp by wanderlan.anjos@gmail.com
 
-unit WinSock2;
+unit WinSockDelphi;
 
 interface
 
