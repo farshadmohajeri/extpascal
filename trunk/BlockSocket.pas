@@ -29,9 +29,13 @@ type
 implementation
 
 uses
-  SysUtils{$IFDEF MSWINDOWS}, Windows, {$IFDEF FPC}WinSock2{$ELSE}WinSockDelphi{$ENDIF}{$ELSE}, cthreads, BaseUnix, TermIO{$ENDIF};
-
-{$IFDEF UNIX}{$DEFINE IOCtlSocket:=fpIOCtl}{$DEFINE FD_Zero:=fpFD_Zero}{$DEFINE FD_Set:=fpFD_Set}{$DEFINE Select:=fpSelect}{$ENDIF}
+  SysUtils,
+  {$IFDEF MSWINDOWS}
+    Windows, {$IFDEF FPC}WinSock2{$ELSE}WinSockDelphi{$ENDIF}
+  {$ELSE}
+    {$DEFINE IOCtlSocket:=fpIOCtl}{$DEFINE FD_Zero:=fpFD_Zero}{$DEFINE FD_Set:=fpFD_Set}{$DEFINE Select:=fpSelect}
+    cthreads, BaseUnix, TermIO
+  {$ENDIF};
 
 procedure TBlockSocket.Bind(Porta, BackLog : word); begin
   with RemoteSin do begin
