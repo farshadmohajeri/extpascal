@@ -1,6 +1,6 @@
-program TestExtPascal;
+program ExtPascalSamples;
 
-{$APPTYPE CONSOLE}
+{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
   SysUtils, FCGIApp, ExtPascal,

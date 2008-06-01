@@ -433,7 +433,7 @@ begin
     else begin
       CreateGUID(GUID);
       Thread := GUIDToString(GUID);
-      SetCookie('FCGIThread', Thread,Now);
+      SetCookie('FCGIThread', Thread);
       Application.Threads.AddObject(Thread, Self);
       FreeOnTerminate := false;
     end
@@ -459,7 +459,7 @@ begin
       repeat
         if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
-          if FSocket.SocketError <> 0 then
+          if FSocket.Error <> 0 then
             Terminate
           else begin
             I := 1;

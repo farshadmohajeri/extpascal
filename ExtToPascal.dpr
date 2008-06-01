@@ -1,4 +1,6 @@
-program ExtToPascal; {$APPTYPE CONSOLE}{$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
+program ExtToPascal; 
+{$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
+{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
@@ -902,14 +904,16 @@ end;
 var
   F : TSearchrec;
   T : tdatetime;
+  P : string;
 begin
-  if FindFirst(paramstr(1) + '\*.html', faAnyFile, F) = 0 then begin
+  P := AnsiReplaceStr(paramstr(1), '\', '/');
+  if FindFirst(P + '/*.html', faAnyFile, F) = 0 then begin
     AllClasses := TStringList.Create;
     Units := TStringList.Create;
     T := now;
     writeln('Reading HTML files...');
     repeat
-  		ReadHtml(paramstr(1) + '\' + F.Name)
+  		ReadHtml(P + '/' + F.Name)
     until FindNext(F) <> 0;
     writeln('Writing Unit files...');
     FindClose(F);
@@ -918,7 +922,7 @@ begin
     writeln(AllClasses.Count, ' ExtJS classes wrapped to Object Pascal at ', FormatDateTime('ss.zzz', Now-T), ' seconds');
   end
   else
-    writeln('ExtJS HTML files not found at ' + paramstr(1) + '\*.html');
+    writeln('ExtJS HTML files not found at ' + P + '/*.html');
   writeln('Press enter.');
   readln;
 end.

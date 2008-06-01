@@ -82,7 +82,7 @@ type
     function Count : integer;
   end;
 
-  ExtFunction = class(ExtObject) end;
+  ExtFunction = class(ExtObject);// end;
   HTMLElement = class(ExtObject) end;
   StyleSheet = class(ExtObject) end;
   RegExp = class(ExtObject) end;
