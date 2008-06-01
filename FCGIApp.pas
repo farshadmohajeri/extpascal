@@ -7,7 +7,8 @@ unit FCGIApp;
 interface
 
 uses
-  Classes, BlockSocket, SysUtils, SyncObjs, ExtPascalUtils;
+  {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
+  BlockSocket, SysUtils, SyncObjs, Classes, ExtPascalUtils;
 
 type
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);

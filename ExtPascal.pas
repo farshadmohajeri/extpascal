@@ -3,7 +3,7 @@ unit ExtPascal;
 interface
 
 uses
-  Classes, FCGIApp;
+  FCGIApp;
 
 const
   ExtPath = '/ext';

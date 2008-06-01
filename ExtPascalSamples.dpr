@@ -3,7 +3,7 @@ program ExtPascalSamples;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  SysUtils, FCGIApp, ExtPascal,
+  FCGIApp, ExtPascal, SysUtils,
   Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
