@@ -18,7 +18,7 @@ type
     procedure RemoveJS(JS : string);
     function GetStyle: string;
   protected
-    procedure BeforeHandleRequest; override;
+    function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
@@ -30,6 +30,7 @@ type
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = '');
+    procedure ErrorMessage(Msg : string; Handler: string = '');
   end;
 
   ArrayOfString  = array of string;
@@ -49,6 +50,7 @@ type
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     procedure CreateVar(JS : string);
+    procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
   protected
     procedure InitDefaults; virtual;
@@ -67,7 +69,9 @@ type
     property JSName : string read FJSName;
   end;
 
-  ExtObjectList = class
+  ExtFunction = class(ExtObject);// end;
+  
+  ExtObjectList = class(ExtFunction)
   private
     FObjects : array of ExtObject;
     Attribute, JSName : string;
@@ -75,28 +79,27 @@ type
     function GetFObjects(I: integer): ExtObject;
   public
     property Objects[I : integer] : ExtObject read GetFObjects; default;
-    constructor CreateSingleton(JSName: string);
+    constructor CreateSingleton(pJSName: string);
     constructor Create(pOwner : ExtObject = nil; pAttribute : string = '');
     destructor Destroy; override;
     procedure Add(Obj : ExtObject);
     function Count : integer;
   end;
 
-  ExtFunction = class(ExtObject);// end;
-  HTMLElement = class(ExtObject) end;
-  StyleSheet = class(ExtObject) end;
-  RegExp = class(ExtObject) end;
-  CSSRule = class(ExtObject) end;
-  XMLDocument = class(ExtObject) end;
-  NodeList = class(ExtObject) end;
+  HTMLElement = class(ExtObject);
+  StyleSheet = class(ExtObject);
+  RegExp = class(ExtObject);
+  CSSRule = class(ExtObject);
+  XMLDocument = class(ExtObject);
+  NodeList = class(ExtObject);
   Region = type string;
   NativeMenu = ExtObject;
   el = type string; // doc fault
-  Event = class(ExtObject) end;
+  Event = class(ExtObject);
   EventObject = Event;
   HTMLNode = ExtObject;
-  _Constructor = class(ExtObject) end;
-  _Class = class(ExtObject) end;
+  _Constructor = class(ExtObject);
+  _Class = class(ExtObject);
   ExtLibRegion = Region; //doc fault
   visMode = Integer; // doc fault
   The = ExtObject; // doc fault
@@ -120,28 +123,6 @@ uses
   SysUtils, StrUtils, Math;
 
 { TExtThread }
-
-procedure TExtThread.RelocateVar(JS, JSName, Owner : string; I : integer);
-var
-  VarName, VarBody : string;
-  J, K : integer;
-begin
-  if pos('O_', JS) = 0 then exit;
-  J := LastDelimiter(':,', JS);
-  if J <> 0 then
-    VarName := copy(JS, J+1, posex('_', JS, J+3)-J)
-  else
-    exit;
-  J := posex('/*' + VarName + '*/', Response, I);
-  if J > I then begin
-    K := pos('var ' + VarName + '=new', Response);
-    J := posex(';', Response, J);
-    VarBody := copy(Response, K, J-K+1+length(VarName));
-    delete(Response, K, length(VarBody));
-    if JSName[1] in ['0'..'9'] then JSName := Owner;
-    insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
-  end;
-end;
 
 procedure TExtThread.RemoveJS(JS: string);
 var
@@ -172,11 +153,15 @@ function TExtThread.GetStyle : string; begin
     Result := '<style>' + Style + '</style>';
 end;
 
+procedure TExtThread.ErrorMessage(Msg : string; Handler : string = ''); begin
+  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
+    IfThen(Handler = '', '', ',fn:function(){' + Handler + '}') + '});');
+end;
+
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '<br/><hr/>Method: ' + Method +
-    IfThen(Params = '', '', '<br/>Params: ' + Params) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
+  ErrorMessage(Msg + '<br/><hr/>Method: ' + Method + IfThen(Params = '', '', '<br/>Params: ' + Params));
 end;
 
 // Self-translating
@@ -195,7 +180,29 @@ begin
     if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
-  if JSName <> '' then RelocateVar(JS, JSName, Owner, I+length(JS));
+  if (JSName <> '') and (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then
+    RelocateVar(JS, JSName, Owner, I+length(JS));
+end;
+
+procedure TExtThread.RelocateVar(JS, JSName, Owner : string; I : integer);
+var
+  VarName, VarBody : string;
+  J, K : integer;
+begin
+  J := LastDelimiter(':,', JS);
+  if J <> 0 then
+    VarName := copy(JS, J+1, posex('_', JS, J+3)-J)
+  else
+    exit;
+  J := posex('/*' + VarName + '*/', Response, I);
+  if J > I then begin
+    K := pos('var ' + VarName + '=new', Response);
+    J := posex(';', Response, J);
+    VarBody := copy(Response, K, J-K+1+length(VarName));
+    delete(Response, K, length(VarBody));
+    if JSName[1] in ['0'..'9'] then JSName := Owner;
+    insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
+  end;
 end;
 
 function TExtThread.JSConcat(OldCommand, NewCommand: string): string;
@@ -214,10 +221,11 @@ begin
     Result := OldCommand;
 end;
 
-procedure TExtThread.BeforeHandleRequest;
+function TExtThread.BeforeHandleRequest : boolean;
 var
   I : integer;
 begin
+  Result := true;
   if FLanguage = '' then begin // Set language
     FLanguage := RequestHeader['HTTP_ACCEPT_LANGUAGE'];
     I := LastDelimiter('-', FLanguage);
@@ -233,7 +241,17 @@ begin
     Sequence  := 0;
     Style     := '';
     Libraries := '';
-  end;
+  end
+  else
+    if Cookie['FCGIThread'] = '' then begin
+      ErrorMessage('This web application requires Cookies enabled to Ajax works.');
+      Result := false;
+    end
+    else
+      if NewThread then begin
+        ErrorMessage('Context not found.<br/>This Window will be reloaded to fix this issue.', 'window.location.reload()');
+        Result := false;
+      end
 end;
 
 // Extract Comments, set: HTML body, title, charset, ExtJS CSS, ExtJS libraries, ExtJS theme, ExtJS language, user styles, ExtJS invoke and Ajax response
@@ -279,7 +297,7 @@ constructor ExtObjectList.Create(pOwner : ExtObject = nil; pAttribute : string =
   JSName    := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
-constructor ExtObjectList.CreateSingleton(JSName : string); begin
+constructor ExtObjectList.CreateSingleton(pJSName : string); begin
   Attribute := JSName;
 end;
 
@@ -342,10 +360,13 @@ end;
 procedure ExtObject.CreateVar(JS : string); begin
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  if pos('.create(', JS) = 0 then
-    JSCode('var ' + JSName + '=new ' + JS)
-  else
-    JSCode('var ' + JSName + '= ' + JS) // Alternate create constructor, ExtJS fault
+  JSCode('var ' + JSName + '=new ' + JS)
+end;
+
+procedure ExtObject.CreateVarAlt(JS: string); begin // Alternate create constructor, ExtJS fault
+  CreateJSName;
+  insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
+  JSCode('var ' + JSName + '= ' + JS)
 end;
 
 constructor ExtObject.Create(Owner : ExtObject = nil); begin
@@ -425,7 +446,7 @@ begin
       '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
   end
   else
-    JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});')
+    JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
 end;
 
 function WriteFunction(Command : string) : string;

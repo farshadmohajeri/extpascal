@@ -29,7 +29,7 @@ type
     function SetCurrentFCGIThread : boolean;
   protected
     FSocket : TBlockSocket;
-    FKeepConn : boolean;
+    FKeepConn, NewThread : boolean;
     FResponseHeader : string;
     FRequestHeader, FQuery, FCookie : TStringList;
     FLastAccess : TDateTime;
@@ -41,7 +41,7 @@ type
     procedure GetValues(Content : string);
     function HandleRequest(pRequest : string) : string;
     procedure NotFoundError; virtual;
-    procedure BeforeHandleRequest; virtual;
+    function BeforeHandleRequest : boolean; virtual;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
   public
@@ -285,7 +285,7 @@ end;
 
 procedure TFCGIThread.AfterHandleRequest; begin end;
 
-procedure TFCGIThread.BeforeHandleRequest; begin end;
+function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
 procedure TFCGIThread.CompleteRequestHeaderInfo;
 var
@@ -388,23 +388,23 @@ begin
   else
     FRequest := pRequest;
   Response := '';
-  BeforeHandleRequest;
-  if PathInfo = '' then
-    Home
-  else begin
-    MethodCode := MethodAddress(PathInfo);
-    if MethodCode <> nil then begin
-      PageMethod.Code := MethodCode;
-      PageMethod.Data := Self;
-      try
-        MethodCall(PageMethod); // Call published method
-      except
-        on E : Exception do OnError(E.Message, PathInfo, pRequest)
-      end;
-    end
-    else
-      NotFoundError;
-  end;
+  if BeforeHandleRequest then
+    if PathInfo = '' then
+      Home
+    else begin
+      MethodCode := MethodAddress(PathInfo);
+      if MethodCode <> nil then begin
+        PageMethod.Code := MethodCode;
+        PageMethod.Data := Self;
+        try
+          MethodCall(PageMethod); // Call published method
+        except
+          on E : Exception do OnError(E.Message, PathInfo, pRequest)
+        end;
+      end
+      else
+        NotFoundError;
+    end;
   AfterHandleRequest;
   Result := Response;
 end;
@@ -426,7 +426,8 @@ begin
   Thread := Cookie['FCGIThread'];
   Application.AccessThreads.Enter;
   I := Application.Threads.IndexOf(Thread);
-  if (Thread = '') or (I = -1) then begin
+  if I = -1 then begin
+    NewThread := true;
     if Application.ReachedMaxConns then begin
       SendEndRequest(psOverloaded);
       Result := false;
@@ -443,6 +444,7 @@ begin
     CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
     CurrentFCGIThread.FRequestHeader.Assign(FRequestHeader);
     CurrentFCGIThread.FCookie.Assign(FCookie);
+    CurrentFCGIThread.NewThread := false;
   end;
   Application.AccessThreads.Leave;
 end;
