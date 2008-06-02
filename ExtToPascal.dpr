@@ -672,7 +672,7 @@ var
   I : integer;
 begin
   with Cls do begin
-    writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtObject', Parent), ')');
+    writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtFunction', Parent), ')');
     if Properties.Count > 0 then writeln(Pas, Tab, 'private');
     for I := 0 to Properties.Count-1 do // Write private fields
       with TProp(Properties.Objects[I]) do begin
@@ -813,8 +813,8 @@ begin
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
-        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtObject;'^M^J,
-          Tab, 'ExtMenuCheckItem = ExtComponent;'^M^J, Tab, 'ExtDdDragSource = ExtObject;'^M^J, Tab, 'ExtDdDD = ExtObject;');
+        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtFunction;'^M^J,
+          Tab, 'ExtMenuCheckItem = ExtComponent;'^M^J, Tab, 'ExtDdDragSource = ExtFunction;'^M^J, Tab, 'ExtDdDD = ExtFunction;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
@@ -873,7 +873,7 @@ begin
                 if Return = '' then begin // Write constructors
                   writeln(Pas, Tab, 'InitDefaults;');
                   if AltCreate then // ExtJS fault
-                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''.create', ParamsToJSON(Params), ''')')
+                    writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''')')
                   else
                     writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''')');
                 end
@@ -881,7 +881,7 @@ begin
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
                     ''', ''' + CName + ''');');
                   if Return <> 'Void' then
-                    writeln(Pas, Tab, 'Result := ExtFunction(Self)')
+                    writeln(Pas, Tab, 'Result := Self')
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
