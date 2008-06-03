@@ -3,7 +3,7 @@ program CGIGateway;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  SysUtils, BlockSocket, {$IFDEF FPC}BaseUnix{$ELSE}ShellAPI{$ENDIF};
+  SysUtils, BlockSocket, {$IFDEF MSWINDOWS}ShellAPI{$ELSE}BaseUnix{$ENDIF};
 
 procedure AddParam(var S : string; Param : array of string);
 var
@@ -97,7 +97,7 @@ end;
 function Exec(Prog : string) : boolean;
 {$IFNDEF MSWINDOWS}
 var
-  ArgV : PPChar;
+  ArgV : array of pchar;
 {$ENDIF}
 begin
 {$IFDEF MSWINDOWS}
@@ -106,10 +106,10 @@ begin
   case fpFork of
     -Maxint..-1 : Result := false;
     0 : begin
-      getmem(ArgV, 2*sizeof(PChar));
+      SetLength(ArgV, 2);
       ArgV[0] := pchar(Prog);
       ArgV[1] := nil;
-      Execv(Prog, ArgV);
+      fpExecv(Prog, ArgV);
       Result := false;
     end;
   else
@@ -127,7 +127,7 @@ begin
     if Error = 0 then
       TalkFCGI
     else begin
-      FCGIApp := 'C:/Trabalho/ExtPascal/ExtPascalSamples.exe'; //GetEnvironmentVariable('SCRIPT_FILENAME');
+      FCGIApp := GetEnvironmentVariable('SCRIPT_FILENAME') + '.exe';
       if Exec(FCGIApp) then begin
         Connect(Host, Port);
         if Error = 0 then

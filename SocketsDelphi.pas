@@ -324,6 +324,7 @@ begin
     array4int(Result.s_addr)[i]:=k;
     if J<>0 then Exit;
   end;
+  Result.s_addr := ntohl(Result.s_addr);
 end;
 
 function StrToNetAddr(IP : AnsiString) : in_addr; begin

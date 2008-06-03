@@ -50,7 +50,7 @@ end;
 procedure TBlockSocket.Connect(Host : string; Porta : Word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
-    Sin_Addr   := StrToHostAddr(Host);
+    Sin_Addr   := StrToNetAddr(Host);
     Sin_Port   := htons(Porta);
   end;
   fpConnect(Socket, @RemoteSin, sizeof(RemoteSin));
