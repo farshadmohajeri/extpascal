@@ -309,9 +309,8 @@ function StrToHostAddr(IP : AnsiString) : in_addr ;
 var
   Dummy : AnsiString;
   I,j,k : Longint;
-  Temp  : in_addr;
 begin
-  strtohostaddr.s_addr:=0;
+  Result.s_addr:=0;
   for I:=1 to 4 do begin
     if I<4 then begin
       J:=Pos('.',IP);
@@ -322,10 +321,9 @@ begin
     else
       Dummy:=IP;
     val(Dummy,k,J);
-    array4int(temp.s_addr)[i]:=k;
+    array4int(Result.s_addr)[i]:=k;
     if J<>0 then Exit;
   end;
-  strtohostaddr.s_addr:=ntohl(Temp.s_addr);
 end;
 
 function StrToNetAddr(IP : AnsiString) : in_addr; begin

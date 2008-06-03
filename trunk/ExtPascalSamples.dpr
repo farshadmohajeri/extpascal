@@ -481,6 +481,10 @@ begin
       Text    := 'Add Plant using AJAX!';
       Handler := Ajax(AddPlant);
     end;
+    with ExtButton.AddTo(TBarArray) do begin
+      Text    := 'Logout';
+      Handler := Ajax(Logout);
+    end;
   end;
   DataStore.Load(nil);
 end;
