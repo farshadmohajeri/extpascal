@@ -3,7 +3,7 @@ program CGIGateway;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  SysUtils, BlockSocket, {$IFDEF FPC}Process{$ELSE}ProcessDelphi{$ENDIF};
+  SysUtils, BlockSocket, {$IFDEF FPC}BaseUnix{$ELSE}ShellAPI{$ENDIF};
 
 procedure AddParam(var S : string; Param : array of string);
 var
@@ -68,6 +68,11 @@ const
 var
   Socket : TBlockSocket;
 
+procedure ErrorCGI(Msg : string); begin
+  writeln('Content-Type:text/plain'#10#13);
+  writeln(Msg);
+end;
+
 procedure TalkFCGI;
 var
   Request : string;
@@ -77,6 +82,7 @@ begin
     Request := '';
     if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then Read(Request);
     Tam := length(Request);
+    if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(EnvVariables + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
     Request := '';
     CanRead(3000);
@@ -84,34 +90,54 @@ begin
       Request := Request + RecvString;
     until WaitingData = 0;
     if length(Request) > 8 then
-      writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])))
-    else
-      writeln;
+      writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
   end;
 end;
 
+function Exec(Prog : string) : boolean;
+{$IFNDEF MSWINDOWS}
+var
+  ArgV : PPChar;
+{$ENDIF}
+begin
+{$IFDEF MSWINDOWS}
+  Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
+{$ELSE}
+  case fpFork of
+    -Maxint..-1 : Result := false;
+    0 : begin
+      getmem(ArgV, 2*sizeof(PChar));
+      ArgV[0] := pchar(Prog);
+      ArgV[1] := nil;
+      Execv(Prog, ArgV);
+      Result := false;
+    end;
+  else
+    Result := true
+  end;
+{$ENDIF}
+end;
+
+var
+  FCGIApp : string;
 begin
   Socket := TBlockSocket.Create;
   with Socket do begin
     Connect(Host, Port);
     if Error = 0 then
       TalkFCGI
-    else
-      with TProcess.Create(nil) do begin
-        CommandLine := 'C:/Trabalho/ExtPascal/ExtPascalSamples.exe';//GetEnvironmentVariable('SCRIPT_FILENAME');
-        Options := [poNoConsole];
-        try
-          Execute;
-          sleep(10);
-          Connect(Host, Port);
-          if Error = 0 then
-            TalkFCGI
-          else
-            writeln('FastCGI application (', CommandLine, ') not connect at port ', Port);
-        except
-          writeln(CommandLine, ' not found.');
-        end;
-      end;
+    else begin
+      FCGIApp := 'C:/Trabalho/ExtPascal/ExtPascalSamples.exe'; //GetEnvironmentVariable('SCRIPT_FILENAME');
+      if Exec(FCGIApp) then begin
+        Connect(Host, Port);
+        if Error = 0 then
+          TalkFCGI
+        else
+          ErrorCGI('FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
+      end
+      else
+        ErrorCGI(FCGIApp + ' not found or has no execute permission.');
+    end;
     Free;
   end;
 end.
