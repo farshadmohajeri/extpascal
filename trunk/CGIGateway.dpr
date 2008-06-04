@@ -3,7 +3,18 @@ program CGIGateway;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  SysUtils, BlockSocket, {$IFDEF MSWINDOWS}ShellAPI{$ELSE}BaseUnix{$ENDIF};
+  SysUtils, BlockSocket
+  {$IFNDEF MSWINDOWS} // Posix systems
+    , BaseUnix;
+  {$ELSE}
+    {$IFNDEF FPC} // Delphi
+      , ShellAPI;
+    {$ELSE} // FPC Windows optimization, ShellAPI generate a greater .exe
+      ;
+      function ShellExecute(hWnd: integer; Operation, FileName, Parameters,
+        Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
+    {$ENDIF}
+  {$ENDIF}
 
 procedure AddParam(var S : string; Param : array of string);
 var
@@ -127,7 +138,7 @@ begin
     if Error = 0 then
       TalkFCGI
     else begin
-      FCGIApp := GetEnvironmentVariable('SCRIPT_FILENAME') + '.exe';
+      FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.fcgi');
       if Exec(FCGIApp) then begin
         Connect(Host, Port);
         if Error = 0 then
