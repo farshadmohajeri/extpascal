@@ -592,6 +592,6 @@ begin
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.1', TSamples);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.6', TSamples, 2014, 2, true);
   Application.Run;
 end.

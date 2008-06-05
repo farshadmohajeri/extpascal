@@ -138,7 +138,7 @@ begin
     if Error = 0 then
       TalkFCGI
     else begin
-      FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.fcgi');
+      FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.exe');
       if Exec(FCGIApp) then begin
         Connect(Host, Port);
         if Error = 0 then
