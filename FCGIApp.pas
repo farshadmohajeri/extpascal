@@ -74,20 +74,21 @@ type
     WebServers : TStringList;
     FCGIThreadClass : TFCGIThreadClass;
     Port : word;
-    MaxConns : integer;
+    MaxConns, FThreadsCount : integer;
     Threads : TStringList;
     MaxIdleTime : TDateTime;
     AccessThreads : TCriticalSection;
     procedure GarbageThreads;
   public
-    Terminated, GarbageNow : boolean;
+    Terminated, GarbageNow, Shutdown : boolean;
     Title : string;
-    constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
+    constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
+      pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
     destructor Destroy; override;
     procedure Run;
     function CanConnection(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
-    function ThreadsCount : cardinal;
+    function ThreadsCount : integer;
     function ReachedMaxConns : boolean;
   end;
 
@@ -132,6 +133,8 @@ procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
 end;
 
 constructor TFCGIThread.Create(NewSocket : integer); begin
+  if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
+  inc(Application.FThreadsCount);
   FSocket := TBlockSocket.Create(NewSocket);
   FRequestHeader := TStringList.Create;
   FRequestHeader.StrictDelimiter := true;
@@ -147,6 +150,7 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
 end;
 
 destructor TFCGIThread.Destroy; begin
+  dec(Application.FThreadsCount);
   FRequestHeader.Free;
   FQuery.Free;
   FCookie.Free;
@@ -531,7 +535,8 @@ function TFCGIApplication.ReachedMaxConns : boolean; begin
   Result := Threads.Count >= MaxConns
 end;
 
-constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30; pMaxConns : integer = 1000);
+constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014;
+  pMaxIdleMinutes : word = 30; pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
 var
   WServers : string;
 begin
@@ -541,6 +546,7 @@ begin
   Threads := TStringList.Create;
   AccessThreads := TCriticalSection.Create;
   MaxIdleTime := EncodeTime(0, pMaxIdleMinutes, 0, 0);
+  Shutdown := pShutdownAfterLastThreadDown;
   MaxConns := pMaxConns;
   if ParamCount = 1 then
     WServers := ParamStr(1)
@@ -584,6 +590,7 @@ var
   NewSocket, I : integer;
 begin
   I := 0;
+  FThreadsCount := -1;
   with TBlockSocket.Create do begin
     Bind(Port, 100);
     repeat
@@ -595,13 +602,13 @@ begin
         I := 0;
       end;
       inc(I);
-    until Terminated;
+    until Terminated or (Shutdown and (ThreadsCount = 0));
     Free;
   end;
 end;
 
-function TFCGIApplication.ThreadsCount: cardinal; begin
-  Result := Threads.Count
+function TFCGIApplication.ThreadsCount: integer; begin
+  Result := FThreadsCount
 end;
 
 end.
