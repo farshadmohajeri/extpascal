@@ -13,14 +13,14 @@ The main advantages are:
 
 = Prerequisites =
 
- * Download and install Apache 2.2.8 or later.
- * Download and install [http://www.fastcgi.com FastCGI for Apache 2.2]. 
- * Download and install ExtJS 2.02 or later, _*with the documentation*_.
- * Install Delphi 7 or later (should work on previous versions with little or no changes), I use Turbo Delphi Win32 *OR* download and install Lazarus/FreePascal 0.9.24 or later.
- * Download ExtPascal files from svn to a working directory, for example: C:\ExtPascal 
+ * Download and install Apache 2.2.8 or later, but 1.3 works using CGIGateway included in ExtPascal package.
+ * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache is necessary.
+ * Download and install ExtJS 2.1 or later, _*with the documentation*_.
+ * Install Delphi 7 or later (should work on previous versions with little or no changes), I use Turbo Delphi Win32 *OR* download and install Lazarus/FreePascal 0.9.24 or later. Another very good IDE for FreePascal is [http://http://sourceforge.net/projects/mseide-msegui MSEide 1.8 or later].
+ * Download ExtPascal files from SVN to a working directory, for example: C:\ExtPascal 
 
 = First Steps =
  # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
  # Run it informing the path of the ExtJS documentation, the HTML files. For example: ExtToPascal C:\Ext\docs\output
- # ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.0.2 of ExtJS.
- # Use TextExtPascal as example.
+ # ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.1 of ExtJS.
+ # Use ExtPascalSamples as example.
