@@ -58,6 +58,6 @@ LoadModule fastcgi_module modules/mod_fastcgi.so
 fastcgiexternalserver <path to/ExtPascalApp.exe> –host localhost:2014 –idle-timeout 3
 }}}
  * <paths to> must be the complete path to FastCGI application, using Apache patterns or a alias (see Apache docs).
- * –host parameter declare the server where is hosted the FastCGI application (by example localhost). Se for na mesma máquina declara-se localhost. Se for em outra declara-se o FQDN da máquina ou o endereço IP.
+ * –host parameter declare the server where is hosted the FastCGI application (by example localhost).
  * The default TCP/IP port is 2014, but another could be declared.
  * See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
