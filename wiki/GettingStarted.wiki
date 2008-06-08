@@ -49,9 +49,13 @@ ExtPascalSamples.cgi // The CGI Gateway
  # Rename to “mod_fastcgi.so” 
  # Copy to Apache's modules folder (by example c:\apache\modules)
  # In httpd.conf file at LoadModules session insert the line below:
- {{{LoadModule fastcgi_module modules/mod_fastcgi.so}}}
+{{{
+LoadModule fastcgi_module modules/mod_fastcgi.so
+}}}
  # Declare the FastCGI application as external server, appending this line in httpd.conf:
- {{{fastcgiexternalserver <path to/ExtPascalApp.exe> –host localhost:2014 –idle-timeout 3}}}
+{{{
+fastcgiexternalserver <path to/ExtPascalApp.exe> –host localhost:2014 –idle-timeout 3
+}}}
  * <paths to> must be the complete path until FastCGI application, using Apache patterns or a alias (see Apache docs)created in adequat  criado na sessão apropriada Exs.:
  * –host parameter declare the server where is hosted the FastCGI application (by example localhost). Se for na mesma máquina declara-se localhost. Se for em outra declara-se o FQDN da máquina ou o endereço IP.
  * The default TCP/IP port is 2014, but another could be declared.
