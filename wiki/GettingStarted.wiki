@@ -25,6 +25,7 @@ The main advantages are:
 
 = First Steps =
  # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
+ # For FreePascal I recommend `-Smdcghie50 -venwi -l` as compiler options. Append this options `-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE` to release version.
  # Run it informing the path of the ExtJS documentation, the HTML files. For example: ExtToPascal C:\Ext\docs\output
  # ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.1 of ExtJS.
  # Compile ExtPascalSamples as example.
@@ -42,7 +43,7 @@ ExtPascalSamples.exe // The real FastCGI application
 ExtPascalSamples.cgi // The CGI Gateway
 }}}
  # None configuration is necessary on Apache.
- # In your browser call Samples using: *http://localhost/cgi-bin/ExtPascalSamples.cgi
+ # In your browser call Samples using: `http://localhost/cgi-bin/ExtPascalSamples.cgi`
 
 = Setting using native FastCGI only for Apache 2.2+ =
  # Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
