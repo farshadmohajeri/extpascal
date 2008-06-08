@@ -15,7 +15,7 @@ The main advantages are:
 
  * One Windows, Linux, MacOS X or FreeBSD machine. I tested using Intel/AMD 32 bits, but should work with other processors supported by FreePascal.
  * A web browser: IE 5+, Firefox 1.5+, Safari 2+, Opera 9+ or compatibles.   
- * Download and install Apache 2.2.8 or later, but 1.3 works using CGIGateway included in ExtPascal package.
+ * Download and install Apache 2.2.8 or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package.
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache is necessary.
  * Download ExtJS 2.1 or later, _*with the documentation*_.
  * Install ExtJS below Apache's Document Root at folder *ext*
@@ -29,9 +29,9 @@ The main advantages are:
  # ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.1 of ExtJS.
  # Compile ExtPascalSamples as example.
 
-= Setting using FCGI thru CGI gateway =
+= Setting using FastCGI thru CGI gateway (any Apache version and similar procedure for IIS) =
  # Open CGIGateway.dpr
- # Modify Port if necessary, default 2014
+ # Modify Port optional parameter if necessary, default 2014
  # Compile
  # Copy CGIGateway.exe to cgi-bin directory
  # Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
@@ -42,4 +42,18 @@ ExtPascalSamples.exe // The real FastCGI application
 ExtPascalSamples.cgi // The CGI Gateway
 }}}
  # None configuration is necessary on Apache.
- # In your browser call Samples using: *http://localhost/cgi-bin/ExtPascalSamples.cgi*
+ # In your browser call Samples using: *http://localhost/cgi-bin/ExtPascalSamples.cgi
+
+= Setting using native FastCGI only for Apache 2.2+ =
+ # Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
+ # Rename to “mod_fastcgi.so” 
+ # Copy to Apache's modules folder (by example c:\apache\modules)
+ # In httpd.conf file at LoadModules session insert the line below:
+`LoadModule fastcgi_module modules/mod_fastcgi.so`
+ # Declare the FastCGI application as external server, appending this line in httpd.conf:
+'fastcgiexternalserver <path to/ExtPascalApp.exe> –host localhost:2014 –idle-timeout 3'
+
+  * <paths to> must be the complete path until FastCGI application, using Apache patterns or a alias (see Apache docs)created in adequat  criado na sessão apropriada Exs.:
+  * –host parameter declare the server where is hosted the FastCGI application (by example localhost). Se for na mesma máquina declara-se localhost. Se for em outra declara-se o FQDN da máquina ou o endereço IP.
+  * The default TCP/IP port is 2014, but another could be declared.
+  * See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
