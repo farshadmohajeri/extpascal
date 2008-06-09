@@ -25,7 +25,17 @@ The main advantages are:
 
 = First Steps =
  # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
- # For FreePascal I recommend `-Smdcghie50 -venwi -l` as compiler options. Append this options `-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE` to release version.
+ # For Delphi I recommend set these Syntax options (menu \Project\Options\Compiler):
+{{{
+OFF Strict var-strings
+OFF Complete boolean eval
+ON Extended syntax 
+OFF Typed @ operator
+ON Open parameters
+ON Huge strings 
+ON Assignable typed constants
+}}}
+ # For FreePascal I recommend _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append this options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release version.
  # Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
 {{{
 ExtToPascal C:\Ext\docs\output 
