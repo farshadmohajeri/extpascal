@@ -26,7 +26,11 @@ The main advantages are:
 = First Steps =
  # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
  # For FreePascal I recommend `-Smdcghie50 -venwi -l` as compiler options. Append this options `-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE` to release version.
- # Run it informing the path of the ExtJS documentation, the HTML files. For example: ExtToPascal C:\Ext\docs\output
+ # Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
+{{{
+ExtToPascal C:\Ext\docs\output 
+ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-2.1\docs\output"
+}}}
  # ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.1 of ExtJS.
  # Compile ExtPascalSamples as example.
 
