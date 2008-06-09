@@ -65,6 +65,7 @@ type
   published
     procedure Home; virtual; abstract;
     procedure Logout;
+    procedure Shutdown;
   end;
   {$M-}
   TFCGIThreadClass = class of TFCGIThread;
@@ -162,6 +163,11 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := ''
   else
     FResponseHeader := FResponseHeader + Header + ^M^J;
+end;
+
+procedure TFCGIThread.Shutdown; begin
+  Logout;
+  Application.Terminated := true
 end;
 
 procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
