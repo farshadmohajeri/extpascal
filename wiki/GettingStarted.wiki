@@ -15,12 +15,12 @@ The main advantages are:
 
  * One Windows, Linux, MacOS X or FreeBSD machine. I tested using Intel/AMD 32 bits, but should work with other processors supported by FreePascal.
  * A web browser: IE 5+, Firefox 1.5+, Safari 2+, Opera 9+ or compatibles.   
- * Download and install Apache 2.2.8 or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package.
- * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache is necessary.
+ * Download and install Apache 2.2.8 or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package, see below.
+ * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache or IIS is necessary.
  * Download ExtJS 2.1 or later, _*with the documentation*_.
  * Install ExtJS below Apache's Document Root at folder *ext*
  * For Windows install Delphi (5, 6, 7, Turbo, 2006 or 2007) or FreePascal 2.3.1 with Lazarus 0.9.24+ or [http://sourceforge.net/projects/mseide-msegui MSEide 1.8+]. I used Turbo Delphi.
- * For other Posix systems (Linux, MacOS X, BSDs, etc.) install FreePascal 2.3.1 with Lazarus 0.9.24+ or MSEide 1.8+. I used FreePascal and MSEide.
+ * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.3.1 with Lazarus 0.9.24+ or MSEide 1.8+. I used FreePascal and MSEide.
  * Download ExtPascal package to a working directory, for example: C:\ExtPascal. 
 
 = First Steps =
@@ -59,7 +59,7 @@ ExtPascalSamples.cgi // The CGI Gateway
  # None configuration is necessary on Apache.
  # In your browser call Samples using: `http://localhost/cgi-bin/ExtPascalSamples.cgi`
 
-= Setting using native FastCGI only for Apache 2.2+ =
+= Setting using native FastCGI, only for Apache 2.2+ =
  # Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
  # Rename to “mod_fastcgi.so” 
  # Copy to Apache's modules folder (by example c:\apache\modules)
