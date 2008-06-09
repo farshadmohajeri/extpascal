@@ -15,7 +15,7 @@ uses
         Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
     {$ENDIF}
   {$ENDIF}
-
+  
 procedure AddParam(var S : string; Param : array of string);
 var
   I, J   : integer;
@@ -50,6 +50,17 @@ begin
   move(Param[1][1], S[J + Len[0]], Len[1]);
 end;
 
+procedure Log(Msg : string); 
+const
+	First : boolean = true;
+begin
+  if First then begin
+  	writeln('Content-Type:text/plain'#10#13);
+  	First := false;
+  end;
+  writeln(Msg);
+end;
+
 function EnvVariables : string;
 const
   EnvVar : array[0..38] of string = (
@@ -79,11 +90,6 @@ const
 var
   Socket : TBlockSocket;
 
-procedure ErrorCGI(Msg : string); begin
-  writeln('Content-Type:text/plain'#10#13);
-  writeln(Msg);
-end;
-
 procedure TalkFCGI;
 var
   Request : string;
@@ -100,7 +106,7 @@ begin
     repeat
       Request := Request + RecvString;
     until WaitingData = 0;
-    if length(Request) > 8 then
+    if length(Request) > 8 then 
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
   end;
 end;
@@ -114,17 +120,17 @@ begin
 {$IFDEF MSWINDOWS}
   Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
 {$ELSE}
-  case fpFork of
-    -Maxint..-1 : Result := false;
-    0 : begin
+	case fpFork of 
+		-Maxint..-1 : Result := false;
+     0 : begin
       SetLength(ArgV, 2);
-      ArgV[0] := pchar(Prog);
+      ArgV[0] := pchar(Prog);    
       ArgV[1] := nil;
       fpExecv(Prog, ArgV);
       Result := false;
-    end;
+    end
   else
-    Result := true
+  	Result := true
   end;
 {$ENDIF}
 end;
@@ -133,22 +139,22 @@ var
   FCGIApp : string;
 begin
   Socket := TBlockSocket.Create;
-  with Socket do begin
-    Connect(Host, Port);
-    if Error = 0 then
-      TalkFCGI
-    else begin
-      FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.exe');
-      if Exec(FCGIApp) then begin
-        Connect(Host, Port);
-        if Error = 0 then
-          TalkFCGI
-        else
-          ErrorCGI('FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
-      end
+  Socket.Connect(Host, Port);
+  if Socket.Error = 0 then
+    TalkFCGI
+  else begin
+  	Socket.Free;
+    FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.exe');
+    if Exec(FCGIApp) then begin
+    	Socket := TBlockSocket.Create;
+      Socket.Connect(Host, Port);
+      if Socket.Error = 0 then
+        TalkFCGI
       else
-        ErrorCGI(FCGIApp + ' not found or has no execute permission.');
-    end;
-    Free;
+        Log('FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
+    end
+    else
+      Log(FCGIApp + ' not found or has no execute permission.');
   end;
+  try Socket.Free; except end;
 end.
