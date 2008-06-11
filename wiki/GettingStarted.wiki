@@ -69,9 +69,11 @@ LoadModule fastcgi_module modules/mod_fastcgi.so
 }}}
  # Declare the FastCGI application as external server, appending this line in httpd.conf:
 {{{
-fastcgiexternalserver <path to/ExtPascalApp.exe> –host localhost:2014 –idle-timeout 3
+fastcgiexternalserver /cgi-bin/ExtPascalApp.exe –host localhost:2014 –idle-timeout 3
 }}}
- * <paths to> must be the complete path to FastCGI application, using Apache patterns or a alias (see Apache docs).
  * –host parameter declare the server where is hosted the FastCGI application (by example localhost).
  * The default TCP/IP port is 2014, but another could be declared.
+ * Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
+ * Start your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, hoping requests by the TCP port.
+ * In your browser call Samples using: `http://localhost/cgi-bin/ExtPascalSamples.exe`
  * See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
