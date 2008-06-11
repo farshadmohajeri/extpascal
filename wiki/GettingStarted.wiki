@@ -67,6 +67,7 @@ ExtPascalSamples.cgi // The CGI Gateway
 {{{
 http://localhost/cgi-bin/ExtPascalSamples.cgi
 }}}
+ # ExtPascalSamples.cgi (the gateway) will start automatically ExtPascalSamples.exe (the real FastCGI application). 
 
 = Setting using native FastCGI, only for Apache 2.2+ =
  # Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
@@ -83,7 +84,7 @@ fastcgiexternalserver /cgi-bin/ExtPascalApp.exe –host localhost:2014 –idle-t
  * –host parameter declare the server where is hosted the FastCGI application (by example localhost).
  * The default TCP/IP port is 2014, but another could be declared.
  * Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
- * Start your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, hoping requests by the TCP port.
+ * Start manually your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, receiving requests by the TCP port.
  * In your browser call Samples using:
 {{{
 http://localhost/cgi-bin/ExtPascalSamples.exe
