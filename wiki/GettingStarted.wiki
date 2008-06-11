@@ -81,12 +81,12 @@ LoadModule fastcgi_module modules/mod_fastcgi.so
 {{{
 fastcgiexternalserver /cgi-bin/ExtPascalApp.exe –host localhost:2014 –idle-timeout 3
 }}}
- * –host parameter declare the server where is hosted the FastCGI application (by example localhost).
- * The default TCP/IP port is 2014, but another could be declared.
- * Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
- * Start manually your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, receiving requests by the TCP port.
- * In your browser call Samples using:
+ # –host parameter declare the server where is hosted the FastCGI application (by example localhost).
+ # The default TCP/IP port is 2014, but another could be declared.
+ # Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
+ # Start manually your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, receiving requests by the TCP port.
+ # In your browser call Samples using:
 {{{
 http://localhost/cgi-bin/ExtPascalSamples.exe
 }}}
- * See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
+ # See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
