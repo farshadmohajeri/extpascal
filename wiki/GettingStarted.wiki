@@ -70,7 +70,7 @@ http://localhost/cgi-bin/ExtPascalSamples.cgi
 
 = Setting using native FastCGI, only for Apache 2.2+ =
  # Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
- # Rename to “mod_fastcgi.so” 
+ # Rename to `mod_fastcgi.so` 
  # Copy to Apache's modules folder (by example c:\apache\modules)
  # In httpd.conf file at LoadModules session insert the line below:
 {{{
