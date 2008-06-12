@@ -1,3 +1,17 @@
+* USED FORMATS in ExtFixes.txt
+*
+* Adding and updating properties:
+<class name>,<JavaScript property name>,<type>,<if is a static property>,<default value or forceadd for alternate type properties>
+*
+* Adding and updating methods:
+<class name>,<JavaScript method name>,<return type>,<if is a static method>,<if is a overload method>,
+*
+* For each method parameter:
+<parameter name>,<type>,<if is a optional parameter>
+*
+* Adding new classes:
+<class name>,<parent class name>,<unit name>
+*
 ExtComponent, region, string, false,
 ExtComponent, split, Boolean, false,
 ExtComponent, collapseMode, string, false,

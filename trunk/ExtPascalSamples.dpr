@@ -28,34 +28,6 @@ type
   end;
 
 procedure TSamples.Home;
-(*begin
- with TExtWindow.Create do begin
-   Title      := 'Login';
-   Layout     := 'fit';
-   Plain      := true;
-   Closable   := false;
-   Resizable  := false;
-   Width      := 500;
-   Height     := 300;
-   with TExtFormFormPanel.AddTo(Items) do
-   begin
-     with TExtFormTextField.AddTo(Items) do
-     begin
-       Name := 'username';
-       FieldLabel := 'Username:';
-     end;
-     with TExtFormTextField.AddTo(Items) do
-     begin
-       Name := 'password';
-       FieldLabel := 'Password:';
-       InputType := 'password';
-     end;
-   end;
-   TExtButton.AddTo(Buttons).Text := 'Login';
-   Show;
-   Free;
- end;
-end;*)
 const
   Examples : array[0..6] of record
     Name, Proc, Gif, Desc : string
@@ -91,7 +63,7 @@ begin
     Free;
   end;
 end;
-     
+
 procedure TSamples.Layout;
 var
   Tabs : TExtTabPanel;

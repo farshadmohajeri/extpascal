@@ -33,8 +33,8 @@ type
     procedure ErrorMessage(Msg : string; Handler: string = '');
   end;
 
-  ArrayOfString  = array of string;
-  ArrayOfInteger = array of Integer;
+  TArrayOfString  = array of string;
+  TArrayOfInteger = array of Integer;
 
   TExtObjectList = class;
   TExtFunction = class;
@@ -47,8 +47,8 @@ type
     JSCommand : string;
     function VarToJSON(A : array of const) : string; overload;
     function VarToJSON(Exts : TExtObjectList) : string; overload;
-    function VarToJSON(Strs : ArrayOfString) : string; overload;
-    function VarToJSON(Ints : ArrayOfInteger) : string; overload;
+    function VarToJSON(Strs : TArrayOfString) : string; overload;
+    function VarToJSON(Ints : TArrayOfInteger) : string; overload;
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
@@ -86,6 +86,7 @@ type
     function Count : integer;
   end;
 
+{$IFNDEF FPDOC}
   THTMLElement = class(TExtObject);
   TStyleSheet = class(TExtObject);
   TRegExp = class(TExtObject);
@@ -117,6 +118,7 @@ type
   TTreeSelectionModel = TExtObject; // doc fault
   TSelectionModel = TExtObject; // doc fault
   TDataSource = TExtObject; // doc fault
+{$ENDIF}
 
 implementation
 
@@ -326,7 +328,7 @@ begin
       ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
     else
       ListAdd := '%s';
-    if pos(Obj.Classname + '.', 'TExtTabPanel.TExtGridPropertyGrid.TExtFormTextField.TExtFormFormPanel.') <> 0 then // Generalize it if necessary
+    if Attribute = 'items' then // Generalize it more if necessary
       ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
@@ -514,7 +516,7 @@ function TExtObject.VarToJSON(Exts : TExtObjectList): string; begin
     Result := TExtObject(Exts).JSName
 end;
 
-function TExtObject.VarToJSON(Strs : ArrayOfString): string;
+function TExtObject.VarToJSON(Strs : TArrayOfString): string;
 var
   I : integer;
 begin
@@ -526,7 +528,7 @@ begin
   Result := Result + ']'
 end;
 
-function TExtObject.VarToJSON(Ints : ArrayOfInteger): string;
+function TExtObject.VarToJSON(Ints : TArrayOfInteger): string;
 var
   I : integer;
 begin

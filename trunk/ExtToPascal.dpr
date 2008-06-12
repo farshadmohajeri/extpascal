@@ -65,7 +65,7 @@ begin
           if (Result <> 'Integer') and (Result <> 'string') then
             Result := 'TExtObjectList'
           else
-            Result := 'ArrayOf' + Result;
+            Result := 'TArrayOf' + Result;
         end
         else
           Result := Ident;
@@ -287,7 +287,7 @@ var
   I, J : integer;
 begin
   Cls.Methods.AddObject(Method.Name, Method);
-  with Method do begin
+  with Method do
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do
         if pos('/', Typ) <> 0 then begin
@@ -297,20 +297,7 @@ begin
           for J := 1 to Types.Count-1 do
             DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
           Types.Free;
-        end;(*
-        else
-          Typ := FixType(Typ);
-    if pos('/', Return) <> 0 then begin
-      Overload := true;
-      Types  := Explode('/', Return);
-      Return := Types[0];
-      for J := 1 to Types.Count-1 do
-        DoOverloads(Cls, TMethod.Create(Method.JSName, Types[J], Params, Static, true));
-      Types.Free;
-    end;(*
-    else
-      Return := FixType(Return);*)
-  end;
+        end;
 end;
 
 procedure SetDefault(Prop : TProp; Def : string; var Match : TStringList);
@@ -560,57 +547,59 @@ begin
     reset(Fixes);
     repeat
       readln(Fixes, Fix);
-      Fields := Explode(',', Fix);
-      I := AllClasses.IndexOf('T' + Fields[0]);
-      if I <> -1 then begin
-        with TClass(AllClasses.Objects[I]) do
-          if Fields.Count = 5 then // props
-            if Fields[4] = 'forceadd' then
-              Properties.AddObject(Fields[1] + Fields[2], TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', ''))
-            else begin
-              J := Properties.IndexOf(Fields[1]);
-              if J = -1 then // Add
-                Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
-              else // Update
-                with TProp(Properties.Objects[J]) do begin
-                  Typ := FixType(Fields[2]);
-                  Static := lowercase(Fields[3]) = 'true';
-                  Default := Fields[4]
-                end;
-            end
-          else begin // methods
-            J := Methods.IndexOf(Fields[1]);
-            if J = -1 then begin // Add
-              Params := TStringList.Create;
-              Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
-              for K := 0 to ((Fields.Count-4) div 3)-1 do
-                Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
-            end
-            else // Update
-              with TMethod(Methods.Objects[J]) do begin
-                Return := FixType(Fields[2]);
-                Static := lowercase(Fields[3]) = 'true';
-                Overload := lowercase(Fields[4]) = 'true';
-                for K := 0 to ((Fields.Count-4) div 3)-1 do
-                  with TParam(Params.Objects[K]) do begin
-                    Typ := FixType(Fields[K*3+6]);
-                    Optional := lowercase(Fields[K*3+7]) = 'true';
-                  end;
-              end;
-          end;
-      end
-      else begin// Create new Class
-        I := Units.IndexOf(Fields[2]);
+      if (Fix <> '') and (Fix[1] in ['A'..'Z', 'a'..'z', '_']) then begin // else comments
+        Fields := Explode(',', Fix);
+        I := AllClasses.IndexOf('T' + Fields[0]);
         if I <> -1 then begin
-          NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-          NewClass.JSName := 'Object';
-          AllClasses.AddObject(NewClass.Name, NewClass);
-          TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
+          with TClass(AllClasses.Objects[I]) do
+            if Fields.Count = 5 then // props
+              if Fields[4] = 'forceadd' then
+                Properties.AddObject(Fields[1] + Fields[2], TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', ''))
+              else begin
+                J := Properties.IndexOf(Fields[1]);
+                if J = -1 then // Add
+                  Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
+                else // Update
+                  with TProp(Properties.Objects[J]) do begin
+                    Typ := FixType(Fields[2]);
+                    Static := lowercase(Fields[3]) = 'true';
+                    Default := Fields[4]
+                  end;
+              end
+            else begin // methods
+              J := Methods.IndexOf(Fields[1]);
+              if J = -1 then begin // Add
+                Params := TStringList.Create;
+                Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
+                for K := 0 to ((Fields.Count-4) div 3)-1 do
+                  Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+              end
+              else // Update
+                with TMethod(Methods.Objects[J]) do begin
+                  Return := FixType(Fields[2]);
+                  Static := lowercase(Fields[3]) = 'true';
+                  Overload := lowercase(Fields[4]) = 'true';
+                  for K := 0 to ((Fields.Count-4) div 3)-1 do
+                    with TParam(Params.Objects[K]) do begin
+                      Typ := FixType(Fields[K*3+6]);
+                      Optional := lowercase(Fields[K*3+7]) = 'true';
+                    end;
+                end;
+            end;
         end
-        else
-          writeln('Unit: ', Fields[2], 'not found. Fix record: ', Fix);
+        else begin// Create new Class
+          I := Units.IndexOf(Fields[2]);
+          if I <> -1 then begin
+            NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+            NewClass.JSName := 'Object';
+            AllClasses.AddObject(NewClass.Name, NewClass);
+            TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
+          end
+          else
+            writeln('Unit: ', Fields[2], 'not found. Fix record: ', Fix);
+        end;
+        Fields.Free;
       end;
-      Fields.Free;
     until SeekEOF(Fixes);
     close(Fixes);
   end;
@@ -726,15 +715,6 @@ begin
 end;
 
 function ParamsToJSON(Params : TStringList; Config : boolean = true) : string;
-
-  procedure OptionalParam(Param : TParam); begin
-(*    with Param do
-      if Optional then
-        Result := Result + ' + IfThen(' + Name + WriteOptional(Optional, Typ) + ', '''', '','')'
-      else*)
-        Result := Result + ' + '',''';
-  end;
-
 var
   I : integer;
   InitCommonParam : boolean;
@@ -754,12 +734,9 @@ begin
           Result := Result + Name;
         end
         else begin
-          if not InitCommonParam then begin
-            Result := Result + '])';
-            OptionalParam(TParam(Params.Objects[I]));
-          end;
+          if not InitCommonParam then Result := Result + ']) + '',''';
           Result := Result + ' + VarToJSON(' + Name + ')';
-          if I < (Params.Count-1) then OptionalParam(TParam(Params.Objects[I+1]));
+          if I < (Params.Count-1) then Result := Result + ' + '',''';
           InitCommonParam := true;
         end;
       end;
@@ -830,8 +807,8 @@ begin
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
-        writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtLayoutContainerLayout = TExtFunction;'^M^J,
-          Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J, Tab, 'TExtDdDragSource = TExtFunction;'^M^J, Tab, 'TExtDdDD = TExtFunction;');
+        writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J,
+                     Tab, 'TExtDdDragSource = TExtFunction;'^M^J, Tab, 'TExtDdDD = TExtFunction;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
@@ -846,7 +823,7 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
-                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('ArrayOf', Typ) = 0, '[Value]', 'Value'), '));');
+                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), '));');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -932,9 +909,10 @@ begin
     repeat
   		ReadHtml(P + '/' + F.Name)
     until FindNext(F) <> 0;
-    writeln('Writing Unit files...');
     FindClose(F);
+    writeln('Reading ExtFixes.txt');
     LoadFixes;
+    writeln('Writing Unit files...');
     WriteUnits;
     writeln(AllClasses.Count, ' Ext JS classes wrapped to Object Pascal at ', FormatDateTime('ss.zzz', Now-T), ' seconds');
   end
