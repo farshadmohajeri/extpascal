@@ -1,6 +1,6 @@
 #labels Featured
 = Introduction =
-[http://code.google.com/p/extpascal/source/browse/trunk/images/Apache-Instalacao-Tela-01.gif]
+
 ExtPascal is an ExtJS wrapper/binding. ExtPascal lets you use the ExtJS from Object Pascal commands issued by the server. That brings the structure and strict syntax of the Object Pascal for programming the web browser. 
 
 The main advantages are:
