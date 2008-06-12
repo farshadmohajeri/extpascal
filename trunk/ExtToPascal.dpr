@@ -1,4 +1,4 @@
-program ExtToPascal; 
+program ExtToPascal;
 {$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
@@ -18,7 +18,7 @@ begin
     Result := '_' + S;
 end;
 
-function FixIdent(Ident : string) : string;
+function FixIdent(Ident : string; IsType : boolean = false) : string;
 var
   I : integer;
 begin
@@ -31,7 +31,11 @@ begin
         Result := Result + Ident[I]
     else
       if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
-  Result := FixReserved(Result);
+  if IsType then begin
+    if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result
+  end
+  else
+    Result := FixReserved(Result);
 end;
 
 function FixType(Ident : string) : string;
@@ -39,31 +43,39 @@ var
   T : string;
   I : integer;
 begin
-  T := LowerCase(Ident);
-  if T = 'string'    then begin Result := 'string';           exit end else
-  if T = 'number'    then begin Result := 'Integer';          exit end else
-  if T = 'object'    then begin Result := 'ExtObject';        exit end else
-  if T = 'boolean'   then begin Result := 'Boolean';          exit end else
-  if T = 'function'  then begin Result := 'ExtFunction';      exit end else
-  if T = 'mixed'     then begin Result := 'string';           exit end else
-  if T = 'array'     then begin Result := 'ExtObjectList';    exit end else
-  if T = 'object...' then begin Result := 'ExtObjectList';    exit end else
-  if T = 'date'      then begin Result := 'TDateTime';        exit end else
-  if T = 'float'     then begin Result := 'Double';           exit end else
-  if T = 'int'       then begin Result := 'Integer';          exit end 
-  else begin
-    I := LastDelimiter('/[:', Ident);
-    if I <> 0 then begin
-      Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
-      if Ident[I] <> '/' then
-        if (Result <> 'Integer') and (Result <> 'string') then
-          Result := 'ExtObjectList'
+  if Ident <> '' then begin
+    T := LowerCase(Ident);
+    if T = 'string'    then begin Result := 'string';           exit end else
+    if T = 'number'    then begin Result := 'Integer';          exit end else
+    if T = 'integer'   then begin Result := 'Integer';          exit end else
+    if T = 'object'    then begin Result := 'TExtObject';       exit end else
+    if T = 'boolean'   then begin Result := 'Boolean';          exit end else
+    if T = 'function'  then begin Result := 'TExtFunction';     exit end else
+    if T = 'mixed'     then begin Result := 'string';           exit end else
+    if T = 'array'     then begin Result := 'TExtObjectList';   exit end else
+    if T = 'object...' then begin Result := 'TExtObjectList';   exit end else
+    if T = 'date'      then begin Result := 'TDateTime';        exit end else
+    if T = 'float'     then begin Result := 'Double';           exit end else
+    if T = 'int'       then begin Result := 'Integer';          exit end
+    else begin
+      I := LastDelimiter('/[:', Ident);
+      if I <> 0 then begin
+        if Ident[I] <> '/' then begin
+          Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
+          if (Result <> 'Integer') and (Result <> 'string') then
+            Result := 'TExtObjectList'
+          else
+            Result := 'ArrayOf' + Result;
+        end
         else
-          Result := 'ArrayOf' + Result;
-      exit;
+          Result := Ident;
+        exit;
+      end;
     end;
-  end;
-  Result := FixIdent(Ident);
+    Result := FixIdent(Ident, true);
+  end
+  else
+    Result := ''
 end;
 
 type
@@ -138,25 +150,25 @@ procedure TUnit.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
   const
-    Types = '.string.Integer.Boolean.Double.TDateTime.ExtObject.ExtObjectList.Void.ExtFunction.Event.HTMLElement.RegExp.';
+    Types = '.string.Integer.Boolean.Double.TDateTime.TExtObject.TExtObjectList.Void.TExtFunction.TEvent.THTMLElement.TRegExp.';
   var
     T : string;
     I : integer;
   begin
     if (Typ <> '') and (pos('.' + Typ + '.', Types) = 0) then begin
       T := Typ;
-      if (Name <> 'Ext') and (pos('Ext', T) = 1) and (pos('Ext,', UsesList + ',') = 0) then begin // uses Ext?
+      if (Name <> 'Ext') and (pos('TExt', T) = 1) and (pos('Ext,', UsesList + ',') = 0) then begin // uses Ext?
         I := AllClasses.IndexOf(T);
         if (I <> -1) and (TClass(AllClasses.Objects[I]).UnitName = 'Ext') then begin
           UsesList := UsesList + ', Ext';
           exit;
         end;
       end;
-      if T[1] = '_' then delete(T, 1, 1);
+      if T[1] = 'T' then delete(T, 1, 1);
       for I := 0 to Units.Count-1 do
-        if AllClasses.IndexOf(Units[I] + T) <> -1 then begin
-          Typ := Units[I] + T;
-          if (Name = 'Ext') and (Units[I] = 'ExtLayout') then exit; // Exception to resolve circular reference
+        if AllClasses.IndexOf('T' + Units[I] + T) <> -1 then begin
+          Typ := 'T' + Units[I] + T;
+          if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
         end;
@@ -182,9 +194,9 @@ begin
 end;
 
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
-  Name       := FixIdent(pName);
+  Name       := FixIdent(pName, true);
   JSName     := pName;
-  Parent     := FixIdent(pParent);
+  Parent     := FixIdent(pParent, true);
   UnitName   := FixIdent(pUnitName);
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
@@ -239,7 +251,7 @@ constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStat
   Params   := pParams;
   Static   := pStatic;
   Overload := pOverload;
-  if pReturn <> '' then Return := 'ExtFunction';
+  if pReturn <> '' then Return := 'TExtFunction';
 end;
 
 constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
@@ -250,7 +262,7 @@ begin
   JSName   := pJSName;
   Params   := pParams;
   Overload := pOverload;
-  if pReturn <> '' then Return := 'ExtFunction';
+  if pReturn <> '' then Return := 'TExtFunction';
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
   Static := I <> 0;
@@ -285,19 +297,19 @@ begin
           for J := 1 to Types.Count-1 do
             DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
           Types.Free;
-        end
+        end;(*
         else
           Typ := FixType(Typ);
     if pos('/', Return) <> 0 then begin
       Overload := true;
       Types  := Explode('/', Return);
-      Return := FixType(Types[0]);
+      Return := Types[0];
       for J := 1 to Types.Count-1 do
         DoOverloads(Cls, TMethod.Create(Method.JSName, Types[J], Params, Static, true));
       Types.Free;
-    end
+    end;(*
     else
-      Return := FixType(Return);
+      Return := FixType(Return);*)
   end;
 end;
 
@@ -359,9 +371,9 @@ begin
         end;
       InClass :
         if Extract(['Package:', '<td class="hd-info">', '<'], Line, Matches) then begin
-          if CurClass.Name = 'Ext' then begin // Pascal requires this exception: move Ext class to Unit class and rename Ext class to _Ext
+          if CurClass.Name = 'Ext' then begin // Pascal requires this exception: move Ext class to Unit class
             PackName := 'Ext';
-            CurClass.Name := '_Ext';
+            CurClass.Name := 'TExt';
           end
           else begin
             PackName := FixIdent(Matches[1]);
@@ -379,7 +391,7 @@ begin
         end
         else
           if Extract(['Extends:', '<a ext:cls="', '"'], Line, Matches) then
-            CurClass.Parent := FixIdent(Matches[1])
+            CurClass.Parent := FixIdent(Matches[1], true)
           else
             if pos('This class is a singleton', Line) <> 0 then begin
               CurClass.Singleton := true;
@@ -428,7 +440,7 @@ begin
               if pos('<h2>Public Methods</h2>', Line) <> 0 then begin
                 for I := 0 to CurClass.Properties.Count-1 do
                   with TProp(CurClass.Properties.Objects[I]) do
-                    if (Typ = 'ExtObjectList') and not Static then begin
+                    if (Typ = 'TExtObjectList') and not Static then begin
                       CurClass.Arrays := true;
                       CurClass.AddCreate;
                       break;
@@ -447,7 +459,7 @@ begin
             end;
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            Return  := FixType(Matches[2]);
+            Return  := Matches[2];
             if Return = '' then begin
               MetName := 'Create';
               if CurClass.Defaults or CurClass.Arrays or CurClass.Singleton then exit; // already have Create
@@ -458,7 +470,7 @@ begin
             for I := 0 to Params.Count-1 do
               if Extract(['<code>', ' ', '</code>'], Params[I], Matches) then begin
                 if pos('etc', Matches[1]) = 1 then begin // variable parameter list
-                  Matches[0] := 'ExtObjectList';
+                  Matches[0] := 'TExtObjectList';
                   Arg := Args[0];
                   Arg[length(Arg)] := 's';
                   Matches[1] := Arg;
@@ -470,9 +482,9 @@ begin
                     Matches[1] := Matches[0];
                     Matches[0] := Arg;
                   end;
-                  Matches[1] := Unique(FixIdent(Matches[1]), Args);
-                  Args.AddObject(Matches[1], TParam.Create(Matches[1], Matches[0], (Matches[1] = 'config') or
-                    ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'ExtObjecList'))));
+                Matches[1] := Unique(FixIdent(Matches[1]), Args);
+                Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]), (Matches[1] = 'config') or
+                  ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
               end;
             Params.Free;
             CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
@@ -549,7 +561,7 @@ begin
     repeat
       readln(Fixes, Fix);
       Fields := Explode(',', Fix);
-      I := AllClasses.IndexOf(Fields[0]);
+      I := AllClasses.IndexOf('T' + Fields[0]);
       if I <> -1 then begin
         with TClass(AllClasses.Objects[I]) do
           if Fields.Count = 5 then // props
@@ -561,7 +573,7 @@ begin
                 Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
               else // Update
                 with TProp(Properties.Objects[J]) do begin
-                  Typ := Fields[2];
+                  Typ := FixType(Fields[2]);
                   Static := lowercase(Fields[3]) = 'true';
                   Default := Fields[4]
                 end;
@@ -570,28 +582,33 @@ begin
             J := Methods.IndexOf(Fields[1]);
             if J = -1 then begin // Add
               Params := TStringList.Create;
-              Methods.AddObject(Fields[1], TMethod.Create(Fields[1], Fields[2], Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
+              Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
               for K := 0 to ((Fields.Count-4) div 3)-1 do
-                Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], Fields[K*3+6], lowercase(Fields[K*3+7]) = 'true'))
+                Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
             end
             else // Update
               with TMethod(Methods.Objects[J]) do begin
-                Return := Fields[2];
+                Return := FixType(Fields[2]);
                 Static := lowercase(Fields[3]) = 'true';
                 Overload := lowercase(Fields[4]) = 'true';
                 for K := 0 to ((Fields.Count-4) div 3)-1 do
                   with TParam(Params.Objects[K]) do begin
-                    Typ := Fields[K*3+6];
+                    Typ := FixType(Fields[K*3+6]);
                     Optional := lowercase(Fields[K*3+7]) = 'true';
                   end;
               end;
           end;
       end
       else begin// Create new Class
-        NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-        NewClass.JSName := 'Object';
-        AllClasses.AddObject(Fields[0], NewClass);
-        TUnit(Units.Objects[Units.IndexOf(Fields[2])]).Classes.AddObject(Fields[0], NewClass)
+        I := Units.IndexOf(Fields[2]);
+        if I <> -1 then begin
+          NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+          NewClass.JSName := 'Object';
+          AllClasses.AddObject(NewClass.Name, NewClass);
+          TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
+        end
+        else
+          writeln('Unit: ', Fields[2], 'not found. Fix record: ', Fix);
       end;
       Fields.Free;
     until SeekEOF(Fixes);
@@ -609,13 +626,13 @@ end;
 
 function WriteOptional(Optional : boolean; Typ : string; Equal : string = ' = ') : string; begin
   if Optional then begin
-    if Typ = 'string'       then Result := ''''''  else
-    if Typ = 'Integer'      then Result := '0'     else
-    if Typ = 'Boolean'      then Result := 'false' else
-    if Typ = 'Double'       then Result := '0.0'   else
-    if Typ = 'TDateTime'    then Result := '0'     else
-    if Typ = 'Region'       then Result := ''''''  else
-    if Typ = 'ExtLibRegion' then Result := ''''''
+    if Typ = 'string'        then Result := ''''''  else
+    if Typ = 'Integer'       then Result := '0'     else
+    if Typ = 'Boolean'       then Result := 'false' else
+    if Typ = 'Double'        then Result := '0.0'   else
+    if Typ = 'TDateTime'     then Result := '0'     else
+    if Typ = 'Region'        then Result := ''''''  else
+    if Typ = 'TExtLibRegion' then Result := ''''''
     else                         Result := 'nil';
     Result := Equal + Result;
   end
@@ -672,7 +689,7 @@ var
   I : integer;
 begin
   with Cls do begin
-    writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'ExtFunction', Parent), ')');
+    writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'TExtFunction', Parent), ')');
     if Properties.Count > 0 then writeln(Pas, Tab, 'private');
     for I := 0 to Properties.Count-1 do // Write private fields
       with TProp(Properties.Objects[I]) do begin
@@ -727,7 +744,7 @@ begin
     Result := '(''';
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do begin
-        if Typ <> 'ExtObjectList' then begin
+        if Typ <> 'TExtObjectList' then begin
           if InitCommonParam then begin
             Result := Result + ' + VarToJSON([';
             InitCommonParam := false;
@@ -771,7 +788,7 @@ begin
             writeln(Pas, 'var');
             HasSingleton := true
           end;
-          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' : ', Name, ';');
+          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' : ', Name, ';');
         end;
       end;
   if HasSingleton then writeln(Pas);
@@ -791,7 +808,7 @@ begin
             writeln(Pas, 'begin');
             HasSingleton := true
           end;
-          writeln(Pas, Tab, copy(Name, 1, length(Name) - length('Singleton')), ' := ', Name, '.CreateSingleton;');
+          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' := ', Name, '.CreateSingleton;');
         end;
 end;
 
@@ -813,8 +830,8 @@ begin
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
-        writeln(Pas, Tab, 'ExtFormField = ExtBoxComponent;'^M^J, Tab, 'ExtLayoutContainerLayout = ExtFunction;'^M^J,
-          Tab, 'ExtMenuCheckItem = ExtComponent;'^M^J, Tab, 'ExtDdDragSource = ExtFunction;'^M^J, Tab, 'ExtDdDD = ExtFunction;');
+        writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtLayoutContainerLayout = TExtFunction;'^M^J,
+          Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J, Tab, 'TExtDdDragSource = TExtFunction;'^M^J, Tab, 'TExtDdDD = TExtFunction;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
@@ -862,8 +879,8 @@ begin
                   if Default <> '' then
                     writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
                   else
-                    if Typ = 'ExtObjectList' then
-                      writeln(Pas, Tab, 'F', Name, ' := ExtObjectList.Create(Self, ''', JSName, ''');');
+                    if Typ = 'TExtObjectList' then
+                      writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');');
             writeln(Pas, 'end;'^M^J);
           end;
           for K := 0 to Methods.Count-1 do // Write methods
@@ -890,7 +907,7 @@ begin
             writeln(Pas, Tab, 'inherited;');
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
-                if not Static and (Typ = 'ExtObjectList') then
+                if not Static and (Typ = 'TExtObjectList') then
                   writeln(Pas, Tab, Name + '.Free;');
             writeln(Pas, 'end;'^M^J);
           end;
@@ -919,10 +936,10 @@ begin
     FindClose(F);
     LoadFixes;
     WriteUnits;
-    writeln(AllClasses.Count, ' ExtJS classes wrapped to Object Pascal at ', FormatDateTime('ss.zzz', Now-T), ' seconds');
+    writeln(AllClasses.Count, ' Ext JS classes wrapped to Object Pascal at ', FormatDateTime('ss.zzz', Now-T), ' seconds');
   end
   else
-    writeln('ExtJS HTML files not found at ' + P + '/*.html');
+    writeln('Ext JS HTML files not found at ' + P + '/*.html');
   writeln('Press enter.');
   readln;
 end.

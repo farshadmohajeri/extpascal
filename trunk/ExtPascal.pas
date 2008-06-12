@@ -36,17 +36,17 @@ type
   ArrayOfString  = array of string;
   ArrayOfInteger = array of Integer;
 
-  ExtObjectList = class;
-  ExtFunction = class;
-  ExtAjaxMethod = procedure of object;
+  TExtObjectList = class;
+  TExtFunction = class;
+  TExtAjaxMethod = procedure of object;
 
-  ExtObject = class
+  TExtObject = class
   private
     FJSName : string;
   protected
     JSCommand : string;
     function VarToJSON(A : array of const) : string; overload;
-    function VarToJSON(Exts : ExtObjectList) : string; overload;
+    function VarToJSON(Exts : TExtObjectList) : string; overload;
     function VarToJSON(Strs : ArrayOfString) : string; overload;
     function VarToJSON(Ints : ArrayOfInteger) : string; overload;
     procedure CreateVar(JS : string);
@@ -55,67 +55,68 @@ type
   protected
     procedure InitDefaults; virtual;
   public
-    constructor Create(Owner : ExtObject = nil);
+    constructor Create(Owner : TExtObject = nil);
     constructor CreateSingleton(pJSName : string = '');
-    constructor AddTo(List : ExtObjectList);
+    constructor AddTo(List : TExtObjectList);
     function JSClassName : string; virtual;
-    function JSArray(JSON : string) : ExtObjectList;
-    function JSObject(JSON : string; ObjectConstructor : string = '') : ExtObject;
-    function JSFunction(Params, Body : string) : ExtFunction; overload;
+    function JSArray(JSON : string) : TExtObjectList;
+    function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
+    function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
-    function JSFunction(Body: string): ExtFunction; overload;
+    function JSFunction(Body: string): TExtFunction; overload;
     procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
-    function Ajax(Method : ExtAjaxMethod; Params: string = '') : ExtFunction;
+    function Ajax(Method : TExtAjaxMethod; Params: string = '') : TExtFunction;
     property JSName : string read FJSName;
   end;
 
-  ExtFunction = class(ExtObject);// end;
-  
-  ExtObjectList = class(ExtFunction)
+  TExtFunction = class(TExtObject);// end;
+
+  TExtObjectList = class(TExtFunction)
   private
-    FObjects : array of ExtObject;
+    FObjects : array of TExtObject;
     Attribute, JSName : string;
-    Owner : ExtObject;
-    function GetFObjects(I: integer): ExtObject;
+    Owner : TExtObject;
+    function GetFObjects(I: integer): TExtObject;
   public
-    property Objects[I : integer] : ExtObject read GetFObjects; default;
+    property Objects[I : integer] : TExtObject read GetFObjects; default;
     constructor CreateSingleton(pJSName: string);
-    constructor Create(pOwner : ExtObject = nil; pAttribute : string = '');
+    constructor Create(pOwner : TExtObject = nil; pAttribute : string = '');
     destructor Destroy; override;
-    procedure Add(Obj : ExtObject);
+    procedure Add(Obj : TExtObject);
     function Count : integer;
   end;
 
-  HTMLElement = class(ExtObject);
-  StyleSheet = class(ExtObject);
-  RegExp = class(ExtObject);
-  CSSRule = class(ExtObject);
-  XMLDocument = class(ExtObject);
-  NodeList = class(ExtObject);
-  Region = type string;
-  NativeMenu = ExtObject;
-  el = type string; // doc fault
-  Event = class(ExtObject);
-  EventObject = Event;
-  HTMLNode = ExtObject;
-  _Constructor = class(ExtObject);
-  _Class = class(ExtObject);
-  ExtLibRegion = Region; //doc fault
-  visMode = Integer; // doc fault
-  The = ExtObject; // doc fault
-  This = ExtObject; // doc fault
-  airNativeMenu = ExtObject;
-  X = ExtObject; // doc fault
-  N1 = ExtObject; // doc fault
-  N2 = ExtObject; // doc fault
-  Layout = ExtObject; // Poor hierarchy definition
-  Id = ExtObject;// doc fault
-  iPageX = ExtObject; // doc fault
-  iPageY = ExtObject; // doc fault
-  ExtGridGrid = ExtObject; // doc fault
-  TreeSelectionModel = ExtObject; // doc fault
-  SelectionModel = ExtObject; // doc fault
-  DataSource = ExtObject; // doc fault
+  THTMLElement = class(TExtObject);
+  TStyleSheet = class(TExtObject);
+  TRegExp = class(TExtObject);
+  TCSSRule = class(TExtObject);
+  TXMLDocument = class(TExtObject);
+  TNodeList = class(TExtObject);
+  TExtDataNode = class(TExtObject);
+  TRegion = type string;
+  TNativeMenu = TExtObject;
+  Tel = type string; // doc fault
+  TEvent = class(TExtObject);
+  TEventObject = TEvent;
+  THTMLNode = TExtObject;
+  TConstructor = class(TExtObject);
+  TClass = class(TExtObject);
+  TExtLibRegion = TRegion; //doc fault
+  TvisMode = Integer; // doc fault
+  TThe = TExtObject; // doc fault
+  TThis = TExtObject; // doc fault
+  TairNativeMenu = TExtObject;
+  TX = TExtObject; // doc fault
+  TN1 = TExtObject; // doc fault
+  TN2 = TExtObject; // doc fault
+  TLayout = TExtObject; // Poor hierarchy definition
+  TId = TExtObject;// doc fault
+  TiPageX = TExtObject; // doc fault
+  TiPageY = TExtObject; // doc fault
+  TExtGridGrid = TExtObject; // doc fault
+  TTreeSelectionModel = TExtObject; // doc fault
+  TSelectionModel = TExtObject; // doc fault
+  TDataSource = TExtObject; // doc fault
 
 implementation
 
@@ -291,17 +292,17 @@ end;
 
 { ExtObjectList }
 
-constructor ExtObjectList.Create(pOwner : ExtObject = nil; pAttribute : string = ''); begin
+constructor TExtObjectList.Create(pOwner : TExtObject = nil; pAttribute : string = ''); begin
   Attribute := pAttribute;
   Owner     := pOwner;
   JSName    := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
-constructor ExtObjectList.CreateSingleton(pJSName : string); begin
+constructor TExtObjectList.CreateSingleton(pJSName : string); begin
   Attribute := JSName;
 end;
 
-destructor ExtObjectList.Destroy;
+destructor TExtObjectList.Destroy;
 var
   I : integer;
 begin
@@ -309,7 +310,7 @@ begin
   inherited;
 end;
 
-procedure ExtObjectList.Add(Obj : ExtObject);
+procedure TExtObjectList.Add(Obj : TExtObject);
 var
   ListAdd : string;
 begin
@@ -325,7 +326,7 @@ begin
       ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
     else
       ListAdd := '%s';
-    if pos(Obj.Classname + '.', 'ExtTabPanel.ExtGridPropertyGrid.') <> 0 then // Generalize it if necessary
+    if pos(Obj.Classname + '.', 'TExtTabPanel.TExtGridPropertyGrid.TExtFormTextField.TExtFormFormPanel.') <> 0 then // Generalize it if necessary
       ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
@@ -335,21 +336,21 @@ begin
     Obj.JSCode(Obj.JSName, JSName, Owner.JSName)
 end;
 
-function ExtObjectList.GetFObjects(I: integer): ExtObject; begin
+function TExtObjectList.GetFObjects(I: integer): TExtObject; begin
   Result := FObjects[I]
 end;
 
-function ExtObjectList.Count: integer; begin
+function TExtObjectList.Count: integer; begin
   Result := length(FObjects)
 end;
 
 { ExtObject }
 
-procedure ExtObject.CreateJSName; begin
+procedure TExtObject.CreateJSName; begin
   FJSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
-constructor ExtObject.CreateSingleton(pJSName : string = ''); begin
+constructor TExtObject.CreateSingleton(pJSName : string = ''); begin
   InitDefaults;
   if pJSName = '' then
     FJSName := JSClassName
@@ -357,27 +358,27 @@ constructor ExtObject.CreateSingleton(pJSName : string = ''); begin
     FJSName := pJSName;
 end;
 
-procedure ExtObject.CreateVar(JS : string); begin
+procedure TExtObject.CreateVar(JS : string); begin
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '=new ' + JS)
 end;
 
-procedure ExtObject.CreateVarAlt(JS: string); begin // Alternate create constructor, ExtJS fault
+procedure TExtObject.CreateVarAlt(JS: string); begin // Alternate create constructor, ExtJS fault
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '= ' + JS)
 end;
 
-constructor ExtObject.Create(Owner : ExtObject = nil); begin
+constructor TExtObject.Create(Owner : TExtObject = nil); begin
   if Owner = nil then CreateVar(JSClassName + '({});')
 end;
 
-function ExtObject.JSClassName: string; begin
+function TExtObject.JSClassName: string; begin
   Result := 'Object'
 end;
 
-procedure ExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
+procedure TExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
       if (JSCommand <> '') and (pJSName <> '') and (pJSName <> Classname) then begin
@@ -394,7 +395,7 @@ procedure ExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = 
   end;
 end;
 
-constructor ExtObject.AddTo(List : ExtObjectList); begin
+constructor TExtObject.AddTo(List : TExtObjectList); begin
   if JSName = '' then begin
     InitDefaults;
     CreateJSName;
@@ -402,39 +403,39 @@ constructor ExtObject.AddTo(List : ExtObjectList); begin
   List.Add(Self);
 end;
 
-procedure ExtObject.InitDefaults; begin end;
+procedure TExtObject.InitDefaults; begin end;
 
-function ExtObject.JSArray(JSON: string): ExtObjectList; begin
-  Result := ExtObjectList(ExtObject.Create(Self));
-  ExtObject(Result).FJSName := '[' + JSON + ']';
+function TExtObject.JSArray(JSON: string): TExtObjectList; begin
+  Result := TExtObjectList(TExtObject.Create(Self));
+  TExtObject(Result).FJSName := '[' + JSON + ']';
 end;
 
-function ExtObject.JSObject(JSON : string; ObjectConstructor : string = ''): ExtObject; begin
-  Result := ExtObject.Create(Self);
+function TExtObject.JSObject(JSON : string; ObjectConstructor : string = ''): TExtObject; begin
+  Result := TExtObject.Create(Self);
   if ObjectConstructor = '' then
     Result.FJSName := '{' + JSON + '}'
   else
     Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
 end;
 
-function ExtObject.JSFunction(Params, Body : string) : ExtFunction; begin
-  Result := ExtFunction.Create(Self);
+function TExtObject.JSFunction(Params, Body : string) : TExtFunction; begin
+  Result := TExtFunction.Create(Self);
   Result.FJSName := 'function(' + Params + '){' + Body + '}';
 end;
 
-function ExtObject.JSFunction(Body : string) : ExtFunction; begin
+function TExtObject.JSFunction(Body : string) : TExtFunction; begin
   Result := JSFunction('', Body);
 end;
 
-procedure ExtObject.JSFunction(Name, Params, Body : string); begin
+procedure TExtObject.JSFunction(Name, Params, Body : string); begin
   JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
-function ExtObject.Ajax(Method : ExtAjaxMethod; Params : string = ''): ExtFunction;
+function TExtObject.Ajax(Method : TExtAjaxMethod; Params : string = ''): TExtFunction;
 var
   MetName : string;
 begin
-  Result  := ExtFunction(Self);
+  Result  := TExtFunction(Self);
   MetName := TExtThread(CurrentFCGIThread).MethodName(@Method);
   if MetName <> '' then begin
     if Params <> '' then
@@ -473,7 +474,7 @@ begin
   Result := 'function(' + Params + '){return ' + Command + '}';
 end;
 
-function ExtObject.VarToJSON(A : array of const): string;
+function TExtObject.VarToJSON(A : array of const): string;
 var
   I : integer;
 begin
@@ -483,11 +484,11 @@ begin
       case VType of
         vtObject:
           if VObject <> nil then
-            if ExtObject(VObject).JSCommand = '' then
-              Result := Result + ExtObject(VObject).JSName
+            if TExtObject(VObject).JSCommand = '' then
+              Result := Result + TExtObject(VObject).JSName
             else begin
-              Result := Result + WriteFunction(ExtObject(VObject).JSCommand);
-              TExtThread(CurrentFCGIThread).RemoveJS(ExtObject(VObject).JSCommand);
+              Result := Result + WriteFunction(TExtObject(VObject).JSCommand);
+              TExtThread(CurrentFCGIThread).RemoveJS(TExtObject(VObject).JSCommand);
             end
           else
             if Result = '' then
@@ -506,14 +507,14 @@ begin
   if (Result <> '') and (Result[length(Result)] = ',') then delete(Result, length(Result), 1);
 end;
 
-function ExtObject.VarToJSON(Exts : ExtObjectList): string; begin
-  if ExtS.ClassName = 'ExtObjectList' then
+function TExtObject.VarToJSON(Exts : TExtObjectList): string; begin
+  if Exts.ClassName = 'TExtObjectList' then
     Result := Exts.JSName
   else
-    Result := ExtObject(Exts).JSName
+    Result := TExtObject(Exts).JSName
 end;
 
-function ExtObject.VarToJSON(Strs : ArrayOfString): string;
+function TExtObject.VarToJSON(Strs : ArrayOfString): string;
 var
   I : integer;
 begin
@@ -525,7 +526,7 @@ begin
   Result := Result + ']'
 end;
 
-function ExtObject.VarToJSON(Ints : ArrayOfInteger): string;
+function TExtObject.VarToJSON(Ints : ArrayOfInteger): string;
 var
   I : integer;
 begin

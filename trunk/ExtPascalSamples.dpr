@@ -9,11 +9,11 @@ uses
 type
   TSamples = class(TExtThread)
   public
-    Tabs : ExtTabPanel;
+    Tabs : TExtTabPanel;
     TabIndex : integer;
-    Grid : ExtGridEditorGridPanel;
-    DataStore : ExtDataStore;
-    Plant : ExtDataRecord;
+    Grid : TExtGridEditorGridPanel;
+    DataStore : TExtDataStore;
+    Plant : TExtDataRecord;
   published
     procedure Home; override;
     procedure BasicTabPanel;
@@ -28,6 +28,34 @@ type
   end;
 
 procedure TSamples.Home;
+(*begin
+ with TExtWindow.Create do begin
+   Title      := 'Login';
+   Layout     := 'fit';
+   Plain      := true;
+   Closable   := false;
+   Resizable  := false;
+   Width      := 500;
+   Height     := 300;
+   with TExtFormFormPanel.AddTo(Items) do
+   begin
+     with TExtFormTextField.AddTo(Items) do
+     begin
+       Name := 'username';
+       FieldLabel := 'Username:';
+     end;
+     with TExtFormTextField.AddTo(Items) do
+     begin
+       Name := 'password';
+       FieldLabel := 'Password:';
+       InputType := 'password';
+     end;
+   end;
+   TExtButton.AddTo(Buttons).Text := 'Login';
+   Show;
+   Free;
+ end;
+end;*)
 const
   Examples : array[0..6] of record
     Name, Proc, Gif, Desc : string
@@ -45,7 +73,7 @@ var
 begin
   // Theme := 'gray';
   SetStyle('img:hover{border:1px solid blue}');
-  with ExtPanel.Create do begin
+  with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';
     Width       := 400;
@@ -53,7 +81,7 @@ begin
     Collapsible := true;
     SetPosition(300, 0);
     for I := 0 to high(Examples) do
-      with Examples[I], ExtPanel.AddTo(Items) do begin
+      with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
         Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=_blank>'+
@@ -63,33 +91,33 @@ begin
     Free;
   end;
 end;
-
+     
 procedure TSamples.Layout;
 var
-  Tabs : ExtTabPanel;
-  Nav  : ExtPanel;
+  Tabs : TExtTabPanel;
+  Nav  : TExtPanel;
 begin
-  Tabs := ExtTabPanel.Create;
+  Tabs := TExtTabPanel.Create;
   with Tabs do begin
     Region   := 'center';
     Margins  := '3 3 3 0';
     Defaults := JSObject('autoScroll:true');
     ActiveTabNumber := 0;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Title := 'Bogus Tab';
       Html  := 'Blah blah blah';
     end;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Title := 'Another Tab';
       Html  := 'Blah blah blah';
     end;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Title := 'Closable Tab';
       Html  := 'Blah blah blah';
       Closable := true;
     end;
   end;
-  Nav := ExtPanel.Create;
+  Nav := TExtPanel.Create;
   with Nav do begin
     Title       := 'Navigation';
     Region      := 'west';
@@ -98,7 +126,7 @@ begin
     Collapsible := true;
     Margins     := '3 0 3 3';
   end;
-  with ExtWindow.Create do begin
+  with TExtWindow.Create do begin
     Title    := 'Layout Window';
     Closable := true;
     Width    := 600;
@@ -114,7 +142,7 @@ end;
 
 procedure TSamples.AddTab; begin // Ajax
   inc(TabIndex);
-  with ExtPanel.AddTo(Tabs.Items) do begin
+  with TExtPanel.AddTo(Tabs.Items) do begin
     Title    := 'New Tab ' + IntToStr(TabIndex);
     IconCls  := 'tabs';
     Html     := 'Tab Body ' + IntToStr(TabIndex) + '<br/><br/>blahblah';
@@ -131,13 +159,13 @@ begin
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
   SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu.js');
-  with ExtButton.Create do begin
+  with TExtButton.Create do begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
     Handler  := Ajax(AddTab);
   end;
-  Tabs := ExtTabPanel.Create;
+  Tabs := TExtTabPanel.Create;
   with Tabs do begin
     RenderTo        := 'body';
     ActiveTabNumber := 0;
@@ -155,19 +183,19 @@ end;
 
 procedure TSamples.ArrayGrid;
 var
-  DataStore  : ExtDataSimpleStore;
-  ColorValue : ExtFunction;
+  DataStore  : TExtDataSimpleStore;
+  ColorValue : TExtFunction;
 begin
   // Statefull !!!
-  ExtStateManager.SetProvider(ExtStateCookieProvider.Create);
+  ExtStateManager.SetProvider(TExtStateCookieProvider.Create);
   // create the data store
-  DataStore := ExtDataSimpleStore.Create;
+  DataStore := TExtDataSimpleStore.Create;
   with DataStore do begin
-    ExtDataField.AddTo(Fields).Name := 'company';
-    with ExtDataField.AddTo(Fields) do begin Name := 'price';     _Type := 'float' end;
-    with ExtDataField.AddTo(Fields) do begin Name := 'change';    _Type := 'float' end;
-    with ExtDataField.AddTo(Fields) do begin Name := 'pctchange'; _Type := 'float' end;
-    with ExtDataField.AddTo(Fields) do begin Name := 'lastchange';_Type := 'date'; DateFormat := 'n/j h:ia' end;
+    TExtDataField.AddTo(Fields).Name := 'company';
+    with TExtDataField.AddTo(Fields) do begin Name := 'price';     _Type := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'change';    _Type := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; _Type := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';_Type := 'date'; DateFormat := 'n/j h:ia' end;
     Data := JSArray(
       '["3m Co",71.72,0.02,0.03,"9/1 12:00am"],' +
       '["Alcoa Inc",29.01,0.42,1.47,"9/1 12:00am"],' +
@@ -199,40 +227,40 @@ begin
       '["Verizon Communications",35.57,0.39,1.11,"9/1 12:00am"],' +
       '["Wal-Mart Stores, Inc.",45.45,0.73,1.63,"9/1 12:00am"]');
   end;
-  with ExtGridGridPanel.Create do begin
+  with TExtGridGridPanel.Create do begin
     Store := DataStore;
     ColorValue := JSFunction('V', 'if(V>0){return "<span style=''color:green''>" + V + "</span>";}else ' +
       'if(V<0){return "<span style=''color:red''>" + V + "</span>";}' +
       'return V;');
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Id        := 'company';
       Header    := 'Company';
       Width     := 160;
       Sortable  := true;
       DataIndex := Id;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := 'Price';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'price';
       RendererString := 'usMoney';
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := 'Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'change';
       Renderer  := ColorValue;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := '% Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'pctchange';
       Renderer  := ColorValue;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := 'Last Updated';
       Width     := 85;
       Sortable  := true;
@@ -246,15 +274,15 @@ begin
     RenderTo   := 'body';
     Frame      := true;
     AutoExpandColumn := 'company';
-    ExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
+    TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
   end;
 end;
 
 procedure TSamples.BasicTabPanel;
 var
-  Window : ExtWindow;
+  Window : TExtWindow;
 begin
-  Window := ExtWindow.Create;
+  Window := TExtWindow.Create;
   with Window do begin
     Title  := 'Hello Dialog';
     Layout := 'fit';
@@ -262,22 +290,22 @@ begin
     Width  := 500;
     Height := 300;
     CloseAction := 'hide';
-    with ExtTabPanel.AddTo(Items) do begin
+    with TExtTabPanel.AddTo(Items) do begin
       ActiveTabNumber := 0;
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title := 'Hello World 1';
         Html  := 'Hello...';
       end;
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title := 'Hello World 2';
         Html  := '...World';
       end;
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Text     := 'Submit';
       Disabled := true;
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Text    := 'Close';
       Handler := JSFunction('window.close()');// try this: Handler := Window.Close; for another effect.
     end;
@@ -291,15 +319,15 @@ procedure TSamples.BorderLayout; begin
 	  'p{margin:5px}' +
     '.settings{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_wrench.png)}' +
     '.nav{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_go.png)}');
-  with ExtViewport.Create do begin
+  with TExtViewport.Create do begin
     Layout := 'border';
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Region := 'north';
       Height := 32;
       Frame  := true;
       Html   := '<p>north - generally for menus, toolbars and/or advertisements</p>';
     end;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Region  := 'south';
       Html    := '<p>south - generally for informational stuff, also could be for status bar</p>';
       Split   := true;
@@ -310,7 +338,7 @@ procedure TSamples.BorderLayout; begin
       MaxSize := 200;
       Collapsible := true;
     end;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Region  := 'east';
       Split   := true;
       Height  := 100;
@@ -321,16 +349,16 @@ procedure TSamples.BorderLayout; begin
       MinSize := 175;
       MaxSize := 400;
       Collapsible := true;
-      with ExtTabPanel.AddTo(Items) do begin
+      with TExtTabPanel.AddTo(Items) do begin
         Border := false;
         TabPosition := 'bottom';
         ActiveTabNumber := 1;
-        with ExtPanel.AddTo(Items) do begin
+        with TExtPanel.AddTo(Items) do begin
           Html  := '<p>A TabPanel component can be a region.</p>';
           Title := 'A Tab';
           AutoScroll := true;
         end;
-        with ExtGridPropertyGrid.AddTo(Items) do begin
+        with TExtGridPropertyGrid.AddTo(Items) do begin
           Title    := 'Property Grid';
           Closable := true;
           Source   := JSObject('"(name)":"Property Grid",grouping:false,autoFitColumns:true,productionQuality:false,' +
@@ -338,7 +366,7 @@ procedure TSamples.BorderLayout; begin
         end;
       end;
     end;
-    with ExtPanel.AddTo(Items) do begin
+    with TExtPanel.AddTo(Items) do begin
       Region  := 'west';
       Id      := 'west-panel';
       Split   := true;
@@ -350,30 +378,30 @@ procedure TSamples.BorderLayout; begin
       MaxSize := 400;
       Collapsible  := true;
       LayoutConfig := JSObject('animate:true');
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title   := 'Navigation';
         Html    := '<p>Hi. I''m the west panel.</p>';
         Border  := false;
         IconCls := 'nav';
       end;
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title   := 'Settings';
         Html    := '<p>Some settings in here.</p>';
         Border  := false;
         IconCls := 'settings';
       end;
     end;
-    with ExtTabPanel.AddTo(Items) do begin
+    with TExtTabPanel.AddTo(Items) do begin
       Region := 'center';
       DeferredRender  := false;
       ActiveTabNumber := 0;
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title      := 'Close Me';
         Html       := '<p><b>Done reading me? Close me by clicking the X in the top right corner.</b></p>';
         Closable   := true;
         AutoScroll := true
       end;
-      with ExtPanel.AddTo(Items) do begin
+      with TExtPanel.AddTo(Items) do begin
         Title      := 'Center Panel';
         Html       := '<p>The center panel automatically grows to fit the remaining space in the container that isn''t taken up by the border regions.</p>';
         AutoScroll := true
@@ -392,29 +420,29 @@ end;
 
 procedure TSamples.EditableGrid;
 var
-  Data : ExtObjectList;
+  Data : TExtObjectList;
 begin
   ExtQuickTips.Init;
-  Data := ExtObjectList.Create;
+  Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
-  with ExtDataField.AddTo(Data) do begin Name := 'common';    _Type := 'string' end;
-  with ExtDataField.AddTo(Data) do begin Name := 'botanical'; _Type := 'string' end;
-  ExtDataField.AddTo(Data).Name := 'light';
-  with ExtDataField.AddTo(Data) do begin Name := 'price'; _Type := 'float' end; // automatic date conversions
-  with ExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; _Type := 'date'; DateFormat := 'm/d/Y' end;
-  with ExtDataField.AddTo(Data) do begin Name := 'indoor'; _Type := 'bool' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'common';    _Type := 'string' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'botanical'; _Type := 'string' end;
+  TExtDataField.AddTo(Data).Name := 'light';
+  with TExtDataField.AddTo(Data) do begin Name := 'price'; _Type := 'float' end; // automatic date conversions
+  with TExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; _Type := 'date'; DateFormat := 'm/d/Y' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'indoor'; _Type := 'bool' end;
   // this could be inline, but we want to define the Plant record, type so we can add records dynamically
-  Plant := ExtDataRecord.Create(Data);
+  Plant := TExtDataRecord.Create(Data);
   // create the Data Store
-  DataStore := ExtDataStore.Create;
+  DataStore := TExtDataStore.Create;
   with DataStore do begin
     URL := ExtPath + '/examples/grid/plants.xml';
     // the return will be XML, so lets set up a reader, records will have a "plant" tag
-    Reader := ExtDataXmlReader.Create(JSObject('record:"plant"'), Plant);
+    Reader := TExtDataXmlReader.Create(JSObject('record:"plant"'), Plant);
     SortInfo := JSObject('field:"common", direction:"ASC"');
   end;
   // create the editor grid
-  Grid := ExtGridEditorGridPanel.Create;
+  Grid := TExtGridEditorGridPanel.Create;
   with Grid do begin
     Store  := DataStore;
     Width  := 600;
@@ -424,64 +452,64 @@ begin
     RenderTo := 'body';
     ClicksToEdit := 1;
     AutoExpandColumn := 'common';
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Id := 'common';
       Header := 'Common Name';
       Width  := 220;
       DataIndex := 'common';
-      Editor := ExtFormTextField.Create;
-      ExtFormTextField(Editor).AllowBlank := false;
+      Editor := TExtFormTextField.Create;
+      TExtFormTextField(Editor).AllowBlank := false;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header := 'Light';
       Width  := 130;
       DataIndex := 'light';
-      Editor := ExtFormComboBox.Create;
-      with ExtFormComboBox(Editor) do begin
+      Editor := TExtFormComboBox.Create;
+      with TExtFormComboBox(Editor) do begin
         StoreArray := JSArray('"Shade", "Mostly Shady", "Sun or Shade", "Mostly Sunny", "Sunny"');
         TypeAhead  := true;
         ListClass  := 'x-combo-list-small';
         TriggerAction := 'all';
       end;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header := 'Price';
       Width  := 70;
       Align  := 'right';
       DataIndex := 'price';
       RendererString := 'usMoney';
-      Editor := ExtFormNumberField.Create;
-      with ExtFormNumberField(Editor) do begin
+      Editor := TExtFormNumberField.Create;
+      with TExtFormNumberField(Editor) do begin
         MaxValue      := 100000;
         AllowBlank    := false;
         AllowNegative := false;
       end;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := 'Available';
       Width     := 95;
       DataIndex := 'availDate';
       Renderer  := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
-      Editor    := ExtFormDateField.Create;
-      with ExtFormDateField(Editor) do begin
+      Editor    := TExtFormDateField.Create;
+      with TExtFormDateField(Editor) do begin
         Format := 'm/d/y';
         MinValueString   := '01/01/06';
         DisabledDays     := JSArray('0, 6');
         DisabledDaysText := 'Plants are not available on the weekends'
       end;
     end;
-    with ExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumnModel.AddTo(Columns) do begin
       Header    := 'Indoor?';
       DataIndex := 'indoor';
       Width     := 55;
-      Editor    := ExtFormCheckbox.Create;
+      Editor    := TExtFormCheckbox.Create;
       Renderer  := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
     end;
-    with ExtButton.AddTo(TBarArray) do begin
+    with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Add Plant using AJAX!';
       Handler := Ajax(AddPlant);
     end;
-    with ExtButton.AddTo(TBarArray) do begin
+    with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Logout';
       Handler := Ajax(Logout);
     end;
@@ -491,29 +519,29 @@ end;
 
 procedure TSamples.MessageBoxes;
 var
-  ShowConfig : ExtShowConfig;
+  ShowConfig : TExtShowConfig;
 begin
-  with ExtPanel.Create do begin
+  with TExtPanel.Create do begin
     Title    := 'Message Boxes';
     Width    := 700;
     RenderTo := 'body';
     Frame    := true;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Text    := 'Alert Dialog';
       Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully');
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Text    := 'Confirm Message';
       Handler := ExtMessageBox.Confirm('Confirm', 'Are you sure?');
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Text    := 'Prompt Dialog';
       Handler := ExtMessageBox.Prompt('Name', 'Please enter your name:');
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Id   := 'ButtonMultiline';
       Text := 'Multi-line prompt dialog';
-      ShowConfig := ExtShowConfig.Create;
+      ShowConfig := TExtShowConfig.Create;
       with ShowConfig do begin
         Title     := 'Address';
         Msg       := 'Please enter your address:';
@@ -525,10 +553,10 @@ begin
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Id   := 'Yes/No/Cancel Dialog';
       Text := Id;
-      ShowConfig := ExtShowConfig.Create;
+      ShowConfig := TExtShowConfig.Create;
       with ShowConfig do begin
         Title   := 'Save Changes?';
         Msg     := 'You are closing a tab that has unsaved changes.<br/>Would you like to save your changes?';
@@ -539,10 +567,10 @@ begin
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
     end;
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Id   := 'Progress Dialog';
       Text := Id;
-      ShowConfig := ExtShowConfig.Create;
+      ShowConfig := TExtShowConfig.Create;
       with ShowConfig do begin
         Title    := 'Please wait';
         Width    := 300;
@@ -551,7 +579,7 @@ begin
         Wait     := true;
         AnimEl   := Id;
         ProgressText := 'Loading...';
-        WaitConfig   := ExtProgressWaitConfig.Create;
+        WaitConfig   := TExtProgressWaitConfig.Create;
         with WaitConfig do begin
           Duration  := 5000;
           Interval  := 500;
@@ -565,10 +593,10 @@ begin
     end;
     SetStyle('.x-window-dlg .ext-mb-download{background:transparent ' +
       'url(' + ExtPath + '/examples/message-box/images/download.gif) no-repeat top left; height:46px}');
-    with ExtButton.AddTo(Buttons) do begin
+    with TExtButton.AddTo(Buttons) do begin
       Id   := 'Wait Dialog';
       Text := Id;
-      ShowConfig := ExtShowConfig.Create;
+      ShowConfig := TExtShowConfig.Create;
       with ShowConfig do begin
         Msg    := 'Saving your data, please wait...';
         Width  := 300;
@@ -576,7 +604,7 @@ begin
         Icon   := 'ext-mb-download';
         AnimEl := Id;
         ProgressText := 'Saving...';
-        WaitConfig   := ExtProgressWaitConfig.Create;
+        WaitConfig   := TExtProgressWaitConfig.Create;
         with WaitConfig do begin
           Duration := 5000;
           Interval := 500;
@@ -592,6 +620,6 @@ begin
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.6', TSamples, 2014, 5, true);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, true);
   Application.Run;
 end.
