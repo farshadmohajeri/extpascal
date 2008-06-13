@@ -314,7 +314,7 @@ end;
 
 procedure TExtObjectList.Add(Obj : TExtObject);
 var
-  ListAdd : string;
+  ListAdd, Response : string;
 begin
   if length(FObjects) = 0 then
     if Owner <> nil then
@@ -323,8 +323,9 @@ begin
       TExtThread(CurrentFCGIThread).JSCode('var ' + JSName + '=[/*' + JSName + '*/];');
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
-  if pos(Obj.JSName, TExtThread(CurrentFCGIThread).Response) = 0 then begin
-    if TExtThread(CurrentFCGIThread).IsAjax then
+  Response := TExtThread(CurrentFCGIThread).Response;
+  if pos(Obj.JSName, Response) = 0 then begin
+    if (pos(JSName, Response) = 0) and TExtThread(CurrentFCGIThread).IsAjax then
       ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
     else
       ListAdd := '%s';
