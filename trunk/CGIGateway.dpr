@@ -144,7 +144,7 @@ begin
     TalkFCGI
   else begin
   	Socket.Free;
-    FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), '.exe');
+    FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
     if Exec(FCGIApp) then begin
     	Socket := TBlockSocket.Create;
       Socket.Connect(Host, Port);
