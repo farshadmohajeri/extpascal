@@ -1,14 +1,21 @@
 unit ExtPascal;
-
+{
+Basic classes for Javascript and ExtJS translate to Pascal.
+Associates semantic concepts of JavaScript and ExtJS for Object Pascal, such as: Function, Object, List of Objects and Method Ajax.
+It's the heart of the automatic translation of JavaScript for Object Pascal method that I call "Self-translating."
+It takes advantage of the fact that JavaScript and ObjectPascal are structurally similar languages,
+where there is almost one to one parity between its syntax and semantic structures.
+}
 interface
 
 uses
   FCGIApp;
 
 const
-  ExtPath = '/ext';
+  ExtPath = '/ext'; // Instalation path of Ext JS framework, below the your Web server document root
 
 type
+  //
   TExtThread = class(TFCGIThread)
   private
     Style, Libraries, FLanguage : string;
@@ -24,9 +31,9 @@ type
     function GetSequence : string;
     function JSConcat(OldCommand, NewCommand : string) : string;
   public
-    Theme : string;
-    property Language : string read FLanguage;
-    property IsAjax : boolean read FIsAjax;
+    Theme : string; // Set or get Ext JS installed theme
+    property Language : string read FLanguage; // Actual language for this session, read HTTP_ACCEPT_LANGUAGE header
+    property IsAjax : boolean read FIsAjax; // Test if execution is occouring in an AJAX request
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = '');
@@ -45,10 +52,11 @@ type
     FJSName : string;
   protected
     JSCommand : string;
-    function VarToJSON(A : array of const) : string; overload;
-    function VarToJSON(Exts : TExtObjectList) : string; overload;
-    function VarToJSON(Strs : TArrayOfString) : string; overload;
+    function VarToJSON(A : array of const)     : string; overload;
+    function VarToJSON(Exts : TExtObjectList)  : string; overload;
+    function VarToJSON(Strs : TArrayOfString)  : string; overload;
     function VarToJSON(Ints : TArrayOfInteger) : string; overload;
+    function ExtractJSCommand(pJSCommand : string) : string;
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
@@ -65,7 +73,8 @@ type
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body: string): TExtFunction; overload;
     procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
-    function Ajax(Method : TExtAjaxMethod; Params: string = '') : TExtFunction;
+    function Ajax(Method : TExtAjaxMethod) : TExtFunction; overload;
+    function Ajax(Method : TExtAjaxMethod; Params : array of const) : TExtFunction; overload;
     property JSName : string read FJSName;
   end;
 
@@ -196,7 +205,7 @@ begin
   if J <> 0 then
     VarName := copy(JS, J+1, posex('_', JS, J+3)-J)
   else
-    exit;
+    VarName := JS;
   J := posex('/*' + VarName + '*/', Response, I);
   if J > I then begin
     K := pos('var ' + VarName + '=new', Response);
@@ -224,6 +233,14 @@ begin
     Result := OldCommand;
 end;
 
+{ Realiza tarefas que ocorrem antes da chamada do método invocada pelo Browser (PATH-INFO)
+1. Determina a linguagem do browser
+2. Verifica se essa linguagem tem arquivo correspondente no Ext JS '/ext/source/locale/ext-lang-?????.js'
+3. Se não tem usa a lingua default se existe usa essa língua.
+3. Verifica se é um request Ajax.
+4. Verifica se os cookies estão ativados
+@result devolve false se Cookies estão desativados ou se é Ajax executando no primeiro request de uma thread.
+}
 function TExtThread.BeforeHandleRequest : boolean;
 var
   I : integer;
@@ -271,7 +288,7 @@ begin
   Response := AnsiReplaceStr(Response, '_', '');
   if not IsAjax then begin
     Response := '<!doctype html public><html><title>' + Application.Title + '</title>' +
-      '<meta http-equiv="Content-Type" content="charset=utf-8">' +
+      '<meta http-equiv="content-type" content="charset=utf-8">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
       '<script src=' + ExtPath + '/ext-all.js></script>' +
@@ -434,20 +451,42 @@ procedure TExtObject.JSFunction(Name, Params, Body : string); begin
   JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
-function TExtObject.Ajax(Method : TExtAjaxMethod; Params : string = ''): TExtFunction;
+function TExtObject.Ajax(Method: TExtAjaxMethod): TExtFunction; begin
+  Result := Ajax(Method, []);
+end;
+
+function TExtObject.Ajax(Method: TExtAjaxMethod; Params: array of const): TExtFunction;
 var
-  MetName : string;
+  MetName, lParams : string;
+  I : integer;
 begin
   Result  := TExtFunction(Self);
   MetName := TExtThread(CurrentFCGIThread).MethodName(@Method);
   if MetName <> '' then begin
-    if Params <> '' then
-      if pos('&', Params) <> 0 then
-        Params := '&' + TExtThread.URLEncode(Params)
-      else
-        Params := '&' + TExtThread.URLEncode(AnsiReplaceStr(Params, ',', '&'));
+    lParams := 'Ajax=1';
+    for I := 0 to high(Params) do
+      with Params[I] do
+        if Odd(I) then
+          case VType of
+            vtAnsiString : lParams := lParams + string(VAnsiString);
+            vtString     : lParams := lParams + VString^;
+            vtObject     : lParams := lParams + '"+' + ExtractJSCommand(TExtObject(VObject).JSCommand) + '+"';
+            vtInteger    : lParams := lParams + IntToStr(VInteger);
+            vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
+            vtExtended   : lParams := lParams + FloatToStr(VExtended^);
+            vtVariant    : lParams := lParams + string(VVariant^)
+          end
+        else
+          case VType of
+            vtAnsiString : lParams := lParams + '&' + string(VAnsiString) + '=';
+            vtString     : lParams := lParams + '&' + VString^ + '=';
+          else
+            JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MetName +
+              ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
+            exit;
+          end;
     JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + MetName +
-      '",params:"Ajax=1' + Params + '",success:AjaxSuccess,failure:AjaxFailure});');
+      '",params:"' + lParams + '",success:AjaxSuccess,failure:AjaxFailure});');
   end
   else
     JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
@@ -475,6 +514,16 @@ begin
     if I <> J then Params := Params + ','
   end;
   Result := 'function(' + Params + '){return ' + Command + '}';
+end;
+
+function TExtObject.ExtractJSCommand(pJSCommand : string) : string;
+var
+  I : integer;
+begin
+  Result := pJSCommand;
+  TExtThread(CurrentFCGIThread).RemoveJS(Result);
+  I := pos('*/', Result);
+  if I <> 0 then Result := copy(Result, I+2, length(Result)-I-2)
 end;
 
 function TExtObject.VarToJSON(A : array of const): string;
