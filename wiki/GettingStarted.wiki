@@ -52,14 +52,14 @@ ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPasca
  # Open your FastCGI application (by example ExtPascalSamples.dpr)
  # Modify Port optional parameter if necessary, default 2014. Near the bottom line of the program, which states:
 {{{
-Application := TFCGIApplication.Create('ExtPascal Samples 0.8.6', TSamples, 2014, 5, true);
+Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, true);
 }}}
  # Compile
- # Copy your FastCGI application to cgi-bin directory. Use .fcgi extension for Posix (non-Windows) platforms
+ # Copy your FastCGI application to cgi-bin directory. Use `.fcgi` extension for Posix (non-Windows) platforms
  # Rename CGIGateway.exe to the same name of your FastCGI application changing the extension to .cgi or anything
  # To play the Samples, by example, you will have this files at cgi-bin:
 {{{
-ExtPascalSamples.exe // The real FastCGI application. The extension is .fcgi for Posix platforms.
+ExtPascalSamples.exe // The real FastCGI application. The extension is `.fcgi` for Posix platforms.
 ExtPascalSamples.cgi // The CGI Gateway
 }}}
  # None configuration is necessary on Apache.
