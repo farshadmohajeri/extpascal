@@ -150,7 +150,7 @@ procedure TUnit.ReviewTypes;
 
   procedure InsertNamespace(var Typ : string);
   const
-    Types = '.string.Integer.Boolean.Double.TDateTime.TExtObject.TExtObjectList.Void.TExtFunction.TEvent.THTMLElement.TRegExp.';
+    Types = '.string.Integer.Boolean.Double.TDateTime.TExtObject.TExtObjectList.TVoid.TExtFunction.TEvent.THTMLElement.TRegExp.';
   var
     T : string;
     I : integer;
@@ -661,13 +661,13 @@ begin
     if Return = '' then
       write(Pas, T, 'constructor ', pClassName, 'Create')
     else
-      write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'Void', 'procedure ', 'function '), pClassName, Name);
+      write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'TVoid', 'procedure ', 'function '), pClassName, Name);
     if Params.Count <> 0 then begin
       write(Pas, '(');
       WriteParams(Params);
       write(Pas, ')');
     end;
-    write(Pas, IfThen((Return = 'Void') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
+    write(Pas, IfThen((Return = 'TVoid') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
       IfThen(pClassName = '', ^M^J, ''));
   end;
   Result := true;
@@ -707,6 +707,7 @@ begin
       for I := 0 to Methods.Count-1 do
         with TMethod(Methods.Objects[I]) do
           if (Return + 'Singleton') = Cls.Name then Return := Return + 'Singleton';
+    writeln(Pas, Tab(2), '{$IFDEF FPC}constructor AddTo(List : TExtObjectList);{$ENDIF}');
     for I := 0 to Methods.Count-1 do // Write methods
       WriteMethodSignature(TMethod(Methods.Objects[I]));
     if Arrays then writeln(Pas, Tab(2), 'destructor Destroy; override;');
@@ -860,6 +861,7 @@ begin
                       writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');');
             writeln(Pas, 'end;'^M^J);
           end;
+          writeln(Pas, '{$IFDEF FPC}constructor ' + CName + '.AddTo(List : TExtObjectList);begin inherited end;{$ENDIF}'^M^J);
           for K := 0 to Methods.Count-1 do // Write methods
             if WriteMethodSignature(TMethod(Methods.Objects[K]), Name) then begin
               writeln(Pas, ' begin');
@@ -874,7 +876,7 @@ begin
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
                     ''', ''' + CName + ''');');
-                  if Return <> 'Void' then
+                  if Return <> 'TVoid' then
                     writeln(Pas, Tab, 'Result := Self')
                 end;
               writeln(Pas, 'end;'^M^J);
