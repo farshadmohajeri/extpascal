@@ -8,6 +8,7 @@ uses
 
 type
   TSamples = class(TExtThread)
+  private
   public
     Tabs : TExtTabPanel;
     TabIndex : integer;
@@ -37,7 +38,7 @@ const
     (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
     (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
     (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components and sub-layouts.'),
-    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.'),
+    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
     (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.')
   );
 var
@@ -105,6 +106,7 @@ begin
     Height   := 350;
     Plain    := true;
     Layout   := 'border';
+    Modal    := true;
     Nav.AddTo(Items);
     Tabs.AddTo(Items);
     Show;
@@ -238,6 +240,10 @@ begin
       Sortable  := true;
       DataIndex := 'lastchange';
       Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 handle internal parameters to events
+    end;
+    with TExtButton.AddTo(TBarArray) do begin
+      Text    := 'Show modal dialog using Ajax';
+      Handler := Ajax(Self.Layout);
     end;
     StripeRows := true;
     Height     := 350;
