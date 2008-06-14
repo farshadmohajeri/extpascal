@@ -19,12 +19,12 @@ The main advantages are:
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache or IIS is necessary.
  * Download ExtJS 2.1 or later, _*with the documentation*_.
  * Install ExtJS below Apache's Document Root at folder *ext*
- * For Windows install Delphi (5, 6, 7, Turbo, 2006 or 2007) or FreePascal 2.3.1 with Lazarus 0.9.24+ or [http://sourceforge.net/projects/mseide-msegui MSEide 1.8+]. I used Turbo Delphi.
- * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.3.1 with Lazarus 0.9.24+ or MSEide 1.8+. I used FreePascal and MSEide.
+ * For Windows install Delphi (5, 6, 7, Turbo, 2006 or 2007) or FreePascal 2.2+ with Lazarus 0.9.24+ or [http://sourceforge.net/projects/mseide-msegui MSEide 1.8+]. I used Turbo Delphi, FreePascal 2.2, 2.3.1 and MSEide 1.8.
+ * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.3.1 with Lazarus 0.9.24+ or MSEide 1.8+. I used FreePascal 2.3.1 and MSEide 1.8.
  * Download ExtPascal package to a working directory, for example: C:\ExtPascal. 
 
 = First Steps =
- # Compile ExtToPascal.dpr source using your ObjectPascal compiler.
+ # Compile ExtToPascal.dpr source using your favorite ObjectPascal compiler.
  # For Delphi I recommend set these Syntax options (menu \Project\Options\Compiler):
 {{{
 OFF Strict var-strings
@@ -45,22 +45,22 @@ ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPasca
  # Compile ExtPascalSamples as example.
 
 = Setting using FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
- # Open CGIGateway.dpr
- # Modify Port constant if necessary, default 2014
- # Compile
- # Copy CGIGateway.exe to cgi-bin directory
- # Open your FastCGI application (by example ExtPascalSamples.dpr)
+ # Open CGIGateway.dpr.
+ # Modify Port constant if necessary, default 2014.
+ # Compile.
+ # Copy CGIGateway.exe to cgi-bin directory.
+ # Open your FastCGI application (by example ExtPascalSamples.dpr).
  # Modify Port optional parameter if necessary, default 2014. Near the bottom line of the program, which states:
 {{{
 Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, true);
 }}}
- # Compile
- # Copy your FastCGI application to cgi-bin directory. Use `.fcgi` extension for Posix (non-Windows) platforms
- # Rename CGIGateway.exe to the same name of your FastCGI application changing the extension to .cgi or anything
+ # Compile.
+ # Copy your FastCGI application to cgi-bin directory. Use `.fcgi` extension for Posix (non-Windows) platforms.
+ # Rename CGIGateway.exe to the same name of your FastCGI application changing the extension to .cgi or anything extension supported by your Web Server as CGI application.
  # To play the Samples, by example, you will have this files at cgi-bin:
 {{{
 ExtPascalSamples.exe // The real FastCGI application. The extension is `.fcgi` for Posix platforms.
-ExtPascalSamples.cgi // The CGI Gateway
+ExtPascalSamples.cgi // The CGI Gateway.
 }}}
  # None configuration is necessary on Apache.
  # In your browser call Samples using:
