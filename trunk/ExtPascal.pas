@@ -50,6 +50,7 @@ type
   TExtObject = class
   private
     FJSName : string;
+    function IsParent(C: string): boolean;
   protected
     JSCommand : string;
     function VarToJSON(A : array of const)     : string; overload;
@@ -110,7 +111,6 @@ type
   TEventObject = TEvent;
   THTMLNode = TExtObject;
   TConstructor = class(TExtObject);
-  TClass = class(TExtObject);
   TExtLibRegion = TRegion; //doc fault
   TvisMode = Integer; // doc fault
   TThe = TExtObject; // doc fault
@@ -398,10 +398,23 @@ function TExtObject.JSClassName: string; begin
   Result := 'Object'
 end;
 
+function TExtObject.IsParent(C : string) : boolean;
+var
+  Cl : TClass;
+begin
+  Result := true;
+  Cl := Self.ClassType;
+  while Cl.ClassName <> 'TExtFunction' do begin
+    if Cl.ClassName = C then exit;
+    Cl := Cl.ClassParent
+  end;
+  Result := false;
+end;
+
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
-      if (JSCommand <> '') and (pJSName <> '') and (pJSName <> Classname) then begin
+      if (JSCommand <> '') and not(IsParent(pJSName)) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;
