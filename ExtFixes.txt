@@ -1,10 +1,10 @@
 * USED FORMATS in ExtFixes.txt
 *
 * Adding and updating properties:
-<class name>,<JavaScript property name>,<type>,<if is a static property>,<default value or forceadd for alternate type properties>
+<class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
 *
 * Adding and updating methods:
-<class name>,<JavaScript method name>,<return type>,<if is a static method>,<if is a overload method>,
+<class name>,<JavaScript method name>,<return type>,<if is a static method>,<if is a overload method>
 *
 * For each method parameter:
 <parameter name>,<type>,<if is a optional parameter>
@@ -12,68 +12,67 @@
 * Adding new classes:
 <class name>,<parent class name>,<unit name>
 *
-ExtComponent, region, string, false,
-ExtComponent, split, Boolean, false,
-ExtComponent, collapseMode, string, false,
-ExtComponent, minWidth, Integer, false,
-ExtComponent, maxWidth, Integer, false,
-ExtComponent, minSize, Integer, false,
-ExtComponent, maxSize, Integer, false,
-ExtComponent, margins, string, false,
-ExtComponent, closable, Boolean, false,
-ExtComponent, anchor, string, false,
-ExtComponent, el, string, false,
+ExtComponent, region, string, false, true,
+ExtComponent, split, Boolean, false, true,
+ExtComponent, collapseMode, string, false, true,
+ExtComponent, minWidth, Integer, false, true,
+ExtComponent, maxWidth, Integer, false, true,
+ExtComponent, minSize, Integer, false, true,
+ExtComponent, maxSize, Integer, false, true,
+ExtComponent, margins, string, false, true,
+ExtComponent, closable, Boolean, false, true,
+ExtComponent, anchor, string, false, true,
+ExtComponent, el, string, false, true,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
-ExtDataHttpProxy, conn, ExtDataConnection, false,
-ExtGridGridPanel, columns, ExtObjectList, false,
-ExtGridColumnModel, renderer, String, false, forceadd
+ExtDataHttpProxy, conn, ExtDataConnection, false, false,
+ExtGridColumnModel, renderer, String, false, true, FORCEADD
 ExtDataField,, ExtData
-ExtDataField, name, string, false,
-ExtDataField, mapping, string, false,
-ExtDataField, type, string, false,
-ExtDataField, sortTypes, string, false,
-ExtDataField, sortDir, string, false,
-ExtDataField, convert, ExtFunction, false,
-ExtDataField, dateFormat, string, false,
+ExtDataField, name, string, false, true,
+ExtDataField, mapping, string, false, true,
+ExtDataField, type, string, false, true,
+ExtDataField, sortTypes, string, false, true,
+ExtDataField, sortDir, string, false, true,
+ExtDataField, convert, ExtFunction, false, true,
+ExtDataField, dateFormat, string, false, true,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
-ExtFormFormPanel, buttons, ExtObjectList, false,
-ExtFormFormPanel, items, ExtObjectList, false,
-ExtWindow, items, ExtObjectList, false,
-ExtPanel, items, ExtObjectList, false,
-ExtViewPort, items, ExtObjectList, false,
+ExtFormFormPanel, buttons, ExtObjectList, false, true,
+ExtFormFormPanel, items, ExtObjectList, false, true,
+ExtWindow, items, ExtObjectList, false, true,
+ExtPanel, items, ExtObjectList, false, true,
+ExtViewPort, items, ExtObjectList, false, true,
 ExtShowConfig,, Ext
-ExtShowConfig, animEl, string, false,
-ExtShowConfig, buttons, ExtObject, false,
-ExtShowConfig, closable, Boolean, false, true
-ExtShowConfig, cls, string, false,
-ExtShowConfig, defaultTextHeight, Integer, false, 75
-ExtShowConfig, fn, ExtFunction, false,
-ExtShowConfig, scope, ExtObject, false,
-ExtShowConfig, icon, string, false,
-ExtShowConfig, iconCls, string, false,
-ExtShowConfig, maxWidth, Integer, false, 600
-ExtShowConfig, minWidth, Integer, false, 100
-ExtShowConfig, modal, Boolean, false, true
-ExtShowConfig, msg, string, false,
-ExtShowConfig, multiline, Boolean, false,
-ExtShowConfig, progress, Boolean, false,
-ExtShowConfig, progressText, string, false,
-ExtShowConfig, prompt, Boolean, false,
-ExtShowConfig, proxyDrag, Boolean, false,
-ExtShowConfig, title, string, false,
-ExtShowConfig, value, string, false,
-ExtShowConfig, wait, Boolean, false,
-ExtShowConfig, waitConfig, ExtProgressWaitConfig, false,
-ExtShowConfig, width, Integer, false,
-ExtMessageBoxSingleton, ERROR, string, true, 'ext-mb-error'
-ExtMessageBoxSingleton, INFO, string, true, 'ext-mb-info'
-ExtMessageBoxSingleton, QUESTION, string, true, 'ext-mb-question'
-ExtMessageBoxSingleton, WARNING, string, true, 'ext-mb-warning'
+ExtShowConfig, animEl, string, false, true,
+ExtShowConfig, buttons, ExtObject, false, true,
+ExtShowConfig, closable, Boolean, false, true, true
+ExtShowConfig, cls, string, false, true,
+ExtShowConfig, defaultTextHeight, Integer, false, true, 75
+ExtShowConfig, fn, ExtFunction, false, true,
+ExtShowConfig, scope, ExtObject, false, true,
+ExtShowConfig, icon, string, false, true,
+ExtShowConfig, iconCls, string, false, true,
+ExtShowConfig, maxWidth, Integer, false, true, 600
+ExtShowConfig, minWidth, Integer, false, true, 100
+ExtShowConfig, modal, Boolean, false, true, true
+ExtShowConfig, msg, string, false, true,
+ExtShowConfig, multiline, Boolean, false, true,
+ExtShowConfig, progress, Boolean, false, true,
+ExtShowConfig, progressText, string, false, true,
+ExtShowConfig, prompt, Boolean, false, true,
+ExtShowConfig, proxyDrag, Boolean, false, true,
+ExtShowConfig, title, string, false, true,
+ExtShowConfig, value, string, false, true,
+ExtShowConfig, wait, Boolean, false, true,
+ExtShowConfig, waitConfig, ExtProgressWaitConfig, false, true,
+ExtShowConfig, width, Integer, false, true,
+ExtMessageBoxSingleton, ERROR, string, true, false, 'ext-mb-error'
+ExtMessageBoxSingleton, INFO, string, true, false, 'ext-mb-info'
+ExtMessageBoxSingleton, QUESTION, string, true, false, 'ext-mb-question'
+ExtMessageBoxSingleton, WARNING, string, true, false, 'ext-mb-warning'
 ExtProgressWaitConfig,, Ext
-ExtProgressWaitConfig, duration, Integer, false,
-ExtProgressWaitConfig, interval, Integer, false, 1000
-ExtProgressWaitConfig, increment, Integer, false, 10
-ExtProgressWaitConfig, fn, ExtFunction, false,
-ExtProgressWaitConfig, scope, ExtObject, false,
+ExtProgressWaitConfig, duration, Integer, false, true,
+ExtProgressWaitConfig, interval, Integer, false, true, 1000
+ExtProgressWaitConfig, increment, Integer, false, true, 10
+ExtProgressWaitConfig, fn, ExtFunction, false, true,
+ExtProgressWaitConfig, scope, ExtObject, false, true,
 

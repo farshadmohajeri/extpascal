@@ -100,6 +100,7 @@ type
   protected
     procedure InitDefaults; virtual;
   public
+    constructor CreateInternal(Owner: TExtObject; pJSName: string);
     constructor Create(Owner : TExtObject = nil);
     constructor CreateSingleton(pJSName : string = '');
     constructor AddTo(List : TExtObjectList);
@@ -158,7 +159,7 @@ type
   TEventObject = TEvent;
   THTMLNode = TExtObject;
   TConstructor = class(TExtObject);
-  TExtLibRegion = TRegion; //doc fault
+  TExtLibRegion = class(TExtObject); //doc fault
   TvisMode = Integer; // doc fault
   TThe = TExtObject; // doc fault
   TThis = TExtObject; // doc fault
@@ -556,6 +557,10 @@ Create a TExtObject and generate corresponding JS code using "Self-translating"
 }
 constructor TExtObject.Create(Owner : TExtObject = nil); begin
   if Owner = nil then CreateVar(JSClassName + '({});')
+end;
+
+constructor TExtObject.CreateInternal(Owner : TExtObject; pJSName : string); begin
+  FJSName := Owner.JSName + '.' + pJSName;
 end;
 
 {

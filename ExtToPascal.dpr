@@ -98,8 +98,8 @@ type
 
   TProp = class
     Name, JSName, Typ, Default : string;
-    Static : boolean;
-    constructor Create(pName, pJSName, pType : string; pStatic : boolean; pDefault : string = '');
+    Static, Config : boolean;
+    constructor Create(pName, pJSName, pType : string; pStatic, pConfig : boolean; pDefault : string = '');
   end;
 
   TMethod = class
@@ -231,10 +231,11 @@ begin
     end;
 end;
 
-constructor TProp.Create(pName, pJSName, pType : string; pStatic : boolean; pDefault : string = ''); begin
+constructor TProp.Create(pName, pJSName, pType : string; pStatic, pConfig : boolean; pDefault : string = ''); begin
   Name    := FixIdent(pName);
   JSName  := pJSName;
   Static  := pStatic or IsUpper(pName);
+  Config  := pConfig;
   Typ     := FixType(pType);
   Default := pDefault;
 end;
@@ -341,6 +342,7 @@ const
   PropName  : string      = '';
   MetName   : string      = '';
   PropTypes : TStringList = nil;
+  Config    : boolean     = false;
 var
   PackName, Arg, Return, JSName : string;
   Matches, Params, Args : TStringList;
@@ -385,7 +387,15 @@ begin
               CurClass.Name := CurClass.Name + 'Singleton';
             end
             else
-              if (pos('<h2>Config Options</h2>', Line) + pos('<h2>Public Properties</h2>', Line)) <> 0 then State := InProperties;
+              if pos('<h2>Config Options</h2>', Line) <> 0 then begin
+                State := InProperties;
+                Config := true;
+              end
+              else
+                if pos('<h2>Public Properties</h2>', Line) <> 0 then begin
+                  State := InProperties;
+                  Config := false;
+                end;
       InProperties :
         if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
           PropName := Matches[0];
@@ -400,11 +410,11 @@ begin
             PropTypes := Explode('/', Matches[2]);
             for I := 0 to PropTypes.Count-1 do
               if I = 0 then begin
-                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static);
+                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
                 CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
               end
               else
-                CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static));
+                CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static, Config));
           end;
         end
         else
@@ -424,18 +434,21 @@ begin
               FreeAndNil(PropTypes);
             end
             else
-              if pos('<h2>Public Methods</h2>', Line) <> 0 then begin
-                for I := 0 to CurClass.Properties.Count-1 do
-                  with TProp(CurClass.Properties.Objects[I]) do
-                    if (Typ = 'TExtObjectList') and not Static then begin
-                      CurClass.Arrays := true;
-                      CurClass.AddCreate;
-                      break;
-                    end;
-                State := InMethods
-              end
+              if pos('<h2>Public Properties</h2>', Line) <> 0 then
+                Config := false
               else
-                if pos('<static>', lowercase(Line)) <> 0 then CurProp.Static := true;
+                if pos('<h2>Public Methods</h2>', Line) <> 0 then begin
+                  for I := 0 to CurClass.Properties.Count-1 do
+                    with TProp(CurClass.Properties.Objects[I]) do
+                      if (Typ = 'TExtObjectList') and not Static then begin
+                        CurClass.Arrays := true;
+                        CurClass.AddCreate;
+                        break;
+                      end;
+                  State := InMethods
+                end
+                else
+                  if pos('<static>', lowercase(Line)) <> 0 then CurProp.Static := true;
       InMethods :
           if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
@@ -552,18 +565,21 @@ begin
         I := AllClasses.IndexOf('T' + Fields[0]);
         if I <> -1 then begin
           with TClass(AllClasses.Objects[I]) do
-            if Fields.Count = 5 then // props
-              if Fields[4] = 'forceadd' then
-                Properties.AddObject(Fields[1] + Fields[2], TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', ''))
+            if Fields.Count = 6 then // props
+              if lowercase(Fields[5]) = 'forceadd' then
+                Properties.AddObject(Fields[1] + Fields[2],
+                  TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', ''))
               else begin
                 J := Properties.IndexOf(Fields[1]);
                 if J = -1 then // Add
-                  Properties.AddObject(Fields[1], TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', Fields[4]))
+                  Properties.AddObject(Fields[1],
+                    TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
                 else // Update
                   with TProp(Properties.Objects[J]) do begin
                     Typ := FixType(Fields[2]);
                     Static := lowercase(Fields[3]) = 'true';
-                    Default := Fields[4]
+                    Config := lowercase(Fields[4]) = 'true';
+                    Default := Fields[5]
                   end;
               end
             else begin // methods
@@ -792,7 +808,7 @@ end;
 
 procedure WriteUnits;
 var
-  I, J, K : integer;
+  I, J, K, L : integer;
   CName, CJSName : string;
 begin
   for I := 0 to Units.Count-1 do
@@ -869,9 +885,13 @@ begin
                 if Return = '' then begin // Write constructors
                   writeln(Pas, Tab, 'InitDefaults;');
                   if AltCreate then // ExtJS fault
-                    writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''')')
+                    writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
                   else
-                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''')');
+                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''');');
+                  for L := 0 to Properties.Count-1 do // Write Set procedures implementation
+                    with TProp(Properties.Objects[L]) do
+                      if not Static and not Config and (pos('TExt', Typ) = 1) and (Typ <> 'TExtObjectList') then
+                        writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
                 end
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
