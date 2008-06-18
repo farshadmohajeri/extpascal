@@ -599,16 +599,21 @@ begin
   FThreadsCount := -1;
   with TBlockSocket.Create do begin
     Bind(Port, 100);
-    repeat
-      NewSocket := Accept(250);
-      if NewSocket <> 0 then FCGIThreadClass.Create(NewSocket);
-      if ((I mod 120) = 0) or GarbageNow then begin // A garbage for each 30 seconds
-        GarbageThreads;
-        GarbageNow := false;
-        I := 0;
-      end;
-      inc(I);
-    until Terminated or (Shutdown and (ThreadsCount = 0));
+    if Error = 0 then
+      repeat
+        NewSocket := Accept(250);
+        if NewSocket <> 0 then FCGIThreadClass.Create(NewSocket);
+        if ((I mod 120) = 0) or GarbageNow then begin // A garbage for each 30 seconds
+          GarbageThreads;
+          GarbageNow := false;
+          I := 0;
+        end;
+        inc(I);
+      until Terminated or (Shutdown and (ThreadsCount = 0))
+    else begin
+      writeln(Port, ' already in use.'^M^J'Press ENTER');
+      readln;
+    end;
     Free;
   end;
 end;

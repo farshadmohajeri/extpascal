@@ -1,10 +1,33 @@
 unit ExtPascal;
 {
-Basic classes for Javascript and ExtJS translate to Pascal.
-Associates semantic concepts of JavaScript and ExtJS for Object Pascal, such as: Function, Object, List of Objects and Method Ajax.
-It's the heart of the automatic translation of JavaScript for Object Pascal method that I call "Self-translating."
-It takes advantage of the fact that JavaScript and ObjectPascal are structurally similar languages,
+Basic classes for JavaScript and Ext JS translating from Object Pascal.
+Associates semantic concepts of JavaScript and Ext JS for Object Pascal, such as: Function, Object, List of Objects and Ajax Method.
+It's the heart of the automatic translation method from Object Pascal to JavaScript, that I call "Self-translating".
+It takes advantage of the fact that JavaScript and Object Pascal are structurally similar languages,
 where there is almost one to one parity between its syntax and semantic structures.
+
+ExtPascal é composto por três componentes principais:
+
+1. The Parser @[link ExtToPascal] able to scan Ext JS documentation in HTML format and to create the Wrapper.
+2. The Wrapper programmatically created by Parser, is in fact a set of units (twelve in Ext JS 2.1)
+   which has the definition of all Ext JS classes, properties, methods and events.
+3. The Self-translating engine, this unit. It's triggered when using the Wrapper,
+   ie by creating objects, assigning properties and events, and invoking methods.
+
+@[image c:\trabalho\extpascal\images\extpascal.gif]
+
+1. The Parser read the HTML documentation of Ext JS and
+2. Generate the Wrapper.
+3. With the application on-line a browser session to do a request.
+4. The application create ExtObjects, set properties and call methods from Wrapper Units.
+5. For each these tasks the "Self-translating" is invoked
+6. Generating JavaScript code that uses Ext JS classes.
+7. At end of request processing, the application read and format all JS generated
+8. And send the response to browser session. New requests can be done begining of step 3.
+
+So the translation is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
+In this way the use of (X)HTML, JavaScript and CSS is minimum.
+Indeed the Parser can be adapted to read the documentation of another JavaScript framework, Dojo for example.
 }
 interface
 
@@ -15,13 +38,25 @@ const
   ExtPath = '/ext'; // Instalation path of Ext JS framework, below the your Web server document root
 
 type
-  //
+  TArrayOfString  = array of string;
+  TArrayOfInteger = array of Integer;
+
+  TExtObjectList = class;
+  TExtFunction   = class;
+  TExtPublishedMethod = procedure of object; // Tipo que define uma procedure que pode ser chamada num @[link TExtObject.AJAX] request
+
+  {
+  Representa uma sessão de usuário aberta em um browser. Cada sessão é uma thread FastCGI que possui recursos adicionais do
+  JavaScript e do Ext JS, tais como: tema, língua, Ajax, mensagens de erro no padrão Ext, definição de bibliotecas JS e
+  regras de estilo (CSS) da sessão.
+  O "Self-translating" está implementado nesta classe no método @[link JSCode].
+  }
   TExtThread = class(TFCGIThread)
   private
     Style, Libraries, FLanguage : string;
     Sequence : cardinal;
     FIsAjax  : boolean;
-    procedure RelocateVar(JS, JSName, Owner: string; I: integer);
+    procedure RelocateVar(JS, JSName : string; I: integer);
     procedure RemoveJS(JS : string);
     function GetStyle: string;
   protected
@@ -29,34 +64,35 @@ type
     procedure AfterHandleRequest; override;
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
-    function JSConcat(OldCommand, NewCommand : string) : string;
+    function JSConcat(PrevCommand, NextCommand : string) : string;
   public
     Theme : string; // Set or get Ext JS installed theme
     property Language : string read FLanguage; // Actual language for this session, read HTTP_ACCEPT_LANGUAGE header
-    property IsAjax : boolean read FIsAjax; // Test if execution is occouring in an AJAX request
-    procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
-    procedure SetStyle(pStyle : string = '');
-    procedure SetLibrary(pLibrary : string = '');
-    procedure ErrorMessage(Msg : string; Handler: string = '');
+    property IsAjax : boolean read FIsAjax; // Test if execution is occuring in an AJAX request
+    procedure JSCode(JS : string; JSName : string = ''); // Self-translating main procedure
+    procedure SetStyle(pStyle : string = ''); // Set or reset stylesheet rules for this session
+    procedure SetLibrary(pLibrary : string = ''); // Set or reset aditional JavaScript libraries, além das necessárias pelo Ext JS
+    procedure ErrorMessage(Msg : string; Action : string = ''); overload;
+    procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   end;
 
-  TArrayOfString  = array of string;
-  TArrayOfInteger = array of Integer;
-
-  TExtObjectList = class;
-  TExtFunction = class;
-  TExtAjaxMethod = procedure of object;
-
+  {
+  Classe pai de todas as classes e componentes do framework Ext JS.
+  Cada TExtObject tem a capacidade de se auto traduzir para JavaScript durante sua programação.
+  Ou seja, quando uma propriedade é atribuída ou um método é chamado o "Self-translating" entra em ação
+  traduzindo esses comandos Objet Pascal em JavaScript. Para isso o método @[link TExtThread.JSCode] é invocado cada vez
+  }
   TExtObject = class
   private
     FJSName : string;
-    function IsParent(C: string): boolean;
+    function WriteFunction(Command: string): string;
   protected
     JSCommand : string;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
     function VarToJSON(Ints : TArrayOfInteger) : string; overload;
+    function IsParent(CName : string): boolean;
     function ExtractJSCommand(pJSCommand : string) : string;
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
@@ -72,15 +108,24 @@ type
     function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
     function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
-    function JSFunction(Body: string): TExtFunction; overload;
-    procedure JSCode(JS : string; pJSName : string = ''; Owner : string = '');
-    function Ajax(Method : TExtAjaxMethod) : TExtFunction; overload;
-    function Ajax(Method : TExtAjaxMethod; Params : array of const) : TExtFunction; overload;
+    function JSFunction(Body : string): TExtFunction; overload;
+    function JSFunction(Method: TExtPublishedMethod) : TExtFunction; overload;
+    procedure JSCode(JS : string; pJSName : string = ''); // Método de ligação
+    function Ajax(Method : TExtPublishedMethod) : TExtFunction; overload;
+    function Ajax(Method : TExtPublishedMethod; Params : array of const) : TExtFunction; overload;
     property JSName : string read FJSName;
   end;
 
-  TExtFunction = class(TExtObject);// end;
+  {
+  Classe básica que define uma função JavaScript. Todas as funções/procedures do framework Ext JS são convertidas para functions Pascal
+  cujo retorno pertence a esta classe. Com isso todas as funções convertidas pelo @[link ExtPascal Wrapper] podem ser atribuídas a
+  tratadores de eventos.
+  }
+  TExtFunction = class(TExtObject);
 
+  {
+  Lista de TExtObjects. O @[link ExtPascal Wrapper] converte o tipo Array do JavaScript para esta classe
+  }
   TExtObjectList = class(TExtFunction)
   private
     FObjects : array of TExtObject;
@@ -96,7 +141,9 @@ type
     function Count : integer;
   end;
 
-{$IFNDEF FPDOC}
+{$IFNDEF DELPHIDOC}
+  // Classes que não devem ser documentadas.
+  // Elas são normalmente classes básicas do JavaScript que não são referenciadas na documentação do Ext JS, por omissão ou por falha
   THTMLElement = class(TExtObject);
   TStyleSheet = class(TExtObject);
   TRegExp = class(TExtObject);
@@ -136,7 +183,13 @@ uses
 
 { TExtThread }
 
-procedure TExtThread.RemoveJS(JS: string);
+{
+Remove identificated JS command from response.
+Used internally by Sel-Translating mechanism to repositioning JS commands.
+@param JS JS command with sequence identifier.
+@see ExtractJSCommand
+}
+procedure TExtThread.RemoveJS(JS : string);
 var
   I : integer;
 begin
@@ -144,6 +197,15 @@ begin
   if I <> 0 then delete(Response, I, length(JS))
 end;
 
+{
+Add/Remove a user JS library to be used in current response.
+Common requests fazem reset das user libraries e das user style.
+Por outro lado os AJAX requests não fazem reset e são considerados parte ou continuação do mesmo request.
+@param pLibrary JS library with Path based on Web server document root.
+If pLibrary is '' then all user JS libraries to this session will be removed from response.
+@example SetLibrary('');
+@example SetLibrary(@[link ExtPath] + '/examples/tabs/TabCloseMenu.js');
+}
 procedure TExtThread.SetLibrary(pLibrary: string); begin
   if pLibrary = '' then
     Libraries := ''
@@ -151,6 +213,15 @@ procedure TExtThread.SetLibrary(pLibrary: string); begin
     Libraries := Libraries + '<script src=' + pLibrary + '></script>';
 end;
 
+(*
+Add/Remove a user stylesheet to be used in current response.
+Common requests fazem reset das user libraries e das user style.
+Por outro lado os AJAX requests não fazem reset e são considerados parte ou continuação do mesmo request.
+@param pStyle Styles to apply upon HTML or Ext elements in this response using CSS notation.
+If pStyle is '' then all user styles to this session will be removed from response.
+@example SetStyle('');
+@example SetStyle('img:hover{border:1px solid blue}');
+*)
 procedure TExtThread.SetStyle(pStyle: string); begin
   if pStyle = '' then
     Style := ''
@@ -158,6 +229,9 @@ procedure TExtThread.SetStyle(pStyle: string); begin
     Style := Style + pStyle
 end;
 
+{
+Returns all styles in use in current response
+}
 function TExtThread.GetStyle : string; begin
   if Style = '' then
     Result := ''
@@ -165,19 +239,65 @@ function TExtThread.GetStyle : string; begin
     Result := '<style>' + Style + '</style>';
 end;
 
-procedure TExtThread.ErrorMessage(Msg : string; Handler : string = ''); begin
+{
+Show an error message in browser session using Ext JS style.
+@param Msg Message text, can to use HTML to formating text.
+@param Action Optional action that will be executed after user to click Ok button. Could be JavaScript or ExtPascal commands
+@example ErrorMessage('User not found.');
+@example ErrorMessage('Context not found.<br/>This Window will be reloaded to fix this issue.', 'window.location.reload()');
+}
+procedure TExtThread.ErrorMessage(Msg : string; Action : string = ''); begin
   JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
-    IfThen(Handler = '', '', ',fn:function(){' + Handler + '}') + '});');
+    IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
 end;
 
+{
+Show an error message in browser session using Ext JS style.
+@param Msg Message text, can to use HTML to formating text.
+@param Action Optional action that will be executed after user to click Ok button. Could be JavaScript or ExtPascal commands
+@example ErrorMessage('Illegal operation.<br/>Click OK to Shutdown.', Ajax(Shutdown));
+}
+procedure TExtThread.ErrorMessage(Msg : string; Action : TExtFunction); begin
+  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
+    ',fn:function(){' + Action.ExtractJSCommand(Action.JSCommand) + '}});');
+end;
+
+{
+Occurs when an exception is raised during the execution of method that handle the request (PATH_INFO).
+Display error message with exception message, method name and method params.
+@exception TAccessViolation If current request is AJAX a sessão pode ser recuperada com um reload da página.
+@param Msg Exception message
+@param Method Method name invoked by Browser (PATH_INFO) or thru AJAX request
+@param Params Method params
+}
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
   ErrorMessage(Msg + '<br/><hr/>Method: ' + Method + IfThen(Params = '', '', '<br/>Params: ' + Params));
 end;
 
-// Self-translating
-procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
+{
+Self-translating main procedure. Translate Object Pascal code to JavaScript code.
+Self-translating (ST) is not a compiler. It's a minimalist (very small, ultra quick an dirty) approach that imitates an online interpreter.
+You program in Object pascal and when the program runs it automatically generates the corresponding JavaScript code.
+
+But thre is an essential limitation, it does not create business rules or sophisticated behaviour in JavaScript.
+So it is not interpret "IF", "WHILE", "CASE", "TRY", etc commands, but "IF", "WHILE", etc realize a conditional code generation
+on Server side as ASP and JSP do it. ST is used to create objects and widgets, to set properties and events, to call methods.
+It's analogous to Delphi .dfm file role: to describe a GUI.
+There are aditional facilities to invoke Server side logic using @[link AJAX], to define small @[link JSFunction functions] in JavaScript and
+to use @[link SetLibrary large JS libraries]. It's enough to create powerful GUIs.
+The rest (business rules, database access, etc) should be done in Object Pascal on Server side.
+
+Basic work:
+JS commands are appended to Response.
+JS attributes are found in Response using yours JSName attribute and setted in place.
+If not found, JS attributes are appended to Response.
+
+@param JS JS commands or assigning of attributes or events
+@param JSName Optional current JS Object name
+}
+procedure TExtThread.JSCode(JS : string; JSName : string = '');
 var
   I : integer;
 begin
@@ -192,11 +312,18 @@ begin
     if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
-  if (JSName <> '') and (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then
-    RelocateVar(JS, JSName, Owner, I+length(JS));
+  if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then
+    RelocateVar(JS, JSName, I+length(JS));
 end;
 
-procedure TExtThread.RelocateVar(JS, JSName, Owner : string; I : integer);
+{
+Garante que a declaração de um Objeto JS (var) ocorre antes da sua utilização; Chamada de métodos, uso de atributos, etc.
+Se isso não ocorrer realoca a declaração para uma posição física anterior à sua utilização.
+@param JS Comando ou atribuição que utiliza o JS Object.
+@param JSName JS Object corrente.
+@param I Posição física no Response onde o JS comando termina.
+}
+procedure TExtThread.RelocateVar(JS, JSName : string; I : integer);
 var
   VarName, VarBody : string;
   J, K : integer;
@@ -212,34 +339,47 @@ begin
     J := posex(';', Response, J);
     VarBody := copy(Response, K, J-K+1+length(VarName));
     delete(Response, K, length(VarBody));
-    if JSName[1] in ['0'..'9'] then JSName := Owner;
     insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
   end;
 end;
 
-function TExtThread.JSConcat(OldCommand, NewCommand: string): string;
+{
+Concatena dois comandos JS exclusivamente para traduzir typecasts aninhados em Object Pascal como:
+@[sample TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;]
+Que normalmente seria traduzido para:
+@sample[O1.getSelectionModel;
+O1.selectFirstRow;]
+ao invés de:
+@[sample O1.getSelectionModel.selectFirstRow;]
+@param PrevCommand Comando já presente no Response que será concatenado com o próximo comando
+@param NextCommand Comando a ser concatenado com o anterior.
+}
+function TExtThread.JSConcat(PrevCommand, NextCommand: string): string;
 var
   I , J : integer;
 begin
-  J := pos(OldCommand, Response);
-  I := pos('.', NewCommand);
+  J := pos(PrevCommand, Response);
+  I := pos('.', NextCommand);
   if (I <> 0) and (J <> 0) then begin
-    NewCommand := copy(NewCommand, I, length(NewCommand));
-    Result := copy(OldCommand, 1, length(OldCommand)-1) + NewCommand;
-    delete(Response, J + length(OldCommand)-1, 1);
-    insert(NewCommand, Response, J + length(OldCommand))
+    NextCommand := copy(NextCommand, I, length(NextCommand));
+    Result := copy(PrevCommand, 1, length(PrevCommand)-1) + NextCommand;
+    delete(Response, J + length(PrevCommand)-1, 1);
+    insert(NextCommand, Response, J + length(PrevCommand))
   end
   else
-    Result := OldCommand;
+    Result := PrevCommand;
 end;
 
-{ Realiza tarefas que ocorrem antes da chamada do método invocada pelo Browser (PATH-INFO)
+{
+Realiza tarefas relacionada ao Request que ocorrem antes da chamada do método invocada pelo Browser (PATH-INFO)
 1. Determina a linguagem do browser
 2. Verifica se essa linguagem tem arquivo correspondente no Ext JS '/ext/source/locale/ext-lang-?????.js'
-3. Se não tem usa a lingua default se existe usa essa língua.
-3. Verifica se é um request Ajax.
-4. Verifica se os cookies estão ativados
-@result devolve false se Cookies estão desativados ou se é Ajax executando no primeiro request de uma thread.
+3. Se não tem usa a língua default (inglês) se existe usa essa língua.
+4. Verifica se é um request AJAX.
+5. If not is AJAX reset Sequence, Style and Libraries
+6. Verifica se os cookies estão ativados.
+
+@return Devolve false se Cookies estão desativados ou se é Ajax executando no primeiro request de uma thread.
 }
 function TExtThread.BeforeHandleRequest : boolean;
 var
@@ -274,7 +414,22 @@ begin
       end
 end;
 
-// Extract Comments, set: HTML body, title, charset, ExtJS CSS, ExtJS libraries, ExtJS theme, ExtJS language, user styles, ExtJS invoke and Ajax response
+{
+Realiza tarefas após o processamento do Request.
+1. Extract Comments.
+2. Set:
+  2.1. HTML body,
+  2.2. Title,
+  2.3. Charset,
+  2.4. ExtJS CSS,
+  2.5. ExtJS libraries,
+  2.6. ExtJS theme,
+  2.7. ExtJS language,
+  2.8. Aditional user styles,
+  2.9. Aditional user libraries,
+  2.9. ExtJS invoke and
+  2.10. Handlers for AJAX response
+}
 procedure TExtThread.AfterHandleRequest;
 var
   I, J : integer;
@@ -304,6 +459,10 @@ begin
   end;
 end;
 
+{
+Return a unique numeric sequence to identify a JS object, list or attribute in this session.
+This sequence will be used by Self-translating process imitating a Symbol table entrance.
+}
 function TExtThread.GetSequence: string; begin
   Result := IntToStr(Sequence);
   inc(Sequence);
@@ -353,7 +512,7 @@ begin
     Obj.JSCode(ListAdd, JSName);
   end
   else
-    Obj.JSCode(Obj.JSName, JSName, Owner.JSName)
+    Obj.JSCode(Obj.JSName, JSName);
 end;
 
 function TExtObjectList.GetFObjects(I: integer): TExtObject; begin
@@ -384,37 +543,52 @@ procedure TExtObject.CreateVar(JS : string); begin
   JSCode('var ' + JSName + '=new ' + JS)
 end;
 
-procedure TExtObject.CreateVarAlt(JS: string); begin // Alternate create constructor, ExtJS fault
+// Alternate create constructor, it is an ExtJS fault
+procedure TExtObject.CreateVarAlt(JS : string); begin
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '= ' + JS)
 end;
 
+{
+Create a TExtObject and generate corresponding JS code using "Self-translating"
+@param Owner Optional
+}
 constructor TExtObject.Create(Owner : TExtObject = nil); begin
   if Owner = nil then CreateVar(JSClassName + '({});')
 end;
 
+{
+Returns 'Object' that is the default class name for Ext JS objects
+}
 function TExtObject.JSClassName: string; begin
   Result := 'Object'
 end;
 
-function TExtObject.IsParent(C : string) : boolean;
+{
+Test if a class name is parent of this object
+@param CName Class name with "T" prefix
+@return true if CName is parent of this object and false if not
+}
+function TExtObject.IsParent(CName : string) : boolean;
 var
-  Cl : TClass;
+  Cls : TClass;
 begin
-  Result := true;
-  Cl := Self.ClassType;
-  while Cl.ClassName <> 'TExtFunction' do begin
-    if Cl.ClassName = C then exit;
-    Cl := Cl.ClassParent
+  if (CName <> '') and (CName[1] = 'T') then begin
+    Result := true;
+    Cls    := ClassType;
+    while Cls.ClassName <> 'TExtFunction' do begin
+      if Cls.ClassName = CName then exit;
+      Cls := Cls.ClassParent
+    end;
   end;
   Result := false;
 end;
 
-procedure TExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string = ''); begin
+procedure TExtObject.JSCode(JS : string; pJSName : string = ''); begin 
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
-      if (JSCommand <> '') and not(IsParent(pJSName)) then begin
+      if (JSCommand <> '') and (pJSName <> '') and  not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;
@@ -424,7 +598,7 @@ procedure TExtObject.JSCode(JS : string; pJSName : string = ''; Owner : string =
     else
       JSCommand := '';
     if pJSName = '' then pJSName := JSName;
-    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, Owner);
+    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName);
   end;
 end;
 
@@ -464,11 +638,26 @@ procedure TExtObject.JSFunction(Name, Params, Body : string); begin
   JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
-function TExtObject.Ajax(Method: TExtAjaxMethod): TExtFunction; begin
+function TExtObject.JSFunction(Method : TExtPublishedMethod) : TExtFunction;
+var
+  CurrentResponse : string;
+begin
+  Result := TExtFunction(Self);
+  with TExtThread(CurrentFCGIThread) do begin
+    CurrentResponse := Response;
+    Response := '';
+    Method;
+    JSCommand := Response;
+    Response := CurrentResponse;
+    JSCode(JSCommand);
+  end;
+end;
+
+function TExtObject.Ajax(Method: TExtPublishedMethod): TExtFunction; begin
   Result := Ajax(Method, []);
 end;
 
-function TExtObject.Ajax(Method: TExtAjaxMethod; Params: array of const): TExtFunction;
+function TExtObject.Ajax(Method: TExtPublishedMethod; Params: array of const): TExtFunction;
 var
   MetName, lParams : string;
   I : integer;
@@ -505,7 +694,7 @@ begin
     JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
 end;
 
-function WriteFunction(Command : string) : string;
+function TExtObject.WriteFunction(Command : string) : string;
 var
   I, J : integer;
   Params : string;
@@ -526,7 +715,12 @@ begin
     Params := 'P' + IntToStr(I);
     if I <> J then Params := Params + ','
   end;
-  Result := 'function(' + Params + '){return ' + Command + '}';
+  I := LastDelimiter(';', copy(Command, 1, length(Command)-1));
+  if I = 0 then
+    Command := 'return ' + Command
+  else
+    insert('return ', Command, I+1);
+  Result := 'function(' + Params + '){' + Command + '}';
 end;
 
 function TExtObject.ExtractJSCommand(pJSCommand : string) : string;
