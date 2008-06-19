@@ -15,7 +15,7 @@ begin
   if pos('.' + lowercase(S) + '.', Reserved) = 0 then
     Result := S
   else
-    Result := '_' + S;
+    Result := S + '_';
 end;
 
 function FixIdent(Ident : string; IsType : boolean = false) : string;
@@ -346,7 +346,7 @@ const
 var
   PackName, Arg, Return, JSName : string;
   Matches, Params, Args : TStringList;
-  Static : boolean;
+  Static  : boolean;
   Package : TUnit;
   I : integer;
 begin
@@ -406,7 +406,8 @@ begin
           end
           else
             Static := false;
-          if (PropName <> 'config') and (CurClass.Properties.IndexOf(PropName) = -1)  then begin // config object are deleted, sugar coding non sweet to Pascal
+          if CurClass.Properties.IndexOf(FixIdent(PropName)) <> -1 then PropName := PropName + '_';
+          if PropName <> 'config' then begin
             PropTypes := Explode('/', Matches[2]);
             for I := 0 to PropTypes.Count-1 do
               if I = 0 then begin
@@ -457,14 +458,15 @@ begin
               CurClass.AltCreate := true;
               exit;
             end;
-            MetName := Unique(FixIdent(JSName), CurClass.Properties);
-            MetName := Unique(MetName, CurClass.Methods);
-            Return  := Matches[2];
-            if Return = '' then begin
+            MetName   := Unique(FixIdent(JSName), CurClass.Properties);
+            MetName   := Unique(MetName, CurClass.Methods);
+            Return    := Matches[2];
+            if Return = '' then  begin
               MetName := 'Create';
-              if CurClass.Defaults or CurClass.Arrays or CurClass.Singleton then exit; // already have Create
-            end;
-            if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
+              with CurClass do if Defaults or Arrays or Singleton then exit; // already have Create
+            end
+            else
+              if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
             Params := Explode(',', Matches[1]);
             Args   := TStringList.Create;
             for I := 0 to Params.Count-1 do
@@ -483,8 +485,8 @@ begin
                     Matches[0] := Arg;
                   end;
                 Matches[1] := Unique(FixIdent(Matches[1]), Args);
-                Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]), (Matches[1] = 'config') or
-                  ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
+                Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
+                  (Matches[1] = 'Config') or ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
               end;
             Params.Free;
             CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
@@ -595,11 +597,9 @@ begin
                   Return := FixType(Fields[2]);
                   Static := lowercase(Fields[3]) = 'true';
                   Overload := lowercase(Fields[4]) = 'true';
+                  Params.Clear;
                   for K := 0 to ((Fields.Count-4) div 3)-1 do
-                    with TParam(Params.Objects[K]) do begin
-                      Typ := FixType(Fields[K*3+6]);
-                      Optional := lowercase(Fields[K*3+7]) = 'true';
-                    end;
+                    Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
                 end;
             end;
         end
@@ -749,6 +749,11 @@ begin
           else
             if I > 0 then Result := Result + ', ';
           Result := Result + Name;
+          if pos('TExt', Typ) = 1 then // additional param to identify TExtFunction param
+            if Typ = 'TExtFunction' then
+              Result := Result + ', true'
+            else
+              Result := Result + ', false';
         end
         else begin
           if not InitCommonParam then Result := Result + ']) + '',''';
@@ -840,7 +845,10 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
-                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), '));');
+                if Config then
+                  writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), '));')
+                else
+                  writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), ') + '';'');');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;

@@ -37,10 +37,7 @@ ExtDataField, dateFormat, string, false, true,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
 ExtFormFormPanel, buttons, ExtObjectList, false, true,
-ExtFormFormPanel, items, ExtObjectList, false, true,
-ExtWindow, items, ExtObjectList, false, true,
-ExtPanel, items, ExtObjectList, false, true,
-ExtViewPort, items, ExtObjectList, false, true,
+ExtContainer, items, ExtObjectList, false, true,
 ExtShowConfig,, Ext
 ExtShowConfig, animEl, string, false, true,
 ExtShowConfig, buttons, ExtObject, false, true,

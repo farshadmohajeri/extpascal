@@ -421,7 +421,6 @@ end;
 
 procedure TFCGIThread.Logout; begin
   SendEndRequest;
-//  sleep(0);
   FLastAccess := 0;
   Application.GarbageNow := true;
 end;
