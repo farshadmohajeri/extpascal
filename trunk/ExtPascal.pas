@@ -43,7 +43,7 @@ type
 
   TExtObjectList = class;
   TExtFunction   = class;
-  TExtPublishedMethod = procedure of object; // Tipo que define uma procedure que pode ser chamada num @[link TExtObject.AJAX] request
+  TExtProcedure  = procedure of object; // Tipo que define uma procedure que pode ser chamada num @[link TExtObject.AJAX] request
 
   {
   Representa uma sessão de usuário aberta em um browser. Cada sessão é uma thread FastCGI que possui recursos adicionais do
@@ -110,10 +110,10 @@ type
     function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string): TExtFunction; overload;
-    function JSFunction(Method: TExtPublishedMethod) : TExtFunction; overload;
+    function JSFunction(Method: TExtProcedure) : TExtFunction; overload;
     procedure JSCode(JS : string; pJSName : string = ''); // Método de ligação
-    function Ajax(Method : TExtPublishedMethod) : TExtFunction; overload;
-    function Ajax(Method : TExtPublishedMethod; Params : array of const) : TExtFunction; overload;
+    function Ajax(Method : TExtProcedure) : TExtFunction; overload;
+    function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     property JSName : string read FJSName;
   end;
 
@@ -307,10 +307,12 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then begin
-      if IsAjax then JS := JSName + '.' + AnsiReplaceStr(JS, ':', '=') + ';';
-      I := length(Response) + 1;
-    end;
-    if (I > 1) and not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
+      ErrorMessage('Config Option: ' + JS +
+        '<br/>is not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method.');
+      exit;
+    end
+    else
+      if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
   if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then
@@ -410,7 +412,7 @@ begin
     end
     else
       if NewThread then begin
-        ErrorMessage('Context not found.<br/>This Window will be reloaded to fix this issue.', 'window.location.reload()');
+        ErrorMessage('Session not found.<br/>This window will be reloaded to fix this issue.', 'window.location.reload()');
         Result := false;
       end
 end;
@@ -643,7 +645,7 @@ procedure TExtObject.JSFunction(Name, Params, Body : string); begin
   JSCode('function ' + Name + '(' + Params + '){' + Body + '};');
 end;
 
-function TExtObject.JSFunction(Method : TExtPublishedMethod) : TExtFunction;
+function TExtObject.JSFunction(Method : TExtProcedure) : TExtFunction;
 var
   CurrentResponse : string;
 begin
@@ -658,11 +660,11 @@ begin
   end;
 end;
 
-function TExtObject.Ajax(Method: TExtPublishedMethod): TExtFunction; begin
+function TExtObject.Ajax(Method: TExtProcedure): TExtFunction; begin
   Result := Ajax(Method, []);
 end;
 
-function TExtObject.Ajax(Method: TExtPublishedMethod; Params: array of const): TExtFunction;
+function TExtObject.Ajax(Method: TExtProcedure; Params: array of const): TExtFunction;
 var
   MetName, lParams : string;
   I : integer;
@@ -701,7 +703,7 @@ end;
 
 function TExtObject.WriteFunction(Command : string) : string;
 var
-  I, J : integer;
+  I, J   : integer;
   Params : string;
 begin
   Params := '';
@@ -710,8 +712,8 @@ begin
   while I <> 0 do begin
     if Command[I+1] in ['0'..'9'] then begin
       Command[I] := 'P';
-      delete(Command, I+2, 1);
-      delete(Command, I-1, 1);
+      insert('+"', Command, posex('"', Command, I));
+      insert('"+', Command, I);
       inc(J);
     end;
     I := posex('%', Command, I);
@@ -741,24 +743,32 @@ end;
 function TExtObject.VarToJSON(A : array of const): string;
 var
   I : integer;
+  Command : string;
 begin
   Result := '';
-  for I := 0 to high(A) do begin
+  I := 0;
+  while I <= high(A) do begin
     with A[I] do
       case VType of
-        vtObject:
-          if VObject <> nil then
-            if TExtObject(VObject).JSCommand = '' then
-              Result := Result + TExtObject(VObject).JSName
-            else begin
-              Result := Result + WriteFunction(TExtObject(VObject).JSCommand);
-              TExtThread(CurrentFCGIThread).RemoveJS(TExtObject(VObject).JSCommand);
+        vtObject: begin
+          if VObject <> nil then begin
+            Command := TExtObject(VObject).JSCommand;
+            if A[I+1].VBoolean and (Command <> '') then begin
+              Result := Result + WriteFunction(Command);
+              TExtThread(CurrentFCGIThread).RemoveJS(Command);
             end
+            else
+              Result := Result + TExtObject(VObject).JSName
+          end
           else
             if Result = '' then
               Result := 'null'
-            else
+            else begin
+              inc(I, 2);
               continue;
+            end;
+          inc(I);
+        end;
         vtAnsiString: Result := Result + '"' + string(VAnsiString) + '"';
         vtString:     Result := Result + '"' + VString^ + '"';
         vtInteger:    Result := Result + IntToStr(VInteger);
@@ -767,6 +777,7 @@ begin
         vtVariant:    Result := Result + string(VVariant^)
       end;
     if I < high(A) then Result := Result + ',';
+    inc(I);
   end;
   if (Result <> '') and (Result[length(Result)] = ',') then delete(Result, length(Result), 1);
 end;
