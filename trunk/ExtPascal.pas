@@ -147,7 +147,7 @@ type
   // Elas são normalmente classes básicas do JavaScript que não são referenciadas na documentação do Ext JS, por omissão ou por falha
   THTMLElement = class(TExtObject);
   TStyleSheet = class(TExtObject);
-  TRegExp = class(TExtObject);
+  TRegExp = type string;
   TCSSRule = class(TExtObject);
   TXMLDocument = class(TExtObject);
   TNodeList = class(TExtObject);
@@ -274,7 +274,7 @@ Display error message with exception message, method name and method params.
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  ErrorMessage(Msg + '<br/><hr/>Method: ' + Method + IfThen(Params = '', '', '<br/>Params: ' + Params));
+  ErrorMessage(Msg + '<br/>Method: ' + Method + IfThen(Params = '', '', '<br/>Params: ' + Params));
 end;
 
 {
@@ -307,8 +307,8 @@ begin
   else begin // set attribute
     I := pos('/*' + JSName + '*/', Response);
     if I = 0 then begin
-      ErrorMessage('Config Option: ' + JS +
-        '<br/>is not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method.');
+      ErrorMessage('Config Option: ' + JS + '<br/>is refering a previous request,' +
+        '<br/>it''s not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method instead.');
       exit;
     end
     else
@@ -407,12 +407,12 @@ begin
   end
   else
     if Cookie['FCGIThread'] = '' then begin
-      ErrorMessage('This web application requires Cookies enabled to Ajax works.');
+      ErrorMessage('This web application requires Cookies enabled to AJAX works.');
       Result := false;
     end
     else
       if NewThread then begin
-        ErrorMessage('Session not found.<br/>This window will be reloaded to fix this issue.', 'window.location.reload()');
+        ErrorMessage('Session expired or lost.<br/>A new session will be created now.', 'window.location.reload()');
         Result := false;
       end
 end;
@@ -445,7 +445,9 @@ begin
   end;
   Response := AnsiReplaceStr(Response, '_', '');
   if not IsAjax then begin
-    Response := '<!doctype html public><html><title>' + Application.Title + '</title>' +
+    Response := '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>' +
+//    Response := '<!docttype html public><html>' +  // Compat mode
+      '<title>' + Application.Title + '</title>' +
       '<meta http-equiv="content-type" content="charset=utf-8">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
@@ -457,8 +459,7 @@ begin
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";'+
       'function AjaxSuccess(response){eval(response.responseText);};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      Response +
-      '});</script><body><div id=body></div></body></html>';
+      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
   end;
 end;
 
@@ -592,10 +593,10 @@ begin
   Result := false;
 end;
 
-procedure TExtObject.JSCode(JS : string; pJSName : string = ''); begin 
+procedure TExtObject.JSCode(JS : string; pJSName : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
-      if (JSCommand <> '') and (pJSName <> '') and  not IsParent(pJSName) then begin
+      if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;

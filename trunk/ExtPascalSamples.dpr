@@ -8,7 +8,6 @@ uses
 
 type
   TSamples = class(TExtThread)
-  private
   public
     Tabs : TExtTabPanel;
     TabIndex : integer;
@@ -122,8 +121,9 @@ procedure TSamples.AddTab; begin // Ajax
     Html     := 'Tab Body ' + IntToStr(TabIndex) + '<br/><br/>blahblah';
     Closable := true;
     if IsAjax then Show;
+    Free;
   end;
-//  Tabs.ActiveTabNumber := TabIndex-1;
+  // Tabs.ActiveTabNumber := TabIndex-1;
 end;
 
 procedure TSamples.AdvancedTabs;
@@ -138,6 +138,7 @@ begin
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
     Handler  := Ajax(AddTab);
+    Free;
   end;
   Tabs := TExtTabPanel.Create;
   with Tabs do begin
@@ -166,10 +167,10 @@ begin
   DataStore := TExtDataSimpleStore.Create;
   with DataStore do begin
     TExtDataField.AddTo(Fields).Name := 'company';
-    with TExtDataField.AddTo(Fields) do begin Name := 'price';     _Type := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'change';    _Type := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; _Type := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';_Type := 'date'; DateFormat := 'n/j h:ia' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'price';     Type_ := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'change';    Type_ := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; Type_ := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';Type_ := 'date'; DateFormat := 'n/j h:ia' end;
     Data := JSArray(
       '["3m Co",71.72,0.02,0.03,"9/1 12:00am"],' +
       '["Alcoa Inc",29.01,0.42,1.47,"9/1 12:00am"],' +
@@ -253,6 +254,7 @@ begin
     Frame      := true;
     AutoExpandColumn := 'company';
     TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
+    Free;
   end;
 end;
 
@@ -400,15 +402,16 @@ procedure TSamples.EditableGrid;
 var
   Data : TExtObjectList;
 begin
+  if Grid <> nil then Grid.Free;
   ExtQuickTips.Init;
   Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
-  with TExtDataField.AddTo(Data) do begin Name := 'common';    _Type := 'string' end;
-  with TExtDataField.AddTo(Data) do begin Name := 'botanical'; _Type := 'string' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'common';    Type_ := 'string' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'botanical'; Type_ := 'string' end;
   TExtDataField.AddTo(Data).Name := 'light';
-  with TExtDataField.AddTo(Data) do begin Name := 'price'; _Type := 'float' end; // automatic date conversions
-  with TExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; _Type := 'date'; DateFormat := 'm/d/Y' end;
-  with TExtDataField.AddTo(Data) do begin Name := 'indoor'; _Type := 'bool' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'price'; Type_ := 'float' end; // automatic date conversions
+  with TExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; Type_ := 'date'; DateFormat := 'm/d/Y' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'indoor'; Type_ := 'bool' end;
   // this could be inline, but we want to define the Plant record, type so we can add records dynamically
   Plant := TExtDataRecord.Create(Data);
   // create the Data Store
@@ -598,6 +601,6 @@ begin
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, true);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, false);
   Application.Run;
 end.
