@@ -40,10 +40,10 @@ type
     procedure ReadBeginRequest(var FCGIHeader; Content : string);
     procedure GetValues(Content : string);
     function HandleRequest(pRequest : string) : string;
-    procedure NotFoundError; virtual;
     function BeforeHandleRequest : boolean; virtual;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
+    procedure OnNotFoundError; virtual;
   public
     BrowserCache : boolean;
     Response, ContentType : string;
@@ -64,8 +64,8 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
     procedure Home; virtual; abstract;
-    procedure Logout;
-    procedure Shutdown;
+    procedure Logout; virtual;
+    procedure Shutdown; virtual;
   end;
   {$M-}
   TFCGIThreadClass = class of TFCGIThread;
@@ -91,6 +91,7 @@ type
     function GetThread(I : integer) : TFCGIThread;
     function ThreadsCount : integer;
     function ReachedMaxConns : boolean;
+    procedure OnPortInUseError; virtual;
   end;
 
 var
@@ -166,12 +167,14 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
 end;
 
 procedure TFCGIThread.Shutdown; begin
-  Logout;
-  Application.Terminated := true
+  if Query['password'] = 'pitinnu' then begin
+    Logout;
+    Application.Terminated := true
+  end;
 end;
 
 procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
-  SetResponseHeader('Set-Cookie: ' + Name + '=' + Value + ';' +
+  SetResponseHeader('Set-Cookie:' + Name + '=' + Value + ';' +
     IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd-mmm-yyyy hh:nn:ss', Expires) + ' GMT;', '') +
     IfThen(Domain <> '', ' domain=' + Domain + ';', '') + IfThen(Path <> '', ' path=' + Path + ';', '') + IfThen(Secure, ' secure', ''))
 end;
@@ -377,13 +380,12 @@ begin
   SendResponse(GetValuesResult, rtGetValuesResult);
 end;
 
-procedure TFCGIThread.NotFoundError; begin
-  SetResponseHeader('Status: 405 Method not found');
-  Response := 'Method not found'
+procedure TFCGIThread.OnNotFoundError; begin
+  Response := 'alert("Method: ''' + PathInfo + ''' not found");';
 end;
 
 procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
-  Response := Msg
+  Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
 end;
 
 function TFCGIThread.HandleRequest(pRequest : string) : string;
@@ -413,13 +415,14 @@ begin
         end;
       end
       else
-        NotFoundError;
+        OnNotFoundError;
     end;
   AfterHandleRequest;
   Result := Response;
 end;
 
 procedure TFCGIThread.Logout; begin
+  Response := 'window.close();';
   SendEndRequest;
   FLastAccess := 0;
   Application.GarbageNow := true;
@@ -432,9 +435,12 @@ var
   I : integer;
 begin
   Result := true;
-  Thread := Cookie['FCGIThread'];
   Application.AccessThreads.Enter;
-  I := Application.Threads.IndexOf(Thread);
+  I := Application.Threads.IndexOf(Cookie['FCGIThread']);
+  if I = -1 then begin
+    I := Application.Threads.IndexOf(Cookie[' FCGIThread']);
+    if I <> -1 then SetCookie('FCGIThread', Cookie[' FCGIThread']);
+  end;
   if I = -1 then begin
     NewThread := true;
     if Application.ReachedMaxConns then begin
@@ -497,6 +503,7 @@ begin
                       end
                       else begin
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
+                        FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         if (Response <> '') or (RequestMethod in [rmGet, rmHead]) then SendResponse(Response);
                         SendEndRequest;
                       end;
@@ -590,6 +597,11 @@ function TFCGIApplication.GetThread(I: integer): TFCGIThread; begin
   Result := TFCGIThread(Threads.Objects[I])
 end;
 
+procedure TFCGIApplication.OnPortInUseError; begin
+  writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER');
+  readln;
+end;
+
 procedure TFCGIApplication.Run;
 var
   NewSocket, I : integer;
@@ -609,10 +621,8 @@ begin
         end;
         inc(I);
       until Terminated or (Shutdown and (ThreadsCount = 0))
-    else begin
-      writeln(Port, ' already in use.'^M^J'Press ENTER');
-      readln;
-    end;
+    else
+      OnPortInUseError;
     Free;
   end;
 end;
