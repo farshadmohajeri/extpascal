@@ -60,7 +60,7 @@ begin
           '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a><td/><td>' + Desc + '</td></table>';
         Collapsible := true;
       end;
-    Free;
+    //Free;
   end;
 end;
 
@@ -109,7 +109,7 @@ begin
     Nav.AddTo(Items);
     Tabs.AddTo(Items);
     Show;
-    Free;
+    //Free;
   end;
 end;
 
@@ -290,7 +290,7 @@ begin
       Handler := JSFunction('window.close()');// try this: Handler := Window.Close; for another effect.
     end;
     Show;
-    Free;
+//    Free;
   end;
 end;
 
@@ -402,7 +402,7 @@ procedure TSamples.EditableGrid;
 var
   Data : TExtObjectList;
 begin
-  if Grid <> nil then Grid.Free;
+//  if Grid <> nil then Grid.Free;
   ExtQuickTips.Init;
   Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
@@ -596,11 +596,11 @@ begin
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
     end;
-    Free;
+    //Free;
   end;
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 5, false);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 1, false);
   Application.Run;
 end.

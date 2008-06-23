@@ -85,7 +85,7 @@ type
   TExtObject = class
   private
     FJSName : string;
-    function WriteFunction(Command: string): string;
+    function WriteFunction(Command : string): string;
   protected
     JSCommand : string;
     function VarToJSON(A : array of const)     : string; overload;
@@ -97,13 +97,14 @@ type
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
-  protected
     procedure InitDefaults; virtual;
   public
     constructor CreateInternal(Owner: TExtObject; pJSName: string);
     constructor Create(Owner : TExtObject = nil);
     constructor CreateSingleton(pJSName : string = '');
     constructor AddTo(List : TExtObjectList);
+    destructor Destroy; override;
+    procedure DeleteFromGarbage;
     function JSClassName : string; virtual;
     function JSArray(JSON : string) : TExtObjectList;
     function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
@@ -488,7 +489,7 @@ destructor TExtObjectList.Destroy;
 var
   I : integer;
 begin
-  for I := 0 to length(FObjects)-1 do FObjects[I].Free;
+  for I := 0 to length(FObjects)-1 do try FObjects[I].Free except end;
   inherited;
 end;
 
@@ -496,6 +497,7 @@ procedure TExtObjectList.Add(Obj : TExtObject);
 var
   ListAdd, Response : string;
 begin
+  Obj.DeleteFromGarbage;
   if length(FObjects) = 0 then
     if Owner <> nil then
       Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
@@ -503,7 +505,7 @@ begin
       TExtThread(CurrentFCGIThread).JSCode('var ' + JSName + '=[/*' + JSName + '*/];');
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
-  Response := TExtThread(CurrentFCGIThread).Response;
+  Response := CurrentFCGIThread.Response;
   if pos(Obj.JSName, Response) = 0 then begin
     if (pos(JSName, Response) = 0) and TExtThread(CurrentFCGIThread).IsAjax then
       ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
@@ -534,14 +536,15 @@ procedure TExtObject.CreateJSName; begin
 end;
 
 constructor TExtObject.CreateSingleton(pJSName : string = ''); begin
-  InitDefaults;
   if pJSName = '' then
     FJSName := JSClassName
   else
     FJSName := pJSName;
+  InitDefaults;
 end;
 
 procedure TExtObject.CreateVar(JS : string); begin
+  CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '=new ' + JS)
@@ -549,9 +552,21 @@ end;
 
 // Alternate create constructor, it is an ExtJS fault
 procedure TExtObject.CreateVarAlt(JS : string); begin
+  CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   JSCode('var ' + JSName + '= ' + JS)
+end;
+
+procedure TExtObject.DeleteFromGarbage; begin
+  if CurrentFCGIThread <> nil then CurrentFCGIThread.DeleteFromGarbage(Self);
+end;
+
+destructor TExtObject.Destroy; begin
+  try
+    DeleteFromGarbage;
+    inherited;
+  except end;
 end;
 
 {
@@ -559,7 +574,7 @@ Create a TExtObject and generate corresponding JS code using "Self-translating"
 @param Owner Optional
 }
 constructor TExtObject.Create(Owner : TExtObject = nil); begin
-  if Owner = nil then CreateVar(JSClassName + '({});')
+  if Owner = nil then CreateVar(JSClassName + '({});');
 end;
 
 constructor TExtObject.CreateInternal(Owner : TExtObject; pJSName : string); begin
@@ -612,8 +627,8 @@ end;
 
 constructor TExtObject.AddTo(List : TExtObjectList); begin
   if JSName = '' then begin
-    InitDefaults;
     CreateJSName;
+    InitDefaults;
   end;
   List.Add(Self);
 end;
@@ -661,17 +676,17 @@ begin
   end;
 end;
 
-function TExtObject.Ajax(Method: TExtProcedure): TExtFunction; begin
+function TExtObject.Ajax(Method : TExtProcedure): TExtFunction; begin
   Result := Ajax(Method, []);
 end;
 
-function TExtObject.Ajax(Method: TExtProcedure; Params: array of const): TExtFunction;
+function TExtObject.Ajax(Method : TExtProcedure; Params : array of const): TExtFunction;
 var
   MetName, lParams : string;
   I : integer;
 begin
   Result  := TExtFunction(Self);
-  MetName := TExtThread(CurrentFCGIThread).MethodName(@Method);
+  MetName := CurrentFCGIThread.MethodName(@Method);
   if MetName <> '' then begin
     lParams := 'Ajax=1';
     for I := 0 to high(Params) do
@@ -695,7 +710,7 @@ begin
               ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
             exit;
           end;
-    JSCode('Ext.Ajax.request({url:"' + TExtThread(CurrentFCGIThread).RequestHeader['SCRIPT_NAME'] + '/' + MetName +
+    JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MetName +
       '",params:"' + lParams + '",success:AjaxSuccess,failure:AjaxFailure});');
   end
   else
@@ -754,14 +769,14 @@ begin
         vtObject: begin
           if VObject <> nil then begin
             Command := TExtObject(VObject).JSCommand;
-            if A[I+1].VBoolean and (Command <> '') then begin
+            if (Command <> '') and A[I+1].VBoolean then begin
               Result := Result + WriteFunction(Command);
               TExtThread(CurrentFCGIThread).RemoveJS(Command);
             end
             else
               Result := Result + TExtObject(VObject).JSName
           end
-          else
+          else 
             if Result = '' then
               Result := 'null'
             else begin
