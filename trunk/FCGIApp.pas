@@ -22,6 +22,7 @@ type
     FRole : TRole;
     FRequest, FPathInfo : string;
     FRequestMethod : TRequestMethod;
+    FGarbageCollector : TList;
     function GetRequestHeader(Name: string): string;
     function GetQuery(Name: string): string;
     procedure CompleteRequestHeaderInfo;
@@ -57,6 +58,8 @@ type
     property Cookie[Name : string] : string read GetCookie;
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
+    procedure AddToGarbage(Obj : TObject);
+    procedure DeleteFromGarbage(Obj : TObject);
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
@@ -137,6 +140,7 @@ end;
 constructor TFCGIThread.Create(NewSocket : integer); begin
   if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
   inc(Application.FThreadsCount);
+  FGarbageCollector := TList.Create;
   FSocket := TBlockSocket.Create(NewSocket);
   FRequestHeader := TStringList.Create;
   FRequestHeader.StrictDelimiter := true;
@@ -151,11 +155,23 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   inherited Create(false);
 end;
 
-destructor TFCGIThread.Destroy; begin
-  dec(Application.FThreadsCount);
+procedure TFCGIThread.DeleteFromGarbage(Obj : TObject); begin
+  FGarbageCollector.Remove(Obj)
+end;
+
+destructor TFCGIThread.Destroy;
+var
+  I : integer;
+begin
+  with FGarbageCollector do begin
+    for I := 0 to Count-1 do
+      try TObject(Items[I]).Free except end;
+    Free
+  end;
   FRequestHeader.Free;
   FQuery.Free;
   FCookie.Free;
+  dec(Application.FThreadsCount);
   inherited;
 end;
 
@@ -294,6 +310,10 @@ begin
       Result := Result + Decoded[I]
     else
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
+end;
+
+procedure TFCGIThread.AddToGarbage(Obj: TObject); begin
+  FGarbageCollector.Add(Obj)
 end;
 
 procedure TFCGIThread.AfterHandleRequest; begin end;
@@ -581,12 +601,12 @@ procedure TFCGIApplication.GarbageThreads;
 var
   I : integer;
   Thread : TFCGIThread;
-begin
+begin        
   for I := Threads.Count-1 downto 0 do begin
     Thread := TFCGIThread(Threads.Objects[I]);
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
-      try Thread.Free except end;
       AccessThreads.Enter;
+      try Thread.Free except end;
       Threads.Delete(I);
       AccessThreads.Leave;
     end;
@@ -614,7 +634,7 @@ begin
       repeat
         NewSocket := Accept(250);
         if NewSocket <> 0 then FCGIThreadClass.Create(NewSocket);
-        if ((I mod 120) = 0) or GarbageNow then begin // A garbage for each 30 seconds
+        if ((I mod 40) = 0) or GarbageNow then begin // A garbage for each 10 seconds
           GarbageThreads;
           GarbageNow := false;
           I := 0;

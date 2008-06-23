@@ -736,6 +736,17 @@ begin
   end;
 end;
 
+// Add boolean additional param to identify TExtFunction param type
+function AddBoolParam(Type_ : string) : string; begin
+  Result := '';
+  if (Type_ <> '') and (Type_[1] = 'T') and (pos('TArrayOf', Type_) = 0) and
+     (pos('.' + Type_ + '.', '.TDateTime.TRegExp.TRegion.Tel.TVisMode.') = 0) then
+    if Type_ = 'TExtFunction' then
+      Result := ', true'
+    else
+      Result := ', false';
+end;
+
 function ParamsToJSON(Params : TStringList; Config : boolean = true) : string;
 var
   I : integer;
@@ -753,12 +764,7 @@ begin
           end
           else
             if I > 0 then Result := Result + ', ';
-          Result := Result + Name;
-          if (Typ[1] = 'T') and (pos('.' + Typ + '.', '.TDateTime.TRegExp.TRegion.Tel.TVisMode.') = 0) then // additional param to identify TExtFunction param
-            if Typ = 'TExtFunction' then
-              Result := Result + ', true'
-            else
-              Result := Result + ', false';
+          Result := Result + Name + AddBoolParam(Typ);
         end
         else begin
           if not InitCommonParam then Result := Result + ']) + '',''';
@@ -819,7 +825,7 @@ end;
 procedure WriteUnits;
 var
   I, J, K : integer;
-  CName, CJSName : string;
+  CName, CJSName, BoolParam : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -835,7 +841,7 @@ begin
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
         writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J,
-                     Tab, 'TExtDdDragSource = TExtFunction;'^M^J, Tab, 'TExtDdDD = TExtFunction;');
+                     Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;');
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
@@ -850,10 +856,12 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
+                BoolParam := AddBoolParam(Typ);
+                if BoolParam = ', false' then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
                 if Config then
-                  writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), '));')
+                  writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), '));')
                 else
-                  writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value]', 'Value'), ') + '';'');');
+                  writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), ') + '';'');');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -899,11 +907,11 @@ begin
               writeln(Pas, ' begin');
               with TMethod(Methods.Objects[K]) do
                 if Return = '' then begin // Write constructors
-                  writeln(Pas, Tab, 'InitDefaults;');
                   if AltCreate then // ExtJS fault
                     writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
                   else
                     writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''');');
+                  writeln(Pas, Tab, 'InitDefaults;');
                 end
                 else begin // Write class and instance methods
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
@@ -916,12 +924,12 @@ begin
           if Arrays or Objects then begin // Write destructor
             writeln(Pas, 'destructor ', CName, '.Destroy; begin');
             writeln(Pas, Tab, 'try');
-            writeln(Pas, Tab(2), 'inherited;');
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
                 if not Static and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
-                  writeln(Pas, Tab(2), Name + '.Free;');
+                  writeln(Pas, Tab(2), 'F' + Name + '.Free;');
             writeln(Pas, Tab, 'except end;');
+            writeln(Pas, Tab, 'inherited;');
             writeln(Pas, 'end;'^M^J);
           end;
         end;
