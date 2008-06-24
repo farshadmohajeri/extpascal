@@ -69,7 +69,7 @@ type
     Theme : string; // Set or get Ext JS installed theme
     property Language : string read FLanguage; // Actual language for this session, read HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Test if execution is occuring in an AJAX request
-    procedure JSCode(JS : string; JSName : string = ''); // Self-translating main procedure
+    procedure JSCode(JS : string; JSName : string = ''; Owner : string = ''); // Self-translating main procedure
     procedure SetStyle(pStyle : string = ''); // Set or reset stylesheet rules for this session
     procedure SetLibrary(pLibrary : string = ''); // Set or reset aditional JavaScript libraries, além das necessárias pelo Ext JS
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
@@ -112,7 +112,7 @@ type
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string): TExtFunction; overload;
     function JSFunction(Method: TExtProcedure) : TExtFunction; overload;
-    procedure JSCode(JS : string; pJSName : string = ''); // Método de ligação
+    procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); // Método de ligação
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     property JSName : string read FJSName;
@@ -299,7 +299,7 @@ If not found, JS attributes are appended to Response.
 @param JS JS commands or assigning of attributes or events
 @param JSName Optional current JS Object name
 }
-procedure TExtThread.JSCode(JS : string; JSName : string = '');
+procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
 var
   I : integer;
 begin
@@ -316,8 +316,10 @@ begin
       if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
   end;
   insert(JS, Response, I);
-  if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then
+  if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then begin
+    if Owner <> '' then JSName := Owner;
     RelocateVar(JS, JSName, I+length(JS));
+  end;
 end;
 
 {
@@ -339,9 +341,10 @@ begin
     VarName := JS;
   J := posex('/*' + VarName + '*/', Response, I);
   if J > I then begin
-    K := pos('var ' + VarName + '=new', Response);
+    K := pos('/*' + JSName + '*/', Response);
+    K := posex(';', Response, K)+1;
     J := posex(';', Response, J);
-    VarBody := copy(Response, K, J-K+1+length(VarName));
+    VarBody := copy(Response, K, J-K+1);
     delete(Response, K, length(VarBody));
     insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
   end;
@@ -495,7 +498,7 @@ end;
 
 procedure TExtObjectList.Add(Obj : TExtObject);
 var
-  ListAdd, Response : string;
+  ListAdd, Response, OwnerName : string;
 begin
   Obj.DeleteFromGarbage;
   if length(FObjects) = 0 then
@@ -506,19 +509,23 @@ begin
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   Response := CurrentFCGIThread.Response;
+  if Owner <> nil then
+    OwnerName := Owner.JSName
+  else
+    OwnerName := '';
   if pos(Obj.JSName, Response) = 0 then begin
-    if (pos(JSName, Response) = 0) and TExtThread(CurrentFCGIThread).IsAjax then
-      ListAdd := 'var ' + Obj.JSName + '=' + Owner.JSName + '.add(%s);'
+    if (pos(JSName, Response) = 0) and TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
+      ListAdd := 'var ' + Obj.JSName + '=' + OwnerName + '.add(%s);'
     else
       ListAdd := '%s';
     if Attribute = 'items' then // Generalize it more if necessary
       ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
-    Obj.JSCode(ListAdd, JSName);
+    Obj.JSCode(ListAdd, JSName, OwnerName);
   end
   else
-    Obj.JSCode(Obj.JSName, JSName);
+    Obj.JSCode(Obj.JSName, JSName, OwnerName);
 end;
 
 function TExtObjectList.GetFObjects(I: integer): TExtObject; begin
@@ -608,7 +615,7 @@ begin
   Result := false;
 end;
 
-procedure TExtObject.JSCode(JS : string; pJSName : string = ''); begin
+procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
     if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
@@ -621,7 +628,7 @@ procedure TExtObject.JSCode(JS : string; pJSName : string = ''); begin
     else
       JSCommand := '';
     if pJSName = '' then pJSName := JSName;
-    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName);
+    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, pOwner);
   end;
 end;
 
