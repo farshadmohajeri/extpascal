@@ -5,18 +5,17 @@
 
 ==Environment Description==
 
-Processor:Intel Pentium 4 (531-Prescott) 3.0 GHz 
-Memory: 1GB - DDR1
-
-OS: Windows 2003 Service Pack 1
-WebServers: IIS 6.0 and Apache 2.2.8
-
-Benchmark software used:
-ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
+ * Processor: Intel Pentium 4 (531-Prescott) 3.0 GHz 
+ * Memory: 1GB DDR1 
+ * OS: Windows 2003 Service Pack 1 
+ * WebServers:
+   # IIS 6.0 and 
+   # Apache 2.2.8 
+ * Benchmark software: ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
 
 == Details ==
 
-||      ||      || *--- * || *Performance...* || *...Req/s---* ||		
+||      ||      || *Per...* || *...formance...* || *...(Req/s)* ||		
 ||      ||      || *CGI*	 || *CGI*||               *Fastcgi* ||
 || *Total Reqs*           || *Simult Reqs* || *Apache*  || *IIS*	   || *Apache* ||
 ||1000	||10	||65.71	  ||67.65  ||481.20||
