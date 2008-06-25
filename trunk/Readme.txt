@@ -1,8 +1,8 @@
 Ext JS wrapper for Object Pascal
 
-version: 0.8.7, Beta 2 release, 14-jun-2008
+version: 0.8.8, Beta 3 release, 25-jun-2008
 
-ExtPascal is an another Ext JS wrapper. 
+ExtPascal is an Ext JS wrapper. 
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
 That brings the structure and strict syntax of the Object Pascal for programming the web browser.
 
@@ -16,7 +16,10 @@ License: LGPL
 
 Changes since last release
 
-- Self-translating bug fixes
-- Ajax parameters using ExtObjects
-- "T" prefix in generated classes
-- FPC incompatibilites
+- Hierarchical Garbage Collector (Delphi similar)
+- Thread Garbage Collector
+- Self-Translating enhancements and fixes
+- Nested calls
+- New JSFunction overload accept Pascal procedure
+- Initial docs in code
+- New error and warning messages
