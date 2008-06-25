@@ -90,7 +90,7 @@ type
       pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
     destructor Destroy; override;
     procedure Run;
-    function CanConnection(Address : string) : boolean;
+    function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
     function ThreadsCount : integer;
     function ReachedMaxConns : boolean;
@@ -493,7 +493,7 @@ begin
   CurrentFCGIThread := Self;
   FRequest := '';
   try
-    if Application.CanConnection(FSocket.GetHostAddress) then
+    if Application.CanConnect(FSocket.GetHostAddress) then
       repeat
         if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
@@ -559,7 +559,7 @@ end;
 
 { TFCGIApplication }
 
-function TFCGIApplication.CanConnection(Address: string): boolean; begin
+function TFCGIApplication.CanConnect(Address: string): boolean; begin
   Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
 end;
 
