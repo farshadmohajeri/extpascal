@@ -40,10 +40,9 @@ const
 type
   TArrayOfString  = array of string;
   TArrayOfInteger = array of Integer;
-
-  TExtObjectList = class;
-  TExtFunction   = class;
-  TExtProcedure  = procedure of object; // Tipo que define uma procedure que pode ser chamada num @[link TExtObject.AJAX] request
+  TExtObjectList  = class;
+  TExtFunction    = class;
+  TExtProcedure   = procedure of object; // Tipo que define uma procedure que pode ser chamada num @[link TExtObject.AJAX] request
 
   {
   Representa uma sessão de usuário aberta em um browser. Cada sessão é uma thread FastCGI que possui recursos adicionais do
@@ -66,6 +65,7 @@ type
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
   public
+    HTMLQuirksMode : boolean;
     Theme : string; // Set or get Ext JS installed theme
     property Language : string read FLanguage; // Actual language for this session, read HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Test if execution is occuring in an AJAX request
@@ -345,7 +345,9 @@ begin
     K := posex(';', Response, K)+1;
     J := posex(';', Response, J);
     VarBody := copy(Response, K, J-K+1);
-    delete(Response, K, length(VarBody));
+    J := LastDelimiter('|', VarBody)+1;
+    VarBody := copy(VarBody, J, length(VarBody));
+    delete(Response, K+J-1, length(VarBody)+1);
     insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
   end;
 end;
@@ -447,10 +449,10 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
-  Response := AnsiReplaceStr(Response, '_', '');
-  if not IsAjax then begin
-    Response := '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>' +
-//    Response := '<!docttype html public><html>' +  // Compat mode
+  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extract aux chars
+  if not IsAjax then
+    Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
+      '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
       '<title>' + Application.Title + '</title>' +
       '<meta http-equiv="content-type" content="charset=utf-8">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
@@ -464,7 +466,6 @@ begin
       'function AjaxSuccess(response){eval(response.responseText);};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
-  end;
 end;
 
 {
@@ -554,7 +555,7 @@ procedure TExtObject.CreateVar(JS : string); begin
   CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  JSCode('var ' + JSName + '=new ' + JS)
+  JSCode('|var ' + JSName + '=new ' + JS)
 end;
 
 // Alternate create constructor, it is an ExtJS fault
@@ -562,7 +563,7 @@ procedure TExtObject.CreateVarAlt(JS : string); begin
   CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  JSCode('var ' + JSName + '= ' + JS)
+  JSCode('|var ' + JSName + '= ' + JS)
 end;
 
 procedure TExtObject.DeleteFromGarbage; begin
@@ -622,8 +623,7 @@ procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string 
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;
-      JSCommand := '/*' + TExtThread(CurrentFCGIThread).GetSequence + '*/' + JS;
-      JS := JSCommand
+      JSCommand := JS;
     end
     else
       JSCommand := '';
@@ -753,14 +753,10 @@ begin
   Result := 'function(' + Params + '){' + Command + '}';
 end;
 
-function TExtObject.ExtractJSCommand(pJSCommand : string) : string;
-var
-  I : integer;
-begin
+function TExtObject.ExtractJSCommand(pJSCommand : string) : string; begin
   Result := pJSCommand;
   TExtThread(CurrentFCGIThread).RemoveJS(Result);
-  I := pos('*/', Result);
-  if I <> 0 then Result := copy(Result, I+2, length(Result)-I-2)
+  SetLength(Result, length(Result)-1);
 end;
 
 function TExtObject.VarToJSON(A : array of const): string;
