@@ -1,30 +1,26 @@
 #summary Performance Notes on ExtPascal Samples.
 #labels Featured
 
-= Introduction =
+=Performance Notes on ExtPascal Samples.=
 
 ==Environment Description==
-====Processor:====
-`Intel Pentium 4 (531-Prescott) 3.0 GHz`
-====Memory:==== 
-`1GB - DDR1`
 
-====OS:==== 
-`Windows 2003 Service Pack 1`
-====WebServers:==== 
-`IIS 6.0 and Apache 2.2.8`
+Processor:Intel Pentium 4 (531-Prescott) 3.0 GHz 
+Memory: 1GB - DDR1
 
-====Benchmark software used:====
-`ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>`
+OS: Windows 2003 Service Pack 1
+WebServers: IIS 6.0 and Apache 2.2.8
 
-= Details =
-{{{
-Total Simult      Performance Req/s		
-Reqs  Reqs.	 CGI     CGI	FastCGI
-		Apache	 IIS	Apache
-1000	10	65.71	67.65	481.20
-1000	20	64.91	67.02	477.61
-1000	30	63.24	67.02	477.61
-1000	40	62.08	65.98	477.61
-1000	50	62.44	66.46	477.61
-}}}
+Benchmark software used:
+ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
+
+== Details ==
+
+||      ||      || *--- * || *Performance...* || *...Req/s---* ||		
+||      ||      || *CGI*	 || *CGI*||               *Fastcgi* ||
+|| *Total Reqs*           || *Simult Reqs* || *Apache*  || *IIS*	   || *Apache* ||
+||1000	||10	||65.71	  ||67.65  ||481.20||
+||1000	||20	||64.91	  ||67.02  ||477.61||
+||1000	||30	||63.24	  ||67.02  ||477.61||
+||1000	||40	||62.08   ||65.98  ||477.61||
+||1000	||50	||62.44   ||66.46  ||477.61||
