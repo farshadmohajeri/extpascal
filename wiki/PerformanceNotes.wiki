@@ -3,29 +3,28 @@
 
 = Introduction =
 
-Environment Description
-Processor:Intel Pentium 4 (531-Prescott) 3.0 GHz
-Memory: 1GB - DDR1
+==Environment Description==
+====Processor:====
+`Intel Pentium 4 (531-Prescott) 3.0 GHz`
+====Memory:==== 
+`1GB - DDR1`
 
-OS: Windows 2003 Service Pack 1
-WebServers: IIS 6.0 and Apache 2.2.8
+====OS:==== 
+`Windows 2003 Service Pack 1`
+====WebServers:==== 
+`IIS 6.0 and Apache 2.2.8`
 
-Benchmark software used: 
-ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
+====Benchmark software used:====
+`ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>`
 
 = Details =
-
-Total Simult     Performance Req/s		
-Reqs	Reqs.	CGI		Fastcgi
-		Apache	IIS	Apache
+{{{
+Total Simult      Performance Req/s		
+Reqs  Reqs.	 CGI     CGI	FastCGI
+		Apache	 IIS	Apache
 1000	10	65.71	67.65	481.20
 1000	20	64.91	67.02	477.61
 1000	30	63.24	67.02	477.61
 1000	40	62.08	65.98	477.61
 1000	50	62.44	66.46	477.61
-
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+}}}
