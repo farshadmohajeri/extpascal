@@ -8,6 +8,7 @@ uses
 
 type
   TSamples = class(TExtThread)
+  private
   public
     Tabs : TExtTabPanel;
     TabIndex : integer;
@@ -25,6 +26,8 @@ type
     procedure ArrayGrid;
     procedure EditableGrid;
     procedure AddPlant; // Ajax
+    procedure ReadButtonAjax;
+    procedure ReadButtonJS;
   end;
 
 procedure TSamples.Home;
@@ -33,7 +36,7 @@ const
     Name, Proc, Gif, Desc : string
   end = (
     (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';        Desc: 'Simple Hello World window that contains a basic TabPanel.'),
-    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons.'),
+    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
     (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
     (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
     (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components and sub-layouts.'),
@@ -498,6 +501,15 @@ begin
   DataStore.Load(nil);
 end;
 
+
+procedure TSamples.ReadButtonAjax; begin
+  ExtMessageBox.Alert('AJAX: Button clicked', 'You clicked the "' + Query['ButtonID'] + '" button')
+end;
+
+procedure TSamples.ReadButtonJS; begin
+  ExtMessageBox.Alert('Browser Side: Button clicked', 'You clicked the "%0" button')
+end;
+
 procedure TSamples.MessageBoxes;
 var
   ShowConfig : TExtShowConfig;
@@ -509,15 +521,15 @@ begin
     Frame    := true;
     with TExtButton.AddTo(Buttons) do begin
       Text    := 'Alert Dialog';
-      Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully');
+      Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully', Ajax(ReadButtonAjax, ['ButtonID', '%0']));
     end;
     with TExtButton.AddTo(Buttons) do begin
       Text    := 'Confirm Message';
-      Handler := ExtMessageBox.Confirm('Confirm', 'Are you sure?');
+      Handler := ExtMessageBox.Confirm('Confirm', 'Are you sure?', JSFunction(ReadButtonJS));
     end;
     with TExtButton.AddTo(Buttons) do begin
       Text    := 'Prompt Dialog';
-      Handler := ExtMessageBox.Prompt('Name', 'Please enter your name:');
+      Handler := ExtMessageBox.Prompt('Name', 'Please enter your name:', JSFunction(ReadButtonJS));
     end;
     with TExtButton.AddTo(Buttons) do begin
       Id   := 'ButtonMultiline';
@@ -530,6 +542,7 @@ begin
         Buttons   := ExtMessageBox.OKCANCEL;
         Multiline := true;
         AnimEl    := 'ButtonMultiline';
+        Fn        := JSFunction(ReadButtonJS);
       end;
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
@@ -544,6 +557,7 @@ begin
         Icon    := ExtMessageBox.QUESTION;
         Buttons := ExtMessageBox.YESNOCANCEL;
         AnimEl  := Id;
+        Fn      := Ajax(ReadButtonAjax, ['ButtonID', '%0']);
       end;
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
@@ -601,6 +615,6 @@ begin
 end;
 
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.7', TSamples, 2014, 1, false);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 1, false);
   Application.Run;
 end.

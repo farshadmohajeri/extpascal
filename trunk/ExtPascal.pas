@@ -181,7 +181,7 @@ type
 implementation
 
 uses
-  SysUtils, StrUtils, Math;
+  SysUtils, StrUtils, Math, ExtPascalUtils;
 
 { TExtThread }
 
@@ -735,7 +735,7 @@ begin
   while I <> 0 do begin
     if Command[I+1] in ['0'..'9'] then begin
       Command[I] := 'P';
-      insert('+"', Command, posex('"', Command, I));
+      insert('+"', Command, FirstDelimiter('"'' ', Command, I));
       insert('"+', Command, I);
       inc(J);
     end;
@@ -746,7 +746,7 @@ begin
     if I <> J then Params := Params + ','
   end;
   I := LastDelimiter(';', copy(Command, 1, length(Command)-1));
-  if I = 0 then
+  if (I = 0) or (I = length(Command)) and (pos('return ', Command) <> 1) then
     Command := 'return ' + Command
   else
     insert('return ', Command, I+1);
@@ -779,7 +779,7 @@ begin
             else
               Result := Result + TExtObject(VObject).JSName
           end
-          else 
+          else
             if Result = '' then
               Result := 'null'
             else begin
@@ -788,8 +788,8 @@ begin
             end;
           inc(I);
         end;
-        vtAnsiString: Result := Result + '"' + string(VAnsiString) + '"';
-        vtString:     Result := Result + '"' + VString^ + '"';
+        vtAnsiString: Result := Result + '"' + AnsiReplaceStr(string(VAnsiString), '"', '''') + '"';
+        vtString:     Result := Result + '"' + AnsiReplaceStr(VString^, '"', '''') + '"';
         vtInteger:    Result := Result + IntToStr(VInteger);
         vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
         vtExtended:   Result := Result + FloatToStr(VExtended^);
@@ -814,7 +814,7 @@ var
 begin
   Result := '[';
   for I := 0 to high(Strs) do begin
-    Result := Result + '"' + Strs[I] + '"';
+    Result := Result + '"' + AnsiReplaceStr(Strs[I], '"', '''') + '"';
     if I < high(Strs) then Result := Result + ',';
   end;
   Result := Result + ']'

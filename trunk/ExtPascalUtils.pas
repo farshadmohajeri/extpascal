@@ -21,6 +21,7 @@ type
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
 // Mimics explode php function
 function Explode(Delim : char; S : string) : TStringList;
+function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
 
 implementation
 
@@ -140,6 +141,16 @@ begin
   Result.Delimiter := Delim;
   Result.DelimitedText := S;
   for I := 0 to Result.Count-1 do Result[I] := trim(Result[I]);
+end;
+
+function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
+var
+  I : integer;
+begin
+  for Result := Offset to length(S) do
+    for I := 1 to length(Delimiters) do
+      if Delimiters[I] = S[Result] then exit;
+  Result := 0;
 end;
 
 end.
