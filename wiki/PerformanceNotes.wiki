@@ -16,7 +16,7 @@
 == Details ==
 
 ||      ||      || *Per...* || *...formance...* || *...(Req/s)* ||		
-||      ||      || *CGI*	 || *CGI*||               *Fastcgi* ||
+||      ||      || *CGI*	 || *CGI*||               *FastCGI* ||
 || *Total Reqs*           || *Simult Reqs* || *Apache*  || *IIS*	   || *Apache* ||
 ||1000	||10	||65.71	  ||67.65  ||481.20||
 ||1000	||20	||64.91	  ||67.02  ||477.61||
