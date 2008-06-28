@@ -89,7 +89,7 @@ type
     constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
       pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
     destructor Destroy; override;
-    procedure Run;
+    procedure Run(OwnerThread : TThread = nil);
     function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
     function ThreadsCount : integer;
@@ -622,7 +622,10 @@ procedure TFCGIApplication.OnPortInUseError; begin
   readln;
 end;
 
-procedure TFCGIApplication.Run;
+type
+  THackThread = class(TThread);
+
+procedure TFCGIApplication.Run(OwnerThread : TThread = nil);
 var
   NewSocket, I : integer;
 begin
@@ -640,7 +643,7 @@ begin
           I := 0;
         end;
         inc(I);
-      until Terminated or (Shutdown and (ThreadsCount = 0))
+      until Terminated or (Shutdown and (ThreadsCount = 0)) or ((OwnerThread <> nil) and THackThread(OwnerThread).Terminated)
     else
       OnPortInUseError;
     Free;

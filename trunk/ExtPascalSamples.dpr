@@ -1,9 +1,9 @@
 program ExtPascalSamples;
 
-{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
+{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$DEFINE SERVICE}{$ENDIF}
 
 uses
-  FCGIApp, ExtPascal, SysUtils,
+  FCGIApp, ExtPascal, SysUtils, {$IFDEF SERVICE} Classes, Services,{$ENDIF}
   Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -501,7 +501,6 @@ begin
   DataStore.Load(nil);
 end;
 
-
 procedure TSamples.ReadButtonAjax; begin
   ExtMessageBox.Alert('AJAX: Button clicked', 'You clicked the "' + Query['ButtonID'] + '" button')
 end;
@@ -614,7 +613,36 @@ begin
   end;
 end;
 
+{$IFNDEF SERVICE}
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 1, false);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 5);
   Application.Run;
+{$ELSE}
+type
+  TServiceThread = class(TThread)
+    procedure Execute; override;
+  end;
+
+procedure TServiceThread.Execute; begin
+  Application.Run(Self)
+end;
+
+begin
+  Service := TService.Create('ExtPascal', 'ExtPascal Samples 0.8.8');
+  with Service do try
+    if Install then
+      writeln('Service installed')
+    else if Uninstall then
+      writeln('Service uninstalled')
+    else begin
+      Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 5);
+      if Exists then
+        Run([TServiceThread.Create(true)])
+      else
+        Application.Run;
+    end;
+  except
+    on E : Exception do ReportEventLog(EventError, 1, E.Message);
+  end;
+{$ENDIF}
 end.
