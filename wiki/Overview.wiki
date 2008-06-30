@@ -30,9 +30,9 @@ The *CGIGateway* used to run an ExtPascal application on a Web Server that not p
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/cgigateway.png]
 
- 1. Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
- 2. The CGI gateway tries to connect to associated FCGI app counterpart.
- 3. If the FCGI app isn't running, the CGI gateway fires up the FCGI app.
- 4. The FCGI app processes request from CGI gateway and returns the result.
- 5. The CGI gateway forward FCGI app result to the browser. The communication is done through CGI standard protocol. 
- 6. If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
+ #  Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
+ #  The CGI gateway tries to connect to associated FCGI app counterpart.
+ #  If the FCGI app isn't running, the CGI gateway fires up the FCGI app.
+ #  The FCGI app processes request from CGI gateway and returns the result.
+ #  The CGI gateway forward FCGI app result to the browser. The communication is done through CGI standard protocol. 
+ #  If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
