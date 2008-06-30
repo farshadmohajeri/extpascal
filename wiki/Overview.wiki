@@ -1,7 +1,6 @@
 =ExtPascal is composed of four main components:=
 
-http://pitinnu.com
-http://wansan5.100webspace.net/images/ExtPascal.png
+http://wansan5.100webspace.net/images/extpascal.png
 
  # The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
  # The *Wrapper* programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1) which has the definition of all Ext JS classes, properties, methods and events.
@@ -14,7 +13,7 @@ http://wansan5.100webspace.net/images/ExtPascal.png
  # Read *ExtFixes.txt* file to fix documentation faults and omissions, and
  # Generate the *Wrapper*.
  # With the application running, a browser session do a HTTP request to the Web Server.
- # The Web Server do a      *FastCGI* request to the application that create a *thread* to handle the request.
+ # The Web Server send a *FastCGI* request to the application that create a *thread* to handle the request.
  # The *thread* create ExtObjects, set properties and call methods from *Wrapper Units*.
  # For each these tasks the *Self-translating* is invoked
  # Generating JavaScript code that uses Ext JS classes.
