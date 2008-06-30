@@ -1,37 +1,37 @@
 #labels Featured
 =ExtPascal is composed of four main components:=
 
--01- The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
+01. The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
 
--02- The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1 which has the definition of all Ext JS classes, properties, methods and events.
+02. The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1 which has the definition of all Ext JS classes, properties, methods and events.
 
--03- The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
+03. The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
 
--04- The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
+04. The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
 
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/extpascal.png]
 
 
--01- The *Parser* read the HTML documentation of Ext JS;
+01. The *Parser* read the HTML documentation of Ext JS;
 
--02- Read *ExtFixes.txt* file to fix documentation faults and omissions, and;
+02. Read *ExtFixes.txt* file to fix documentation faults and omissions, and;
 
--03- Generate the *Wrapper*; 
+03. Generate the *Wrapper*; 
 
--04- With the application running, a browser session do a HTTP request to the Web Server;
+04. With the application running, a browser session do a HTTP request to the Web Server;
 
--05- The Web Server send a *FastCGI* request to the application that create a *thread* to handle the request;
+05. The Web Server send a *FastCGI* request to the application that create a *thread* to handle the request;
 
--06- The *thread* create ExtObjects, set properties and call methods from *Wrapper Units*;
+06. The *thread* create ExtObjects, set properties and call methods from *Wrapper Units*;
 
--07- For each these tasks the *Self-translating* is invoked;
+07. For each these tasks the *Self-translating* is invoked;
 
--08- Generating JavaScript code that uses Ext JS classes;
+08. Generating JavaScript code that uses Ext JS classes;
 
--09- At end of request processing, the *thread* read and format all JS generated;
+09. At end of request processing, the *thread* read and format all JS generated;
 
--10- And send the response to browser session. New requests can be done begining from step 4.
+10. And send the response to browser session. New requests can be done begining from step 4.
 
 So the translating is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
@@ -42,15 +42,15 @@ The *CGIGateway* used to run an ExtPascal application on a Web Server that not p
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/cgigateway.png]
 
--01- Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
+01. Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
 
--02- The CGI gateway tries to connect to associated FCGI app counterpart.
+02. The CGI gateway tries to connect to associated FCGI app counterpart.
 
--03- If the FCGI app isn't running, the CGI gateway fires up the FCGI app.
+03. If the FCGI app isn't running, the CGI gateway fires up the FCGI app.
 
--04- The FCGI app processes request from CGI gateway and returns the result.
+04. The FCGI app processes request from CGI gateway and returns the result.
 
--05- The CGI gateway forward FCGI app result to the browser. The communication is done
+05. The CGI gateway forward FCGI app result to the browser. The communication is done
 through CGI standard protocol.
 
--06- If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
+06. If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
