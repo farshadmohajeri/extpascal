@@ -6,28 +6,34 @@ It's the heart of the automatic translation method from Object Pascal to JavaScr
 It takes advantage of the fact that JavaScript and Object Pascal are structurally similar languages,
 where there is almost one to one parity between its syntax and semantic structures.
 
-ExtPascal é composto por três componentes principais:
+ExtPascal is compound for four main components:
 
 1. The Parser @[link ExtToPascal] able to scan Ext JS documentation in HTML format and to create the Wrapper.
-2. The Wrapper programmatically created by Parser, is in fact a set of units (twelve in Ext JS 2.1)
+2. The Wrapper programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1)
    which has the definition of all Ext JS classes, properties, methods and events.
-3. The Self-translating engine, this unit. It's triggered when using the Wrapper,
+3. The Self-translating engine, ExtPascal unit. It's triggered when using the Wrapper,
    ie by creating objects, assigning properties and events, and invoking methods.
+4. The @[link FastCGI] multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behaviour.
 
-@[image c:\trabalho\extpascal\images\extpascal.gif]
+@[image c:\trabalho\extpascal\images\extpascal.png]
 
-1. The Parser read the HTML documentation of Ext JS and
-2. Generate the Wrapper.
-3. With the application on-line a browser session to do a request.
-4. The application create ExtObjects, set properties and call methods from Wrapper Units.
-5. For each these tasks the "Self-translating" is invoked
-6. Generating JavaScript code that uses Ext JS classes.
-7. At end of request processing, the application read and format all JS generated
-8. And send the response to browser session. New requests can be done begining of step 3.
+1. The Parser read the HTML documentation of Ext JS,
+2. Read ExtFixes.txt file to fix documentation faults and omissions, and
+3. Generate the Wrapper.
+4. With the application running, a browser session do a HTTP request to the Web Server.
+5. The Web Server do a FastCGI request to the application that create a thread to handle the request.
+6. The thread create ExtObjects, set properties and call methods from Wrapper Units.
+7. For each these tasks the "Self-translating" is invoked
+8. Generating JavaScript code that uses Ext JS classes.
+9. At end of request processing, the thread read and format all JS generated
+10. And send the response to browser session. New requests can be done begining from step 4.
 
-So the translation is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
+So the translating is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
 Indeed the Parser can be adapted to read the documentation of another JavaScript framework, Dojo for example.
+
+ExtPascal has one optional fifth component:
+The @[link CGIGateway] used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
 }
 interface
 
