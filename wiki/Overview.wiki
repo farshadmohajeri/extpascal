@@ -28,3 +28,10 @@ Indeed the Parser can be adapted to read the documentation of another JavaScript
 The *CGIGateway* used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/cgigateway.png]
+
+ # Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
+ # The CGI gateway tries to connect to associated FCGI app counterpart.
+ # If the FCGI app isn't running, the CGI gateway fires up the FCGI app.
+ # The FCGI app processes request from CGI gateway and returns the result.
+ # The CGI gateway forward FCGI app result to the browser. The communication is done through CGI standard protocol. 
+ # If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
