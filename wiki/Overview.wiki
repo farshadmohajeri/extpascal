@@ -3,10 +3,11 @@
 
 
 
-  #  The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper. 
-  #  The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1) which has the definition of all Ext JS classes, properties, methods and events. 
-  #  The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
-  #  The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
+ 1. The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper. 
+
+ 2. The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1) which has the definition of all Ext JS classes, properties, methods and events. 
+ 3. The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
+4. The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/extpascal.png]
 
