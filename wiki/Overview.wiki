@@ -1,5 +1,3 @@
-The ExtPascal components
-
 =ExtPascal is composed of four main components:=
 
  # The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
