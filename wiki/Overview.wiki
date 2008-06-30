@@ -1,6 +1,6 @@
 =ExtPascal is composed of four main components:=
 
-http://wansan5.100webspace.net/images/extpascal.png
+[http://wansan5.100webspace.net/images/extpascal.png]
 
  # The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
  # The *Wrapper* programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1) which has the definition of all Ext JS classes, properties, methods and events.
