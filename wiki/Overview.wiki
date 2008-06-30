@@ -5,7 +5,7 @@
  # The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
  # The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
 
-http://wansan5.100webspace.net/images/extpascal2.png 
+http://wansan5.100webspace.net/images/extpascal2.gif 
 
  # The *Parser* read the HTML documentation of Ext JS,
  # Read *ExtFixes.txt* file to fix documentation faults and omissions, and
