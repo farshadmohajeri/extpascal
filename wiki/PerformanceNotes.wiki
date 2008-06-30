@@ -1,6 +1,4 @@
-#summary Performance Notes on ExtPascal Samples.
 #labels Featured
-
 =Performance Notes on ExtPascal Samples.=
 
 ==Environment Description==
@@ -10,8 +8,8 @@
  * Network: Ethernet 100 Mbps. Both server and client on the same segment. No significant traffic.
  * OS: Windows 2003 Service Pack 1 
  * WebServers:
-   * IIS 6.0 and 
-   * Apache 2.2.8 
+   # IIS 6.0 and 
+   # Apache 2.2.8 
  * Benchmark software: ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
  * Compiler: Turbo Delphi
 
