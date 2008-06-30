@@ -1,24 +1,27 @@
 #labels Featured
 =ExtPascal is composed of four main components:=
 
+1. The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
 
-1. The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper. 
-2. The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1 which has the definition of all Ext JS classes, properties, methods and events. 
+2. The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.1 which has the definition of all Ext JS classes, properties, methods and events.
+
 3. The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
+
 4. The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
+
 
 [http://pitinnu.fazenda.df.gov.br/extpascal/extpascal.png]
 
-  #  The *Parser* read the HTML documentation of Ext JS,
-  #  Read *ExtFixes.txt* file to fix documentation faults and omissions, and
-  #  Generate the *Wrapper*.
-  #  With the application running, a browser session do a HTTP request to the Web Server.
-  #  The Web Server send a *FastCGI* request to the application that create a *thread* to handle the request.
-  #  The *thread* create ExtObjects, set properties and call methods from *Wrapper Units*.
-  #  For each these tasks the *Self-translating* is invoked
-  #  Generating JavaScript code that uses Ext JS classes.
-  #  At end of request processing, the *thread* read and format all JS generated
-  #  And send the response to browser session. New requests can be done begining from step 4.
+ # The *Parser* read the HTML documentation of Ext JS,
+ # Read *ExtFixes.txt* file to fix documentation faults and omissions, and
+ # Generate the *Wrapper*.
+ # With the application running, a browser session do a HTTP request to the Web Server.
+ # The Web Server send a *FastCGI* request to the application that create a *thread* to handle the request.
+ # The *thread* create ExtObjects, set properties and call methods from *Wrapper Units*.
+ # For each these tasks the *Self-translating* is invoked
+ # Generating JavaScript code that uses Ext JS classes.
+ # At end of request processing, the *thread* read and format all JS generated
+ # And send the response to browser session. New requests can be done begining from step 4.
 
 So the translating is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
