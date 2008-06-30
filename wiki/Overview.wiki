@@ -1,11 +1,13 @@
 =ExtPascal is composed of four main components:=
 
+
+
  # The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
  # The *Wrapper* programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1) which has the definition of all Ext JS classes, properties, methods and events.
  # The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
  # The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
 
-http://wansan5.100webspace.net/images/extpascal2.gif 
+[http://pitinnu.fazenda.df.gov.br/extpascal/extpascal.png]
 
  # The *Parser* read the HTML documentation of Ext JS,
  # Read *ExtFixes.txt* file to fix documentation faults and omissions, and
@@ -24,3 +26,5 @@ Indeed the Parser can be adapted to read the documentation of another JavaScript
 
 =ExtPascal has one optional fifth component:=
 The *CGIGateway* used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
+
+[http://pitinnu.fazenda.df.gov.br/extpascal/cgigateway.png]
