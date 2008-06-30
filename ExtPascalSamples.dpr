@@ -26,7 +26,7 @@ type
     procedure ArrayGrid;
     procedure EditableGrid;
     procedure AddPlant; // Ajax
-    procedure ReadButtonAjax;
+    procedure ReadButtonAjax; // Ajax
     procedure ReadButtonJS;
   end;
 
@@ -615,7 +615,7 @@ end;
 
 {$IFNDEF SERVICE}
 begin
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 5);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.9', TSamples, 2014, 5);
   Application.Run;
 {$ELSE}
 type
@@ -628,14 +628,14 @@ procedure TServiceThread.Execute; begin
 end;
 
 begin
-  Service := TService.Create('ExtPascal', 'ExtPascal Samples 0.8.8');
+  Service := TService.Create('ExtPascalSamples', 'v.0.8.9');
   with Service do try
     if Install then
       writeln('Service installed')
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := TFCGIApplication.Create('ExtPascal Samples 0.8.8', TSamples, 2014, 5);
+      Application := TFCGIApplication.Create('ExtPascal Samples 0.8.9', TSamples, 2014, 5);
       if Exists then
         Run([TServiceThread.Create(true)])
       else

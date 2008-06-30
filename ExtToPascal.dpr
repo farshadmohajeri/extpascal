@@ -557,9 +557,9 @@ end;
 procedure LoadFixes;
 var
   Fixes : text;
-  Fix : string;
+  Fix   : string;
   Fields, Params : TStringList;
-  I, J, K : integer;
+  I, J, K  : integer;
   NewClass : TClass;
 begin
   if FileExists('ExtFixes.txt') then begin
@@ -583,9 +583,9 @@ begin
                     TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
                 else // Update
                   with TProp(Properties.Objects[J]) do begin
-                    Typ := FixType(Fields[2]);
-                    Static := lowercase(Fields[3]) = 'true';
-                    Config := lowercase(Fields[4]) = 'true';
+                    Typ     := FixType(Fields[2]);
+                    Static  := lowercase(Fields[3]) = 'true';
+                    Config  := lowercase(Fields[4]) = 'true';
                     Default := Fields[5]
                   end;
               end
@@ -599,8 +599,8 @@ begin
               end
               else // Update
                 with TMethod(Methods.Objects[J]) do begin
-                  Return := FixType(Fields[2]);
-                  Static := lowercase(Fields[3]) = 'true';
+                  Return   := FixType(Fields[2]);
+                  Static   := lowercase(Fields[3]) = 'true';
                   Overload := lowercase(Fields[4]) = 'true';
                   Params.Clear;
                   for K := 0 to ((Fields.Count-4) div 3)-1 do
@@ -608,7 +608,7 @@ begin
                 end;
             end;
         end
-        else begin// Create new Class
+        else begin // Create new Class
           I := Units.IndexOf(Fields[2]);
           if I <> -1 then begin
             NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
@@ -617,12 +617,16 @@ begin
             TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
           end
           else
-            writeln('Unit: ', Fields[2], 'not found. Fix record: ', Fix);
+            writeln('Unit: ', Fields[2], ' not found. Fix record: ', Fix);
         end;
         Fields.Free;
       end;
     until SeekEOF(Fixes);
     close(Fixes);
+  end
+  else begin
+    writeln('ExtFixes.txt file not found. Generation aborted.'^M^J'Press enter.');
+    readln;
   end;
 end;
 

@@ -1,18 +1,15 @@
 unit Services;
 {
+Slim Services and EventLog support for Windows
 @author Wanderlan Santos dos Anjos
 @data 27-jun-2008
-License: BSD
+@License: BSD
 }
 interface
 
 uses WinSvc, Classes;
 
-Resourcestring
-  SLogInfo      = '1000Info';
-  SLogWarning   = 'Warning';
-  SLogError     = 'Error';
-  SLogDebug     = 'Debug';
+{$R *.res}
 
 type
 	TFuncBool  = function : boolean;
@@ -51,7 +48,7 @@ type
     function  Uninstall : boolean;
     procedure Insert(Exec: string);
     procedure Delete;
-    function  Run(ServThreads : array of TThread; ServBegin  : TFuncBool = nil; ServEnd : TFuncBool = nil) : boolean;
+    function  Run(ServThreads : array of TThread; ServBegin : TFuncBool = nil; ServEnd : TFuncBool = nil) : boolean;
     function  Exists : boolean;
     function  Stop : integer;
     function  Start : integer;
@@ -89,17 +86,14 @@ end;
 
 procedure TService.Insert(Exec : string); begin
   FService := CreateService(FManager, FName, FName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START,
-                           SERVICE_ERROR_NORMAL, pchar(Exec), nil, nil, nil, nil, nil);
+                            SERVICE_ERROR_NORMAL, pchar(Exec), nil, nil, nil, nil, nil);
   if not Exists then RaiseLastOSError;
   with TRegistry.Create do begin
-    Access := KEY_ALL_ACCESS;
+    Access  := KEY_ALL_ACCESS;
     RootKey := HKey_Local_Machine;
     OpenKey('\SYSTEM\CurrentControlSet\Services\EventLog\Application\' + FName, true);
-    WriteInteger('CategoryCount', 4);
-    WriteInteger('TypesSupported', 7);
     WriteString('EventMessageFile', Exec);
-    WriteString('CategoryMessageFile', Exec);
-    OpenKey('\SYSTEM\ControlSet001\Services\' + FName, true);
+    OpenKey('\SYSTEM\CurrentControlSet\Services\' + FName, true);
     WriteString('Description', FDescription);
     Free;
   end;
@@ -118,10 +112,9 @@ procedure TService.Delete; begin
   if not Exists then RaiseLastOSError;
   if not DeleteService(FService) then RaiseLastOSError;
   with TRegistry.Create do begin
-    Access := KEY_ALL_ACCESS;
+    Access  := KEY_ALL_ACCESS;
     RootKey := HKey_Local_Machine;
     DeleteKey('\SYSTEM\CurrentControlSet\Services\EventLog\Application\' + FName);
-    DeleteKey('\SYSTEM\ControlSet001\Services\' + FName);
     Free;
   end;
 end;
@@ -148,8 +141,7 @@ end;
 function TService.Stop : integer; begin
 	Result := 0;
   if Exists then begin
-		if not WinSvc.ControlService(FService, SERVICE_CONTROL_STOP, FStatus) then
-			Result := GetLastError;
+		if not WinSvc.ControlService(FService, SERVICE_CONTROL_STOP, FStatus) then Result := GetLastError;
 	end
 	else
 		Result := GetServiceError;
@@ -161,11 +153,9 @@ const
 	Param : pchar = nil;
 begin
 	Result := 0;
-  if FService = 0 then
-    FService := OpenService(FManager, FName, SERVICE_ALL_ACCESS);
+  if FService = 0 then FService := OpenService(FManager, FName, SERVICE_ALL_ACCESS);
 	if Exists then begin
-	  if not StartServiceA(FService, 0, Param) then 
-		  Result := GetServiceError;
+	  if not StartServiceA(FService, 0, Param) then Result := GetServiceError;
   end
 	else
 		Result := GetServiceError;
@@ -182,8 +172,8 @@ procedure TService.ReportEventLog(EventType : TEventType; EventCode : word; Mess
 var
 	Mensagem : pchar;
 begin
-	Mensagem := pchar(#10#13#10#13 + Message);
-	ReportEvent(FSource, Word(EventType), Word(EventType), 1000+EventCode, nil, 1, 0, @Mensagem, nil);
+	Mensagem := pchar(Message);
+	ReportEvent(FSource, Word(EventType), 1000+EventCode, 0, nil, 1, 0, @Mensagem, nil);
 end;
 
 // StopNow pode ser usada dentro do service para parar o Service
@@ -225,25 +215,25 @@ function TService.ReportStart : boolean;
 const
 	ChkPoint : integer = 0;
 begin
-   Result := false;
-   if FReportStartStop and Exists then begin
-      inc(ChkPoint);
-      Result := ReportServiceStatus(SERVICE_START_PENDING, NO_ERROR, ChkPoint, Timeout);
-   end;
+  Result := false;
+  if FReportStartStop and Exists then begin
+    inc(ChkPoint);
+    Result := ReportServiceStatus(SERVICE_START_PENDING, NO_ERROR, ChkPoint, Timeout);
+  end;
 end;
 
 function TService.ReportStop : boolean;
 const
 	ChkPoint : integer = 0;
 begin
-   Result := false;
-   if FReportStartStop and Exists then begin
-      inc(ChkPoint);
-      Result := ReportServiceStatus(SERVICE_STOP_PENDING, NO_ERROR, ChkPoint, Timeout);
-   end;
+  Result := false;
+  if FReportStartStop and Exists then begin
+    inc(ChkPoint);
+    Result := ReportServiceStatus(SERVICE_STOP_PENDING, NO_ERROR, ChkPoint, Timeout);
+  end;
 end;
 
-// É chamado pelo Server Manager do Windows
+// Is called by Windows Server Manager
 procedure ServController(Comando : integer); stdcall;
 var
 	I : integer;
@@ -266,10 +256,9 @@ begin
         // Request all threads to terminate
         for I := 0 to FMaxThreads do
           FServiceThreads[I].Terminate;
-        // Waits for termination and frees them
+        // Wait to termination and free them
         for I := 0 to FMaxThreads do
-          with FServiceThreads[I] do
-          begin
+          with FServiceThreads[I] do begin
             WaitFor;
             Free;
           end;
@@ -281,9 +270,11 @@ begin
     end;
 end;
 
-// Starta o serviço, informando ao Server Manager cada passo do processo,
-// depois lança as threads do serviço, espera o evento de finalização e
-// volta para StartServiceCtrlDispatcher no RunService
+{
+Starta o serviço, informando ao Server Manager cada passo do processo,
+depois lança as threads do serviço, espera o evento de finalização e
+volta para StartServiceCtrlDispatcher no RunService
+}
 procedure ServiceMain(ArgC : integer; ArgV : pchar); stdcall;
 var
 	I : integer;
@@ -306,10 +297,10 @@ begin
           if InitOk then begin
             ReportStart;
             FReportStartStop := false;
-            ReportEventLog(EventInformation, 0, 'End Initialization');
             // Starta as threads do service
             for I := 0 to FMaxThreads do
               FServiceThreads[I].Resume;
+            ReportEventLog(EventInformation, 0, 'Started');
             if ReportNoError(SERVICE_RUNNING) then
               // Espera indefinidamente até o StopEvent ocorrer
               WaitForSingleObject(FStopEvent, INFINITE);
@@ -318,7 +309,7 @@ begin
             // Desaloca as Threads
             for I := 0 to FMaxThreads do
               FServiceThreads[I].Terminate;
-            ReportEventLog(EventInformation, 0, 'Begin Finalization');
+            ReportEventLog(EventInformation, 1, 'Stopped');
             ReportStop;
             SetLastError(0);
             if @FServiceEnd <> nil then FServiceEnd; // Roda a rotina de finalização
@@ -331,8 +322,10 @@ begin
   end;
 end;
 
-// Chama StartServiceCtrlDispatcher para register a main service thread.
-// Quando a API retorna, o service foi stopado, então halt.
+{
+Chama StartServiceCtrlDispatcher para register a main service thread.
+Quando a API retorna, o service foi stopado, então halt.
+}
 function TService.Run(ServThreads : array of TThread; ServBegin  : TFuncBool = nil; ServEnd : TFuncBool = nil) : boolean;
 var
 	ServTable : array[0..1] of WinSvc.TServiceTableEntry;
@@ -366,9 +359,8 @@ end;
 
 destructor TService.Destroy; begin
   CloseServiceHandle(FService);
-	CloseEventlog(FSource);
+	CloseEventLog(FSource);
   CloseServiceHandle(FManager);
 end;
 
 end.
-
