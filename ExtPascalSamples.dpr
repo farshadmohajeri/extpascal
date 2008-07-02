@@ -8,13 +8,13 @@ uses
 
 type
   TSamples = class(TExtThread)
-  private
   public
     Tabs : TExtTabPanel;
     TabIndex : integer;
     Grid : TExtGridEditorGridPanel;
     DataStore : TExtDataStore;
     Plant : TExtDataRecord;
+    FormLogin : TExtWindow;
   published
     procedure Home; override;
     procedure BasicTabPanel;
@@ -28,20 +28,25 @@ type
     procedure AddPlant; // Ajax
     procedure ReadButtonAjax; // Ajax
     procedure ReadButtonJS;
+    procedure SelectNodeEventBrowserSide;
+    procedure SelectNodeEventServerSide;
+    procedure Login;
+    procedure CheckLogin;
   end;
 
 procedure TSamples.Home;
 const
-  Examples : array[0..6] of record
+  Examples : array[0..7] of record
     Name, Proc, Gif, Desc : string
   end = (
     (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';        Desc: 'Simple Hello World window that contains a basic TabPanel.'),
     (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
     (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
     (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
-    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components and sub-layouts.'),
+    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
     (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
-    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.')
+    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
+    (Name: 'Simple Login';   Proc: 'Login';         Gif: '';              Desc: 'A simple login form showing AJAX use with parameters.')
   );
 var
   I : integer;
@@ -59,8 +64,11 @@ begin
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
-        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=_blank>'+
-          '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a><td/><td>' + Desc + '</td></table>';
+        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=_blank>';
+        if Gif <> '' then
+          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
+        else
+          Html := Html + Desc + '</a></td></table>';
         Collapsible := true;
       end;
     //Free;
@@ -113,6 +121,67 @@ begin
     Tabs.AddTo(Items);
     Show;
     //Free;
+  end;
+end;
+
+procedure TSamples.CheckLogin; begin
+  if true {user account verification should be done here} then
+    with TExtWindow.Create do begin
+      Title    := 'Login';
+      Width    := 380;
+      Height   := 140;
+      Plain    := true;
+      Layout   := 'fit';
+      Closable := false;
+      with TExtPanel.AddTo(Items) do begin
+        Border    := false;
+        BodyStyle := 'padding: 5px 8px';
+        HTML      := 'Welcome, ' + Query['UserName'] + '.<br/>Password: ' + Query['Password'];
+      end;
+      Show;
+    end
+  else
+    ExtMessageBox.Alert('Unknown', 'User is not known.');
+end;
+
+procedure TSamples.Login;
+var
+  UserName, Password : TExtFormTextField;
+begin
+  FormLogin := TExtWindow.Create;
+  with FormLogin do begin
+    Title    := 'Login';
+    Width    := 380;
+    Height   := 140;
+    Plain    := true;
+    Layout   := 'fit';
+    Closable := false;
+    with TExtFormFormPanel.AddTo(Items) do begin
+      LabelWidth  := 70;
+      Border      := false;
+      XType       := 'form';
+      ButtonAlign := 'right';
+      BodyStyle   := 'padding: 10px 15px';
+      DefaultType := 'textfield';
+      Defaults    := JSObject('width: 250');
+      UserName    := TExtFormTextField.Create;
+      with UserName.AddTo(Items) do begin
+        Name       := 'user';
+        FieldLabel := 'Username';
+        InputType  := 'textfield';
+      end;
+      Password := TExtFormTextField.Create;
+      with Password.AddTo(Items) do begin
+        Name       := 'pass';
+        FieldLabel := 'Password';
+        InputType  := 'password';
+      end;
+      with TExtButton.AddTo(Buttons) do begin
+        Text    := 'LOGIN';
+        Handler := Ajax(CheckLogin, ['UserName', UserName.GetValue, 'Password', Password.GetValue]);
+      end;
+    end;
+    Show;
   end;
 end;
 
@@ -243,7 +312,7 @@ begin
       Width     := 85;
       Sortable  := true;
       DataIndex := 'lastchange';
-      Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 handle internal parameters to events
+      Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Show modal dialog using Ajax';
@@ -297,11 +366,44 @@ begin
   end;
 end;
 
-procedure TSamples.BorderLayout; begin
+procedure TSamples.SelectNodeEventServerSide; begin
+  ExtMessageBox.Alert('Server Side', Query['Name']);
+end;
+
+procedure TSamples.SelectNodeEventBrowserSide; begin
+  ExtMessageBox.Alert('Browser Side', '%0.text')
+end;
+
+procedure TSamples.BorderLayout;
+var
+ Tree : TExtTreeTreePanel;
+ Root, Node : TExtTreeTreeNode;
+begin
   SetStyle('html,body{font:normal 12px verdana;margin:0;padding:0;border:0 none;overflow:hidden;height:100%}' +
 	  'p{margin:5px}' +
     '.settings{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_wrench.png)}' +
     '.nav{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_go.png)}');
+  Tree := TExtTreeTreePanel.Create;
+  Tree.Border := false;
+  //set root node
+  Root := TExtTreeTreeNode.Create;
+  with Root do begin
+    Text := 'Root';
+    AllowChildren := True;
+    Expandable := True;
+    Expanded := True;
+    Leaf := False;
+    on('click', JSFunction(SelectNodeEventBrowserSide));
+  end;
+  Tree.SetRootNode(Root);
+  //set child node
+  Node := TExtTreeTreeNode.Create;
+  with Node do begin
+    Text := 'child0';
+    on('click', Ajax(SelectNodeEventServerSide, ['Name', '%0.text']));
+  end;
+  Root.AppendChild(Node);
+
   with TExtViewport.Create do begin
     Layout := 'border';
     with TExtPanel.AddTo(Items) do begin
@@ -366,6 +468,7 @@ procedure TSamples.BorderLayout; begin
         Html    := '<p>Hi. I''m the west panel.</p>';
         Border  := false;
         IconCls := 'nav';
+        Tree.AddTo(Items)
       end;
       with TExtPanel.AddTo(Items) do begin
         Title   := 'Settings';

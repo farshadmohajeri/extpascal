@@ -21,6 +21,7 @@ type
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
 // Mimics explode php function
 function Explode(Delim : char; S : string) : TStringList;
+// Opposite of LastDelimiter VCL function
 function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
 
 implementation
@@ -32,75 +33,74 @@ uses
 function TStringList.GetDelimitedText: string;
 var
   I : integer;
-  p : pchar;
+  P : pchar;
 begin
   {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
-  result:='';
-  for i:=0 to count-1 do begin
-    p := pchar(strings[i]);
+  Result := '';
+  for I := 0 to Count-1 do begin
+    P := pchar(Strings[I]);
     if not StrictDelimiter then
-      while not(p^ in [#0..' ',QuoteChar,Delimiter]) do inc(p)
+      while not(P^ in [#0..' ', QuoteChar, Delimiter]) do inc(P)
     else
-      while not(p^ in [QuoteChar,Delimiter]) do inc(p);
-    // strings in list may contain #0
-    if p <> pchar(strings[i]) + length(strings[i]) then
+      while not(P^ in [QuoteChar, Delimiter]) do inc(P);
+    // strings in list may to contain #0
+    if P <> (pchar(Strings[I]) + length(Strings[I])) then
       Result := Result + QuoteChar + Strings[I] + QuoteChar
     else
-      Result := Result + strings[i];
-    if I < Count-1 then Result:=Result+Delimiter;
+      Result := Result + Strings[I];
+    if I < Count-1 then Result := Result + Delimiter;
   end;
-  if (Length(Result)=0)and(count=1) then
-    Result := QuoteChar + QuoteChar;
+  if (length(Result) = 0) and (Count = 1) then Result := QuoteChar + QuoteChar;
 end;
 
 procedure TStringList.SetDelimitedText(const AValue : string);
 var
   I, J : integer;
-  aNotFirst:boolean;
+  aNotFirst : boolean;
 begin
   {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
   BeginUpdate;
-  i := 1;
+  I := 1;
   aNotFirst := false;
   try
     Clear;
-    while i<=length(AValue) do begin
+    while I <= length(AValue) do begin
       // skip delimiter
-      if aNotFirst and (i<=length(AValue)) and (AValue[i]=Delimiter) then inc(i);
+      if aNotFirst and (I <= length(AValue)) and (AValue[I] = Delimiter) then inc(I);
       // skip spaces
       if not StrictDelimiter then
-        while (i<=length(AValue)) and (Ord(AValue[i])<=Ord(' ')) do inc(i);
+        while (I <= length(AValue)) and (ord(AValue[I]) <= ord(' ')) do inc(I);
       // read next string
-      if i<=length(AValue) then begin
-        if AValue[i]=QuoteChar then begin
+      if I <= length(AValue) then begin
+        if AValue[I] = QuoteChar then begin
           // next string is quoted
-          j:=i+1;
-          while (j<=length(AValue)) and ((AValue[j]<>QuoteChar) or
-               ((j+1<=length(AValue)) and (AValue[j+1]=QuoteChar))) do
-            if (j<=length(AValue)) and (AValue[j]=QuoteChar) then
-              inc(j,2)
+          J := I + 1;
+          while (J <= length(AValue)) and ((AValue[J] <> QuoteChar) or
+             ((J+1 <= length(AValue)) and (AValue[J+1] = QuoteChar))) do
+            if (J <= length(AValue)) and (AValue[J] = QuoteChar) then
+              inc(J, 2)
             else
-              inc(j);
-          // j is position of closing quote
-          Add(StringReplace(Copy(AValue,i+1,j-i-1), QuoteChar+QuoteChar,QuoteChar, [rfReplaceAll]));
-          i:=j+1;
+              inc(J);
+          // J is position of closing quote
+          Add(StringReplace(Copy(AValue, I+1, J-I-1), QuoteChar + QuoteChar, QuoteChar, [rfReplaceAll]));
+          I := J + 1;
         end
         else begin
           // next string is not quoted
-          j:=i;
+          J := I;
           if not StrictDelimiter then
-            while (j<=length(AValue)) and (Ord(AValue[j])>Ord(' ')) and (AValue[j]<>Delimiter) do inc(j)
+            while (J <= length(AValue)) and (ord(AValue[J]) > ord(' ')) and (AValue[J] <> Delimiter) do inc(J)
           else
-            while (j<=length(AValue)) and (AValue[j]<>Delimiter) do inc(j);
-          Add(Copy(AValue,i,j-i));
-          i:=j;
+            while (J <= length(AValue)) and (AValue[J] <> Delimiter) do inc(J);
+          Add(copy(AValue, I, J-i));
+          I := J;
         end;
       end
       else
         if aNotFirst then Add('');
       // skip spaces
       if not StrictDelimiter then
-        while (i<=length(AValue)) and (Ord(AValue[i])<=Ord(' ')) do inc(i);
+        while (I <= length(AValue)) and (ord(AValue[I]) <= ord(' ')) do inc(I);
       aNotFirst:=true;
     end;
   finally
