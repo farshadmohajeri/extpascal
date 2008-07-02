@@ -1,14 +1,15 @@
 unit FCGIApp;
-// Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) at 04/2008
-// License: LGPLv3
-// This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
-// Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
-
+{
+This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
+Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
+@Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) at 04/2008
+@License: BSD
+}
 interface
 
 uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
-  BlockSocket, SysUtils, SyncObjs, Classes, ExtPascalUtils;
+  BlockSocket, SysUtils, SyncObjs, Classes;
 
 type
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);

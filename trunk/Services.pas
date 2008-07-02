@@ -3,7 +3,7 @@ unit Services;
 Slim Services and EventLog support for Windows
 @author Wanderlan Santos dos Anjos
 @data 27-jun-2008
-@License: BSD
+@license BSD
 }
 interface
 
