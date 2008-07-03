@@ -11,10 +11,8 @@ ExtPascal is composed of four main components:
 1. The @(em Parser) (@(link ExtToPascal)) able to scan Ext JS documentation in HTML format and to create the @(em Wrapper).
 2. The @(em Wrapper) programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1), which has the definition of all Ext JS classes, properties, methods and events.
 3. The @(em Self-translating) engine, ExtPascal unit. It's triggered when using the @(em Wrapper), ie by creating objects, assigning properties and events, and invoking methods.
-4. The @(link FCGIApp FastCGI) multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behaviour.
-
+4. The @em(@(link FCGIApp FastCGI)) multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behaviour.
 @(image c:\trabalho\extpascal\images\extpascal.gif)
-
 1. The @(em Parser) read the HTML documentation of Ext JS,
 2. Read ExtFixes.txt file to fix documentation faults and omissions, and
 3. Generate the @(em Wrapper).
@@ -30,14 +28,11 @@ So the translating is not focused on JavaScript language, but to access widget f
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
 Indeed the @(em Parser) can be adapted to read the documentation of another JavaScript framework, Dojo for example.
 
-ExtPascal has one optional fifth component:
-The @(link CGIGateway) used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
-
-@(image C:\trabalho\extpascal\images\cgigateway.gif)
+ExtPascal has one optional fifth component the @(link CGIGateway).
 
 @author Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
-@date 30-jun-2008
-@license BSD
+@date jun-2008
+@license @(linkExtern http://www.opensource.org/licenses/bsd-license.php BSD)
 }
 interface
 
@@ -96,7 +91,7 @@ type
     FJSName : string;
     function WriteFunction(Command : string): string;
   protected
-    JSCommand : string; // Last command writed in Response
+    JSCommand : string; // Last command written in Response
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
@@ -289,7 +284,7 @@ Self-translating main procedure. Translates Object Pascal code to JavaScript cod
 Self-translating (ST) is not a compiler. It's a minimalist (very small, ultra quick an dirty) approach that imitates an online interpreter.
 You code in Object Pascal and when the program runs it automatically generates the corresponding JavaScript code.
 
-But thre is an essential limitation, it does not create business rules or sophisticated behaviour in JavaScript.
+But there is an essential limitation, it does not create business rules or sophisticated behaviour in JavaScript.
 So it does not interpret "IF", "WHILE", "CASE", "TRY", etc commands, but "IF", "WHILE", etc but realizes a conditional code generation
 on Server side as ASP and JSP does it. ST is used to create objects and widgets, to set properties and events, to call methods.
 It's analogous to Delphi .dfm file role: to describe a GUI.

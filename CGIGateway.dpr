@@ -1,5 +1,18 @@
 program CGIGateway;
+{
+It is used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
+@(image C:\trabalho\extpascal\images\cgigateway.gif)
+1. Browser requests a @(linkUnit FCGIApp) through CGI gateway (for example ExtPascalSamples.cgi).
+2. The CGI gateway tries to connect to associated @(linkUnit FCGIApp) counterpart.
+3. If the @(linkUnit FCGIApp) isn't running, the CGI gateway fires up the @(linkUnit FCGIApp).
+4. The @(linkUnit FCGIApp) processes request from CGI gateway and returns the result.
+5. The CGI gateway forward @(linkUnit FCGIApp) result to the browser. The communication is done through CGI standard protocol.
+6. If there's no request over than @(link TFCGIApplication.Create MaxIdleMinutes), the @(linkUnit FCGIApp) terminates itself.
 
+@author Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
+@date jul-2008
+@license @(linkExtern http://www.opensource.org/licenses/bsd-license.php BSD)
+}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
