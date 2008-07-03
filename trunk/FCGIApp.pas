@@ -2,8 +2,9 @@ unit FCGIApp;
 {
 This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
 Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
-@Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) at 04/2008
-@License: BSD
+@author Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
+@date apr-2008
+@license @(linkExtern http://www.opensource.org/licenses/bsd-license.php BSD)
 }
 interface
 
