@@ -10,7 +10,7 @@ interface
 
 uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
-  BlockSocket, SysUtils, SyncObjs, Classes;
+  BlockSocket, SysUtils, SyncObjs, Classes{$IFDEF FPC}, ExtPascalUtils{$ENDIF};
 
 type
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
