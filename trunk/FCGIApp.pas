@@ -1,11 +1,27 @@
-unit FCGIApp;
 {
-This FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
-Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
-@author Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
-@date apr-2008
-@license @(linkExtern http://www.opensource.org/licenses/bsd-license.php BSD)
+FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
+This is a native and full Object Pascal implementation that doesn't depend on DLLs or external libraries.
+This unit is based on <extlink http://www.fastcgi.com/devkit/doc/fcgi-spec.html>FastCGI specs</extlink>, read it for more details.
+The initial state in a <link TFCGIAplication, FastCGI application> is a listening socket, through which it accepts connections from a Web server.
+After a FastCGI application <link TFCGIAplication.Run, accepts a connection on its listening socket>,
+a <link TFCGIThread> is <link TFCGIThread.Create, created> that executes the FCGI protocol to <link TFCGIThread.ReadRequestHeader, receive> and <link TFCGIThread.SendResponse, send> data.
+As the actual Web paradigm is based on non-related requests, FCGIApp uses a Cookie to relate requests of a same browser session.
+This cookie is a <link TFCGIThread.SetCurrentFCGIThread, GUID that is associated> to actual <link TFCGIThread, Thread> address.
+In this way a statefull and multi-thread behaviour is provided.
+
+-Limitations and architectural decisions:-
+1. Multiplexing is not supported. Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
+2. Only Sockets is supported, because is more flexible providing the ability to run applications remotely, named pipes is not.
+   So IIS is not natively supported, use <link CGIGateway.dpr> instead.
+3. Only Responder role is implemented.
+4. Event-driven paradigm is not supported, instead FCGIApp uses extensively multi-thread approach.
+
+Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
+Date: apr-2008
+License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
+unit FCGIApp;
+
 interface
 
 uses
@@ -13,25 +29,41 @@ uses
   BlockSocket, SysUtils, SyncObjs, Classes{$IFDEF FPC}, ExtPascalUtils{$ENDIF};
 
 type
+  // FastCGI record types, i.e. the general function that the record performs
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
+  // FastCGI roles, only Responder role is supported in this FCGIApp version
   TRole = (rResponder = 1, rAuthorizer, rFilter);
+  // FastCGI level status code
   TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole);
+  // HTTP request methods
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
   {$M+}
+  {
+  Each browser session generates a TFCGIhread. On first request it is <link Create, created> and a Cookie is associated using <link TFCGIApplication.Threads> list.
+  On subsequent requests this <link SetCurrentFCGIThread, Cookie is read to recover the original thread address> from <link TFCGIApplication.Threads> list.
+  Each request on its <link Execute, execution cycle> do:
+  * <link MoveToFCGIHeader, Reads its FCGI header>
+  * Depending on <link TRecType, record type> do:
+    * <link ReadBeginRequest, Starts a request> or
+    * <link Logout, Aborts the request> or
+    * <link SendEndRequest, Ends the request> or
+    * <link ReadRequestHeader, Reads HTTP headers> or
+    * <link HandleRequest, Handles the request>
+  }
   TFCGIThread = class(TThread)
   private
-    FRequestID : word;
-    FRole : TRole;
+    FRequestID : word; // FastCGI request ID for this thread
+    FRole : TRole; // FastCGI Thread role
     FRequest, FPathInfo : string;
-    FRequestMethod : TRequestMethod;
-    FGarbageCollector : TList;
+    FRequestMethod : TRequestMethod; // Current HTTP request method
+    FGarbageCollector : TList; // Object list to free when the thread to end
     function GetRequestHeader(Name: string): string;
     function GetQuery(Name: string): string;
     procedure CompleteRequestHeaderInfo;
     function GetCookie(Name: string): string;
     function SetCurrentFCGIThread : boolean;
   protected
-    FSocket : TBlockSocket;
+    FSocket : TBlockSocket; // current socket for current FastCGI request
     FKeepConn, NewThread : boolean;
     FResponseHeader : string;
     FRequestHeader, FQuery, FCookie : TStringList;
@@ -60,7 +92,7 @@ type
     property Cookie[Name : string] : string read GetCookie;
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
-    procedure AddToGarbage(Obj : TObject);
+    procedure AddToGarbage(Obj : TObject); // Adds a TObject to Thread Garbage Collector
     procedure DeleteFromGarbage(Obj : TObject);
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
@@ -192,7 +224,7 @@ procedure TFCGIThread.Shutdown; begin
 end;
 
 procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
-  SetResponseHeader('Set-Cookie:' + Name + '=' + Value + ';' +
+  SetResponseHeader('set-cookie:' + Name + '=' + Value + ';' +
     IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd-mmm-yyyy hh:nn:ss', Expires) + ' GMT;', '') +
     IfThen(Domain <> '', ' domain=' + Domain + ';', '') + IfThen(Path <> '', ' path=' + Path + ';', '') + IfThen(Secure, ' secure', ''))
 end;
@@ -204,8 +236,8 @@ var
 begin
   if pRecType = rtStdOut then begin
     if FRequestMethod = rmHead then S := '';
-    FResponseHeader := FResponseHeader + 'content-type: ' + ContentType + ^M^J;
-    if not BrowserCache then FResponseHeader := FResponseHeader + 'Cache-Control: no-cache'^M^J;
+    FResponseHeader := FResponseHeader + 'content-type:' + ContentType + ^M^J;
+    if not BrowserCache then FResponseHeader := FResponseHeader + 'cache-control:no-cache'^M^J;
     S := FResponseHeader + ^M^J + S;
     FResponseHeader := '';
   end;
@@ -603,7 +635,7 @@ procedure TFCGIApplication.GarbageThreads;
 var
   I : integer;
   Thread : TFCGIThread;
-begin        
+begin
   for I := Threads.Count-1 downto 0 do begin
     Thread := TFCGIThread(Threads.Objects[I]);
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
@@ -620,7 +652,7 @@ function TFCGIApplication.GetThread(I: integer): TFCGIThread; begin
 end;
 
 procedure TFCGIApplication.OnPortInUseError; begin
-  writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER');
+  writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER.');
   readln;
 end;
 
