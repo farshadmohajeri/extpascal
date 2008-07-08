@@ -41,14 +41,7 @@ type
   {
   Each browser session generates a TFCGIhread. On first request it is <link Create, created> and a Cookie is associated using <link TFCGIApplication.Threads> list.
   On subsequent requests this <link SetCurrentFCGIThread, Cookie is read to recover the original thread address> from <link TFCGIApplication.Threads> list.
-  Each request on its <link Execute, execution cycle> do:
-  * <link MoveToFCGIHeader, Reads its FCGI header>
-  * Depending on <link TRecType, record type> do:
-    * <link ReadBeginRequest, Starts a request> or
-    * <link Logout, Aborts the request> or
-    * <link SendEndRequest, Ends the request> or
-    * <link ReadRequestHeader, Reads HTTP headers> or
-    * <link HandleRequest, Handles the request>
+  Each request <link Execute, is interpreted as a FastCGI record and executed according> to its <link TRecType, record type>.
   }
   TFCGIThread = class(TThread)
   private
@@ -57,17 +50,20 @@ type
     FRequest, FPathInfo : string;
     FRequestMethod : TRequestMethod; // Current HTTP request method
     FGarbageCollector : TList; // Object list to free when the thread to end
+    FSocket : TBlockSocket; // Current socket for current FastCGI request
+    FKeepConn : boolean; // Not used
+    FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
+    FRequestHeader, // Protected field @see RequestHeader
+    FQuery, // Protected field @see Query
+    FCookie : TStringList; // Protected field @see Cookie
+    FLastAccess : TDateTime; // Protected field @see LastAccess
     function GetRequestHeader(Name: string): string;
     function GetQuery(Name: string): string;
     procedure CompleteRequestHeaderInfo;
     function GetCookie(Name: string): string;
     function SetCurrentFCGIThread : boolean;
   protected
-    FSocket : TBlockSocket; // current socket for current FastCGI request
-    FKeepConn, NewThread : boolean;
-    FResponseHeader : string;
-    FRequestHeader, FQuery, FCookie : TStringList;
-    FLastAccess : TDateTime;
+    NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
     procedure AddParam(var S: string; Param: array of string);
@@ -80,16 +76,17 @@ type
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
   public
-    BrowserCache : boolean;
-    Response, ContentType : string;
-    property Role : TRole read FRole;
-    property Request : string read FRequest;
-    property PathInfo : string read FPathInfo;
-    property LastAccess : TDateTime read FLastAccess;
-    property RequestMethod : TRequestMethod read FRequestMethod;
-    property RequestHeader[Name : string] : string read GetRequestHeader;
-    property Query[Name : string] : string read GetQuery;
-    property Cookie[Name : string] : string read GetCookie;
+    BrowserCache : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
+    Response, // Response string
+    ContentType : string; // HTTP content-type header, default is 'text/html'
+    property Role : TRole read FRole; // FastCGI role for the current request
+    property Request : string read FRequest; // Request body string
+    property PathInfo : string read FPathInfo; // Path info string for the current request
+    property LastAccess : TDateTime read FLastAccess; // Last TDateTime access of this thread
+    property RequestMethod : TRequestMethod read FRequestMethod; // HTTP request method for the current request
+    property RequestHeader[Name : string] : string read GetRequestHeader; // HTTP headers read in the current request
+    property Query[Name : string] : string read GetQuery; // HTTP query info parameters read in the current request
+    property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(Obj : TObject); // Adds a TObject to Thread Garbage Collector
@@ -105,7 +102,7 @@ type
     procedure Shutdown; virtual;
   end;
   {$M-}
-  TFCGIThreadClass = class of TFCGIThread;
+  TFCGIThreadClass = class of TFCGIThread; // Thread class type to create when a new request arrives
 
   TFCGIApplication = class
   private
@@ -118,8 +115,10 @@ type
     AccessThreads : TCriticalSection;
     procedure GarbageThreads;
   public
-    Terminated, GarbageNow, Shutdown : boolean;
-    Title : string;
+    Terminated, // Set to true to terminate the application
+    GarbageNow, // Set to true to trigger the garbage colletor
+    Shutdown : boolean; // Set to true to shutdown the application after the last thread to end, default is false
+    Title : string; // Application title used by <link TExtThread..AfterHandleRequest>
     constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
       pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
     destructor Destroy; override;
@@ -132,10 +131,10 @@ type
   end;
 
 var
-  Application : TFCGIApplication;
+  Application : TFCGIApplication; // FastCGI application object
 
 threadvar
-  CurrentFCGIThread : TFCGIThread;
+  CurrentFCGIThread : TFCGIThread; // Current FastCGI thread address assigned by <link SetCurrentFCGIThread> method
 
 implementation
 
@@ -143,34 +142,53 @@ uses
   StrUtils;
 
 type
+  // FastCGI header
   TFCGIHeader = packed record
-    Version : byte; // 1
-    RecType : TRecType;
-    ID, Len : word;
-    PadLen  : byte;
-    Filler  : byte;
+    Version : byte;     // FastCGI protocol version, ever constant 1
+    RecType : TRecType; // FastCGI record type
+    ID,                 // Is zero if management request else is data request. Used also to determine if the session is being multiplexed
+    Len     : word;     // FastCGI record length
+    PadLen  : byte;     // Pad length to complete the alignment boundery that is 8 bytes on FastCGI protocol
+    Filler  : byte;     // Pad field
   end;
 
+  // <link TRecType, Begin request> record
   TBeginRequest = packed record
-    Header  : TFCGIHeader;
-    Filler  : byte;
-    Role    : TRole;
-    KeepConn: boolean; // Keep connection
-    Filler2 : array[1..5] of byte;
+    Header  : TFCGIHeader; // FastCGI header
+    Filler  : byte;        // Pad field
+    Role    : TRole;       // FastCGI role
+    KeepConn: boolean;     // Keep connection
+    Filler2 : array[1..5] of byte; // Pad field
   end;
 
+{
+Converts a Request string into a FastCGI Header
+@param Buffer Input buffer to convert
+@param FCGIHeader FastCGI header converted from Buffer
+@see MoveFromFCGIHeader
+}
 procedure MoveToFCGIHeader(var Buffer : char; var FCGIHeader : TFCGIHeader); begin
   move(Buffer, FCGIHeader, sizeof(TFCGIHeader));
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
 end;
 
+{
+Converts a Request string into a FastCGI Header
+@param Buffer Input buffer to convert
+@param FCGIHeader FastCGI header converted from Buffer
+@see MoveFromFCGIHeader
+}
 procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
   move(FCGIHeader, Buffer, sizeof(TFCGIHeader));
 end;
 
+{
+Creates a TFCGIThread to handle a new request to be read from the NewSocket parameter
+@param NewSocket Socket to read a new request
+}
 constructor TFCGIThread.Create(NewSocket : integer); begin
   if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
   inc(Application.FThreadsCount);
@@ -184,15 +202,20 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FCookie := TStringList.Create;
   FCookie.StrictDelimiter := true;
   FCookie.Delimiter := ';';
-  ContentType  := 'text/html';
+  ContentType := 'text/html';
   FreeOnTerminate := true;
   inherited Create(false);
 end;
 
+{
+Deletes a TObject from the Thread Garbage Collector
+@param Obj TObject to delete
+}
 procedure TFCGIThread.DeleteFromGarbage(Obj : TObject); begin
   FGarbageCollector.Remove(Obj)
 end;
 
+// Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
 destructor TFCGIThread.Destroy;
 var
   I : integer;
@@ -209,6 +232,10 @@ begin
   inherited;
 end;
 
+{
+Appends or cleans HTTP response header. The HTTP response header is sent using <link SendResponse> method.
+@param Header Use '' to clean response header else Header parameter is appended to response header
+}
 procedure TFCGIThread.SetResponseHeader(Header : string); begin
   if Header = '' then
     FResponseHeader := ''
@@ -216,6 +243,7 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := FResponseHeader + Header + ^M^J;
 end;
 
+// Terminates the TFCGIThread calls <link Logout> method
 procedure TFCGIThread.Shutdown; begin
   if Query['password'] = 'pitinnu' then begin
     Logout;
@@ -223,12 +251,30 @@ procedure TFCGIThread.Shutdown; begin
   end;
 end;
 
+{
+Sets a cookie in HTTP response header
+@param Name Cookie name
+@param Value Cookie value
+@param Expires Cookie expiration date. If zero or not specified, the cookie will expire when the user's session ends.
+@param Domain Sets this cookie only if Domain parameter matches against the tail of the fully qualified domain name of the host.
+If not specified assumes the current Domain request.
+@param Path Sets this cookie only if Path parameter matches against the initial part of pathname component of the URL.
+If not specified assumes the current pathname request.
+@param Secure If true the cookie will only be transmitted if the communications channel with the host is a secure one (HTTPS only).
+The default is false.
+}
 procedure TFCGIThread.SetCookie(Name, Value: string; Expires: TDateTime; Domain, Path: string; Secure: boolean); begin
   SetResponseHeader('set-cookie:' + Name + '=' + Value + ';' +
     IfThen(Expires <> 0, ' expires=' + FormatDateTime('ddd, dd-mmm-yyyy hh:nn:ss', Expires) + ' GMT;', '') +
     IfThen(Domain <> '', ' domain=' + Domain + ';', '') + IfThen(Path <> '', ' path=' + Path + ';', '') + IfThen(Secure, ' secure', ''))
 end;
 
+{
+Sends a FastCGI response record to the Web Server. Puts the HTTP header in front of response, generates the FastCGI header and sends using sockets.
+@param S String to format using FastCGI protocol
+@param pRecType FastCGI record type
+@see MoveFromFCGIHeader TBlocketSocket.SendString
+}
 procedure TFCGIThread.SendResponse(S : string; pRecType : TRecType = rtStdOut);
 var
   FCGIHeader : TFCGIHeader;
@@ -258,6 +304,10 @@ begin
   FSocket.SendString(Buffer);
 end;
 
+{
+Sends an end request record to the Web Server and ends this thread.
+@param Status Status of request. Default is psRequestComplete
+}
 procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplete); begin
   if Status <> psRequestComplete then begin
     case Status of
@@ -271,6 +321,11 @@ procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplet
   Terminate;
 end;
 
+{
+Reads the begin request record from FastCGI request to the thread.
+@param FCGIHeader FastCGI Header
+@param Content Additional bytes from FastCGI request
+}
 procedure TFCGIThread.ReadBeginRequest(var FCGIHeader; Content : string);
 var
   BeginRequest : TBeginRequest;
@@ -287,6 +342,12 @@ begin
     SendEndRequest(psUnknownRole);
 end;
 
+{
+Reads HTTP headers and cookies from FastCGI rtParams record type
+@param RequestHeader List of HTTP headers to initialize
+@param Stream rtParams record type body
+@param Cookies List of HTTP cookies to initialize
+}
 procedure TFCGIThread.ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
 var
   I, Pos : integer;
@@ -319,6 +380,11 @@ begin
   end;
 end;
 
+{
+Decodes a URL encoded string to a normal string
+@param Encoded URL encoded string to convert
+@return A decoded string
+}
 class function TFCGIThread.URLDecode(Encoded : string) : string;
 var
   I : integer;
@@ -332,6 +398,11 @@ begin
   end;
 end;
 
+{
+Encodes a string to fit in URL encoding form
+@param Decoded Normal string to convert
+@return An URL encoded string
+}
 class function TFCGIThread.URLEncode(Decoded: string): string;
 const
   Allowed = ['A'..'Z','a'..'z', '*', '@', '.', '_', '-', '0'..'9', '$', '!', '''', '(', ')'];
@@ -346,12 +417,25 @@ begin
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
-procedure TFCGIThread.AddToGarbage(Obj: TObject); begin
+{
+Adds a TObject to the Thread Garbage Collector
+@param Obj TObject to add
+}
+procedure TFCGIThread.AddToGarbage(Obj : TObject); begin
   FGarbageCollector.Add(Obj)
 end;
 
+{
+Processing to execute after <link HandleRequest> method immediately before to <link SendResponse>
+@see TExtThread.AfterHandleRequest
+}
 procedure TFCGIThread.AfterHandleRequest; begin end;
 
+{
+Processing to execute before <link HandleRequest> method.
+@see TExtThread.BeforeHandleRequest
+@return True if the processing is ok else retuns False and the <link HandleRequest> method will not call the published method indicated by PathInfo.
+}
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
 procedure TFCGIThread.CompleteRequestHeaderInfo;
@@ -375,6 +459,11 @@ begin
   FQuery.DelimitedText := URLDecode(FRequestHeader.Values['QUERY_STRING']);
 end;
 
+{
+Adds a pair Name/Value to a FastCGI rtGetValuesResult record type
+@param S Body of rtGetValuesResult record type
+@param Param Pair Name/Value
+}
 procedure TFCGIThread.AddParam(var S : string; Param : array of string);
 var
   I, J   : integer;
@@ -418,6 +507,10 @@ function TFCGIThread.GetCookie(Name: string): string; begin
   Result := FCookie.Values[Name]
 end;
 
+{
+Handles the FastCGI rtGetValues record type and sends a rtgetValuesResult record type
+@param Body of rtGetValues record type
+}
 procedure TFCGIThread.GetValues(Content : string);
 var
   Values : TStringList;
@@ -434,14 +527,27 @@ begin
   SendResponse(GetValuesResult, rtGetValuesResult);
 end;
 
+{
+Handles "method not found" error. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
+@see HandleRequest
+}
 procedure TFCGIThread.OnNotFoundError; begin
   Response := 'alert("Method: ''' + PathInfo + ''' not found");';
 end;
 
+// Handles errors raised in the method called by PathInfo in <link HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
 procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
   Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
 end;
 
+{
+Calls the published method indicated by PathInfo. Before calls <link BeforeHandleRequest> method and after calls <link AfterHandleRequest> method.
+The published method will use the FRequest as input and the Response as output.
+@param pRequest Request body assigned to FRequest field or to Query array if FRequestMethod is rmPost, it is the input to the published method
+@return Response body to <link SendResponse, send>
+@exception <link OnError> method is called if an exception is raised in published method
+@exception <link OnNotFoundError> method is called if the published method is not declared in this thread
+}
 function TFCGIThread.HandleRequest(pRequest : string) : string;
 type
   MethodCall = procedure of object;
@@ -475,6 +581,7 @@ begin
   Result := Response;
 end;
 
+// Ends current Browser session and triggers the Garbage Collector
 procedure TFCGIThread.Logout; begin
   Response := 'window.close();';
   SendEndRequest;
@@ -482,6 +589,14 @@ procedure TFCGIThread.Logout; begin
   Application.GarbageNow := true;
 end;
 
+{
+Sets the context of current thread to the context of associated session using a cookie (<b>FCGIThread</b>).
+When a browser session sends its first request this method associates the current browser session, this first thread, to a new cookie (<b>FCGIThread</b>),
+whose value is a <extlink http://en.wikipedia.org/wiki/GUID>GUID</extlink>.
+In subsequent requests this cookie is the key to find the browser session, i.e. the original <link TFCGIThread, Thread>.
+In this way a statefull and multi-thread behaviour is provided.
+@return False if it fails to find the session associated with the cookie, for example if the session already expired.
+}
 function TFCGIThread.SetCurrentFCGIThread : boolean;
 var
   Thread : string;
@@ -518,6 +633,20 @@ begin
   Application.AccessThreads.Leave;
 end;
 
+{
+The thread main loop.<p>
+On receive a request, each request, on its execution cycle, do:
+  * <link MoveToFCGIHeader, Reads its FCGI header>
+  * Depending on <link TRecType, record type> do:
+    * <link ReadBeginRequest, Starts a request> or
+    * <link Logout, Aborts the request> or
+    * <link SendEndRequest, Ends the request> or
+    * <link ReadRequestHeader, Reads HTTP headers> or
+    * <link HandleRequest, Handles the request> with these internal steps:
+      * <link BeforeHandleRequest>
+      * The <link HandleRequest> own method
+      * <link AfterHandleRequest>
+}
 procedure TFCGIThread.Execute;
 var
   FCGIHeader : TFCGIHeader;
@@ -593,14 +722,32 @@ end;
 
 { TFCGIApplication }
 
+{
+Tests if Address parameter is an IP address in WebServers list
+@param Address IP address to find
+@return True if Address is in WebServers list
+}
 function TFCGIApplication.CanConnect(Address: string): boolean; begin
   Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
 end;
 
+{
+Tests if <link MaxConns, max connections>, default is 1000, was reached
+@return True if was reached
+}
 function TFCGIApplication.ReachedMaxConns : boolean; begin
   Result := Threads.Count >= MaxConns
 end;
 
+{
+Creates a FastCGI application instance.
+@param pTitle Application title used by <link TExtThread.AfterHandleRequest>
+@param pFCGIThreadClass Thread class type to create when a new request arrives
+@param pPort TCP/IP port used to comunicate with the Web Server, default is 2014
+@param pMaxIdleMinutes Minutes of inactivity before the end of the thread, releasing it from memory, default is 30 minutes
+@param pShutdownAfterLastThreadDown If true Shutdown the application after the last thread to end, default is false
+@param pMaxConns
+}
 constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014;
   pMaxIdleMinutes : word = 30; pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
 var
@@ -624,6 +771,7 @@ begin
   end;
 end;
 
+// Frees a TFCGIApplication
 destructor TFCGIApplication.Destroy; begin
   Threads.Free;
   AccessThreads.Free;
@@ -631,6 +779,7 @@ destructor TFCGIApplication.Destroy; begin
   inherited;
 end;
 
+// Thread Garbage Collector. Frees all expired threads
 procedure TFCGIApplication.GarbageThreads;
 var
   I : integer;
@@ -647,10 +796,19 @@ begin
   end;
 end;
 
-function TFCGIApplication.GetThread(I: integer): TFCGIThread; begin
+{
+Returns the Ith thread
+@param I Order of the thread to return
+}
+function TFCGIApplication.GetThread(I : integer) : TFCGIThread; begin
   Result := TFCGIThread(Threads.Objects[I])
 end;
 
+{
+Handles "Port #### already in use" error. Occurs when the port is already in use for another service or application.
+Can be overrided in descendent thread class. It shall be overrided if the application is a service.
+@see Create Run
+}
 procedure TFCGIApplication.OnPortInUseError; begin
   writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER.');
   readln;
@@ -659,6 +817,13 @@ end;
 type
   THackThread = class(TThread);
 
+{
+The application main loop. Listens a socket port, through which it accepts connections from a Web server.
+For each connection a <link TFCGIThread> is <link TFCGIThread.Create, created> that executes the FCGI protocol
+to <link TFCGIThread.ReadRequestHeader, receive> and <link TFCGIThread.SendResponse, send> data.
+@param OwnerThread Optional parameter to use with a service thread, see ExtPascalSamples.pas.
+When this thread is terminated the application is terminated too.
+}
 procedure TFCGIApplication.Run(OwnerThread : TThread = nil);
 var
   NewSocket, I : integer;
@@ -684,7 +849,8 @@ begin
   end;
 end;
 
-function TFCGIApplication.ThreadsCount: integer; begin
+// Returns the number of active threads
+function TFCGIApplication.ThreadsCount : integer; begin
   Result := FThreadsCount
 end;
 
