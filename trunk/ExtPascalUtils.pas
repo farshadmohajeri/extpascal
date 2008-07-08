@@ -1,3 +1,9 @@
+{
+Unit for complementary functions
+Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
+Date: jul-2008
+License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
+}
 unit ExtPascalUtils;
 
 interface
@@ -7,6 +13,7 @@ uses
 
 {$IF Defined(FPC) or (RTLVersion <= 17)}
 type
+  // Implements StrictDelimiter property for FPC, Delphi 7 and older versions
   TStringList = class(Classes.TStringList)
   private
     function GetDelimitedText : string;
@@ -17,9 +24,17 @@ type
   end;
 {$IFEND}
 
-// Mimics preg_match php function
+{
+Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter
+@param Delims Delimiter strings to match
+@param S Subject string
+@param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches should already be created</b>.
+@return True if some match hit, false otherwise
+}
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
-// Mimics explode php function
+{
+Mimics explode php function
+}
 function Explode(Delim : char; S : string) : TStringList;
 // Opposite of LastDelimiter VCL function
 function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;

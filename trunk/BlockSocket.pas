@@ -1,3 +1,9 @@
+{
+Implements <link TBlockSocket> class for TCP/IP protocol
+Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
+Date: jul-2008
+License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
+}
 unit BlockSocket;
 
 interface
@@ -6,6 +12,7 @@ uses
   {$IFDEF FPC}Sockets{$ELSE}SocketsDelphi{$ENDIF};
 
 type
+  // Implements block <extlink http://en.wikipedia.org/wiki/Internet_socket, sockets> as a class
   TBlockSocket = class
   private
     Socket : TSocket;
@@ -13,9 +20,9 @@ type
   public
     constructor Create(S : TSocket = 0);
 		destructor Destroy; override;
-    procedure Bind(Porta, BackLog : word);
+    procedure Bind(Port, BackLog : word);
 		function Accept(Timeout : integer) : integer;
-    procedure Connect(Host : string; Porta : Word);
+    procedure Connect(Host : string; Port : Word);
 		procedure Purge;
 		procedure Close;
 		function RecvString : string;
@@ -37,25 +44,41 @@ uses
     BaseUnix, TermIO
   {$ENDIF};
 
-procedure TBlockSocket.Bind(Porta, BackLog : word); begin
+{
+Puts the socket in listening state, used on the server side
+@param Port Port to listen
+@param Backlog The maximum length of the queue of pending connections
+@see Error
+}
+procedure TBlockSocket.Bind(Port, BackLog : word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr.s_Addr := 0;
-    Sin_Port   := htons(Porta);
+    Sin_Port   := htons(Port);
   end;
   fpBind(Socket, @RemoteSin, sizeof(RemoteSin));
   fpListen(Socket, BackLog);
 end;
 
-procedure TBlockSocket.Connect(Host : string; Porta : Word); begin
+{
+Attempts to establish a new TCP connection, used on the client side
+@param Host IP address to the server machine
+@param Port Port number to connect
+@see Error
+}
+procedure TBlockSocket.Connect(Host : string; Port : word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr   := StrToNetAddr(Host);
-    Sin_Port   := htons(Porta);
+    Sin_Port   := htons(Port);
   end;
   fpConnect(Socket, @RemoteSin, sizeof(RemoteSin));
 end;
 
+{
+Creates a new socket stream
+@param S Assigns an existing socket to the TBlockSocket
+}
 constructor TBlockSocket.Create(S : integer = 0); begin
 	if S = 0 then
   	Socket := fpSocket(AF_INET, SOCK_STREAM, 0)
@@ -63,11 +86,13 @@ constructor TBlockSocket.Create(S : integer = 0); begin
 		Socket := S;
 end;
 
+// Closes the socket and frees the object
 destructor TBlockSocket.Destroy; begin
   Close;
 	inherited;
 end;
 
+// Returns the host IP address
 function TBlockSocket.GetHostAddress: string;
 var
   Tam : integer;
@@ -78,10 +103,16 @@ begin
   Result := NetAddrToStr(Addr.Sin_Addr);
 end;
 
+// Closes the socket
 procedure TBlockSocket.Close; begin
   CloseSocket(Socket);
 end;
 
+{
+Attempts to accept a new TCP connection from the client and creates a new socket to handle this new connection, used on server side
+@param Timeout Time in milliseconds to wait to accept a new connection
+@return A new socket handler or 0 if none connection was accepted
+}
 function TBlockSocket.Accept(Timeout : integer) : integer;
 var
 	Tam : integer;
@@ -95,6 +126,7 @@ begin
     Result := 0;
 end;
 
+// Returns number of bytes waiting to read
 function TBlockSocket.WaitingData : cardinal;
 var
   Tam : dword;
@@ -105,7 +137,12 @@ begin
     Result := Tam;
 end;
 
-function TBlockSocket.CanRead(Timeout: Integer): Boolean;
+{
+Tests if data are available for reading within the timeout
+@param Timeout Max time to wait until returns
+@return True if data are available, false otherwise
+}
+function TBlockSocket.CanRead(Timeout : Integer) : Boolean;
 var
   FDS: TFDSet;
   TimeV: TTimeVal;
@@ -117,6 +154,7 @@ begin
   Result := Select(Socket + 1, @FDS, nil, nil, @TimeV) > 0;
 end;
 
+// Cleans the socket input stream
 procedure TBlockSocket.Purge;
 var
 	Tam : cardinal;
@@ -129,6 +167,8 @@ begin
 	freemem(Buffer, Tam);
 end;
 
+// Returns the socket input stream as a string
+// @see Error
 function TBlockSocket.RecvString : string;
 var
 	Tam : integer;
@@ -138,10 +178,19 @@ begin
   fpRecv(Socket, @Result[1], Tam, 0);
 end;
 
+{
+Sends a string by the socket
+@param Data String to send
+@see Error
+}
 procedure TBlockSocket.SendString(const Data: string); begin
 	fpSend(Socket, @Data[1], length(Data), 0);
 end;
 
+{
+Use Error method to test if others TBlockSocket methods succeded
+@return 0 if success or socket error code otherwise
+}
 function TBlockSocket.Error : integer; begin
   Result := SocketError
 end;

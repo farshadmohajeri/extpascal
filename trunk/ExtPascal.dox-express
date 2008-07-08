@@ -97,7 +97,7 @@ File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
 [Configurations\HTML Help\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
 ClearDirectoryBeforeExport=1
 HelpKind=1
-OutputDir=chm
+OutputDir=help
 TargetBOM=0
 TargetCodepage=windows-1252
 
@@ -127,7 +127,7 @@ Help2UnregisterNamespace=1
 HelpCompiler=C:\Arquivos de programas\HTML Help Workshop\hhc.exe
 HTMLHelp2Filename=
 HTMLHelpDisplayFontScaleButton=0
-HTMLHelpFilename=chm\ExtPascal.chm
+HTMLHelpFilename=ExtPascal.chm
 SaveUserPosition=1
 SupportEnhancedDecompilation=0
 WindowPosition_Bottom=0
@@ -157,7 +157,7 @@ File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
 [Configurations\HTML\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
 ClearDirectoryBeforeExport=1
 HelpKind=0
-OutputDir=docomatic
+OutputDir=help
 TargetBOM=0
 TargetCodepage=windows-1252
 

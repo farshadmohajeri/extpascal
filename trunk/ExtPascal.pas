@@ -1,5 +1,5 @@
 {
-Basic classes for JavaScript and Ext JS translating from Object Pascal.
+Classes to JavaScript and Ext JS translating from Object Pascal.
 Associates semantic concepts of JavaScript and Ext JS for Object Pascal, such as: Function, Object, List of Objects and Ajax Method.
 It's the heart of the automatic translation method from Object Pascal to JavaScript, that I call "Self-translating".
 It takes advantage of the fact that JavaScript and Object Pascal are structurally similar languages,
@@ -20,7 +20,6 @@ where there is almost one to one parity between its syntax and semantic structur
 8. Generating JavaScript code that uses Ext JS classes.
 9. At end of request processing, the <color red>thread</color> read and format all JS generated
 10. And send the response to browser session. New requests can be done begining from step 4.
-
 So the translating is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
 Indeed the <color red>Parser</color> can be adapted to read the documentation of another JavaScript framework, Dojo for example.
@@ -32,6 +31,9 @@ Date: jun-2008
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 unit ExtPascal;
+
+//@@Overview
+//<copy ExtPascal.pas>
 
 interface
 
@@ -356,6 +358,7 @@ end;
 Concats two JS commands only to translate nested Object Pascal typecasts as:
 @param PrevCommand Command already present in Response that will be concatenated with NextCommand
 @param NextCommand Command that will be concatenated with PrevCommand.
+@return The JS commands concatenated
 @example <code>
 TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
 // It's usually could be translated to:
@@ -388,8 +391,7 @@ Does tasks related to the Request que ocorrem antes da chamada do método invocad
 4. Tests if is an AJAX request.
 5. If not is AJAX request resets Sequence, Style and Libraries.
 6. Tests if cookies are enabled.
-
-@return false if Cookies are disable or if is Ajax executing the first thread request else returns true.
+@return False if Cookies are disable or if is Ajax executing the first thread request else returns true.
 }
 function TExtThread.BeforeHandleRequest : boolean;
 var
@@ -640,7 +642,7 @@ end;
 {
 Tests if a class name is parent of this object
 @param CName Class name with "T" prefix
-@return true if CName is parent of this object and false if not
+@return True if CName is parent of this object and false if not
 }
 function TExtObject.IsParent(CName : string) : boolean;
 var
@@ -986,7 +988,7 @@ end;
 {
 Encapsulates JS commands in an anonymous JS function, find %0..%9 place holders and declares respective event parameters
 @param Command JS command to convert to JS function
-@return An anonymous JS function with optional event parameters declared
+@return The code for an anonymous JS function with optional event parameters declared
 }
 function TExtObject.WriteFunction(Command : string) : string;
 var
