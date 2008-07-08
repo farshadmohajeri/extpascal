@@ -8,7 +8,7 @@ where there is almost one to one parity between its syntax and semantic structur
 1. The <color red>Parser</color> (<link ExtToPascal.dpr>) able to scan Ext JS documentation in HTML format and to create the <color red>Wrapper</color>.
 2. The <color red>Wrapper</color> programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1), which has the definition of all Ext JS classes, properties, methods and events.
 3. The <color red>Self-translating</color> engine, ExtPascal unit. It's triggered when using the <color red>Wrapper</color>, ie by creating objects, assigning properties and events, and invoking methods.
-4. The <color red><link FCGIApp.pas FastCGI></color>) multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behaviour.
+4. The <color red><link FCGIApp.pas FastCGI></color>) multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behavior.
 <image extpascal>
 1. The <color red>Parser</color> read the HTML documentation of Ext JS,
 2. Read ExtFixes.txt file to fix documentation faults and omissions, and
@@ -41,7 +41,7 @@ uses
   FCGIApp;
 
 const
-  ExtPath = '/ext'; // Instalation path of Ext JS framework, below the your Web server document root
+  ExtPath = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
 
 type
   TArrayOfString  = array of string;
@@ -73,7 +73,7 @@ type
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
     property Language : string read FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
-    property IsAjax : boolean read FIsAjax; // Tests if execution is occuring in an AJAX request
+    property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = ''); // Self-translating main procedure
     procedure SetStyle(pStyle : string = ''); // Sets or resets stylesheet rules for this session
     procedure SetLibrary(pLibrary : string = ''); // Sets or resets additional JavaScript libraries, beyond of Ext JS standard libraries
@@ -137,7 +137,9 @@ type
     Owner : TExtObject;
     function GetFObjects(I : integer) : TExtObject;
   public
-    property Objects[I : integer] : TExtObject read GetFObjects; default; // Returns the Ith object in the list, start with 0. @see GetFObjects
+    // Returns the Ith object in the list, start with 0.
+    // @see GetFObjects
+    property Objects[I : integer] : TExtObject read GetFObjects; default;
     constructor CreateSingleton(pAttribute : string);
     constructor Create(pOwner : TExtObject = nil; pAttribute : string = '');
     destructor Destroy; override;
@@ -220,7 +222,7 @@ procedure TExtThread.SetLibrary(pLibrary : string); begin
 end;
 
 (*
-Adds/Removes an user stylesheet to be used in current response.
+Adds/Removes a user stylesheet to be used in current response.
 Common requests does reset for user libraries and user style.
 In opposite the AJAX requests does not reset and becomes part or rest of the same request.
 @param pStyle Styles to apply upon HTML or Ext elements in this response using CSS notation.
@@ -267,7 +269,7 @@ procedure TExtThread.ErrorMessage(Msg : string; Action : TExtFunction); begin
 end;
 
 {
-Occurs when an exception is raised during the execution of method that handle the request (PATH_INFO).
+Occurs when an exception is raised during the execution of method that handles the request (PATH_INFO).
 Display error message with exception message, method name and method params.
 @param Msg Exception message
 @param Method Method name invoked by Browser (PATH_INFO) or thru AJAX request
@@ -282,10 +284,10 @@ end;
 
 {
 Self-translating main procedure. Translates Object Pascal code to JavaScript code.
-Self-translating (ST) is not a compiler. It's a minimalist (very small, ultra quick an dirty) approach that imitates an online interpreter.
+Self-translating (ST) is not a compiler. It's a minimalist (very small, ultra quick and dirty) approach that imitates an online interpreter.
 You code in Object Pascal and when the program runs it automatically generates the corresponding JavaScript code.
 
-But there is an essential limitation, it does not create business rules or sophisticated behaviour in JavaScript.
+But there is an essential limitation; it does not create business rules or sophisticated behavior in JavaScript.
 So it does not interpret "IF", "WHILE", "CASE", "TRY", etc commands, but "IF", "WHILE", etc but realizes a conditional code generation
 on Server side as ASP and JSP does it. ST is used to create objects and widgets, to set properties and events, to call methods.
 It's analogous to Delphi .dfm file role: to describe a GUI.
@@ -294,10 +296,9 @@ to use <link TExtThread.SetLibrary, large JS libraries>. It's enough to create p
 The rest (business rules, database access, etc) should be done in Object Pascal on Server side.
 
 Basic work:
-JS commands are appended to Response.
-JS attributes are found in Response using yours JSName attribute and setted in place.
-If not found, JS attributes are appended to Response.
-
+* JS commands are appended to Response.
+* JS attributes are found in Response using yours JSName attribute and setted in place.
+* If not found, JS attributes are appended to Response.
 @param JS JS commands or assigning of attributes or events
 @param JSName Optional current JS Object name
 }
@@ -384,10 +385,10 @@ begin
 end;
 
 {
-Does tasks related to the Request que ocorrem antes da chamada do método invocada pelo Browser (PATH-INFO)
+Does tasks related to the Request that occur before the method call invoked by Browser (PATH-INFO)
 1. Detects the browser language.
 2. If that language has corresponding JS resource file in framework uses it, for example: '/ext/source/locale/ext-lang-?????.js',
-3. Else uses the default language (english).
+3. Else uses the default language (English).
 4. Tests if is an AJAX request.
 5. If not is AJAX request resets Sequence, Style and Libraries.
 6. Tests if cookies are enabled.
@@ -430,17 +431,17 @@ end;
 Does tasks after Request processing.
 1. Extracts Comments.
 2. Sets:
-  2.1. HTML body,
-  2.2. Title,
-  2.3. Charset,
-  2.4. ExtJS CSS,
-  2.5. ExtJS libraries,
-  2.6. ExtJS theme,
-  2.7. ExtJS language,
-  2.8. Additional user styles,
-  2.9. Additional user libraries,
-  2.9. ExtJS invoke and
-  2.10. Handlers for AJAX response
+   2.1. HTML body,
+   2.2. Title,
+   2.3. Charset,
+   2.4. ExtJS CSS,
+   2.5. ExtJS libraries,
+   2.6. ExtJS theme,
+   2.7. ExtJS language,
+   2.8. Additional user styles,
+   2.9. Additional user libraries,
+   2.9. ExtJS invoke and
+   2.10. Handlers for AJAX response
 }
 procedure TExtThread.AfterHandleRequest;
 var
@@ -702,7 +703,7 @@ Virtual method overrided by Parser generated code to initialize public JS proper
 procedure TExtObject.InitDefaults; begin end;
 
 {
-Generates JS code to declare a inline JS Array.
+Generates JS code to declare an inline JS Array.
 @param JSON JavaScript Object Notation, the body of Array declaration
 @return <link TExtObjectList> to be used in assigns
 }
@@ -712,20 +713,16 @@ function TExtObject.JSArray(JSON : string) : TExtObjectList; begin
 end;
 
 {
-Generates JS code to declare a inline generic JS object.
+Generates JS code to declare an inline generic JS object.
 It is necessary in 3 cases:
-
 1. When the Ext JS documentation informs that the attribute is an object without any particular type (Object),
-as JavaScript language is almost typeless it happens eventually. That would be equivalent to the type Variant of VB or Delphi.
-Examples includes data records.
-
+   as JavaScript language is almost typeless it happens eventually. That would be equivalent to the type Variant of VB or Delphi.
+   Examples include data records.
 2. There are omissions in the documentation and attribute actually belongs to a specific class, in this case use the JSObject method,
-do a typecast or declare in <link ExtFixes.txt, ExtFixes.txt> file, this allows to register in the Wrapper the omissions of the
-documentation or the framework.
-
+   do a typecast or declare in <link ExtFixes.txt, ExtFixes.txt> file, this allows to register in the Wrapper the omissions of the
+   documentation or the framework.
 3. There are omissions in the framework, ie should be a specific class. Read its attributes in description contained
-in the documentation and declare them in <link ExtFixes.txt, ExtFixes.txt> for the Wrapper to recognize them or use JSObject method.
-
+   in the documentation and declare them in <link ExtFixes.txt, ExtFixes.txt> for the Wrapper to recognize them or use JSObject method.
 @param JSON JavaScript Object Notation, the body of JS object declaration
 @return <link TExtObject> to be used in assigns
 }

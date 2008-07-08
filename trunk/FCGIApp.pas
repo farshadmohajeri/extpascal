@@ -1,5 +1,5 @@
 {
-FCGIApp unit implements, in my opinion, the best behaviour for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
+FCGIApp unit implements, in my opinion, the best behavior for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
 This is a native and full Object Pascal implementation that doesn't depend on DLLs or external libraries.
 This unit is based on <extlink http://www.fastcgi.com/devkit/doc/fcgi-spec.html>FastCGI specs</extlink>, read it for more details.
 The initial state in a <link TFCGIAplication, FastCGI application> is a listening socket, through which it accepts connections from a Web server.
@@ -7,15 +7,13 @@ After a FastCGI application <link TFCGIAplication.Run, accepts a connection on i
 a <link TFCGIThread> is <link TFCGIThread.Create, created> that executes the FCGI protocol to <link TFCGIThread.ReadRequestHeader, receive> and <link TFCGIThread.SendResponse, send> data.
 As the actual Web paradigm is based on non-related requests, FCGIApp uses a Cookie to relate requests of a same browser session.
 This cookie is a <link TFCGIThread.SetCurrentFCGIThread, GUID that is associated> to actual <link TFCGIThread, Thread> address.
-In this way a statefull and multi-thread behaviour is provided.
-
+In this way a statefull and multi-thread behavior is provided.
 -Limitations and architectural decisions:-
 1. Multiplexing is not supported. Multiplexing don't works with Apache anyway. Indeed Apache don't supports Filter role.
 2. Only Sockets is supported, because is more flexible providing the ability to run applications remotely, named pipes is not.
    So IIS is not natively supported, use <link CGIGateway.dpr> instead.
 3. Only Responder role is implemented.
 4. Event-driven paradigm is not supported, instead FCGIApp uses extensively multi-thread approach.
-
 Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
 Date: apr-2008
 License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
@@ -39,7 +37,7 @@ type
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
   {$M+}
   {
-  Each browser session generates a TFCGIhread. On first request it is <link Create, created> and a Cookie is associated using <link TFCGIApplication.Threads> list.
+  Each browser session generates a TFCGIThread. On first request it is <link Create, created> and a Cookie is associated using <link TFCGIApplication.Threads> list.
   On subsequent requests this <link SetCurrentFCGIThread, Cookie is read to recover the original thread address> from <link TFCGIApplication.Threads> list.
   Each request <link Execute, is interpreted as a FastCGI record and executed according> to its <link TRecType, record type>.
   }
@@ -594,7 +592,7 @@ Sets the context of current thread to the context of associated session using a 
 When a browser session sends its first request this method associates the current browser session, this first thread, to a new cookie (<b>FCGIThread</b>),
 whose value is a <extlink http://en.wikipedia.org/wiki/GUID>GUID</extlink>.
 In subsequent requests this cookie is the key to find the browser session, i.e. the original <link TFCGIThread, Thread>.
-In this way a statefull and multi-thread behaviour is provided.
+In this way a statefull and multi-thread behavior is provided.
 @return False if it fails to find the session associated with the cookie, for example if the session already expired.
 }
 function TFCGIThread.SetCurrentFCGIThread : boolean;
@@ -798,7 +796,7 @@ end;
 
 {
 Returns the Ith thread
-@param I Order of the thread to return
+@param I Index of the thread to return
 }
 function TFCGIApplication.GetThread(I : integer) : TFCGIThread; begin
   Result := TFCGIThread(Threads.Objects[I])

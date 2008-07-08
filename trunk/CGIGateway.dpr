@@ -29,7 +29,12 @@ uses
         Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
     {$ENDIF}
   {$ENDIF}
-  
+
+{
+Adds a pair Name/Value to a <link FCGIApp.pas, FastCGI> <link TRecType, rtGetValuesResult> record type
+@param S Body of <link TRecType, rtGetValuesResult> record type
+@param Param Pair Name/Value
+}
 procedure AddParam(var S : string; Param : array of string);
 var
   I, J   : integer;
@@ -64,7 +69,8 @@ begin
   move(Param[1][1], S[J + Len[0]], Len[1]);
 end;
 
-procedure Log(Msg : string); 
+// Writes a log message to the browser screen
+procedure Log(Msg : string);
 const
 	First : boolean = true;
 begin
@@ -75,6 +81,7 @@ begin
   writeln(Msg);
 end;
 
+// Returns the environment variables encapsulated using FastCGI protocol
 function EnvVariables : string;
 const
   EnvVar : array[0..38] of string = (
@@ -98,12 +105,16 @@ begin
 end;
 
 const
-  Host = '127.0.0.1';
-  Port = 2014;
+  Host = '127.0.0.1'; // Host IP address, default is (127.0.0.1' (localhost)
+  Port = 2014;        // Socket port to comunicate with FastCGI application
 
 var
-  Socket : TBlockSocket;
+  Socket : TBlockSocket; // Block socket object
 
+{
+Reads the data from Web Server using CGI protocol and
+writes the same data to FastCGI application using FastCGI protocol
+}
 procedure TalkFCGI;
 var
   Request : string;
@@ -120,11 +131,16 @@ begin
     repeat
       Request := Request + RecvString;
     until WaitingData = 0;
-    if length(Request) > 8 then 
+    if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
   end;
 end;
 
+{
+Executes a program file
+@param Prog Executable file with path
+@return True if succeded else False
+}
 function Exec(Prog : string) : boolean;
 {$IFNDEF MSWINDOWS}
 var
@@ -134,11 +150,11 @@ begin
 {$IFDEF MSWINDOWS}
   Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
 {$ELSE}
-	case fpFork of 
+	case fpFork of
 		-Maxint..-1 : Result := false;
      0 : begin
       SetLength(ArgV, 2);
-      ArgV[0] := pchar(Prog);    
+      ArgV[0] := pchar(Prog);
       ArgV[1] := nil;
       fpExecv(Prog, ArgV);
       Result := false;
@@ -150,7 +166,7 @@ begin
 end;
 
 var
-  FCGIApp : string;
+  FCGIApp : string; // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
 begin
   Socket := TBlockSocket.Create;
   Socket.Connect(Host, Port);
