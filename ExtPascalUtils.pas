@@ -28,15 +28,28 @@ type
 Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter
 @param Delims Delimiter strings to match
 @param S Subject string
-@param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches should already be created</b>.
+@param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches (TStringList) should already be created</b>.
 @return True if some match hit, false otherwise
 }
 function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
+
 {
-Mimics explode php function
+Mimics explode php function.
+Creates a TStringList where each string is a substring formed by the splitting of S string through delimiter Delim.
+@param Delim Delimiter used to split the string
+@param S Source string to split
+@return TStringList created with substrings from S
 }
 function Explode(Delim : char; S : string) : TStringList;
-// Opposite of LastDelimiter VCL function
+
+{
+Opposite of LastDelimiter RTL function.
+Returns the index of the first occurence in a string of the characters specified.
+If none of the characters in Delimiters appears in string S, function returns zero.
+@param Delimiters String where each character is a valid delimiter.
+@param S String to search for delimiters.
+@param Offset Index from where the search begins.
+}
 function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
 
 implementation

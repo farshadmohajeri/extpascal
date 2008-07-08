@@ -1,9 +1,9 @@
 unit Services;
 {
 Slim Services and EventLog support for Windows
-@author Wanderlan Santos dos Anjos
-@data 27-jun-2008
-@license BSD
+Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
+Date: jun-2008
+License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 interface
 
@@ -13,7 +13,7 @@ uses WinSvc, Classes;
 
 type
 	TFuncBool  = function : boolean;
-  TEventType = (EventError = 1, EventWarning = 2, EventInformation = 4);
+  TEventType = (EventError = 1, EventWarning = 2, EventInformation = 4); // Event severity
 
   TService = class
   private
@@ -56,15 +56,15 @@ type
     function  ReportStop  : boolean;
     procedure ReportEventLog(EventType : TEventType; EventCode : word; Message : string);
     procedure Reset;
-    property Timeout : integer read FTimeout write FTimeout;
-    property ExitCode : integer read FExitCode write FExitCode;
-    property Name : string read GetName;
-    property ParamStr : string read FParamStr;
-    property ParamCount : integer read FParamCount;
+    property Timeout : integer read FTimeout write FTimeout; // Time before to generate an error. Default 20000 milliseconds
+    property ExitCode : integer read FExitCode write FExitCode; // Exit code to return to Service Manager
+    property Name : string read GetName; // Service Name
+    property ParamStr : string read FParamStr; // Parameter list passed when the service was started
+    property ParamCount : integer read FParamCount; // Number of parameters passed when the service was started
   end;
 
 var
-  Service : TService;
+  Service : TService; // Global var, use it to initialize a service
 
 implementation
 
@@ -75,15 +75,23 @@ function TService.GetName : string; begin
   Result := string(FName);
 end;
 
+// Closes service handle
 procedure TService.Reset; begin
   CloseServiceHandle(FService);
   FService := 0;
 end;
 
+// Returns if service is initialized
 function TService.Exists : boolean; begin
 	Result := FService <> 0;
 end;
 
+{
+Installs a service.
+@param Exec Executable file with path
+@exception RaiseLastOSError if not succeded
+@see Install Delete
+}
 procedure TService.Insert(Exec : string); begin
   FService := CreateService(FManager, FName, FName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START,
                             SERVICE_ERROR_NORMAL, pchar(Exec), nil, nil, nil, nil, nil);
@@ -99,6 +107,11 @@ procedure TService.Insert(Exec : string); begin
   end;
 end;
 
+{
+Installs a service using command line. In command line use <application> -INSTALL to install a service
+@return True if succeded else False
+@see Insert Uninstall
+}
 function TService.Install : boolean; begin
   if FindCmdLineSwitch('INSTALL', ['-', '/'], true) and (FService = 0) then begin
     Insert(system.ParamStr(0));
@@ -108,6 +121,11 @@ function TService.Install : boolean; begin
     Result := false
 end;
 
+{
+Uninstalls a service.
+@exception RaiseLastOSError if not succeded
+@see Insert Uninstall
+}
 procedure TService.Delete; begin
   if not Exists then RaiseLastOSError;
   if not DeleteService(FService) then RaiseLastOSError;
@@ -119,6 +137,11 @@ procedure TService.Delete; begin
   end;
 end;
 
+{
+Uninstalls a service using command line. In command line use <application> -UNINSTALL to uninstall a service
+@return True if succeded else False
+@see Delete Install
+}
 function TService.Uninstall : boolean; begin
   if FindCmdLineSwitch('UNINSTALL', ['-', '/'], true) then begin
     Delete;
@@ -128,16 +151,21 @@ function TService.Uninstall : boolean; begin
     Result := false
 end;
 
+// Returns last error code
 function TService.GetServiceError : integer; begin
   Result := GetLastError;
   if Result = 0 then Result := -1
 end;
 
+// Returns last error message
 function TService.GetServiceErrorMessage : string; begin
   Result := SysErrorMessage(GetServiceError)
 end;
 
-// Pára o Service, devolve 0 se conseguiu pará-lo ou o GetLastError
+{
+Stops the service
+@return 0 if succeeded else last error code
+}
 function TService.Stop : integer; begin
 	Result := 0;
   if Exists then begin
@@ -147,7 +175,10 @@ function TService.Stop : integer; begin
 		Result := GetServiceError;
 end;
 
-// Inicia o Service, devolve 0 se conseguiu estartá-lo ou o GetLastError
+{
+Starts the service
+@return 0 if succeeded else last error code
+}
 function TService.Start : integer;
 const
 	Param : pchar = nil;
@@ -168,15 +199,21 @@ function TService.GetState : cardinal; begin
     Result := 77;
 end;
 
+{
+Writes an event log.
+@param EventType
+@param EventCode User code
+@param Message User message
+}
 procedure TService.ReportEventLog(EventType : TEventType; EventCode : word; Message : string);
 var
 	Mensagem : pchar;
 begin
 	Mensagem := pchar(Message);
-	ReportEvent(FSource, Word(EventType), 1000+EventCode, 0, nil, 1, 0, @Mensagem, nil);
+	ReportEvent(FSource, word(EventType), 1000 + EventCode, 0, nil, 1, 0, @Mensagem, nil);
 end;
 
-// StopNow pode ser usada dentro do service para parar o Service
+// StopNow can be used within the service to stop the service
 procedure TService.StopNow; begin
   SetLastError(0);
   SetEvent(FStopEvent)
@@ -211,6 +248,7 @@ function TService.ReportNoError(Estado : integer) : boolean; begin
 	Result := ReportServiceStatus(Estado, NO_ERROR, 0, 0)
 end;
 
+// Reports that the service is in start pending status. Use it when to initialize a service.
 function TService.ReportStart : boolean;
 const
 	ChkPoint : integer = 0;
@@ -222,6 +260,7 @@ begin
   end;
 end;
 
+// Reports that the service is in stop pending status. Use it when to stop a service
 function TService.ReportStop : boolean;
 const
 	ChkPoint : integer = 0;
@@ -234,12 +273,12 @@ begin
 end;
 
 // Is called by Windows Server Manager
-procedure ServController(Comando : integer); stdcall;
+procedure ServController(Command : integer); stdcall;
 var
 	I : integer;
 begin
   with Service do
-    case Comando of
+    case Command of
       SERVICE_CONTROL_PAUSE: if FStatus.dwCurrentState = SERVICE_RUNNING then begin
         for I := 0 to FMaxThreads do
           FServiceThreads[I].Suspend;
@@ -271,9 +310,9 @@ begin
 end;
 
 {
-Starta o serviço, informando ao Server Manager cada passo do processo,
-depois lança as threads do serviço, espera o evento de finalização e
-volta para StartServiceCtrlDispatcher no RunService
+Starts the service, telling Service Manager each step of the process,
+then resumes the service threads, waits the stop event and back to
+StartServiceCtrlDispatcher in RunService
 }
 procedure ServiceMain(ArgC : integer; ArgV : pchar); stdcall;
 var
@@ -323,8 +362,11 @@ begin
 end;
 
 {
-Chama StartServiceCtrlDispatcher para register a main service thread.
-Quando a API retorna, o service foi stopado, então halt.
+Runs a service. Calls StartServiceCtrlDispatcher to register a main service thread.
+When the API returns, the service was stopped, then halt.
+@param
+@param ServBegin Function called before to start the service. It should return true if initializing was Ok.
+@param ServEnd Function called after to stop the service.
 }
 function TService.Run(ServThreads : array of TThread; ServBegin  : TFuncBool = nil; ServEnd : TFuncBool = nil) : boolean;
 var
@@ -345,6 +387,11 @@ begin
 	Result := WinSvc.StartServiceCtrlDispatcher(ServTable[0]);
 end;
 
+{
+Creates a new service, but not installs it. Use <link Insert> to install.
+@param ServiceName to show in Service Manager
+@param Description to show in Service Manager
+}
 constructor TService.Create(ServiceName : string; Description : string = ''); begin
   inherited Create;
   FName        := pchar(ServiceName);
@@ -357,6 +404,7 @@ constructor TService.Create(ServiceName : string; Description : string = ''); be
   FReportStartStop := true;
 end;
 
+// Frees a service but not uninstalls it. Use <link Delete> method to uninstall.
 destructor TService.Destroy; begin
   CloseServiceHandle(FService);
 	CloseEventLog(FSource);
