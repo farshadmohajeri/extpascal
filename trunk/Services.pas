@@ -1,10 +1,11 @@
-unit Services;
 {
 Slim Services and EventLog support for Windows
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
 Date: jun-2008
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
+unit Services;
+
 interface
 
 uses WinSvc, Classes;
@@ -90,7 +91,8 @@ end;
 Installs a service.
 @param Exec Executable file with path
 @exception RaiseLastOSError if not succeded
-@see Install Delete
+@see Install
+@see Delete
 }
 procedure TService.Insert(Exec : string); begin
   FService := CreateService(FManager, FName, FName, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START,
@@ -108,9 +110,10 @@ procedure TService.Insert(Exec : string); begin
 end;
 
 {
-Installs a service using command line. In command line use <application> -INSTALL to install a service
+Installs a service using command line. In command line use \<application\> -INSTALL to install a service
 @return True if succeded else False
-@see Insert Uninstall
+@see Insert
+@see Uninstall
 }
 function TService.Install : boolean; begin
   if FindCmdLineSwitch('INSTALL', ['-', '/'], true) and (FService = 0) then begin
@@ -124,7 +127,8 @@ end;
 {
 Uninstalls a service.
 @exception RaiseLastOSError if not succeded
-@see Insert Uninstall
+@see Insert
+@see Uninstall
 }
 procedure TService.Delete; begin
   if not Exists then RaiseLastOSError;
@@ -138,9 +142,10 @@ procedure TService.Delete; begin
 end;
 
 {
-Uninstalls a service using command line. In command line use <application> -UNINSTALL to uninstall a service
+Uninstalls a service using command line. In command line use \<application\> -UNINSTALL to uninstall a service
 @return True if succeded else False
-@see Delete Install
+@see Delete
+@see Install
 }
 function TService.Uninstall : boolean; begin
   if FindCmdLineSwitch('UNINSTALL', ['-', '/'], true) then begin
@@ -388,7 +393,7 @@ begin
 end;
 
 {
-Creates a new service, but not installs it. Use <link Insert> to install.
+Creates a new service, but not installs it. Use <link TService.Insert> to install.
 @param ServiceName to show in Service Manager
 @param Description to show in Service Manager
 }
@@ -404,7 +409,7 @@ constructor TService.Create(ServiceName : string; Description : string = ''); be
   FReportStartStop := true;
 end;
 
-// Frees a service but not uninstalls it. Use <link Delete> method to uninstall.
+// Frees a service but not uninstalls it. Use <link TService.Delete> method to uninstall.
 destructor TService.Destroy; begin
   CloseServiceHandle(FService);
 	CloseEventLog(FSource);

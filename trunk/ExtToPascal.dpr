@@ -1,4 +1,10 @@
-program ExtToPascal;
+{
+ExtToPascal is a parser that scans Ext JS documentation, in HTML format, and that creates a Object Pascal wrapper upon Ext JS classes and widgets
+Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
+Date: apr-2008
+License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
+}
+}program ExtToPascal;
 {$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 

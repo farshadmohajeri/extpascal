@@ -7,19 +7,19 @@ where there is almost one to one parity between its syntax and semantic structur
 -ExtPascal is composed of four main components:-
 1. The <color red>Parser</color> (<link ExtToPascal.dpr>) able to scan Ext JS documentation in HTML format and to create the <color red>Wrapper</color>.
 2. The <color red>Wrapper</color> programmatically created by Parser. It's in fact a set of units (twelve in Ext JS 2.1), which has the definition of all Ext JS classes, properties, methods and events.
-3. The <color red>Self-translating</color> engine, ExtPascal unit. It's triggered when using the <color red>Wrapper</color>, ie by creating objects, assigning properties and events, and invoking methods.
-4. The <color red><link FCGIApp.pas FastCGI></color>) multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behavior.
+3. The <color red>Self-translating</color> engine, <link ExtPascal.pas, ExtPascal unit>. It's triggered when using the <color red>Wrapper</color>, ie by creating objects, assigning properties and events, and invoking methods.
+4. The <link FCGIApp.pas, FastCGI> multithread environment. It implements FastCGI protocol using TCP/IP Sockets and statefull, keep-alive, multithread web application behavior.
 <image extpascal>
-1. The <color red>Parser</color> read the HTML documentation of Ext JS,
-2. Read ExtFixes.txt file to fix documentation faults and omissions, and
-3. Generate the <color red>Wrapper</color>.
-4. With the application running, a browser session do a HTTP request to the Web Server.
-5. The Web Server do a FastCGI request to the application that create a <color red>thread</color> to handle the request.
-6. The <color red>thread</color> create ExtObjects, set properties and call methods from <color red>Wrapper</color> Units.
+1. The <color red>Parser</color> reads the HTML documentation of Ext JS,
+2. Reads ExtFixes.txt file to fix documentation faults and omissions, and
+3. Generates the <color red>Wrapper</color>.
+4. With the application running, a browser session does a HTTP request to the Web Server.
+5. The Web Server does a FastCGI request to the application that creates a <color red>thread</color> to handle the request.
+6. The <color red>thread</color> creates ExtObjects, set properties and call methods from <color red>Wrapper</color> Units.
 7. For each these tasks the <color red>Self-translating</color> is invoked
 8. Generating JavaScript code that uses Ext JS classes.
-9. At end of request processing, the <color red>thread</color> read and format all JS generated
-10. And send the response to browser session. New requests can be done begining from step 4.
+9. At end of request processing, the <color red>thread</color> reads and formats all JS generated
+10. And sends the response to browser session. New requests can be done begining from step 4.
 So the translating is not focused on JavaScript language, but to access widget frameworks made in JavaScript.
 In this way the use of (X)HTML, JavaScript and CSS is minimum.
 Indeed the <color red>Parser</color> can be adapted to read the documentation of another JavaScript framework, Dojo for example.
@@ -53,7 +53,7 @@ type
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
   as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
-  The <color red>"Self-translating"</color> is implemented in this class in <link JSCode> method.
+  The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode> method.
   }
   TExtThread = class(TFCGIThread)
   private
@@ -61,9 +61,9 @@ type
     Sequence : cardinal;
     FIsAjax  : boolean;
     procedure RelocateVar(JS, JSName : string; I : integer);
-    procedure RemoveJS(JS : string);
     function GetStyle: string;
   protected
+    procedure RemoveJS(JS : string);
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
     procedure OnError(Msg, Method, Params : string); override;
@@ -74,9 +74,9 @@ type
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
     property Language : string read FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
-    procedure JSCode(JS : string; JSName : string = ''; Owner : string = ''); // Self-translating main procedure
-    procedure SetStyle(pStyle : string = ''); // Sets or resets stylesheet rules for this session
-    procedure SetLibrary(pLibrary : string = ''); // Sets or resets additional JavaScript libraries, beyond of Ext JS standard libraries
+    procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
+    procedure SetStyle(pStyle : string = '');
+    procedure SetLibrary(pLibrary : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   end;
@@ -137,9 +137,7 @@ type
     Owner : TExtObject;
     function GetFObjects(I : integer) : TExtObject;
   public
-    // Returns the Ith object in the list, start with 0.
-    // @see GetFObjects
-    property Objects[I : integer] : TExtObject read GetFObjects; default;
+    property Objects[I : integer] : TExtObject read GetFObjects; default; // Returns the Ith object in the list, start with 0.
     constructor CreateSingleton(pAttribute : string);
     constructor Create(pOwner : TExtObject = nil; pAttribute : string = '');
     destructor Destroy; override;
@@ -147,7 +145,7 @@ type
     function Count : integer;
   end;
 
-{$IFNDEF DOC}
+//(*{$IFNDEF DOC}
   {
   Classes that can not be documented.
   They are usually JS basic classes without reference in Ext JS documentation by omission or fault.
@@ -182,8 +180,7 @@ type
   TTreeSelectionModel = TExtObject; // doc fault
   TSelectionModel = TExtObject; // doc fault
   TDataSource = TExtObject; // doc fault
-{$ENDIF}
-
+//{$ENDIF}*)
 implementation
 
 uses
@@ -195,7 +192,7 @@ uses
 Removes identificated JS commands from response.
 Used internally by Self-Translating mechanism to repositioning JS commands.
 @param JS JS command with sequence identifier.
-@see ExtractJSCommand
+@see TExtObject.ExtractJSCommand
 }
 procedure TExtThread.RemoveJS(JS : string);
 var
@@ -429,19 +426,18 @@ end;
 
 {
 Does tasks after Request processing.
-1. Extracts Comments.
-2. Sets:
-   2.1. HTML body,
-   2.2. Title,
-   2.3. Charset,
-   2.4. ExtJS CSS,
-   2.5. ExtJS libraries,
-   2.6. ExtJS theme,
-   2.7. ExtJS language,
-   2.8. Additional user styles,
-   2.9. Additional user libraries,
-   2.9. ExtJS invoke and
-   2.10. Handlers for AJAX response
+1. Extracts Comments, and sets:
+2. HTML body,
+3. Title,
+4. Charset,
+5. ExtJS CSS,
+6. ExtJS libraries,
+7. ExtJS theme,
+8. ExtJS language,
+9. Additional user styles,
+10. Additional user libraries,
+11. ExtJS invoke and
+12. Handlers for AJAX response
 }
 procedure TExtThread.AfterHandleRequest;
 var
@@ -563,7 +559,7 @@ end;
 
 { ExtObject }
 
-// Set an unique <link JSName> using <link TExtThread.GetSequence>
+// Set an unique <link TExtObject.JSName> using <link TExtThread.GetSequence>
 procedure TExtObject.CreateJSName; begin
   FJSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
@@ -581,8 +577,8 @@ constructor TExtObject.CreateSingleton(Attribute : string = ''); begin
 end;
 
 {
-Used by <link Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
-and to generate <link JSCode, JS code>
+Used by <link TExtObject.Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
+and to generate <link TExtObject.JSCode, JS code>
 @param JS JS constructor for the JS <color red>new</color> command
 @see CreateVarAlt
 }
@@ -610,7 +606,7 @@ procedure TExtObject.DeleteFromGarbage; begin
   if CurrentFCGIThread <> nil then CurrentFCGIThread.DeleteFromGarbage(Self);
 end;
 
-// <link DeleteFromGarbage, Removes object from Garbage Collector> and frees it
+// <link TExtObject.DeleteFromGarbage, Removes object from Garbage Collector> and frees it
 destructor TExtObject.Destroy; begin
   try
     DeleteFromGarbage;
@@ -619,15 +615,15 @@ destructor TExtObject.Destroy; begin
 end;
 
 {
-Creates a TExtObject and generate corresponding JS code using <link JSCode, Self-translating>
-@param Owner Optional parameter used internally by <link JSObject> and <link JSArray> only
+Creates a TExtObject and generate corresponding JS code using <link TExtObject.JSCode, Self-translating>
+@param Owner Optional parameter used internally by <link TExtObject.JSObject> and <link TExtObject.JSArray> only
 }
 constructor TExtObject.Create(Owner : TExtObject = nil); begin
   if Owner = nil then CreateVar(JSClassName + '({});');
 end;
 
 {
-Used by Parser to build <link InitDefaults> methods used to initialize public JS properties in a TExtObject
+Used by Parser to build <link TExtObject.InitDefaults> methods used to initialize public JS properties in a TExtObject
 @param Owner TExtObject where this property is declared
 @param Attribute Public JS property name
 }
@@ -664,7 +660,7 @@ end;
 Starts Self-translating mechanism invoking <link TExtThread.JSCode>.
 Invokes <link TExtThread.JSConcat> if identify a nested typecast
 @param JS JS commands or declarations
-@param pJSName Optional, by default is the <link TExtObject.JSName>, when used by <link TExtObjectList.Add> is the <link TExtObjectList.JSName>
+@param pJSName Optional, by default is the <link TExtObject.JSName>, when used by <link TExtObjectList.Add> is the TExtObjectList.JSName
 @param pOwner Optional, used by <link TExtObjectList.Add> only to pass the TExtObject owner list
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
@@ -719,10 +715,10 @@ It is necessary in 3 cases:
    as JavaScript language is almost typeless it happens eventually. That would be equivalent to the type Variant of VB or Delphi.
    Examples include data records.
 2. There are omissions in the documentation and attribute actually belongs to a specific class, in this case use the JSObject method,
-   do a typecast or declare in <link ExtFixes.txt, ExtFixes.txt> file, this allows to register in the Wrapper the omissions of the
+   do a typecast or declare in ExtFixes.txt file, this allows to register in the Wrapper the omissions of the
    documentation or the framework.
 3. There are omissions in the framework, ie should be a specific class. Read its attributes in description contained
-   in the documentation and declare them in <link ExtFixes.txt, ExtFixes.txt> for the Wrapper to recognize them or use JSObject method.
+   in the documentation and declare them in ExtFixes.txt for the Wrapper to recognize them or use JSObject method.
 @param JSON JavaScript Object Notation, the body of JS object declaration
 @return <link TExtObject> to be used in assigns
 }
