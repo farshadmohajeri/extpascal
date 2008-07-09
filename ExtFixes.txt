@@ -72,4 +72,4 @@ ExtProgressWaitConfig, interval, Integer, false, true, 1000
 ExtProgressWaitConfig, increment, Integer, false, true, 10
 ExtProgressWaitConfig, fn, ExtFunction, false, true,
 ExtProgressWaitConfig, scope, ExtObject, false, true,
-
+ExtToolbar, items, ExtObjectList, false, true,

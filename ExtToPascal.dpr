@@ -4,7 +4,7 @@ Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
 Date: apr-2008
 License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
-}program ExtToPascal;
+program ExtToPascal;
 {$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
