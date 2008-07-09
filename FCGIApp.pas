@@ -87,7 +87,7 @@ type
     property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
-    procedure AddToGarbage(Obj : TObject); // Adds a TObject to Thread Garbage Collector
+    procedure AddToGarbage(Obj : TObject);
     procedure DeleteFromGarbage(Obj : TObject);
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
@@ -95,7 +95,7 @@ type
     procedure SetResponseHeader(Header : string);
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
-    procedure Home; virtual; abstract;
+    procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
     procedure Logout; virtual;
     procedure Shutdown; virtual;
   end;
@@ -122,7 +122,7 @@ type
     Terminated : boolean; // Set to true to terminate the application
     GarbageNow : boolean; // Set to true to trigger the garbage colletor
     Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
-    Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest>
+    Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest, AfterHandleRequest>
     procedure Run(OwnerThread : TThread = nil);
     function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
@@ -138,7 +138,7 @@ var
   Application : TFCGIApplication; // FastCGI application object
 
 threadvar
-  CurrentFCGIThread : TFCGIThread; // Current FastCGI thread address assigned by <link TFCGIThread.SetCurrentFCGIThread> method
+  CurrentFCGIThread : TFCGIThread; // Current FastCGI thread address assigned by <link TFCGIThread.SetCurrentFCGIThread, SetCurrentFCGIThread> method
 
 implementation
 
@@ -237,7 +237,7 @@ begin
 end;
 
 {
-Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse> method.
+Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse, SendResponse> method.
 @param Header Use '' to clean response header else Header parameter is appended to response header
 }
 procedure TFCGIThread.SetResponseHeader(Header : string); begin
@@ -247,7 +247,7 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := FResponseHeader + Header + ^M^J;
 end;
 
-// Terminates the TFCGIThread calls <link TFCGIThread.Logout> method
+// Terminates the TFCGIThread calls <link TFCGIThread.Logout, Logout> method
 procedure TFCGIThread.Shutdown; begin
   if Query['password'] = 'pitinnu' then begin
     Logout;
@@ -431,15 +431,15 @@ procedure TFCGIThread.AddToGarbage(Obj : TObject); begin
 end;
 
 {
-Processing to execute after <link TFCGIThread.HandleRequest> method immediately before to <link TFCGIThread.SendResponse>
+Processing to execute after <link TFCGIThread.HandleRequest, HandleRequest> method immediately before to <link TFCGIThread.SendResponse, SendResponse>
 @see TExtThread.AfterHandleRequest
 }
 procedure TFCGIThread.AfterHandleRequest; begin end;
 
 {
-Processing to execute before <link TFCGIThread.HandleRequest> method.
+Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> method.
 @see TExtThread.BeforeHandleRequest
-@return True if the processing is ok else retuns False and the <link TFCGIThread.HandleRequest> method will not call the published method indicated by PathInfo.
+@return True if the processing is ok else retuns False and the <link TFCGIThread.HandleRequest, HandleRequest> method will not call the published method indicated by PathInfo.
 }
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
@@ -465,8 +465,8 @@ begin
 end;
 
 {
-Adds a pair Name/Value to a FastCGI rtGetValuesResult record type
-@param S Body of rtGetValuesResult record type
+Adds a pair Name/Value to a FastCGI rtGetValuesResult <link TRecType, record type>
+@param S Body of rtGetValuesResult <link TRecType, record type>
 @param Param Pair Name/Value
 }
 procedure TFCGIThread.AddParam(var S : string; Param : array of string);
@@ -540,50 +540,9 @@ procedure TFCGIThread.OnNotFoundError; begin
   Response := 'alert("Method: ''' + PathInfo + ''' not found");';
 end;
 
-// Handles errors raised in the method called by PathInfo in <link TFCGIThread.HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
+// Handles errors raised in the method called by PathInfo in <link TFCGIThread.HandleRequest, HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
 procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
   Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
-end;
-
-{
-Calls the published method indicated by PathInfo. Before calls <link TFCGIThread.BeforeHandleRequest> method and after calls <link TFCGIThread.AfterHandleRequest> method.
-The published method will use the FRequest as input and the Response as output.
-@param pRequest Request body assigned to FRequest field or to Query array if FRequestMethod is rmPost, it is the input to the published method
-@return Response body to <link TFCGIThread.SendResponse, send>
-@exception <link TFCGIThread.OnError> method is called if an exception is raised in published method
-@exception <link TFCGIThread.OnNotFoundError> method is called if the published method is not declared in this thread
-}
-function TFCGIThread.HandleRequest(pRequest : string) : string;
-type
-  MethodCall = procedure of object;
-var
-  PageMethod : TMethod;
-  MethodCode : pointer;
-begin
-  if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then
-    FQuery.DelimitedText := URLDecode(pRequest)
-  else
-    FRequest := pRequest;
-  Response := '';
-  if BeforeHandleRequest then
-    if PathInfo = '' then
-      Home
-    else begin
-      MethodCode := MethodAddress(PathInfo);
-      if MethodCode <> nil then begin
-        PageMethod.Code := MethodCode;
-        PageMethod.Data := Self;
-        try
-          MethodCall(PageMethod); // Call published method
-        except
-          on E : Exception do OnError(E.Message, PathInfo, pRequest)
-        end;
-      end
-      else
-        OnNotFoundError;
-    end;
-  AfterHandleRequest;
-  Result := Response;
 end;
 
 // Ends current Browser session and triggers the Garbage Collector
@@ -648,9 +607,9 @@ On receive a request, each request, on its execution cycle, do:
     * <link TFCGIThread.SendEndRequest, Ends the request> or
     * <link TFCGIThread.ReadRequestHeader, Reads HTTP headers> or
     * <link TFCGIThread.HandleRequest, Handles the request> with these internal steps:
-      * <link TFCGIThread.BeforeHandleRequest>
-      * The <link TFCGIThread.HandleRequest> own method
-      * <link TFCGIThread.AfterHandleRequest>
+      * <link TFCGIThread.BeforeHandleRequest, BeforeHandleRequest>
+      * The <link TFCGIThread.HandleRequest, HandleRequest> own method
+      * <link TFCGIThread.AfterHandleRequest, AfterHandleRequest>
 }
 procedure TFCGIThread.Execute;
 var
@@ -725,6 +684,50 @@ begin
   FSocket.Free;
 end;
 
+{
+Calls the published method indicated by PathInfo. Before calls <link TFCGIThread.BeforeHandleRequest, BeforeHandleRequest> method and after calls <link TFCGIThread.AfterHandleRequest, AfterHandleRequest> method.
+If PathInfo is null then <link TFCGIThread.Home, Home> method will be called.
+The published method will use the FRequest as input and the Response as output.
+<link TFCGIThread.OnError, OnError> method is called if an exception is raised in published method.
+<link TFCGIThread.OnNotFoundError, OnNotFoundError> method is called if the published method is not declared in this thread.
+@param pRequest Request body assigned to FRequest field or to <link TFCGIThread.Query, Query> array if FRequestMethod is <link TRequestMethod, rmPost>, it is the input to the published method
+@return Response body to <link TFCGIThread.SendResponse, send>
+}
+function TFCGIThread.HandleRequest(pRequest : string) : string;
+//{DOM-IGNORE-BEGIN
+type
+  MethodCall = procedure of object;
+//DOM-IGNORE-END}
+var
+  PageMethod : TMethod;
+  MethodCode : pointer;
+begin
+  if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then
+    FQuery.DelimitedText := URLDecode(pRequest)
+  else
+    FRequest := pRequest;
+  Response := '';
+  if BeforeHandleRequest then
+    if PathInfo = '' then
+      Home
+    else begin
+      MethodCode := MethodAddress(PathInfo);
+      if MethodCode <> nil then begin
+        PageMethod.Code := MethodCode;
+        PageMethod.Data := Self;
+        try
+          MethodCall(PageMethod); // Call published method
+        except
+          on E : Exception do OnError(E.Message, PathInfo, pRequest)
+        end;
+      end
+      else
+        OnNotFoundError;
+    end;
+  AfterHandleRequest;
+  Result := Response;
+end;
+
 // Frees a TFCGIApplication
 destructor TFCGIApplication.Destroy; begin
   Threads.Free;
@@ -735,7 +738,7 @@ end;
 
 {
 Creates a FastCGI application instance.
-@param pTitle Application title used by <link TExtThread.AfterHandleRequest>
+@param pTitle Application title used by <link TExtThread.AfterHandleRequest, AfterHandleRequest>
 @param pFCGIThreadClass Thread class type to create when a new request arrives
 @param pPort TCP/IP port used to comunicate with the Web Server, default is 2014
 @param pMaxIdleMinutes Minutes of inactivity before the end of the thread, releasing it from memory, default is 30 minutes
@@ -819,7 +822,7 @@ procedure TFCGIApplication.OnPortInUseError; begin
 end;
 
 type
-  THackThread = class(TThread);
+  THackThread = class(TThread); // Internal hack
 
 {
 The application main loop. Listens a socket port, through which it accepts connections from a Web server.
