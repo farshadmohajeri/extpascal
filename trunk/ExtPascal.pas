@@ -53,7 +53,7 @@ type
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
   as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
-  The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode> method.
+  The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
   TExtThread = class(TFCGIThread)
   private
@@ -145,7 +145,7 @@ type
     function Count : integer;
   end;
 
-//(*{$IFNDEF DOC}
+//(*DOM-IGNORE-BEGIN
   {
   Classes that can not be documented.
   They are usually JS basic classes without reference in Ext JS documentation by omission or fault.
@@ -180,7 +180,8 @@ type
   TTreeSelectionModel = TExtObject; // doc fault
   TSelectionModel = TExtObject; // doc fault
   TDataSource = TExtObject; // doc fault
-//{$ENDIF}*)
+//DOM-IGNORE-END*)
+
 implementation
 
 uses
@@ -559,7 +560,7 @@ end;
 
 { ExtObject }
 
-// Set an unique <link TExtObject.JSName> using <link TExtThread.GetSequence>
+// Set an unique <link TExtObject.JSName, JSName> using <link TExtThread.GetSequence, GetSequence>
 procedure TExtObject.CreateJSName; begin
   FJSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
@@ -577,7 +578,7 @@ constructor TExtObject.CreateSingleton(Attribute : string = ''); begin
 end;
 
 {
-Used by <link TExtObject.Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
+Used by <link TExtObject.Create, Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
 and to generate <link TExtObject.JSCode, JS code>
 @param JS JS constructor for the JS <color red>new</color> command
 @see CreateVarAlt
@@ -616,14 +617,14 @@ end;
 
 {
 Creates a TExtObject and generate corresponding JS code using <link TExtObject.JSCode, Self-translating>
-@param Owner Optional parameter used internally by <link TExtObject.JSObject> and <link TExtObject.JSArray> only
+@param Owner Optional parameter used internally by <link TExtObject.JSObject, JSObject> and <link TExtObject.JSArray, JSArray> only
 }
 constructor TExtObject.Create(Owner : TExtObject = nil); begin
   if Owner = nil then CreateVar(JSClassName + '({});');
 end;
 
 {
-Used by Parser to build <link TExtObject.InitDefaults> methods used to initialize public JS properties in a TExtObject
+Used by Parser to build <link TExtObject.InitDefaults, InitDefaults> methods used to initialize public JS properties in a TExtObject
 @param Owner TExtObject where this property is declared
 @param Attribute Public JS property name
 }
@@ -657,10 +658,10 @@ begin
 end;
 
 {
-Starts Self-translating mechanism invoking <link TExtThread.JSCode>.
-Invokes <link TExtThread.JSConcat> if identify a nested typecast
+Starts Self-translating mechanism invoking <link TExtThread.JSCode, JSCode>.
+Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 @param JS JS commands or declarations
-@param pJSName Optional, by default is the <link TExtObject.JSName>, when used by <link TExtObjectList.Add> is the TExtObjectList.JSName
+@param pJSName Optional, by default is the <link TExtObject.JSName, JSName>, when used by <link TExtObjectList.Add> is the TExtObjectList.JSName
 @param pOwner Optional, used by <link TExtObjectList.Add> only to pass the TExtObject owner list
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin

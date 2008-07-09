@@ -13,9 +13,10 @@ uses WinSvc, Classes;
 {$R *.res}
 
 type
-	TFuncBool  = function : boolean;
+	TFuncBool  = function : boolean; // Procedural type to stop and start functions, used in <link TService.Run, Run> method.
   TEventType = (EventError = 1, EventWarning = 2, EventInformation = 4); // Event severity
 
+  // Implements Windows Service with <link TService.ReportEventLog, report EventLog> support
   TService = class
   private
   	FName       : pchar;

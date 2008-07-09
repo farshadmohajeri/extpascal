@@ -19,8 +19,8 @@ type
     function GetDelimitedText : string;
     procedure SetDelimitedText(const AValue : string);
   public
-    StrictDelimiter : boolean;
-    property DelimitedText : string read GetDelimitedText write SetDelimitedText;
+    StrictDelimiter : boolean; // Missing property in FPC, Delphi 7 an older versions
+    property DelimitedText : string read GetDelimitedText write SetDelimitedText; // Property override for FPC, Delphi 7 an older versions
   end;
 {$IFEND}
 
