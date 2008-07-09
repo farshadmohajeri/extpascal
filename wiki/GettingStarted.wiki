@@ -78,7 +78,7 @@ ExtPascalSamples.exe // The real FastCGI application. The extension is `.fcgi` f
 ExtPascalSamples.cgi // The CGI Gateway.
 }}}
 
-11. None configuration is necessary on Apache.
+11. None configuration is necessary on Apache, _*but I recommend to activate the HTTP compression to boost the performance (on IIS too)*_.
 
 12. In your browser call Samples using:
 
@@ -124,3 +124,5 @@ http://localhost/cgi-bin/ExtPascalSamples.exe
 }}}
 
 12. See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
+
+13. I also recommend to activate the HTTP compression to boost the performance.
