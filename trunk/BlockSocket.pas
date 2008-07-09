@@ -20,9 +20,9 @@ type
   public
     constructor Create(S : integer = 0);
 		destructor Destroy; override;
-    procedure Bind(Port, BackLog : word);
+    procedure Bind(pPort, BackLog : word);
 		function Accept(Timeout : integer) : integer;
-    procedure Connect(Host : string; Port : word);
+    procedure Connect(Host : string; pPort : word);
 		procedure Purge;
 		procedure Close;
 		function RecvString : string;
@@ -50,11 +50,11 @@ Puts the socket in listening state, used on the server side
 @param Backlog The maximum length of the queue of pending connections
 @see Error
 }
-procedure TBlockSocket.Bind(Port, BackLog : word); begin
+procedure TBlockSocket.Bind(pPort, BackLog : word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr.s_Addr := 0;
-    Sin_Port   := htons(Port);
+    Sin_Port   := htons(pPort);
   end;
   fpBind(Socket, @RemoteSin, sizeof(RemoteSin));
   fpListen(Socket, BackLog);
@@ -66,11 +66,11 @@ Attempts to establish a new TCP connection, used on the client side
 @param Port Port number to connect
 @see Error
 }
-procedure TBlockSocket.Connect(Host : string; Port : word); begin
+procedure TBlockSocket.Connect(Host : string; pPort : word); begin
   with RemoteSin do begin
     Sin_Family := AF_INET;
     Sin_Addr   := StrToNetAddr(Host);
-    Sin_Port   := htons(Port);
+    Sin_Port   := htons(pPort);
   end;
   fpConnect(Socket, @RemoteSin, sizeof(RemoteSin));
 end;
