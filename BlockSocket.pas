@@ -12,17 +12,17 @@ uses
   {$IFDEF FPC}Sockets{$ELSE}SocketsDelphi{$ENDIF};
 
 type
-  // Implements block <extlink http://en.wikipedia.org/wiki/Internet_socket, sockets> as a class
+  // Implements a block <extlink http://en.wikipedia.org/wiki/Internet_socket>socket</extlink> as a class
   TBlockSocket = class
   private
     Socket : TSocket;
 		RemoteSin : TInetSockAddr;
   public
-    constructor Create(S : TSocket = 0);
+    constructor Create(S : integer = 0);
 		destructor Destroy; override;
     procedure Bind(Port, BackLog : word);
 		function Accept(Timeout : integer) : integer;
-    procedure Connect(Host : string; Port : Word);
+    procedure Connect(Host : string; Port : word);
 		procedure Purge;
 		procedure Close;
 		function RecvString : string;

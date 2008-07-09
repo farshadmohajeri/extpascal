@@ -2,8 +2,8 @@
 FCGIApp unit implements, in my opinion, the best behavior for Web applications: statefull, multi-threaded, blocking and non-multiplexed connection.
 This is a native and full Object Pascal implementation that doesn't depend on DLLs or external libraries.
 This unit is based on <extlink http://www.fastcgi.com/devkit/doc/fcgi-spec.html>FastCGI specs</extlink>, read it for more details.
-The initial state in a <link TFCGIAplication, FastCGI application> is a listening socket, through which it accepts connections from a Web server.
-After a FastCGI application <link TFCGIAplication.Run, accepts a connection on its listening socket>,
+The initial state in a <link TFCGIApplication, FastCGI application> is a listening socket, through which it accepts connections from a Web server.
+After a FastCGI application <link TFCGIApplication.Run, accepts a connection on its listening socket>,
 a <link TFCGIThread> is <link TFCGIThread.Create, created> that executes the FCGI protocol to <link TFCGIThread.ReadRequestHeader, receive> and <link TFCGIThread.SendResponse, send> data.
 As the actual Web paradigm is based on non-related requests, FCGIApp uses a Cookie to relate requests of a same browser session.
 This cookie is a <link TFCGIThread.SetCurrentFCGIThread, GUID that is associated> to actual <link TFCGIThread, Thread> address.
@@ -37,9 +37,9 @@ type
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
   {$M+}
   {
-  Each browser session generates a TFCGIThread. On first request it is <link Create, created> and a Cookie is associated using <link TFCGIApplication.Threads> list.
-  On subsequent requests this <link SetCurrentFCGIThread, Cookie is read to recover the original thread address> from <link TFCGIApplication.Threads> list.
-  Each request <link Execute, is interpreted as a FastCGI record and executed according> to its <link TRecType, record type>.
+  Each browser session generates a TFCGIThread. On first request it is <link TFCGIThread.Create, created> and a Cookie is associated with it.
+  On subsequent requests this <link TFCGIThread.SetCurrentFCGIThread, Cookie is read to recover the original thread address>.
+  Each request <link TFCGIThread.Execute, is interpreted as a FastCGI record and executed according> to its <link TRecType, record type>.
   }
   TFCGIThread = class(TThread)
   private
@@ -51,15 +51,14 @@ type
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FKeepConn : boolean; // Not used
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
-    FRequestHeader, // Protected field @see RequestHeader
-    FQuery, // Protected field @see Query
-    FCookie : TStringList; // Protected field @see Cookie
-    FLastAccess : TDateTime; // Protected field @see LastAccess
+    FRequestHeader,
+    FQuery,
+    FCookie : TStringList;
+    FLastAccess : TDateTime;
     function GetRequestHeader(Name: string): string;
     function GetQuery(Name: string): string;
     procedure CompleteRequestHeaderInfo;
     function GetCookie(Name: string): string;
-    function SetCurrentFCGIThread : boolean;
   protected
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
@@ -70,12 +69,13 @@ type
     procedure GetValues(Content : string);
     function HandleRequest(pRequest : string) : string;
     function BeforeHandleRequest : boolean; virtual;
+    function SetCurrentFCGIThread : boolean;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
   public
     BrowserCache : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
-    Response, // Response string
+    Response    : string; // Response string
     ContentType : string; // HTTP content-type header, default is 'text/html'
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
@@ -102,6 +102,12 @@ type
   {$M-}
   TFCGIThreadClass = class of TFCGIThread; // Thread class type to create when a new request arrives
 
+  {
+  Statefull and multi-thread behavior for FastCGI applications. This class has a garbage collector that frees idle threads.
+  The initial state in a FastCGI application is a listening socket, through which it accepts connections from a Web server.
+  After a FastCGI application <link TFCGIApplication.Run, accepts a connection on its listening socket>,
+  a <link TFCGIThread> is <link TFCGIThread.Create, created> that executes the FCGI protocol to <link TFCGIThread.ReadRequestHeader, receive> and <link TFCGIThread.SendResponse, send> data.
+  }
   TFCGIApplication = class
   private
     WebServers : TStringList;
@@ -113,26 +119,26 @@ type
     AccessThreads : TCriticalSection;
     procedure GarbageThreads;
   public
-    Terminated, // Set to true to terminate the application
-    GarbageNow, // Set to true to trigger the garbage colletor
-    Shutdown : boolean; // Set to true to shutdown the application after the last thread to end, default is false
-    Title : string; // Application title used by <link TExtThread..AfterHandleRequest>
-    constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
-      pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
-    destructor Destroy; override;
+    Terminated : boolean; // Set to true to terminate the application
+    GarbageNow : boolean; // Set to true to trigger the garbage colletor
+    Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
+    Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest>
     procedure Run(OwnerThread : TThread = nil);
     function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
     function ThreadsCount : integer;
     function ReachedMaxConns : boolean;
     procedure OnPortInUseError; virtual;
+    constructor Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
+      pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
+    destructor Destroy; override;
   end;
 
 var
   Application : TFCGIApplication; // FastCGI application object
 
 threadvar
-  CurrentFCGIThread : TFCGIThread; // Current FastCGI thread address assigned by <link SetCurrentFCGIThread> method
+  CurrentFCGIThread : TFCGIThread; // Current FastCGI thread address assigned by <link TFCGIThread.SetCurrentFCGIThread> method
 
 implementation
 
@@ -175,7 +181,7 @@ end;
 Converts a Request string into a FastCGI Header
 @param Buffer Input buffer to convert
 @param FCGIHeader FastCGI header converted from Buffer
-@see MoveFromFCGIHeader
+@see MoveToFCGIHeader
 }
 procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
   FCGIHeader.ID  := swap(FCGIHeader.ID);
@@ -231,7 +237,7 @@ begin
 end;
 
 {
-Appends or cleans HTTP response header. The HTTP response header is sent using <link SendResponse> method.
+Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse> method.
 @param Header Use '' to clean response header else Header parameter is appended to response header
 }
 procedure TFCGIThread.SetResponseHeader(Header : string); begin
@@ -241,7 +247,7 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := FResponseHeader + Header + ^M^J;
 end;
 
-// Terminates the TFCGIThread calls <link Logout> method
+// Terminates the TFCGIThread calls <link TFCGIThread.Logout> method
 procedure TFCGIThread.Shutdown; begin
   if Query['password'] = 'pitinnu' then begin
     Logout;
@@ -271,7 +277,8 @@ end;
 Sends a FastCGI response record to the Web Server. Puts the HTTP header in front of response, generates the FastCGI header and sends using sockets.
 @param S String to format using FastCGI protocol
 @param pRecType FastCGI record type
-@see MoveFromFCGIHeader TBlocketSocket.SendString
+@see MoveFromFCGIHeader
+@see TBlockSocket.SendString
 }
 procedure TFCGIThread.SendResponse(S : string; pRecType : TRecType = rtStdOut);
 var
@@ -424,15 +431,15 @@ procedure TFCGIThread.AddToGarbage(Obj : TObject); begin
 end;
 
 {
-Processing to execute after <link HandleRequest> method immediately before to <link SendResponse>
+Processing to execute after <link TFCGIThread.HandleRequest> method immediately before to <link TFCGIThread.SendResponse>
 @see TExtThread.AfterHandleRequest
 }
 procedure TFCGIThread.AfterHandleRequest; begin end;
 
 {
-Processing to execute before <link HandleRequest> method.
+Processing to execute before <link TFCGIThread.HandleRequest> method.
 @see TExtThread.BeforeHandleRequest
-@return True if the processing is ok else retuns False and the <link HandleRequest> method will not call the published method indicated by PathInfo.
+@return True if the processing is ok else retuns False and the <link TFCGIThread.HandleRequest> method will not call the published method indicated by PathInfo.
 }
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
@@ -533,18 +540,18 @@ procedure TFCGIThread.OnNotFoundError; begin
   Response := 'alert("Method: ''' + PathInfo + ''' not found");';
 end;
 
-// Handles errors raised in the method called by PathInfo in <link HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
+// Handles errors raised in the method called by PathInfo in <link TFCGIThread.HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
 procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
   Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
 end;
 
 {
-Calls the published method indicated by PathInfo. Before calls <link BeforeHandleRequest> method and after calls <link AfterHandleRequest> method.
+Calls the published method indicated by PathInfo. Before calls <link TFCGIThread.BeforeHandleRequest> method and after calls <link TFCGIThread.AfterHandleRequest> method.
 The published method will use the FRequest as input and the Response as output.
 @param pRequest Request body assigned to FRequest field or to Query array if FRequestMethod is rmPost, it is the input to the published method
-@return Response body to <link SendResponse, send>
-@exception <link OnError> method is called if an exception is raised in published method
-@exception <link OnNotFoundError> method is called if the published method is not declared in this thread
+@return Response body to <link TFCGIThread.SendResponse, send>
+@exception <link TFCGIThread.OnError> method is called if an exception is raised in published method
+@exception <link TFCGIThread.OnNotFoundError> method is called if the published method is not declared in this thread
 }
 function TFCGIThread.HandleRequest(pRequest : string) : string;
 type
@@ -636,14 +643,14 @@ The thread main loop.<p>
 On receive a request, each request, on its execution cycle, do:
   * <link MoveToFCGIHeader, Reads its FCGI header>
   * Depending on <link TRecType, record type> do:
-    * <link ReadBeginRequest, Starts a request> or
-    * <link Logout, Aborts the request> or
-    * <link SendEndRequest, Ends the request> or
-    * <link ReadRequestHeader, Reads HTTP headers> or
-    * <link HandleRequest, Handles the request> with these internal steps:
-      * <link BeforeHandleRequest>
-      * The <link HandleRequest> own method
-      * <link AfterHandleRequest>
+    * <link TFCGIThread.ReadBeginRequest, Starts a request> or
+    * <link TFCGIThread.Logout, Aborts the request> or
+    * <link TFCGIThread.SendEndRequest, Ends the request> or
+    * <link TFCGIThread.ReadRequestHeader, Reads HTTP headers> or
+    * <link TFCGIThread.HandleRequest, Handles the request> with these internal steps:
+      * <link TFCGIThread.BeforeHandleRequest>
+      * The <link TFCGIThread.HandleRequest> own method
+      * <link TFCGIThread.AfterHandleRequest>
 }
 procedure TFCGIThread.Execute;
 var
@@ -718,23 +725,12 @@ begin
   FSocket.Free;
 end;
 
-{ TFCGIApplication }
-
-{
-Tests if Address parameter is an IP address in WebServers list
-@param Address IP address to find
-@return True if Address is in WebServers list
-}
-function TFCGIApplication.CanConnect(Address: string): boolean; begin
-  Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
-end;
-
-{
-Tests if <link MaxConns, max connections>, default is 1000, was reached
-@return True if was reached
-}
-function TFCGIApplication.ReachedMaxConns : boolean; begin
-  Result := Threads.Count >= MaxConns
+// Frees a TFCGIApplication
+destructor TFCGIApplication.Destroy; begin
+  Threads.Free;
+  AccessThreads.Free;
+  WebServers.Free;
+  inherited;
 end;
 
 {
@@ -744,10 +740,10 @@ Creates a FastCGI application instance.
 @param pPort TCP/IP port used to comunicate with the Web Server, default is 2014
 @param pMaxIdleMinutes Minutes of inactivity before the end of the thread, releasing it from memory, default is 30 minutes
 @param pShutdownAfterLastThreadDown If true Shutdown the application after the last thread to end, default is false
-@param pMaxConns
+@param pMaxConns Maximum accepted connections
 }
-constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014;
-  pMaxIdleMinutes : word = 30; pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
+constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
+  pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);
 var
   WServers : string;
 begin
@@ -769,12 +765,21 @@ begin
   end;
 end;
 
-// Frees a TFCGIApplication
-destructor TFCGIApplication.Destroy; begin
-  Threads.Free;
-  AccessThreads.Free;
-  WebServers.Free;
-  inherited;
+{
+Tests if Address parameter is an IP address in WebServers list
+@param Address IP address to find
+@return True if Address is in WebServers list
+}
+function TFCGIApplication.CanConnect(Address : string) : boolean; begin
+  Result := (WebServers = nil) or (WebServers.IndexOf(Address) <> -1)
+end;
+
+{
+Tests if MaxConns (max connections), default is 1000, was reached
+@return True if was reached
+}
+function TFCGIApplication.ReachedMaxConns : boolean; begin
+  Result := Threads.Count >= MaxConns
 end;
 
 // Thread Garbage Collector. Frees all expired threads
@@ -805,7 +810,8 @@ end;
 {
 Handles "Port #### already in use" error. Occurs when the port is already in use for another service or application.
 Can be overrided in descendent thread class. It shall be overrided if the application is a service.
-@see Create Run
+@see Create
+@see Run
 }
 procedure TFCGIApplication.OnPortInUseError; begin
   writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER.');

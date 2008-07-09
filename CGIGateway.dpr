@@ -23,8 +23,8 @@ uses
   {$ELSE}
     {$IFNDEF FPC} // Delphi
       , ShellAPI;
-    {$ELSE} // FPC Windows optimization, ShellAPI generate a greater .exe
-      ;
+    {$ELSE}
+      ; // FPC Windows optimization, ShellAPI generate a greater .exe
       function ShellExecute(hWnd: integer; Operation, FileName, Parameters,
         Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
     {$ENDIF}
@@ -105,7 +105,7 @@ begin
 end;
 
 const
-  Host = '127.0.0.1'; // Host IP address, default is (127.0.0.1' (localhost)
+  Host = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
   Port = 2014;        // Socket port to comunicate with FastCGI application
 
 var

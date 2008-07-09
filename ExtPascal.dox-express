@@ -97,7 +97,7 @@ File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
 [Configurations\HTML Help\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
 ClearDirectoryBeforeExport=1
 HelpKind=1
-OutputDir=help
+OutputDir=chm
 TargetBOM=0
 TargetCodepage=windows-1252
 
@@ -212,11 +212,11 @@ Author=Wanderlan Santos dos Anjos
 AuthorEmail=wanderlan.anjos@gmail.com
 Copyright=Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) - License: BSD - Date: jul-2008
 Summary=Ext JS wrapper for Object Pascal
-Title=ExtPascal 0.8.10
+Title=ExtPascal 0.9
 VersionBuild=0
 VersionMajor=0
-VersionMinor=8
-VersionRelease=10
+VersionMinor=9
+VersionRelease=0
 
 [Macro Header Files]
 Count=0
