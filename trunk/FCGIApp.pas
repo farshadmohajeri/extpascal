@@ -26,6 +26,9 @@ uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
   BlockSocket, SysUtils, SyncObjs, Classes{$IFDEF FPC}, ExtPascalUtils{$ENDIF};
 
+const
+  DefaultCharset : string = 'utf-8'; // Default charset when a <link TFCGIThread, thread> is created
+
 type
   // FastCGI record types, i.e. the general function that the record performs
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
@@ -49,6 +52,7 @@ type
     FRequestMethod : TRequestMethod; // Current HTTP request method
     FGarbageCollector : TList; // Object list to free when the thread to end
     FSocket : TBlockSocket; // Current socket for current FastCGI request
+    FGarbage,
     FKeepConn : boolean; // Not used
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
@@ -74,9 +78,10 @@ type
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
   public
-    BrowserCache : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
-    Response    : string; // Response string
-    ContentType : string; // HTTP content-type header, default is 'text/html'
+    BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
+    Response     : string; // Response string
+    ContentType  : string; // HTTP content-type header, default is 'text/html'
+    Charset      : string; // Sets or gets the current charset for this thread, default is <link DefaultCharset, 'utf-8'>
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
     property PathInfo : string read FPathInfo; // Path info string for the current request
@@ -207,6 +212,7 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FCookie.StrictDelimiter := true;
   FCookie.Delimiter := ';';
   ContentType := 'text/html';
+  Charset := DefaultCharset;
   FreeOnTerminate := true;
   inherited Create(false);
 end;
@@ -548,9 +554,7 @@ end;
 // Ends current Browser session and triggers the Garbage Collector
 procedure TFCGIThread.Logout; begin
   Response := 'window.close();';
-  SendEndRequest;
-  FLastAccess := 0;
-  Application.GarbageNow := true;
+  FGarbage := true;
 end;
 
 {
@@ -651,6 +655,7 @@ begin
                       else begin
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
+                        FGarbage := CurrentFCGIThread.FGarbage;
                         if (Response <> '') or (RequestMethod in [rmGet, rmHead]) then SendResponse(Response);
                         SendEndRequest;
                       end;
@@ -682,6 +687,10 @@ begin
     end;
   end;
   FSocket.Free;
+  if FGarbage then begin
+    CurrentFCGIThread.FLastAccess := 0;
+    Application.GarbageNow := true;
+  end;
 end;
 
 {
