@@ -455,7 +455,7 @@ begin
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
       '<title>' + Application.Title + '</title>' +
-      '<meta http-equiv="content-type" content="charset=utf-8">' +
+      '<meta http-equiv="content-type" content="charset=' + Charset + '">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
       '<script src=' + ExtPath + '/ext-all.js></script>' +
