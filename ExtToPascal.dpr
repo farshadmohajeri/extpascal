@@ -62,7 +62,8 @@ begin
     if T = 'object...' then begin Result := 'TExtObjectList';   exit end else
     if T = 'date'      then begin Result := 'TDateTime';        exit end else
     if T = 'float'     then begin Result := 'Double';           exit end else
-    if T = 'int'       then begin Result := 'Integer';          exit end
+    if T = 'int'       then begin Result := 'Integer';          exit end else
+    if pos('mixedcollection', T) <> 0 then begin Result := 'TExtObjectList'; exit end 
     else begin
       I := LastDelimiter('/[:', Ident);
       if I <> 0 then begin
