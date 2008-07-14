@@ -128,6 +128,7 @@ type
     GarbageNow : boolean; // Set to true to trigger the garbage colletor
     Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
     Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest, AfterHandleRequest>
+    Icon       : string;  // Icon to show in Browser
     procedure Run(OwnerThread : TThread = nil);
     function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;

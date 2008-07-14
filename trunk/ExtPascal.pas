@@ -199,7 +199,7 @@ procedure TExtThread.RemoveJS(JS : string);
 var
   I : integer;
 begin
-  I := pos(JS, Response);
+  I := PosR(JS, Response);
   if I <> 0 then delete(Response, I, length(JS))
 end;
 
@@ -370,8 +370,8 @@ function TExtThread.JSConcat(PrevCommand, NextCommand : string) : string;
 var
   I , J : integer;
 begin
-  J := pos(PrevCommand, Response);
-  I := pos('.', NextCommand);
+  J := PosR(PrevCommand, Response);
+  I := Pos('.', NextCommand);
   if (I <> 0) and (J <> 0) then begin
     NextCommand := copy(NextCommand, I, length(NextCommand));
     Result := copy(PrevCommand, 1, length(PrevCommand)-1) + NextCommand;
@@ -454,6 +454,7 @@ begin
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + Application.Icon + '"/>') +
       '<title>' + Application.Title + '</title>' +
       '<meta http-equiv="content-type" content="charset=' + Charset + '">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
@@ -464,7 +465,7 @@ begin
       GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";'+
-      'function AjaxSuccess(response){eval(response.responseText);};' +
+      'function AjaxSuccess(response){eval(response.responseText)};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
 end;
@@ -487,8 +488,9 @@ Creates a TExtObjectList instance.
 }
 constructor TExtObjectList.Create(pOwner : TExtObject = nil; pAttribute : string = ''); begin
   Attribute := pAttribute;
-  Owner     := pOwner;
-  JSName    := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
+  Owner := pOwner;
+  if CurrentFCGIThread <> nil then
+    JSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
 end;
 
 {
@@ -529,19 +531,25 @@ begin
     OwnerName := Owner.JSName
   else
     OwnerName := '';
-  if pos(Obj.JSName, Response) = 0 then begin
-    if (pos(JSName, Response) = 0) and TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
-      ListAdd := 'var ' + Obj.JSName + '=' + OwnerName + '.add(%s);'
+  if (pos(Obj.JSName, Response) = 0) or (pos(JSName, Response) = 0) then begin
+    if TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
+      if pos(Obj.JSName, Response) = 0 then
+        if pos(JSName, Response) = 0 then
+          ListAdd := 'var ' + Obj.JSName + '=' + OwnerName + '.add(%s);'
+        else
+          ListAdd := '%s'
+      else
+        ListAdd := OwnerName + '.add(' + Obj.JSName + ');'
     else
       ListAdd := '%s';
     if Attribute = 'items' then // Generalize it more if necessary
       ListAdd := Format(ListAdd, ['new ' + Obj.JSClassName + '({/*' + Obj.JSName + '*/})'])
     else
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
-    Obj.JSCode(ListAdd, JSName, OwnerName);
   end
   else
-    Obj.JSCode(Obj.JSName, JSName, OwnerName);
+    ListAdd := Obj.JSName;
+  Obj.JSCode(ListAdd, JSName, OwnerName);
 end;
 
 {
@@ -666,7 +674,7 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
-    if (JS[length(JS)] = ';') and (pos('var ', JS) <> 1) then begin
+    if (JS[length(JS)] = ';') and not(pos('var ', JS) in [1, 2]) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
@@ -825,7 +833,8 @@ end;
 
 {
 Invokes an Object Pascal published procedure in AJAX mode.
-To get event parameters use %0, %1 until %9 place holders.
+To get event parameters use %0, %1 until %9 place holders.<p>
+<b>Restriction</b>: Due to JavaScript limitations objects created in an AJAX request can only be referred by another AJAX request by property ID.
 @param Method Published procedure to invoke
 @return <link TExtFunction> to use in event handlers
 @example <code>
@@ -874,7 +883,8 @@ end;
 
 {
 Invokes an Object Pascal published procedure with parameters in AJAX mode.
-To get event parameters use %0, %1 until %9 place holders.
+To get event parameters use %0, %1 until %9 place holders.<p>
+<b>Restriction</b>: Due to JavaScript limitations objects created in an AJAX request can only be referred by another AJAX request by property ID.
 @param Method Published procedure to invoke
 @param Params Array of Parameters, each parameter is a pair: Name, Value.
 To get them on server side use <link TFCGIThread.Query> array property in AJAX method.

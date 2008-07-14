@@ -31,7 +31,7 @@ type
     procedure SelectNodeEventBrowserSide;
     procedure SelectNodeEventServerSide;
     procedure Login;
-    procedure CheckLogin;
+    procedure CheckLogin; // Ajax
   end;
 
 procedure TSamples.Home;

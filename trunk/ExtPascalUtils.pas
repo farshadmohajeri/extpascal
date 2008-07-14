@@ -43,7 +43,7 @@ Creates a TStringList where each string is a substring formed by the splitting o
 function Explode(Delim : char; S : string) : TStringList;
 
 {
-Opposite of LastDelimiter RTL function.
+The opposite of LastDelimiter RTL function.
 Returns the index of the first occurence in a string of the characters specified.
 If none of the characters in Delimiters appears in string S, function returns zero.
 @param Delimiters String where each character is a valid delimiter.
@@ -51,6 +51,9 @@ If none of the characters in Delimiters appears in string S, function returns ze
 @param Offset Index from where the search begins.
 }
 function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
+
+// The opposite of "System.Pos" function. Returns the index value of the last occurrence of a specified substring in a given string.
+function PosR(const Substr, Str : string) : integer;
 
 implementation
 
@@ -145,7 +148,7 @@ begin
   if Matches <> nil then Matches.Clear;
   J := 1;
   for I := 0 to high(Delims) do begin
-    J := posex(Delims[I], S, J);
+    J := PosEx(Delims[I], S, J);
     if J = 0 then
       exit
     else
@@ -153,7 +156,7 @@ begin
   end;
   J := 1;
   for I := 0 to high(Delims)-1 do begin
-    J := posex(Delims[I], S, J);
+    J := PosEx(Delims[I], S, J);
     inc(J, length(Delims[I]));
     Matches.Add(trim(copy(S, J, posex(Delims[I+1], S, J)-J)));
   end;
@@ -180,6 +183,21 @@ begin
       if Delimiters[I] = S[Result] then exit;
   Result := 0;
 end;
+
+function PosR(const Substr, Str : string) : integer;
+var
+  I : integer;
+begin
+  Result := Pos(Substr, Str);
+  while Result <> 0 do begin
+    I := PosEx(Substr, Str, Result+1);
+    if I = 0 then
+      break
+    else
+      Result := I
+  end;
+end;
+
 
 end.
 
