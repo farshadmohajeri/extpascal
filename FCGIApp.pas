@@ -213,7 +213,7 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FCookie.StrictDelimiter := true;
   FCookie.Delimiter := ';';
   ContentType := 'text/html';
-  Charset := DefaultCharset;
+  Charset := lowercase(DefaultCharset);
   FreeOnTerminate := true;
   inherited Create(false);
 end;

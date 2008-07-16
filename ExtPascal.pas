@@ -79,6 +79,7 @@ type
     procedure SetLibrary(pLibrary : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
+    function Latin1ToHTML(S : string) : string;
   end;
 
   {
@@ -383,6 +384,24 @@ begin
 end;
 
 {
+Encodes a Latin-1 (iso-8859-1) string to fit in HTML encoding form.
+Converts characters with ordinal value >= 160 only.
+@param S Latin-1 string to convert
+@return A HTML encoded string
+}
+function TExtThread.Latin1ToHTML(S : string) : string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 1 to length(S) do
+    if S[I] < #160 then
+      Result := Result + S[I]
+    else
+      Result := Result + '&#' + IntToStr(ord(S[I])) + ';';
+end;
+
+{
 Does tasks related to the Request that occur before the method call invoked by Browser (PATH-INFO)
 1. Detects the browser language.
 2. If that language has corresponding JS resource file in framework uses it, for example: '/ext/source/locale/ext-lang-?????.js',
@@ -467,7 +486,9 @@ begin
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";'+
       'function AjaxSuccess(response){eval(response.responseText)};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
+      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>'
+  else
+    if lowercase(CharSet) = 'iso-8859-1' then Response := Latin1ToHTML(Response)
 end;
 
 {
