@@ -14,7 +14,7 @@ The main advantages are:
 = Prerequisites =
 
  * One Windows, Linux, MacOS X or FreeBSD machine. I tested using Intel/AMD 32 bits, but should work with other processors supported by FreePascal.
- * A web browser: IE 5+, Firefox 1.5+, Safari 2+, Opera 9+ or compatibles.   
+ * A web browser: IE 5+, Firefox 1.5+, Safari 2+, Opera 9+ or compatibles. JavaScript and Cookies should be enabled.
  * Download and install Apache 2.2.8 or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package, see below.
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache or IIS is necessary.
  * Download ExtJS 2.1 or later, _*with the documentation*_.
