@@ -53,7 +53,14 @@ If none of the characters in Delimiters appears in string S, function returns ze
 function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
 
 // The opposite of "System.Pos" function. Returns the index value of the last occurrence of a specified substring in a given string.
-function PosR(const Substr, Str : string) : integer;
+function RPos(const Substr, Str : string) : integer;
+
+{
+Returns the number of occurrences of Substr in Str
+@param Substr String to count in Str
+@param Str String where the counting will be done
+}
+function CountStr(const Substr, Str : string) : integer;
 
 implementation
 
@@ -184,7 +191,7 @@ begin
   Result := 0;
 end;
 
-function PosR(const Substr, Str : string) : integer;
+function RPos(const Substr, Str : string) : integer;
 var
   I : integer;
 begin
@@ -198,6 +205,17 @@ begin
   end;
 end;
 
+function CountStr(const Substr, Str : string) : integer;
+var
+  I : integer;
+begin
+  I := 0;
+  Result := 0;
+  repeat
+    I := PosEx(Substr, Str, I+1);
+    if I <> 0 then inc(Result);
+  until I = 0;
+end;
 
 end.
 

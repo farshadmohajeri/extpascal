@@ -75,4 +75,4 @@ ExtProgressWaitConfig, scope, ExtObject, false, true,
 ExtToolbar, items, ExtObjectList, false, true,
 ExtMenuMenu, items, ExtObjectList, false, true,
 ExtToolbarButton, menu, ExtUtilObservable, false, true,
-
+ExtMenuItem, menu, ExtMenuMenu, false, true,
