@@ -200,7 +200,7 @@ procedure TExtThread.RemoveJS(JS : string);
 var
   I : integer;
 begin
-  I := PosR(JS, Response);
+  I := RPos(JS, Response);
   if I <> 0 then delete(Response, I, length(JS))
 end;
 
@@ -371,7 +371,7 @@ function TExtThread.JSConcat(PrevCommand, NextCommand : string) : string;
 var
   I , J : integer;
 begin
-  J := PosR(PrevCommand, Response);
+  J := RPos(PrevCommand, Response);
   I := Pos('.', NextCommand);
   if (I <> 0) and (J <> 0) then begin
     NextCommand := copy(NextCommand, I, length(NextCommand));
