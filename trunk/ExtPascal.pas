@@ -94,6 +94,7 @@ type
     function WriteFunction(Command : string): string;
   protected
     JSCommand : string; // Last command written in Response
+    Created : boolean; // Tests if object already created
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
@@ -187,6 +188,9 @@ implementation
 
 uses
   SysUtils, StrUtils, Math, ExtPascalUtils;
+
+const
+  DeclareJS = '/*var*/ '; // Declare JS objects as global
 
 { TExtThread }
 
@@ -350,7 +354,7 @@ begin
     J := LastDelimiter('|', VarBody)+1;
     VarBody := copy(VarBody, J, length(VarBody));
     delete(Response, K+J-1, length(VarBody)+1);
-    insert(VarBody, Response, pos('var ' + JSName + '=new', Response));
+    insert(VarBody, Response, pos(DeclareJS + JSName + '=new', Response));
   end;
 end;
 
@@ -541,10 +545,12 @@ var
 begin
   Obj.DeleteFromGarbage;
   if length(FObjects) = 0 then
-    if Owner <> nil then
-      Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
+    if Owner <> nil then begin
+      if pos('/*' + Owner.JSName + '*/', CurrentFCGIThread.Response) <> 0 then
+        Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
+    end
     else
-      TExtThread(CurrentFCGIThread).JSCode('var ' + JSName + '=[/*' + JSName + '*/];');
+      TExtThread(CurrentFCGIThread).JSCode(DeclareJS + JSName + '=[/*' + JSName + '*/];');
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   Response := CurrentFCGIThread.Response;
@@ -552,11 +558,11 @@ begin
     OwnerName := Owner.JSName
   else
     OwnerName := '';
-  if (pos(Obj.JSName, Response) = 0) or (pos(JSName, Response) = 0) then begin
+  if not Obj.Created or (pos(JSName, Response) = 0) then begin
     if TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
-      if pos(Obj.JSName, Response) = 0 then
+      if not Obj.Created then
         if pos(JSName, Response) = 0 then
-          ListAdd := 'var ' + Obj.JSName + '=' + OwnerName + '.add(%s);'
+          ListAdd := DeclareJS + Obj.JSName + '=' + OwnerName + '.add(%s);'
         else
           ListAdd := '%s'
       else
@@ -570,6 +576,7 @@ begin
   end
   else
     ListAdd := Obj.JSName;
+  Obj.Created := true;
   Obj.JSCode(ListAdd, JSName, OwnerName);
 end;
 
@@ -616,7 +623,8 @@ procedure TExtObject.CreateVar(JS : string); begin
   CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  JSCode('|var ' + JSName + '=new ' + JS)
+  Created := true;
+  JSCode('|' + DeclareJS + JSName + '=new ' + JS)
 end;
 
 {
@@ -627,7 +635,8 @@ procedure TExtObject.CreateVarAlt(JS : string); begin
   CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
-  JSCode('|var ' + JSName + '= ' + JS)
+  Created := true;
+  JSCode('|' + DeclareJS + JSName + '= ' + JS)
 end;
 
 
@@ -695,7 +704,7 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
-    if (JS[length(JS)] = ';') and not(pos('var ', JS) in [1, 2]) then begin
+    if (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
@@ -855,7 +864,6 @@ end;
 {
 Invokes an Object Pascal published procedure in AJAX mode.
 To get event parameters use %0, %1 until %9 place holders.<p>
-<b>Restriction</b>: Due to JavaScript limitations objects created in an AJAX request can only be referred by another AJAX request by property ID.
 @param Method Published procedure to invoke
 @return <link TExtFunction> to use in event handlers
 @example <code>
@@ -905,7 +913,6 @@ end;
 {
 Invokes an Object Pascal published procedure with parameters in AJAX mode.
 To get event parameters use %0, %1 until %9 place holders.<p>
-<b>Restriction</b>: Due to JavaScript limitations objects created in an AJAX request can only be referred by another AJAX request by property ID.
 @param Method Published procedure to invoke
 @param Params Array of Parameters, each parameter is a pair: Name, Value.
 To get them on server side use <link TFCGIThread.Query> array property in AJAX method.
