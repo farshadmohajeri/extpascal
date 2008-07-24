@@ -111,6 +111,8 @@ type
     constructor CreateSingleton(Attribute : string = '');
     constructor AddTo(List : TExtObjectList);
     destructor Destroy; override;
+    procedure Free(DeleteJS : boolean = false);
+    procedure Delete;
     procedure DeleteFromGarbage;
     function JSClassName : string; virtual;
     function JSArray(JSON : string) : TExtObjectList;
@@ -639,6 +641,10 @@ procedure TExtObject.CreateVarAlt(JS : string); begin
   JSCode('|' + DeclareJS + JSName + '= ' + JS)
 end;
 
+// Deletes JS object from Browser memory
+procedure TExtObject.Delete; begin
+  JSCode('delete ' + JSName + ';')
+end;
 
 // <link TFCGIThread.DeleteFromGarbage, Removes object from Garbage Collector> if is not in a Garbage Collector call
 procedure TExtObject.DeleteFromGarbage; begin
@@ -1064,6 +1070,19 @@ function TExtObject.ExtractJSCommand(Command : string) : string; begin
 end;
 
 {
+Frees TExtObject if object is not destroyed. Automatically calls Free for all components that it does reference.
+Free is successful even if called repeatedly to the same object.
+@param DeleteJS Calls <link TExtObject.Delete> if true
+}
+procedure TExtObject.Free(DeleteJS : boolean = false); begin
+  if (Self <> nil) and Created then begin
+    if DeleteJS then Delete;
+    Destroy;
+    Created := false;
+  end;
+end;
+
+{
 Converts an array of const to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
 @param A Array of anytype variables
 @return JSON representation of array
@@ -1107,7 +1126,7 @@ begin
     if I < high(A) then Result := Result + ',';
     inc(I);
   end;
-  if (Result <> '') and (Result[length(Result)] = ',') then delete(Result, length(Result), 1);
+  if (Result <> '') and (Result[length(Result)] = ',') then System.Delete(Result, length(Result), 1);
 end;
 
 {
