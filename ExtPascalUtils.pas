@@ -11,6 +11,9 @@ interface
 uses
   Classes;
 
+const
+  Version = '0.9.2';
+
 {$IF Defined(FPC) or (RTLVersion <= 17)}
 type
   // Implements StrictDelimiter property for FPC, Delphi 7 and older versions
@@ -61,6 +64,8 @@ Returns the number of occurrences of Substr in Str
 @param Str String where the counting will be done
 }
 function CountStr(const Substr, Str : string) : integer;
+
+function StrToJS(S : string) : string;
 
 implementation
 
@@ -215,6 +220,10 @@ begin
     I := PosEx(Substr, Str, I+1);
     if I <> 0 then inc(Result);
   until I = 0;
+end;
+
+function StrToJS(S : string) : string; begin
+  Result := '"' + AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>') + '"';
 end;
 
 end.
