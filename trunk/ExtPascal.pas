@@ -95,12 +95,12 @@ type
   protected
     JSCommand : string; // Last command written in Response
     Created : boolean; // Tests if object already created
+    function IsParent(CName : string): boolean;
+    function ExtractJSCommand(Command : string) : string;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
     function VarToJSON(Ints : TArrayOfInteger) : string; overload;
-    function IsParent(CName : string): boolean;
-    function ExtractJSCommand(Command : string) : string;
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
@@ -111,7 +111,8 @@ type
     constructor CreateSingleton(Attribute : string = '');
     constructor AddTo(List : TExtObjectList);
     destructor Destroy; override;
-    procedure Free(DeleteJS : boolean = false);
+    function DestroyJS : TExtFunction; virtual;
+    procedure Free(CallDestroyJS : boolean = false);
     procedure Delete;
     procedure DeleteFromGarbage;
     function JSClassName : string; virtual;
@@ -651,6 +652,12 @@ procedure TExtObject.DeleteFromGarbage; begin
   if CurrentFCGIThread <> nil then CurrentFCGIThread.DeleteFromGarbage(Self);
 end;
 
+// Calls Ext JS <b>destroy()</b> method if it exists else calls the JS <b>delete</b> command
+function TExtObject.DestroyJS : TExtFunction; begin
+  Delete;
+  Result := TExtFunction(Self)
+end;
+
 // <link TExtObject.DeleteFromGarbage, Removes object from Garbage Collector> and frees it
 destructor TExtObject.Destroy; begin
   try
@@ -1072,11 +1079,11 @@ end;
 {
 Frees TExtObject if object is not destroyed. Automatically calls Free for all components that it does reference.
 Free is successful even if called repeatedly to the same object.
-@param DeleteJS Calls <link TExtObject.Delete> if true
+@param CallDestroyJS Calls <link TExtObject.DestroyJS, DestroyJS> if true to destroy or delete the JS object too
 }
-procedure TExtObject.Free(DeleteJS : boolean = false); begin
+procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
   if (Self <> nil) and Created then begin
-    if DeleteJS then Delete;
+    if CallDestroyJS then DestroyJS;
     Destroy;
     Created := false;
   end;
@@ -1116,8 +1123,8 @@ begin
             end;
           inc(I);
         end;
-        vtAnsiString: Result := Result + '"' + AnsiReplaceStr(string(VAnsiString), '"', '''') + '"';
-        vtString:     Result := Result + '"' + AnsiReplaceStr(VString^, '"', '''') + '"';
+        vtAnsiString: Result := Result + StrToJS(string(VAnsiString));
+        vtString:     Result := Result + StrToJS(VString^);
         vtInteger:    Result := Result + IntToStr(VInteger);
         vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
         vtExtended:   Result := Result + FloatToStr(VExtended^);
@@ -1152,7 +1159,7 @@ var
 begin
   Result := '[';
   for I := 0 to high(Strs) do begin
-    Result := Result + '"' + AnsiReplaceStr(Strs[I], '"', '''') + '"';
+    Result := Result + StrToJS(Strs[I]);
     if I < high(Strs) then Result := Result + ',';
   end;
   Result := Result + ']'

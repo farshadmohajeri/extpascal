@@ -239,10 +239,10 @@ begin
   DataStore := TExtDataSimpleStore.Create;
   with DataStore do begin
     TExtDataField.AddTo(Fields).Name := 'company';
-    with TExtDataField.AddTo(Fields) do begin Name := 'price';     Type_ := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'change';    Type_ := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; Type_ := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';Type_ := 'date'; DateFormat := 'n/j h:ia' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'price';     TypeJS := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'change';    TypeJS := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; TypeJS := 'float' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';TypeJS := 'date'; DateFormat := 'n/j h:ia' end;
     Data := JSArray(
       '["3m Co",71.72,0.02,0.03,"9/1 12:00am"],' +
       '["Alcoa Inc",29.01,0.42,1.47,"9/1 12:00am"],' +
@@ -512,12 +512,12 @@ begin
   ExtQuickTips.Init;
   Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
-  with TExtDataField.AddTo(Data) do begin Name := 'common';    Type_ := 'string' end;
-  with TExtDataField.AddTo(Data) do begin Name := 'botanical'; Type_ := 'string' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'common';    TypeJS := 'string' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'botanical'; TypeJS := 'string' end;
   TExtDataField.AddTo(Data).Name := 'light';
-  with TExtDataField.AddTo(Data) do begin Name := 'price'; Type_ := 'float' end; // automatic date conversions
-  with TExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; Type_ := 'date'; DateFormat := 'm/d/Y' end;
-  with TExtDataField.AddTo(Data) do begin Name := 'indoor'; Type_ := 'bool' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'price'; TypeJS := 'float' end; // automatic date conversions
+  with TExtDataField.AddTo(Data) do begin Name := 'availDate'; Mapping := 'availability'; TypeJS := 'date'; DateFormat := 'm/d/Y' end;
+  with TExtDataField.AddTo(Data) do begin Name := 'indoor'; TypeJS := 'bool' end;
   // this could be inline, but we want to define the Plant record, type so we can add records dynamically
   Plant := TExtDataRecord.Create(Data);
   // create the Data Store

@@ -21,7 +21,7 @@ begin
   if pos('.' + lowercase(S) + '.', Reserved) = 0 then
     Result := S
   else
-    Result := S + '_';
+    Result := S + 'JS';
 end;
 
 function FixIdent(Ident : string; IsType : boolean = false) : string;
@@ -699,8 +699,15 @@ begin
       WriteParams(Params);
       write(Pas, ')');
     end;
-    write(Pas, IfThen((Return = 'TVoid') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''),
-      IfThen(pClassName = '', ^M^J, ''));
+    write(Pas, IfThen((Return = 'TVoid') or (Return = ''), ';', ' : ' + Return + ';'), IfThen(Overload and (pClassName = ''), ' overload;', ''));
+    if pClassName = '' then begin
+      if Name = 'DestroyJS' then
+        if Params.Count = 0 then
+          write(Pas, ' override;')
+        else
+          write(Pas, ' reintroduce;');
+      writeln(Pas);
+    end;
   end;
   Result := true;
 end;
@@ -959,8 +966,10 @@ begin
   if FindFirst(P + '/*.html', faAnyFile, F) = 0 then begin
     AllClasses := TStringList.Create;
     Units := TStringList.Create;
-    T := now;
+    writeln('ExtToPascal wrapper version ', Version);
+    writeln('(c) 2008 by Wanderlan Santos dos Anjos, BSD license'^M^J);
     writeln('Reading HTML files...');
+    T := now;
     repeat
   		ReadHtml(P + '/' + F.Name)
     until FindNext(F) <> 0;
