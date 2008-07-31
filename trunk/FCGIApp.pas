@@ -60,7 +60,7 @@ type
     FCookie : TStringList;
     FLastAccess : TDateTime;
     function GetRequestHeader(Name: string): string;
-    function GetQuery(Name: string): string;
+    function GetQuery(Name: string): variant;
     procedure CompleteRequestHeaderInfo;
     function GetCookie(Name: string): string;
   protected
@@ -88,7 +88,7 @@ type
     property LastAccess : TDateTime read FLastAccess; // Last TDateTime access of this thread
     property RequestMethod : TRequestMethod read FRequestMethod; // HTTP request method for the current request
     property RequestHeader[Name : string] : string read GetRequestHeader; // HTTP headers read in the current request
-    property Query[Name : string] : string read GetQuery; // HTTP query info parameters read in the current request
+    property Query[Name : string] : variant read GetQuery; // HTTP query info parameters read in the current request
     property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
@@ -511,7 +511,7 @@ function TFCGIThread.GetRequestHeader(Name: string): string; begin
   Result := FRequestHeader.Values[Name]
 end;
 
-function TFCGIThread.GetQuery(Name: string): string;  begin
+function TFCGIThread.GetQuery(Name: string): variant;  begin
   Result := FQuery.Values[Name]
 end;
 
