@@ -65,6 +65,7 @@ Returns the number of occurrences of Substr in Str
 }
 function CountStr(const Substr, Str : string) : integer;
 
+// Replaces " to ' and ^M^J to <br/> and surrounds the string with "
 function StrToJS(S : string) : string;
 
 implementation
@@ -227,4 +228,3 @@ function StrToJS(S : string) : string; begin
 end;
 
 end.
-

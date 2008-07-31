@@ -38,7 +38,7 @@ unit ExtPascal;
 interface
 
 uses
-  FCGIApp;
+  FCGIApp, Classes;
 
 const
   ExtPath = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
@@ -58,8 +58,9 @@ type
   TExtThread = class(TFCGIThread)
   private
     Style, Libraries, FLanguage : string;
-    Sequence : cardinal;
-    FIsAjax  : boolean;
+    JSReturns : TStringList;
+    Sequence  : cardinal;
+    FIsAjax   : boolean;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
@@ -80,6 +81,8 @@ type
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
     function Latin1ToHTML(S : string) : string;
+    constructor Create(NewSocket : integer); override;
+    destructor Destroy; override;
   end;
 
   {
@@ -122,6 +125,7 @@ type
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string) : TExtFunction; overload;
     function JSFunction(Method: TExtProcedure) : TExtFunction; overload;
+    function JSReturn(Method : TExtFunction) : integer;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
@@ -314,16 +318,21 @@ var
 begin
   if JS[length(JS)] = ';' then // Command
     I := length(Response) + 1
-  else begin // set attribute
-    I := pos('/*' + JSName + '*/', Response);
-    if I = 0 then begin
-      ErrorMessage('Config Option: ' + JS + '<br/>is refering a previous request,' +
-        '<br/>it''s not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method instead.');
+  else  // set attribute
+    if JSName = '' then begin
+      ErrorMessage('Missing '';'' in command: ' + JS);
       exit;
     end
-    else
-      if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
-  end;
+    else begin
+      I := pos('/*' + JSName + '*/', Response);
+      if I = 0 then begin
+        ErrorMessage('Config Option: ' + JS + '<br/>is refering a previous request,' +
+          '<br/>it''s not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method instead.');
+        exit;
+      end
+      else
+        if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
+    end;
   insert(JS, Response, I);
   if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then begin
     if Owner <> '' then JSName := Owner;
@@ -356,7 +365,7 @@ begin
     VarBody := copy(Response, K, J-K+1);
     J := LastDelimiter('|', VarBody)+1;
     VarBody := copy(VarBody, J, length(VarBody));
-    delete(Response, K+J-1, length(VarBody)+1);
+    delete(Response, K+J-1, length(VarBody));
     insert(VarBody, Response, pos(DeclareJS + JSName + '=new', Response));
   end;
 end;
@@ -451,9 +460,19 @@ begin
       end
 end;
 
+constructor TExtThread.Create(NewSocket : integer); begin
+  inherited;
+  JSReturns := TStringList.Create;
+end;
+
+destructor TExtThread.Destroy; begin
+  JSReturns.Free;
+  inherited;
+end;
+
 {
 Does tasks after Request processing.
-1. Extracts Comments, and sets:
+1. Extracts Comments, auxiliary chars, and sets:
 2. HTML body,
 3. Title,
 4. Charset,
@@ -467,6 +486,18 @@ Does tasks after Request processing.
 12. Handlers for AJAX response
 }
 procedure TExtThread.AfterHandleRequest;
+
+  procedure HandleJSReturns;
+  var
+    I : integer;
+  begin
+    if JSReturns.Count <> 0 then begin
+      for I := 0 to JSReturns.Count-1 do
+        Response := AnsiReplaceStr(Response, JSReturns.Names[I], JSReturns.ValueFromIndex[I]);
+      JSReturns.Clear;
+    end;
+  end;
+
 var
   I, J : integer;
 begin
@@ -476,6 +507,7 @@ begin
     delete(Response, I, J - I + 2);
     I := PosEx('/*', Response, I);
   end;
+  HandleJSReturns;
   Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
@@ -780,6 +812,30 @@ function TExtObject.JSObject(JSON : string; ObjectConstructor : string = '') : T
     Result.FJSName := '{' + JSON + '}'
   else
     Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
+end;
+
+{
+Lets use an <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
+The function will be called in the browser side and should returns an integer.
+@param Method ExtJS function that will be called
+@return Integer value to return
+@example <code>
+Grid := TExtGridEditorGridPanel.Create;
+with Grid do begin
+  Width  := JSReturn(Panel.GetInnerWidth);
+  Height := JSReturn(Panel.GetInnerHeight);
+end;
+</code>
+}
+function TExtObject.JSReturn(Method: TExtFunction) : integer;
+var
+  Mark : string;
+begin
+  with TExtThread(CurrentFCGIThread) do begin
+    Mark := '-7' + GetSequence + '7';
+    Result := StrToInt(Mark);
+    JSReturns.Values[Mark] := ExtractJSCommand(Method.JSCommand);
+  end;
 end;
 
 {
