@@ -1,9 +1,8 @@
 program ExtPascalSamples;
 
-{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$DEFINE SERVICE}{$ENDIF}
-
+{$I ExtPascal.inc}
 uses
-  FCGIApp, ExtPascal, SysUtils, {$IFDEF SERVICE} Classes, Services,{$ENDIF}
+  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE} Classes, Services,{$ENDIF}
   Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -718,7 +717,11 @@ end;
 
 {$IFNDEF SERVICE}
 begin
+  {$IFDEF CGI}
   Application := TFCGIApplication.Create('ExtPascal Samples 0.8.9', TSamples, 2014, 5);
+  {$ELSE}
+  Application := TIdExtApplication.Create('ExtPascal Samples 0.8.9', TSamples, 80, 5);
+  {$ENDIF}
   Application.Run;
 {$ELSE}
 type

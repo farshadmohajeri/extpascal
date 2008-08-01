@@ -38,7 +38,7 @@ unit ExtPascal;
 interface
 
 uses
-  FCGIApp, Classes;
+  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
 const
   ExtPath = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
@@ -55,7 +55,7 @@ type
   as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
   The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
-  TExtThread = class(TFCGIThread)
+  TExtThread = class({$IFDEF CGI}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
   private
     Style, Libraries, FLanguage : string;
     JSReturns : TStringList;
@@ -70,6 +70,7 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
+    function ConfigAvailable(JSName: string; var Position: Integer): boolean;    
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -81,7 +82,11 @@ type
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
     function Latin1ToHTML(S : string) : string;
+    {$IFDEF CGI}
     constructor Create(NewSocket : integer); override;
+    {$ELSE}
+    procedure InitSessionDefs; override;
+    {$ENDIF}
     destructor Destroy; override;
   end;
 
@@ -98,6 +103,7 @@ type
   protected
     JSCommand : string; // Last command written in Response
     Created : boolean; // Tests if object already created
+    function ConfigAvailable(JSName: string): boolean;
     function IsParent(CName : string): boolean;
     function ExtractJSCommand(Command : string) : string;
     function VarToJSON(A : array of const)     : string; overload;
@@ -459,8 +465,12 @@ begin
         Result := false;
       end
 end;
-
-constructor TExtThread.Create(NewSocket : integer); begin
+{$IFDEF CGI}
+constructor TExtThread.Create(NewSocket : integer);
+{$ELSE}
+procedure TExtThread.InitSessionDefs;
+{$ENDIF}
+begin
   inherited;
   JSReturns := TStringList.Create;
 end;
@@ -529,7 +539,24 @@ begin
   else
     if lowercase(CharSet) = 'iso-8859-1' then Response := Latin1ToHTML(Response)
 end;
-
+{
+  When assign value to a config property, check if it is in creating process.
+  If not then config property code will redirect to a relationed method if it exists.
+  @Param JSName Objects name to be searched in the previous generated script
+  @Param Position the position where the property has to be assigned in the script
+  @Return true if creating false if assign to a previous created object
+@example <code>
+  //doesn't matter if you are into Create block or assign to previous ajax created object
+  //O1.title will be mapped to O1.setTitle('new title', '');
+  O1.title = 'new title';</code>
+}
+function TExtThread.ConfigAvailable(JSName: string; var Position: Integer): boolean;
+begin
+  Position := pos('/*' + JSName + '*/', Response);
+  Result := Position <> 0;
+  if not Result then{put at the end}
+    Position := Length(Response);
+end;
 {
 Returns a unique numeric sequence to identify a JS object, list or attribute in this session.
 This sequence will be used by Self-translating process imitating a Symbol table entrance.
@@ -648,6 +675,12 @@ constructor TExtObject.CreateSingleton(Attribute : string = ''); begin
   InitDefaults;
 end;
 
+function TExtObject.ConfigAvailable(JSName: string): boolean;
+var
+  Dummy: Integer;
+begin
+  Result := TExtThread(CurrentFCGIThread).ConfigAvailable(JSName, Dummy);
+end;
 {
 Used by <link TExtObject.Create, Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
 and to generate <link TExtObject.JSCode, JS code>
