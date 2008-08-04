@@ -15,7 +15,7 @@ type
     FCurrentRequest: TIdHTTPRequestInfo;
     FCurrentReponse: TIdHTTPResponseInfo;
     FNewThread: boolean;
-    FGarbageCollector : TList;
+    FGarbageCollector : TStringList;
     FCharset: string;
     function GetPathInfo: string;
     function GetRequestHeader(const HeaderName: string): string;
@@ -36,8 +36,10 @@ type
     procedure InitSessionDefs; virtual;
 
     procedure HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
-    procedure AddToGarbage(Obj: TObject);
-    procedure DeleteFromGarbage(Obj: TObject);
+    procedure AddToGarbage(const Name: string; Obj: TObject);
+    procedure DeleteFromGarbage(Obj: TObject); overload;
+    procedure DeleteFromGarbage(Name: string); overload;
+    function FindObject(Name: string): TObject;
 
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
@@ -47,6 +49,7 @@ type
     property Charset: string read FCharset write FCharset;
   published
     procedure Home; virtual; abstract;
+    procedure TreatObjEvent; virtual; abstract;
     procedure Logout; virtual;
   end;
   {$M-}
@@ -284,7 +287,7 @@ threadvar
 
 implementation
 uses
-  Controls, SysUtils, IdGlobalProtocols;
+  Controls, StrUtils, SysUtils, IdGlobalProtocols, ExtPascalUtils;
 
 function FileType2MimeType(const AFileName: string): string;
 var
@@ -343,9 +346,9 @@ end;
 
 { TIdExtSession }
 
-procedure TIdExtSession.AddToGarbage(Obj: TObject);
+procedure TIdExtSession.AddToGarbage(const Name: string; Obj: TObject);
 begin
-  FGarbageCollector.Add(Obj);
+  FGarbageCollector.AddObject(AnsiReplaceStr(Name, '_', ''), Obj);
 end;
 
 procedure TIdExtSession.AfterHandleRequest;
@@ -363,13 +366,37 @@ constructor TIdExtSession.CreateInitialized(AOwner: TIdHTTPCustomSessionList;
 begin
   inherited;
   FNewThread := False;
-  FGarbageCollector := TList.Create;
+  FGarbageCollector := TStringList.Create;
+  FGarbageCollector.Sorted := True;
   InitSessionDefs;  
 end;
 
 procedure TIdExtSession.DeleteFromGarbage(Obj: TObject);
+var
+  I: Integer;
 begin
-  FGarbageCollector.Remove(Obj);
+  I := FGarbageCollector.IndexOfObject(Obj);
+  if I >= 0 then
+    FGarbageCollector.Delete(I);
+end;
+
+procedure TIdExtSession.DeleteFromGarbage(Name: string);
+var
+  I: Integer;
+begin
+  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
+  if I >= 0 then
+    FGarbageCollector.Delete(I);
+end;
+
+function TIdExtSession.FindObject(Name: string): TObject;
+var
+  I: Integer;
+begin
+  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
+  if I >= 0 then
+    Result := FGarbageCollector.Objects[I]
+  else Result := nil;  
 end;
 
 destructor TIdExtSession.Destroy;
@@ -378,7 +405,7 @@ var
 begin
   with FGarbageCollector do begin
     for I := 0 to Count-1 do
-      try TObject(Items[I]).Free except end;
+      try TObject(Objects[I]).Free except end;
     Free;
   end;
   FGarbageCollector := nil;

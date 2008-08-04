@@ -30,11 +30,12 @@ Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
 Date: jun-2008
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
+
 unit ExtPascal;
 
 //@@Overview
 //<copy ExtPascal.pas>
-
+{$INCLUDE ExtPascal.inc}
 interface
 
 uses
@@ -55,7 +56,11 @@ type
   as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
   The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
-  TExtThread = class({$IFDEF CGI}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
+  {$IFDEF CGI}
+  TExtThread = class(TFCGIThread)
+  {$ELSE}
+  TExtThread = class(TIdExtSession)
+  {$ENDIF}
   private
     Style, Libraries, FLanguage : string;
     JSReturns : TStringList;
@@ -70,7 +75,7 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
-    function ConfigAvailable(JSName: string; var Position: Integer): boolean;    
+    function ConfigAvailable(JSName: string; var Position: Integer): boolean;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -88,6 +93,8 @@ type
     procedure InitSessionDefs; override;
     {$ENDIF}
     destructor Destroy; override;
+  published
+    procedure TreatObjEvent; override;
   end;
 
   {
@@ -110,10 +117,19 @@ type
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
     function VarToJSON(Ints : TArrayOfInteger) : string; overload;
+    function ParamAsInteger(ParamName: string): integer;
+    function ParamAsDouble(ParamName: string): double;
+    function ParamAsBoolean(ParamName: string): boolean;
+    function ParamAsString(ParamName: string): string;
+    function ParamAsTDateTime(ParamName: string): TDateTime;
+    function ParamAsObject(ParamName: string): TExtObject;
+
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
     procedure InitDefaults; virtual;
+    function Ajax(MethodName: string; Params: array of const; IsEvent: boolean): TExtFunction; overload;
+    procedure TreatObjEvent(const AEvtName: string); virtual;
   public
     constructor CreateInternal(Owner : TExtObject; Attribute : string);
     constructor Create(Owner : TExtObject = nil);
@@ -177,6 +193,7 @@ type
   Tel = type string; // doc fault
   TEvent = class(TExtObject);
   TEventObject = TEvent;
+  TExtEventObject = TEventObject;
   THTMLNode = TExtObject;
   TConstructor = class(TExtObject);
   TExtLibRegion = class(TExtObject); //doc fault
@@ -450,7 +467,7 @@ begin
   Response := '';
   FIsAjax  := Query['Ajax'] = '1';
   if not IsAjax then begin
-    Sequence  := 0;
+    //Sequence  := 0;
     Style     := '';
     Libraries := '';
   end
@@ -473,11 +490,26 @@ procedure TExtThread.InitSessionDefs;
 begin
   inherited;
   JSReturns := TStringList.Create;
+  Sequence := 0;
 end;
 
 destructor TExtThread.Destroy; begin
   JSReturns.Free;
   inherited;
+end;
+
+procedure TExtThread.TreatObjEvent;
+var
+  FObj: TExtObject;
+begin
+  if Query['IsEvent'] = '1' then
+  begin
+    FObj := TExtObject(FindObject(Query['Obj']));
+    if not Assigned(FObj) then
+      OnError('Object not found in session list. It could be timed out, refresh page and try again', 'TreatObjEvent', '')
+    else
+      FObj.TreatObjEvent(Query['Evt']);
+  end else OnError('This method only can be called by internal objects', 'TreatObjEvent', '');
 end;
 
 {
@@ -562,7 +594,7 @@ Returns a unique numeric sequence to identify a JS object, list or attribute in 
 This sequence will be used by Self-translating process imitating a Symbol table entrance.
 }
 function TExtThread.GetSequence : string; begin
-  Result := IntToStr(Sequence);
+  Result := IntToHex(Sequence, 1);
   inc(Sequence);
 end;
 
@@ -688,11 +720,12 @@ and to generate <link TExtObject.JSCode, JS code>
 @see CreateVarAlt
 }
 procedure TExtObject.CreateVar(JS : string); begin
-  CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
+  CurrentFCGIThread.AddToGarbage(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '=new ' + JS)
+  JSCode('|' + DeclareJS + JSName + '=new ' + JS);
+  JSCode(JSName + '.nm=' + VarToJSON([AnsiReplaceStr(JSName, '_', '')]) + ';');
 end;
 
 {
@@ -700,11 +733,12 @@ Alternate create constructor, it is an ExtJS fault
 @see CreateVar
 }
 procedure TExtObject.CreateVarAlt(JS : string); begin
-  CurrentFCGIThread.AddToGarbage(Self);
   CreateJSName;
+  CurrentFCGIThread.AddToGarbage(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '= ' + JS)
+  JSCode('|' + DeclareJS + JSName + '= ' + JS);
+  JSCode(JSName + '.nm=' + VarToJSON([AnsiReplaceStr(JSName, '_', '')]) + ';');
 end;
 
 // Deletes JS object from Browser memory
@@ -802,8 +836,10 @@ If called as constructor creates the object before adds it to the list.
 @param List An instanciated <link TExtObjectList>
 }
 constructor TExtObject.AddTo(List : TExtObjectList); begin
-  if JSName = '' then begin
+  if JSName = '' then
+  begin
     CreateJSName;
+    //FJSName := 'Dummy';
     InitDefaults;
   end;
   List.Add(Self);
@@ -869,6 +905,11 @@ begin
     Result := StrToInt(Mark);
     JSReturns.Values[Mark] := ExtractJSCommand(Method.JSCommand);
   end;
+end;
+
+procedure TExtObject.TreatObjEvent(const AEvtName: string);
+begin
+// must be implemented on extended classes where events can be handled 
 end;
 
 {
@@ -1084,39 +1125,60 @@ end;
 }
 function TExtObject.Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction;
 var
-  MetName, lParams : string;
-  I : integer;
+  MetName : string;
 begin
-  Result  := TExtFunction(Self);
   MetName := CurrentFCGIThread.MethodName(@Method);
-  if MetName <> '' then begin
-    lParams := 'Ajax=1';
-    for I := 0 to high(Params) do
-      with Params[I] do
-        if Odd(I) then
-          case VType of
-            vtAnsiString : lParams := lParams + string(VAnsiString);
-            vtString     : lParams := lParams + VString^;
-            vtObject     : lParams := lParams + '"+' + ExtractJSCommand(TExtObject(VObject).JSCommand) + '+"';
-            vtInteger    : lParams := lParams + IntToStr(VInteger);
-            vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
-            vtExtended   : lParams := lParams + FloatToStr(VExtended^);
-            vtVariant    : lParams := lParams + string(VVariant^)
-          end
-        else
-          case VType of
-            vtAnsiString : lParams := lParams + '&' + string(VAnsiString) + '=';
-            vtString     : lParams := lParams + '&' + VString^ + '=';
-          else
-            JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MetName +
-              ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
-            exit;
-          end;
-    JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MetName +
-      '",params:"' + lParams + '",success:AjaxSuccess,failure:AjaxFailure});');
-  end
+  if MetName <> '' then
+    Result := Ajax(MetName, Params, False)
   else
+  begin
+    Result  := TExtFunction(Self);
     JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
+  end;
+end;
+
+{
+  Internal Ajax generation handler treating IsEvent, when is true TreatEventHandler will be invoked instead
+  published methods
+}
+
+function TExtObject.Ajax(MethodName: string; Params: array of const; IsEvent: boolean): TExtFunction;
+var
+  lParams: string;
+  I : integer;  
+begin
+  Result := TExtFunction(Self);
+  lParams := 'Ajax=1';
+  if IsEvent then
+  begin
+    lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&' + 'Evt=' + MethodName;
+    MethodName := 'TreatObjEvent';
+  end;
+  for I := 0 to high(Params) do
+    with Params[I] do
+      if Odd(I) then
+        case VType of
+          vtAnsiString : lParams := lParams + string(VAnsiString);
+          vtString     : lParams := lParams + VString^;
+          vtObject     : lParams := lParams + '"+' + ExtractJSCommand(TExtObject(VObject).JSCommand) + '+"';
+          vtInteger    : lParams := lParams + IntToStr(VInteger);
+          vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
+          vtExtended   : lParams := lParams + FloatToStr(VExtended^);
+          vtVariant    : lParams := lParams + string(VVariant^);
+          vtChar       : lParams := lParams + VChar;
+        end
+      else
+        case VType of
+          vtAnsiString : lParams := lParams + '&' + string(VAnsiString) + '=';
+          vtString     : lParams := lParams + '&' + VString^ + '=';
+          vtChar       : lParams := lParams + '&' + VChar + '=';
+        else
+          JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MethodName +
+            ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
+          exit;
+        end;
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName +
+    '",params:"' + lParams + '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
 
 {
@@ -1135,16 +1197,15 @@ begin
   while I <> 0 do begin
     if Command[I+1] in ['0'..'9'] then begin
       Command[I] := 'P';
-      insert('+"', Command, FirstDelimiter('"'' ', Command, I));
+      insert('+"', Command, FirstDelimiter('"'' &', Command, I));
       insert('"+', Command, I);
       inc(J);
     end;
     I := posex('%', Command, I);
   end;
-  for I := 0 to J do begin
-    Params := 'P' + IntToStr(I);
-    if I <> J then Params := Params + ','
-  end;
+  for I := 0 to J do
+    Params := Params + IfThen(I>0, ', ') + 'P' + IntToStr(I);
+
   I := LastDelimiter(';', copy(Command, 1, length(Command)-1));
   if (I = 0) or (I = length(Command)) and (pos('return ', Command) <> 1) then
     Command := 'return ' + Command
@@ -1269,6 +1330,36 @@ begin
     if I < high(Ints) then Result := Result + ',';
   end;
   Result := Result + ']'
+end;
+
+function TExtObject.ParamAsInteger(ParamName: string): integer;
+begin
+  Result := StrToIntDef(CurrentFCGIThread.Query[ParamName], 0);
+end;
+
+function TExtObject.ParamAsDouble(ParamName: string): double;
+begin
+  Result := StrToFloatDef(CurrentFCGIThread.Query[ParamName], 0);
+end;
+
+function TExtObject.ParamAsBoolean(ParamName: string): boolean;
+begin
+  Result := CurrentFCGIThread.Query[ParamName] = 'true';
+end;
+
+function TExtObject.ParamAsString(ParamName: string): string;
+begin
+  Result := CurrentFCGIThread.Query[ParamName];
+end;
+
+function TExtObject.ParamAsTDateTime(ParamName: string): TDateTime;
+begin
+  Result := ParamAsDouble(ParamName);
+end;
+
+function TExtObject.ParamAsObject(ParamName: string): TExtObject;
+begin
+  Result := TExtObject(CurrentFCGIThread.FindObject(CurrentFCGIThread.Query[ParamName]));
 end;
 
 end.

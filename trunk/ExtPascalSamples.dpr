@@ -1,9 +1,9 @@
 program ExtPascalSamples;
 
-{$I ExtPascal.inc}
+{$INCLUDE ExtPascal.inc}
 uses
-  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE} Classes, Services,{$ENDIF}
-  Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
+  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE} Services,{$ENDIF}
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
   TSamples = class(TExtThread)
@@ -14,6 +14,7 @@ type
     DataStore : TExtDataStore;
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
+    procedure TreatExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
   published
     procedure Home; override;
     procedure BasicTabPanel;
@@ -208,8 +209,9 @@ begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
-    Handler  := Ajax(AddTab);
-    Free;
+    //Handler  := Ajax(AddTab);
+    OnExtButtonClick := TreatExtButtonClick;
+    //Free;
   end;
   Tabs := TExtTabPanel.Create;
   with Tabs do begin
@@ -367,6 +369,12 @@ end;
 
 procedure TSamples.SelectNodeEventServerSide; begin
   ExtMessageBox.Alert('Server Side', Query['Name']);
+end;
+
+procedure TSamples.TreatExtButtonClick(This: TExtButton;
+  E: TExtEventObjectSingleton);
+begin
+  ExtMessageBox.Alert('alert', 'event handled successfully');
 end;
 
 procedure TSamples.SelectNodeEventBrowserSide; begin
