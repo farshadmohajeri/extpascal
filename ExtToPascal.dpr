@@ -63,7 +63,7 @@ begin
     if T = 'date'      then begin Result := 'TDateTime';        exit end else
     if T = 'float'     then begin Result := 'Double';           exit end else
     if T = 'int'       then begin Result := 'Integer';          exit end else
-    if pos('mixedcollection', T) <> 0 then begin Result := 'TExtObjectList'; exit end 
+    if pos('mixedcollection', T) <> 0 then begin Result := 'TExtObjectList'; exit end
     else begin
       I := LastDelimiter('/[:', Ident);
       if I <> 0 then begin
@@ -73,8 +73,7 @@ begin
             Result := 'TExtObjectList'
           else
             Result := 'TArrayOf' + Result;
-        end
-        else
+        end else
           Result := Ident;
         exit;
       end;
@@ -95,9 +94,9 @@ type
   end;
 
   TClass = class
-    Name, JSName, Parent, UnitName : string;
+    Name, JSName, Parent, UnitName, SimpleName : string;
     Singleton, Defaults, Arrays, Objects, AltCreate : boolean;
-    Properties, Methods : TStringList;
+    Properties, Methods, Events : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
     procedure AddCreate;
@@ -120,6 +119,7 @@ type
 
   TParam = class
 	  Name, Typ : string;
+    DefValue: string;
 	  Optional : boolean;
     constructor Create(pName, pType : string; pOptional : boolean);
   end;
@@ -202,11 +202,13 @@ end;
 
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Name       := FixIdent(pName, true);
+  SimpleName := Copy(pName, LastDelimiter('.', pName) + 1, MaxInt);
   JSName     := pName;
   Parent     := FixIdent(pParent, true);
   UnitName   := FixIdent(pUnitName);
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
+  Events     := TStringList.Create;
 end;
 
 procedure TClass.AddCreate; begin
@@ -251,6 +253,14 @@ constructor TParam.Create(pName, pType : string; pOptional : boolean); begin
   Name     := FixIdent(pName);
   Typ      := pType;
   Optional := pOptional;
+  //To Compatibilize with config properties, when SetMethod Obligatory Params differ from property
+  if SameText(Typ, 'string') then
+    DefValue := ''''''
+  else if SameText(Typ, 'Integer') or SameText(Typ, 'Double') or SameText(Typ, 'TDateTime') then
+    DefValue := '0'
+  else if SameText(Typ, 'Boolean') then
+    DefValue := 'false'
+  else DefValue := 'nil';
 end;
 
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
@@ -339,7 +349,7 @@ function Unique(S : string; List : TStringList) : string; begin
 end;
 
 var
-  State : (Initial, InClass, InProperties, InMethods);
+  State : (Initial, InClass, InProperties, InMethods, InEvents);
 
 procedure LoadElements(Line : string);
 const
@@ -352,7 +362,7 @@ const
   Config    : boolean     = false;
 var
   PackName, Arg, Return, JSName : string;
-  Matches, Params, Args : TStringList;
+  Matches, Params, Args, MetPointer : TStringList;
   Static  : boolean;
   Package : TUnit;
   I : integer;
@@ -462,7 +472,7 @@ begin
                 end
                 else
                   if pos('<static>', lowercase(Line)) <> 0 then CurProp.Static := true;
-      InMethods :
+      InMethods, InEvents :
           if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) or
              Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
             JSName := Matches[0];
@@ -471,15 +481,20 @@ begin
               exit;
             end;
             MetName   := Unique(FixIdent(JSName), CurClass.Properties);
+            if State = InEvents then
+              MetName := Format('On%0:s%1:s', [Copy(CurClass.Name, 2, MaxInt), MetName]);
             MetName   := Unique(MetName, CurClass.Methods);
-            Return    := Matches[2];
-            if Return = '' then  begin
-              MetName := 'Create';
-              with CurClass do if Defaults or Arrays or Objects or Singleton then exit; // already have Create
-            end
-            else
-              if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
-            Params := Explode(',', Matches[1]);
+            if State = InMethods then
+            begin
+              Return    := Matches[2];
+              if Return = '' then  begin
+                MetName := 'Create';
+                with CurClass do if Defaults or Arrays or Objects or Singleton then exit; // already have Create
+              end
+              else
+                if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
+              Params := Explode(',', Matches[1]);
+            end else Params := Explode(',', Matches[2]);
             Args   := TStringList.Create;
             for I := 0 to Params.Count-1 do
               if Extract(['<code>', ' ', '</code>'], Params[I], Matches) then begin
@@ -497,23 +512,33 @@ begin
                     Matches[0] := Arg;
                   end;
                 Matches[1] := Unique(FixIdent(Matches[1]), Args);
+                if (State = InEvents) and SameText(Matches[1], 'This') then
+                  Matches[0] := CurClass.Name;
                 Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
                   (Matches[1] = 'Config') or ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
               end;
             Params.Free;
             CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
-            DoOverloads(CurClass, CurMethod);
+            if State = InEvents then
+              CurClass.Events.AddObject(CurMethod.Name, CurMethod)
+            else
+              DoOverloads(CurClass, CurMethod);
           end
           else
             if Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
               if Matches[0][1] = '<' then
-                with CurClass.Methods do begin
+              begin
+                if state = InEvents then
+                  MetPointer := CurClass.Events
+                else MetPointer := CurClass.Methods;
+                with MetPointer do begin
                   I := IndexOf(MetName);
                   while I <> -1 do begin
                     Delete(I);
                     I := IndexOf(MetName); // delete method inherited and overloads
                   end;
                 end;
+              end;
             end
             else
               if pos('<static>', lowercase(Line)) <> 0 then
@@ -521,8 +546,10 @@ begin
               else
                 if pos('<h2>Public Events</h2>', Line) <> 0 then begin
                   AllClasses.AddObject(CurClass.Name, CurClass);
-                  State := Initial;
-                end;
+                  State := InEvents;
+                end else if pos('<h2>This class has no public events.</h2>', Line) <> 0 then
+                  State := Initial;                          
+
     end;
   finally
     Matches.Free;
@@ -596,23 +623,41 @@ begin
                     Default := Fields[5]
                   end;
               end
-            else begin // methods
-              J := Methods.IndexOf(Fields[1]);
-              if J = -1 then begin // Add
-                Params := TStringList.Create;
-                Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
-                for K := 0 to ((Fields.Count-4) div 3)-1 do
-                  Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
-              end
-              else // Update
-                with TMethod(Methods.Objects[J]) do begin
-                  Return   := FixType(Fields[2]);
-                  Static   := lowercase(Fields[3]) = 'true';
-                  Overload := lowercase(Fields[4]) = 'true';
-                  Params.Clear;
+            else begin // Methods or Events
+              if SameText(Fields[2], 'Event') then //Events
+              begin
+                J := Events.IndexOf('On' + Fields[0] + Fields[1]);
+                if J = -1 then begin // Add
+                  Params := TStringList.Create;
+                  Events.AddObject('On' + Fields[0] + Fields[1], TMethod.Create('On' + Fields[0] + Fields[1], '', Params, false, false));
+                  for K := 0 to ((Fields.Count-2) div 2)-1 do
+                    Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
+                end
+                else // Update
+                  with TMethod(Events.Objects[J]) do begin
+                    Params.Clear;
+                    for K := 0 to ((Fields.Count-2) div 2)-1 do
+                      Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
+                  end;
+              end else
+              begin
+                J := Methods.IndexOf(Fields[1]);
+                if J = -1 then begin // Add
+                  Params := TStringList.Create;
+                  Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
                   for K := 0 to ((Fields.Count-4) div 3)-1 do
                     Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
-                end;
+                end
+                else // Update
+                  with TMethod(Methods.Objects[J]) do begin
+                    Return   := FixType(Fields[2]);
+                    Static   := lowercase(Fields[3]) = 'true';
+                    Overload := lowercase(Fields[4]) = 'true';
+                    Params.Clear;
+                    for K := 0 to ((Fields.Count-4) div 3)-1 do
+                      Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+                  end;
+              end;
             end;
         end
         else begin // Create new Class
@@ -635,6 +680,54 @@ begin
     writeln('ExtFixes.txt file not found. Generation aborted.'^M^J'Press enter.');
     readln;
   end;
+end;
+
+procedure FixEvents;
+var
+  EventDataTypes: TStringList;
+  procedure ChangeSimpleClassToFinalClass(const ATypFrom: string; var ATypTo: string);
+  var
+    I: Integer;
+  begin
+    if SameText(ATypTo, 'TError') then
+      ATypTo := 'string'
+    else if Pos('/', ATypTo) > 0 then
+      ATypTo := FixType(Copy(ATypTo, 1, Pos('/', ATypTo)-1))
+    else if (not SameText(ATypTo, 'integer')) and
+       (not SameText(ATypTo, 'string')) and
+       (not SameText(ATypTo, 'boolean')) and
+       (not SameText(ATypTo, 'double')) and
+       (not SameText(ATypTo, 'TDateTime')) and
+       (not SameText(ATypTo, 'TExtObject')) and
+       (not SameText(ATypTo, 'TExtObjectList')) and
+       (not SameText(ATypTo, 'TArray')) and
+       (not SameText(ATypTo, 'TExtObject')) and
+       (AllClasses.IndexOf(ATypTo) < 0) then
+      for I := 0 to AllClasses.Count - 1 do
+        if SameText(TClass(AllClasses.Objects[I]).SimpleName, ATypFrom) then
+        begin
+          ATypTo := TClass(AllClasses.Objects[I]).Name;
+          break;
+        end;
+    EventDataTypes.Add(ATypTo);
+  end;
+var
+  I, J, K: Integer;
+begin
+  EventDataTypes := TStringList.Create;
+  EventDataTypes.Sorted := True;
+  EventDataTypes.Duplicates := dupIgnore;
+  for I := 0 to AllClasses.Count - 1 do
+    with TClass(AllClasses.Objects[I]) do
+      if Parent = '' then {workaround to ignore classes that has events but do not descend from Observable}
+        Events.Clear
+      else
+        for J := 0 to Events.Count - 1 do
+          with TMethod(Events.Objects[J]) do
+            for K := 0 to Params.Count - 1 do
+              with TParam(Params.Objects[K]) do
+                ChangeSimpleClassToFinalClass(Copy(Typ, 2, MaxInt), Typ);
+  EventDataTypes.SaveToFile('c:\temp\teste.txt');
 end;
 
 function Tab(I : integer = 1) : string;
@@ -715,28 +808,50 @@ end;
 procedure WriteClassType(Cls : TClass);
 var
   I : integer;
+  FPublishedWritten: boolean;
 begin
   with Cls do begin
+    for I := 0 to Events.Count - 1 do
+    begin
+      if I = 0 then
+        writeln(Pas, Tab, '{Event classes for class ', Name, '}');
+      write(Pas, Tab, 'T', TMethod(Events.Objects[I]).Name, ' = procedure');
+      if TMethod(Events.Objects[I]).Params.Count > 0 then
+      begin
+        write(Pas, '(');
+        WriteParams(TMethod(Events.Objects[I]).Params);
+        write(Pas, ')');
+      end;
+      writeln(Pas, ' of object;');
+    end;
+    if Events.Count > 0 then
+      writeln(Pas, Tab, '{End of event classes for class ', Name, '}'^M^J);
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'TExtFunction', Parent), ')');
-    if Properties.Count > 0 then writeln(Pas, Tab, 'private');
+    if (Properties.Count > 0) or (Events.Count > 0)  then writeln(Pas, Tab, 'private');
     for I := 0 to Properties.Count-1 do // Write private fields
       with TProp(Properties.Objects[I]) do begin
         if not Static then
           writeln(Pas, Tab(2), 'F', Name, ' : ', Typ, ';', IfThen(Default <> '', ' // ' + Default, ''));
       end;
+
+    for I := 0 to Events.Count-1 do // Write private fields
+      with TMethod(Events.Objects[I]) do
+        writeln(Pas, Tab(2), 'F', Name, ' : ', 'T', Name, ';');
+
     for I := 0 to Properties.Count-1 do // Write Set procedures
       with TProp(Properties.Objects[I]) do
         if not Static then writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : ', Typ, ');');
-    if Defaults or Arrays or Objects then begin
+
+    for I := 0 to Events.Count-1 do // Write Set procedures
+      with TMethod(Events.Objects[I]) do
+         writeln(Pas, Tab(2), 'procedure SetF', Name, '(Value : T', Name, ');');
+    if Defaults or Arrays or Objects or (Events.Count > 0) then
       writeln(Pas, Tab, 'protected');
+    if Defaults or Arrays or Objects then
       writeln(Pas, Tab(2), 'procedure InitDefaults; override;');
-    end;
+    if (Events.Count > 0) then
+      writeln(Pas, Tab(2), 'procedure TreatObjEvent(const AEvtName: string); override;');
     writeln(Pas, Tab, 'public');
-    for I := 0 to Properties.Count-1 do // Write properties
-      with TProp(Properties.Objects[I]) do begin
-        if not Static then
-          writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
-      end;
     writeln(Pas, Tab(2), 'function JSClassName : string; override;');
     for I := 0 to Properties.Count-1 do // Write class properties
       with TProp(Properties.Objects[I]) do
@@ -750,6 +865,28 @@ begin
     for I := 0 to Methods.Count-1 do // Write methods
       WriteMethodSignature(TMethod(Methods.Objects[I]));
     if Arrays or Objects then writeln(Pas, Tab(2), 'destructor Destroy; override;');
+    FPublishedWritten := False;
+    for I := 0 to Properties.Count-1 do // Write properties
+      with TProp(Properties.Objects[I]) do begin
+        if not Static then
+        begin
+          if not FPublishedWritten then
+          begin
+            writeln(Pas, Tab, 'published');
+            FPublishedWritten := True;          
+          end;
+          writeln(Pas, Tab(2), 'property ', Name, ' : ', Typ, ' read F', Name, ' write SetF', Name, ';');
+        end;
+      end;
+    for I := 0 to Events.Count-1 do // Write events
+      with TMethod(Events.Objects[I]) do begin
+        if not FPublishedWritten then
+        begin
+          writeln(Pas, Tab, 'published');
+          FPublishedWritten := True;
+        end;
+        writeln(Pas, Tab(2), 'property ', Name, ' : T', Name, ' read F', Name, ' write SetF', Name, ';');
+      end;
     writeln(Pas, Tab, 'end;'^M^J);
   end;
 end;
@@ -841,8 +978,60 @@ begin
 end;
 
 procedure WriteUnits;
+  procedure WriteEventParamsAdapter(Event: TMethod);
+  var
+    I: Integer;
+    First: boolean;
+  begin
+    Write(Pas, '[');
+    First := true;
+    for I := 0 to Event.Params.Count - 1 do
+      with TParam(Event.Params.Objects[I]) do
+      begin
+        if not AnsiEndsText('Singleton', Name) then
+        begin
+          Write(Pas, IfThen(not First, ','), '''', Name, '''');
+          First := False;
+          {Simple types}
+          if (SameText(Typ, 'integer')) or
+            (SameText(Typ, 'string')) or
+            (SameText(Typ, 'boolean')) or
+            (SameText(Typ, 'double')) or
+            (SameText(Typ, 'TDateTime')) then
+            Write(Pas, ', ''%', IntToStr(I), '''')
+          else {Objects, just get the name, server will convert in an object}
+            Write(Pas, ', ''%', IntToStr(I), '.nm''')
+        end;
+      end;
+    Write(Pas, ']');
+  end;
+  procedure WriteEventParamsConverter(Event: TMethod);
+  var
+    I: Integer;
+  begin
+    Write(Pas, '(');
+    for I := 0 to Event.Params.Count - 1 do
+    begin
+      if I > 0 then
+        Write(Pas, ', ');
+      with TParam(Event.Params.Objects[I]) do
+      begin
+        if AnsiEndsText('Singleton', Typ) then
+          Write(Pas, Copy(Typ, 2, Length(Typ) - 10)) //Gets Singleton object
+        else if (SameText(Typ, 'integer')) or {Simple types}
+          (SameText(Typ, 'string')) or
+          (SameText(Typ, 'boolean')) or
+          (SameText(Typ, 'double')) or
+          (SameText(Typ, 'TDateTime')) then
+          Write(Pas, 'ParamAs', Typ, '(''', Name, ''')')
+        else {Objects, just get the name, server will convert in an object}
+          Write(Pas, Typ, '(ParamAsObject(''', Name, '''))');
+      end;
+    end;
+    Write(Pas, ')');
+  end;
 var
-  I, J, K : integer;
+  I, J, K, M : integer;
   CName, CJSName, BoolParam : string;
 begin
   for I := 0 to Units.Count-1 do
@@ -853,6 +1042,7 @@ begin
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, '// Generated by ExtToPascal at ', DateTimeToStr(Now), ^M^J);
       writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal', UsesList, ';'^M^J);
+      writeln(Pas, '{$M+}');      
       writeln(Pas, 'type');
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
@@ -877,9 +1067,47 @@ begin
                 BoolParam := AddBoolParam(Typ);
                 if BoolParam = ', false' then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
                 if Config then
+                begin
+                  //Vagner
+                  //If there is an alternative method, and its parameters are
+                  //compatible, implement an workaround to reconfig objects created in a previous request
+                  M := Methods.IndexOf('Set'+Name);
+                  if (M <> -1) and (TMethod(Methods.Objects[M]).Params.Count > 0) and
+                    (SameText(Typ, TParam(TMethod(Methods.Objects[M]).Params.Objects[0]).Typ)) then
+                  begin
+                    writeln(Pas, Tab, 'if not ConfigAvailable(JSName) then');
+                    with TMethod(Methods.Objects[M]) do
+                    begin
+                      write(Pas, Tab, Tab, Name, '(', 'Value');
+                      for M := 1 to Params.Count - 1 do
+                        if TParam(Params.Objects[M]).Optional then
+                          break
+                        else
+                          Write(Pas, ', ', TParam(Params.Objects[M]).DefValue);
+                      writeln(Pas, ')');
+                      writeln(Pas, Tab, 'else');
+                    end;
+                    write(Pas, Tab);
+                  end;
                   writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), '));')
-                else
+                end else
                   writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), ') + '';'');');
+                writeln(Pas, 'end;'^M^J);
+              end;
+            end;
+            for K := 0 to Events.Count-1 do // Write Set procedures implementation
+            with TMethod(Events.Objects[K]) do begin
+              if not Static then begin
+                writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : T', Name, '); begin');
+                writeln(Pas, Tab, 'if Assigned(F', Name, ') then');
+                write(Pas, Tab(2), 'Un(''', JSName, ''', Ajax(''', JSName, ''', ');
+                WriteEventParamsAdapter(TMethod(Events.Objects[K]));
+                writeln(Pas, ', true));');
+                writeln(Pas, Tab, 'if Assigned(Value) then');
+                write(Pas, Tab(2), 'On(''', JSName, ''', Ajax(''', JSName, ''', ');
+                WriteEventParamsAdapter(TMethod(Events.Objects[K]));
+                writeln(Pas, ', true));');
+                writeln(Pas, Tab, 'F', Name, ' := Value;');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -935,7 +1163,7 @@ begin
                   writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
                     ''', ''' + CName + ''');');
                   if Return <> 'TVoid' then
-                    writeln(Pas, Tab, 'Result := Self')
+                    writeln(Pas, Tab, 'Result := Self;')
                 end;
               writeln(Pas, 'end;'^M^J);
             end;
@@ -948,6 +1176,25 @@ begin
                   writeln(Pas, Tab(2), 'F' + Name + '.Free;');
             writeln(Pas, Tab, 'except end;');
             writeln(Pas, Tab, 'inherited;');
+            writeln(Pas, 'end;'^M^J);
+          end;
+          if (Events.Count > 0) then //write TreatEvent handler
+          begin
+            writeln(Pas, 'procedure ', CName, '.TreatObjEvent(const AEvtName: string); begin');
+            writeln(Pas, Tab, 'inherited;');             
+            for K := 0 to Events.Count - 1 do
+              with TMethod(Events.Objects[K]) do
+              begin
+                if K > 0 then
+                  write(Pas, Tab, 'else ')
+                else write(Pas, Tab);
+                writeln(Pas, 'if (AEvtName = ''', JSName, ''') and Assigned(F', Name, ') then');
+                write(Pas, Tab(2), 'F', Name);
+                WriteEventParamsConverter(TMethod(Events.Objects[K]));
+                if K = Events.Count - 1 then
+                  writeln(Pas, ';')
+                else writeln(Pas);
+              end;
             writeln(Pas, 'end;'^M^J);
           end;
         end;
@@ -974,6 +1221,8 @@ begin
   		ReadHtml(P + '/' + F.Name)
     until FindNext(F) <> 0;
     FindClose(F);
+    writeln('Fixing Event Prototypes');
+    FixEvents;   
     writeln('Reading ExtFixes.txt');
     LoadFixes;
     writeln('Writing Unit files...');

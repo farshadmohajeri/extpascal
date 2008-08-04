@@ -9,6 +9,12 @@
 * For each method parameter:
 <parameter name>,<type>,<if is a optional parameter>
 *
+* Adding and updating events:
+<class name>,<JavaScript event name>,Event
+*
+* For each event parameter:
+<parameter name>,<type>
+*
 * Adding new classes:
 <class name>,<parent class name>,<unit name>
 *
@@ -72,12 +78,8 @@ ExtProgressWaitConfig, interval, Integer, false, true, 1000
 ExtProgressWaitConfig, increment, Integer, false, true, 10
 ExtProgressWaitConfig, fn, ExtFunction, false, true,
 ExtProgressWaitConfig, scope, ExtObject, false, true,
-ExtToolbar, items, ExtObjectList, false, true,
-ExtMenuMenu, items, ExtObjectList, false, true,
-ExtToolbarButton, menu, ExtUtilObservable, false, true,
-ExtMenuItem, menu, ExtMenuMenu, false, true,
-ExtGridGridPanel, loadMask, Boolean, false, true, FORCEADD
-ExtDataJsonStore, id, string, false, true,
-ExtDataJsonStore, root, string, false, true,
-ExtDataJsonStore, successProperty, string, false, true,
-ExtDataJsonStore, totalProperty, string, false, true,
+ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
+ExtButton, Menushow, Event, This, ExtButton, Menu, ExtObject
+ExtButton, Menutriggerout, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
+ExtButton, Menutriggerover, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
+ExtContainer, Afterlayout, Event, This, ExtContainer, Layout, ExtObject

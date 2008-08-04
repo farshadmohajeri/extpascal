@@ -50,7 +50,7 @@ type
     FRole : TRole; // FastCGI Thread role
     FRequest, FPathInfo : string;
     FRequestMethod : TRequestMethod; // Current HTTP request method
-    FGarbageCollector : TList; // Object list to free when the thread to end
+    FGarbageCollector : TStringList; // Object list to free when the thread to end
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FGarbage,
     FKeepConn : boolean; // Not used
@@ -92,8 +92,11 @@ type
     property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
-    procedure AddToGarbage(Obj : TObject);
-    procedure DeleteFromGarbage(Obj : TObject);
+    procedure AddToGarbage(const Name: string; Obj: TObject);
+    procedure DeleteFromGarbage(Obj: TObject); overload;
+    procedure DeleteFromGarbage(Name: string); overload;
+    function FindObject(Name: string): TObject;
+
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
@@ -101,6 +104,7 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
+    procedure TreatObjEvent; virtual; abstract;    
     procedure Logout; virtual;
     procedure Shutdown; virtual;
   end;
@@ -202,7 +206,8 @@ Creates a TFCGIThread to handle a new request to be read from the NewSocket para
 constructor TFCGIThread.Create(NewSocket : integer); begin
   if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
   inc(Application.FThreadsCount);
-  FGarbageCollector := TList.Create;
+  FGarbageCollector := TStringList.Create;
+  FGarbageCollector.Sorted := True;
   FSocket := TBlockSocket.Create(NewSocket);
   FRequestHeader := TStringList.Create;
   FRequestHeader.StrictDelimiter := true;
@@ -222,9 +227,34 @@ end;
 Deletes a TObject from the Thread Garbage Collector
 @param Obj TObject to delete
 }
-procedure TFCGIThread.DeleteFromGarbage(Obj : TObject); begin
-  FGarbageCollector.Remove(Obj)
+procedure TFCGIThread.DeleteFromGarbage(Obj : TObject);
+var
+  I: Integer;
+begin
+  I := FGarbageCollector.IndexOfObject(Obj);
+  if I >= 0 then
+    FGarbageCollector.Delete(I);
 end;
+
+procedure TFCGIThread.DeleteFromGarbage(Name: string);
+var
+  I: Integer;
+begin
+  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
+  if I >= 0 then
+    FGarbageCollector.Delete(I);
+end;
+
+function TFCGIThread.FindObject(Name: string): TObject;
+var
+  I: Integer;
+begin
+  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
+  if I >= 0 then
+    Result := FGarbageCollector.Objects[I]
+  else Result := nil;  
+end;
+
 
 // Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
 destructor TFCGIThread.Destroy;
@@ -233,8 +263,8 @@ var
 begin
   with FGarbageCollector do begin
     for I := 0 to Count-1 do
-      try TObject(Items[I]).Free except end;
-    Free
+      try TObject(Objects[I]).Free except end;
+    Free;
   end;
   FRequestHeader.Free;
   FQuery.Free;
@@ -433,8 +463,9 @@ end;
 Adds a TObject to the Thread Garbage Collector
 @param Obj TObject to add
 }
-procedure TFCGIThread.AddToGarbage(Obj : TObject); begin
-  FGarbageCollector.Add(Obj)
+procedure TFCGIThread.AddToGarbage(const Name: string; Obj: TObject);
+begin
+  FGarbageCollector.AddObject(AnsiReplaceStr(Name, '_', ''), Obj);
 end;
 
 {
