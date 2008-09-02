@@ -34,7 +34,7 @@ Mimics preg_match php function. Searches S for a match to delimiter strings give
 @param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches (TStringList) should already be created</b>.
 @return True if some match hit, false otherwise
 }
-function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; const S : string; var Matches : TStringList) : boolean;
 
 {
 Mimics explode php function.
@@ -43,7 +43,7 @@ Creates a TStringList where each string is a substring formed by the splitting o
 @param S Source string to split
 @return TStringList created with substrings from S
 }
-function Explode(Delim : char; S : string) : TStringList;
+function Explode(Delim : char; const S : string) : TStringList;
 
 {
 The opposite of LastDelimiter RTL function.
@@ -53,7 +53,7 @@ If none of the characters in Delimiters appears in string S, function returns ze
 @param S String to search for delimiters.
 @param Offset Index from where the search begins.
 }
-function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
+function FirstDelimiter(const Delimiters, S : string; Offset : integer = 1) : integer;
 
 // The opposite of "System.Pos" function. Returns the index value of the last occurrence of a specified substring in a given string.
 function RPos(const Substr, Str : string) : integer;
@@ -66,7 +66,14 @@ Returns the number of occurrences of Substr in Str
 function CountStr(const Substr, Str : string) : integer;
 
 // Replaces " to ' and ^M^J to <br/> and surrounds the string with "
-function StrToJS(S : string) : string;
+function StrToJS(const S : string) : string;
+
+{
+Finds S in Cases array, returning its index or -1 if not found. Good to use in Pascal "case" command
+@param S String to find in Cases array
+@param Cases String array where to search
+}
+function CaseOf(const S : string; const Cases : array of string) : integer;
 
 implementation
 
@@ -153,7 +160,7 @@ begin
 end;
 {$IFEND}
 
-function Extract(Delims : array of string; S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; const S : string; var Matches : TStringList) : boolean;
 var
   I, J : integer;
 begin
@@ -176,7 +183,7 @@ begin
   Result := true
 end;
 
-function Explode(Delim : char; S : string) : TStringList;
+function Explode(Delim : char; const S : string) : TStringList;
 var
   I : integer;
 begin
@@ -187,7 +194,7 @@ begin
   for I := 0 to Result.Count-1 do Result[I] := trim(Result[I]);
 end;
 
-function FirstDelimiter(Delimiters, S : string; Offset : integer = 1) : integer;
+function FirstDelimiter(const Delimiters, S : string; Offset : integer = 1) : integer;
 var
   I : integer;
 begin
@@ -223,8 +230,15 @@ begin
   until I = 0;
 end;
 
-function StrToJS(S : string) : string; begin
-  Result := '"' + AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>') + '"';
+function StrToJS(const S : string) : string; begin
+  Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
+  if (Result = '') or ((Result <> '') and (Result[1] <> '%')) then Result := '"' + Result + '"'
+end;
+
+function CaseOf(const S : string; const Cases : array of string) : integer; begin
+  for Result := 0 to high(Cases) do
+    if SameText(S, Cases[Result]) then exit;
+  Result := -1;
 end;
 
 end.

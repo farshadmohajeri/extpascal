@@ -26,9 +26,6 @@ uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
   BlockSocket, SysUtils, SyncObjs, Classes{$IFDEF FPC}, ExtPascalUtils{$ENDIF};
 
-const
-  DefaultCharset : string = 'utf-8'; // Default charset when a <link TFCGIThread, thread> is created
-
 type
   // FastCGI record types, i.e. the general function that the record performs
   TRecType = (rtBeginRequest = 1, rtAbortRequest, rtEndRequest, rtParams, rtStdIn, rtStdOut, rtStdErr, rtData, rtGetValues, rtGetValuesResult, rtUnknown);
@@ -81,7 +78,6 @@ type
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
     ContentType  : string; // HTTP content-type header, default is 'text/html'
-    Charset      : string; // Sets or gets the current charset for this thread, default is <link DefaultCharset, 'utf-8'>
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
     property PathInfo : string read FPathInfo; // Path info string for the current request
@@ -92,11 +88,9 @@ type
     property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
-    procedure AddToGarbage(const Name: string; Obj: TObject);
-    procedure DeleteFromGarbage(Obj: TObject); overload;
-    procedure DeleteFromGarbage(Name: string); overload;
-    function FindObject(Name: string): TObject;
-
+    procedure AddToGarbage(const Name : string; Obj: TObject);
+    procedure DeleteFromGarbage(Obj : TObject);
+    function FindObject(Name : string) : TObject;
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
@@ -104,7 +98,6 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
-    procedure TreatObjEvent; virtual; abstract;    
     procedure Logout; virtual;
     procedure Shutdown; virtual;
   end;
@@ -207,7 +200,7 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
   inc(Application.FThreadsCount);
   FGarbageCollector := TStringList.Create;
-  FGarbageCollector.Sorted := True;
+  FGarbageCollector.Sorted := true;
   FSocket := TBlockSocket.Create(NewSocket);
   FRequestHeader := TStringList.Create;
   FRequestHeader.StrictDelimiter := true;
@@ -218,7 +211,6 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FCookie.StrictDelimiter := true;
   FCookie.Delimiter := ';';
   ContentType := 'text/html';
-  Charset := lowercase(DefaultCharset);
   FreeOnTerminate := true;
   inherited Create(false);
 end;
@@ -236,25 +228,16 @@ begin
     FGarbageCollector.Delete(I);
 end;
 
-procedure TFCGIThread.DeleteFromGarbage(Name: string);
+function TFCGIThread.FindObject(Name : string): TObject;
 var
   I: Integer;
 begin
-  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
-  if I >= 0 then
-    FGarbageCollector.Delete(I);
-end;
-
-function TFCGIThread.FindObject(Name: string): TObject;
-var
-  I: Integer;
-begin
-  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
+  I := FGarbageCollector.IndexOf(Name);
   if I >= 0 then
     Result := FGarbageCollector.Objects[I]
-  else Result := nil;  
+  else
+    Result := nil;
 end;
-
 
 // Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
 destructor TFCGIThread.Destroy;
@@ -418,7 +401,7 @@ begin
       if Cookies <> nil then Cookies.DelimitedText := URLDecode(Param[1])
     end
     else
-      RequestHeader.Values[Param[0]] := Param[1];
+      RequestHeader.Values[Param[0]] := UTF8Decode(Param[1]);
   end;
 end;
 
@@ -431,7 +414,7 @@ class function TFCGIThread.URLDecode(Encoded : string) : string;
 var
   I : integer;
 begin
-  Result := Encoded;
+  Result := UTF8Decode(Encoded);
   I := pos('%', Result);
   while I <> 0 do begin
     Result[I] := chr(StrToIntDef('$' + copy(Result, I+1, 2), 32));
@@ -461,10 +444,10 @@ end;
 
 {
 Adds a TObject to the Thread Garbage Collector
+@param Name JS name or other object identification
 @param Obj TObject to add
 }
-procedure TFCGIThread.AddToGarbage(const Name: string; Obj: TObject);
-begin
+procedure TFCGIThread.AddToGarbage(const Name : string; Obj : TObject); begin
   FGarbageCollector.AddObject(AnsiReplaceStr(Name, '_', ''), Obj);
 end;
 
@@ -766,7 +749,7 @@ begin
         OnNotFoundError;
     end;
   AfterHandleRequest;
-  Result := Response;
+  Result := UTF8Encode(Response);
 end;
 
 // Frees a TFCGIApplication

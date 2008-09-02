@@ -35,11 +35,18 @@ unit ExtPascal;
 
 //@@Overview
 //<copy ExtPascal.pas>
-{$INCLUDE ExtPascal.inc}
+
+// Enabling WebServer directive ExtPascal can be used within an embedded Indy based WebServer
+{.$DEFINE WebServer}
+{$IFNDEF WebServer}
+  {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$DEFINE SERVICE}{$ENDIF}
+{$ENDIF}
+{$DEFINE DEBUGJS}
+
 interface
 
 uses
-  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
 const
   ExtPath = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
@@ -56,16 +63,13 @@ type
   as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
   The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
-  {$IFDEF CGI}
-  TExtThread = class(TFCGIThread)
-  {$ELSE}
-  TExtThread = class(TIdExtSession)
-  {$ENDIF}
+  TExtThread = class({$IFNDEF WebServer}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
   private
     Style, Libraries, FLanguage : string;
     JSReturns : TStringList;
     Sequence  : cardinal;
     FIsAjax   : boolean;
+    FIsIE     : boolean;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
@@ -75,26 +79,25 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
-    function ConfigAvailable(JSName: string; var Position: Integer): boolean;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
     property Language : string read FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
+    property IsIE : boolean read FIsIE; // Tests if session is using IE
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
-    function Latin1ToHTML(S : string) : string;
-    {$IFDEF CGI}
+    {$IFNDEF WebServer}
     constructor Create(NewSocket : integer); override;
     {$ELSE}
     procedure InitSessionDefs; override;
     {$ENDIF}
     destructor Destroy; override;
   published
-    procedure TreatObjEvent; override;
+    procedure HandleEvent; virtual;
   end;
 
   {
@@ -105,36 +108,37 @@ type
   }
   TExtObject = class
   private
-    FJSName : string;
     function WriteFunction(Command : string): string;
   protected
+    FJSName : string; // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     JSCommand : string; // Last command written in Response
     Created : boolean; // Tests if object already created
-    function ConfigAvailable(JSName: string): boolean;
+    function ConfigAvailable(JSName : string) : boolean;
     function IsParent(CName : string): boolean;
-    function ExtractJSCommand(Command : string) : string;
+    function ExtractJSCommand : string;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
     function VarToJSON(Ints : TArrayOfInteger) : string; overload;
-    function ParamAsInteger(ParamName: string): integer;
-    function ParamAsDouble(ParamName: string): double;
-    function ParamAsBoolean(ParamName: string): boolean;
-    function ParamAsString(ParamName: string): string;
-    function ParamAsTDateTime(ParamName: string): TDateTime;
-    function ParamAsObject(ParamName: string): TExtObject;
-
+    function ParamAsInteger(ParamName : string) : integer;
+    function ParamAsDouble(ParamName : string) : double;
+    function ParamAsBoolean(ParamName : string) : boolean;
+    function ParamAsString(ParamName : string) : string;
+    function ParamAsTDateTime(ParamName : string) : TDateTime;
+    function ParamAsObject(ParamName : string) : TExtObject;
     procedure CreateVar(JS : string);
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
     procedure InitDefaults; virtual;
-    function Ajax(MethodName: string; Params: array of const; IsEvent: boolean): TExtFunction; overload;
-    procedure TreatObjEvent(const AEvtName: string); virtual;
+    function Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction; overload;
+    procedure HandleEvent(const AEvtName: string); virtual;
   public
     constructor CreateInternal(Owner : TExtObject; Attribute : string);
     constructor Create(Owner : TExtObject = nil);
     constructor CreateSingleton(Attribute : string = '');
     constructor AddTo(List : TExtObjectList);
+    constructor Init(Method : TExtFunction); overload;
+    constructor Init(Command : string); overload;
     destructor Destroy; override;
     function DestroyJS : TExtFunction; virtual;
     procedure Free(CallDestroyJS : boolean = false);
@@ -146,8 +150,9 @@ type
     function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string) : TExtFunction; overload;
-    function JSFunction(Method: TExtProcedure) : TExtFunction; overload;
-    function JSReturn(Method : TExtFunction) : integer;
+    function JSFunction(Method: TExtProcedure; Silent : boolean = false) : TExtFunction; overload;
+    function JSExpression(Expression : string; MethodsValues : array of const) : integer; overload;
+    function JSExpression(Method : TExtFunction) : integer; overload;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
@@ -217,7 +222,7 @@ type
 implementation
 
 uses
-  SysUtils, StrUtils, Math, ExtPascalUtils;
+  SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
 
 const
   DeclareJS = '/*var*/ '; // Declare JS objects as global
@@ -298,7 +303,7 @@ Shows an error message in browser session using Ext JS style.
 }
 procedure TExtThread.ErrorMessage(Msg : string; Action : TExtFunction); begin
   JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
-    ',fn:function(){' + Action.ExtractJSCommand(Action.JSCommand) + '}});');
+    ',fn:function(){' + Action.ExtractJSCommand + '}});');
 end;
 
 {
@@ -423,24 +428,6 @@ begin
 end;
 
 {
-Encodes a Latin-1 (iso-8859-1) string to fit in HTML encoding form.
-Converts characters with ordinal value >= 160 only.
-@param S Latin-1 string to convert
-@return A HTML encoded string
-}
-function TExtThread.Latin1ToHTML(S : string) : string;
-var
-  I : integer;
-begin
-  Result := '';
-  for I := 1 to length(S) do
-    if S[I] < #160 then
-      Result := Result + S[I]
-    else
-      Result := Result + '&#' + IntToStr(ord(S[I])) + ';';
-end;
-
-{
 Does tasks related to the Request that occur before the method call invoked by Browser (PATH-INFO)
 1. Detects the browser language.
 2. If that language has corresponding JS resource file in framework uses it, for example: '/ext/source/locale/ext-lang-?????.js',
@@ -465,7 +452,8 @@ begin
     end;
   end;
   Response := '';
-  FIsAjax  := Query['Ajax'] = '1';
+  FIsIE    := pos('MSIE', RequestHeader['HTTP_USER_AGENT']) <> 0;;
+  FIsAjax  := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
   if not IsAjax then begin
     //Sequence  := 0;
     Style     := '';
@@ -482,7 +470,8 @@ begin
         Result := false;
       end
 end;
-{$IFDEF CGI}
+
+{$IFNDEF WebServer}
 constructor TExtThread.Create(NewSocket : integer);
 {$ELSE}
 procedure TExtThread.InitSessionDefs;
@@ -498,23 +487,24 @@ destructor TExtThread.Destroy; begin
   inherited;
 end;
 
-procedure TExtThread.TreatObjEvent;
+procedure TExtThread.HandleEvent;
 var
-  FObj: TExtObject;
+  Obj : TExtObject;
 begin
-  if Query['IsEvent'] = '1' then
-  begin
-    FObj := TExtObject(FindObject(Query['Obj']));
-    if not Assigned(FObj) then
-      OnError('Object not found in session list. It could be timed out, refresh page and try again', 'TreatObjEvent', '')
+  if Query['IsEvent'] = '1' then begin
+    Obj := TExtObject(FindObject(Query['Obj']));
+    if not Assigned(Obj) then
+      OnError('Object not found in session list. It could be timed out, refresh page and try again', 'HandleEvent', '')
     else
-      FObj.TreatObjEvent(Query['Evt']);
-  end else OnError('This method only can be called by internal objects', 'TreatObjEvent', '');
+      Obj.HandleEvent(Query['Evt']);
+  end
+  else
+  	OnError('This method only can be called by internal objects', 'HandleEvent', '');
 end;
 
 {
 Does tasks after Request processing.
-1. Extracts Comments, auxiliary chars, and sets:
+1. Extracts Comments, auxiliary chars, convert to utf-8 and sets:
 2. HTML body,
 3. Title,
 4. Charset,
@@ -550,45 +540,26 @@ begin
     I := PosEx('/*', Response, I);
   end;
   HandleJSReturns;
-  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars
+  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars and convert to utf-8
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + Application.Icon + '"/>') +
       '<title>' + Application.Title + '</title>' +
-      '<meta http-equiv="content-type" content="charset=' + Charset + '">' +
+      '<meta http-equiv="content-type" content="charset=utf-8">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
-      '<script src=' + ExtPath + '/ext-all.js></script>' +
+      '<script src=' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
       IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
       IfThen(FLanguage = 'en', '', '<script src=' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js></script>') +
       GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
-      'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";'+
+      'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxSuccess(response){eval(response.responseText)};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>'
-  else
-    if lowercase(CharSet) = 'iso-8859-1' then Response := Latin1ToHTML(Response)
+      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
 end;
-{
-  When assign value to a config property, check if it is in creating process.
-  If not then config property code will redirect to a relationed method if it exists.
-  @Param JSName Objects name to be searched in the previous generated script
-  @Param Position the position where the property has to be assigned in the script
-  @Return true if creating false if assign to a previous created object
-@example <code>
-  //doesn't matter if you are into Create block or assign to previous ajax created object
-  //O1.title will be mapped to O1.setTitle('new title', '');
-  O1.title = 'new title';</code>
-}
-function TExtThread.ConfigAvailable(JSName: string; var Position: Integer): boolean;
-begin
-  Position := pos('/*' + JSName + '*/', Response);
-  Result := Position <> 0;
-  if not Result then{put at the end}
-    Position := Length(Response);
-end;
+
 {
 Returns a unique numeric sequence to identify a JS object, list or attribute in this session.
 This sequence will be used by Self-translating process imitating a Symbol table entrance.
@@ -669,7 +640,10 @@ begin
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
   end
   else
-    ListAdd := Obj.JSName;
+    if pos(Obj.JSName, Obj.JSCommand) = 1 then
+      ListAdd := obj.ExtractJSCommand
+    else
+      ListAdd := Obj.JSName;
   Obj.Created := true;
   Obj.JSCode(ListAdd, JSName, OwnerName);
 end;
@@ -707,12 +681,21 @@ constructor TExtObject.CreateSingleton(Attribute : string = ''); begin
   InitDefaults;
 end;
 
-function TExtObject.ConfigAvailable(JSName: string): boolean;
-var
-  Dummy: Integer;
-begin
-  Result := TExtThread(CurrentFCGIThread).ConfigAvailable(JSName, Dummy);
+{
+When assign value to a config property, check if it is in creating process.
+If not then config property code will redirect to a relationed method if it exists.
+@param JSName Objects name to be searched in generated script
+@return true if the JSName object has a configuration in this request, false if not
+@example <code>
+//doesn't matter if you are into Create block or assign to previous ajax created object
+//O1.title will be mapped to O1.setTitle('new title', ''); by ExtToPascal wrapper
+O1.title = 'new title';
+</code>
+}
+function TExtObject.ConfigAvailable(JSName : string) : boolean; begin
+  Result := pos('/*' + JSName + '*/', TExtThread(CurrentFCGIThread).Response) <> 0;
 end;
+
 {
 Used by <link TExtObject.Create, Create> to initialize the JSName, to <link TFCGIThread.AddToGarbage, add to Garbage Collector>
 and to generate <link TExtObject.JSCode, JS code>
@@ -725,7 +708,7 @@ procedure TExtObject.CreateVar(JS : string); begin
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
   JSCode('|' + DeclareJS + JSName + '=new ' + JS);
-  JSCode(JSName + '.nm=' + VarToJSON([AnsiReplaceStr(JSName, '_', '')]) + ';');
+  JSCode(JSName + '.nm="' + JSName + '";');
 end;
 
 {
@@ -738,7 +721,7 @@ procedure TExtObject.CreateVarAlt(JS : string); begin
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
   JSCode('|' + DeclareJS + JSName + '= ' + JS);
-  JSCode(JSName + '.nm=' + VarToJSON([AnsiReplaceStr(JSName, '_', '')]) + ';');
+  JSCode(JSName + '.nm="' + JSName + '";');
 end;
 
 // Deletes JS object from Browser memory
@@ -836,19 +819,28 @@ If called as constructor creates the object before adds it to the list.
 @param List An instanciated <link TExtObjectList>
 }
 constructor TExtObject.AddTo(List : TExtObjectList); begin
-  if JSName = '' then
-  begin
+  if JSName = '' then begin
     CreateJSName;
-    //FJSName := 'Dummy';
     InitDefaults;
   end;
   List.Add(Self);
 end;
 
-{
-Virtual method overrided by Parser generated code to initialize public JS properties in a <link TExtObject>
-@see CreateInternal
-}
+
+// Inits a JS Object with a <link TExtFunction>
+constructor TExtObject.Init(Method : TExtFunction); begin
+  CreateJSName;
+  Created := true;
+  JSCode('|' + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
+end;
+
+constructor TExtObject.Init(Command: string); begin
+  CreateJSName;
+  CurrentFCGIThread.AddToGarbage(JSName, Self);
+  Created := true;
+  JSCode('|' + DeclareJS + JSName + '=' + Command + ';');
+end;
+
 procedure TExtObject.InitDefaults; begin end;
 
 {
@@ -884,33 +876,47 @@ function TExtObject.JSObject(JSON : string; ObjectConstructor : string = '') : T
 end;
 
 {
-Lets use an <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
-The function will be called in the browser side and should returns an integer.
-@param Method ExtJS function that will be called
-@return Integer value to return
+Lets use a JS expression to set a ExtJS property or parameter.   <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
+The expression will be called in the browser side and should returns an integer.
+@param Expression JS Expression using or not Delphi Format specifiers: (%s, %d and etc), use %s for Methods and %d for integers
+@param MethodsValues Array of Methods or Integer values to use in Expression
+@return Integer Internal and fake value to return
 @example <code>
 Grid := TExtGridEditorGridPanel.Create;
 with Grid do begin
-  Width  := JSReturn(Panel.GetInnerWidth);
-  Height := JSReturn(Panel.GetInnerHeight);
+  Width  := JSExpression(Panel.GetInnerWidth);
+  Height := JSExpression(Panel.GetInnerHeight);
 end;
+FormWidth := 40;
+with TExtWindow.Create do
+  Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]);
+  // or Width := JSExpression('Ext.util.TextMetrics.getWidth("g") * ' + IntToStr(FormWidth), []);
 </code>
 }
-function TExtObject.JSReturn(Method: TExtFunction) : integer;
+function TExtObject.JSExpression(Expression : string; MethodsValues : array of const) : integer;
 var
   Mark : string;
+  I : integer;
 begin
   with TExtThread(CurrentFCGIThread) do begin
     Mark := '-7' + GetSequence + '7';
     Result := StrToInt(Mark);
-    JSReturns.Values[Mark] := ExtractJSCommand(Method.JSCommand);
+    for I := 0 to high(MethodsValues) do
+      with MethodsValues[I] do
+        if VType = vtObject then begin
+          VAnsiString := pointer(TExtFunction(VObject).ExtractJSCommand);
+          VType := vtAnsiString;
+        end;
+    JSReturns.Values[Mark] := Format(Expression, MethodsValues);
   end;
 end;
 
-procedure TExtObject.TreatObjEvent(const AEvtName: string);
-begin
-// must be implemented on extended classes where events can be handled 
+function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
+  Result := JSExpression('%s', [Method]);
 end;
+
+// Must be implemented on extended classes where events can be handled 
+procedure TExtObject.HandleEvent(const AEvtName: string); begin end;
 
 {
 Generates JS code to declare an anonymous JS function with parameters
@@ -946,6 +952,7 @@ end;
 Generates an anonymous JS function from an Object Pascal procedure to use in event handlers.
 To get event parameters use %0, %1 until %9 place holders.
 @param Method Object Pascal procedure declared on the <link TExtThread> or in a <link TExtObject>
+@param Silent Discards JS exceptions and returns immediately
 @return <link TExtFunction> to use in event handlers
 @example <code>
 procedure TSamples.ReadButtonJS; begin
@@ -989,7 +996,7 @@ begin
   end;
 : : : : : : :</code>
 }
-function TExtObject.JSFunction(Method : TExtProcedure) : TExtFunction;
+function TExtObject.JSFunction(Method : TExtProcedure; Silent : boolean = false) : TExtFunction;
 var
   CurrentResponse : string;
 begin
@@ -998,7 +1005,10 @@ begin
     CurrentResponse := Response;
     Response := '';
     Method;
-    JSCommand := Response;
+    if Silent then
+      JSCommand := 'try{' + Response + '}catch(e){};'
+    else
+      JSCommand := Response;
     Response  := CurrentResponse;
     JSCode(JSCommand);
   end;
@@ -1129,43 +1139,40 @@ var
 begin
   MetName := CurrentFCGIThread.MethodName(@Method);
   if MetName <> '' then
-    Result := Ajax(MetName, Params, False)
-  else
-  begin
+    Result := Ajax(MetName, Params, false)
+  else begin
     Result  := TExtFunction(Self);
     JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
   end;
 end;
 
-{
-  Internal Ajax generation handler treating IsEvent, when is true TreatEventHandler will be invoked instead
-  published methods
-}
-
-function TExtObject.Ajax(MethodName: string; Params: array of const; IsEvent: boolean): TExtFunction;
+// Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
+function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
 var
-  lParams: string;
-  I : integer;  
+  lParams : string;
+  I : integer;
 begin
   Result := TExtFunction(Self);
   lParams := 'Ajax=1';
-  if IsEvent then
-  begin
-    lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&' + 'Evt=' + MethodName;
-    MethodName := 'TreatObjEvent';
+  if IsEvent then begin
+    lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&Evt=' + MethodName;
+    MethodName := 'HandleEvent';
   end;
   for I := 0 to high(Params) do
     with Params[I] do
       if Odd(I) then
         case VType of
-          vtAnsiString : lParams := lParams + string(VAnsiString);
-          vtString     : lParams := lParams + VString^;
-          vtObject     : lParams := lParams + '"+' + ExtractJSCommand(TExtObject(VObject).JSCommand) + '+"';
+          vtAnsiString : lParams := lParams + '"+' + string(VAnsiString) + '+"';
+          vtString     : lParams := lParams + '"+' + VString^ + '+"';
+          vtObject     : begin
+            lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
+            TExtObject(VObject).JSCommand := '';
+          end;
           vtInteger    : lParams := lParams + IntToStr(VInteger);
           vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
           vtExtended   : lParams := lParams + FloatToStr(VExtended^);
           vtVariant    : lParams := lParams + string(VVariant^);
-          vtChar       : lParams := lParams + VChar;
+          vtChar       : lParams := lParams + '"+' + VChar + '+"';
         end
       else
         case VType of
@@ -1197,15 +1204,14 @@ begin
   while I <> 0 do begin
     if Command[I+1] in ['0'..'9'] then begin
       Command[I] := 'P';
-      insert('+"', Command, FirstDelimiter('"'' &', Command, I));
-      insert('"+', Command, I);
-      inc(J);
+      J := max(J, StrToInt(Command[I+1]));
     end;
     I := posex('%', Command, I);
   end;
-  for I := 0 to J do
-    Params := Params + IfThen(I>0, ', ') + 'P' + IntToStr(I);
-
+  for I := 0 to J do begin
+    Params := Params + 'P' + IntToStr(I);
+    if I <> J then Params := Params + ','
+  end;
   I := LastDelimiter(';', copy(Command, 1, length(Command)-1));
   if (I = 0) or (I = length(Command)) and (pos('return ', Command) <> 1) then
     Command := 'return ' + Command
@@ -1215,15 +1221,15 @@ begin
 end;
 
 {
-Extracts JS command from Response
-@param Command JS
-@return JS command without the last char ';'
+Extracts <link TExtObject.JSCommand, JSCommand> from Response and resets JSCommand
+@return JSCommand without the last char ';'
 @see TExtThread.RemoveJS
 }
-function TExtObject.ExtractJSCommand(Command : string) : string; begin
-  Result := Command;
+function TExtObject.ExtractJSCommand : string; begin
+  Result := JSCommand;
   TExtThread(CurrentFCGIThread).RemoveJS(Result);
   SetLength(Result, length(Result)-1);
+  JSCommand := ''
 end;
 
 {
@@ -1291,7 +1297,7 @@ Converts a <link TExtObjectList> to JSON (JavaScript Object Notation) to be used
 @param Exts An TExtObjectList to convert
 @return JSON representation of Exts
 }
-function TExtObject.VarToJSON(Exts : TExtObjectList): string; begin
+function TExtObject.VarToJSON(Exts : TExtObjectList) : string; begin
   if Exts.ClassName = 'TExtObjectList' then
     Result := Exts.JSName
   else
@@ -1303,7 +1309,7 @@ Converts an <link TArrayOfString, array of strings> to JSON (JavaScript Object N
 @param Strs An <link TArrayOfString, array of strings> to convert
 @return JSON representation of Strs
 }
-function TExtObject.VarToJSON(Strs : TArrayOfString): string;
+function TExtObject.VarToJSON(Strs : TArrayOfString) : string;
 var
   I : integer;
 begin
@@ -1320,7 +1326,7 @@ Converts an <link TArrayOfInteger, array of integers> to JSON (JavaScript Object
 @param Ints An <link TArrayOfInteger, array of integers> to convert
 @return JSON representation of Ints
 }
-function TExtObject.VarToJSON(Ints : TArrayOfInteger): string;
+function TExtObject.VarToJSON(Ints : TArrayOfInteger) : string;
 var
   I : integer;
 begin
@@ -1332,34 +1338,30 @@ begin
   Result := Result + ']'
 end;
 
-function TExtObject.ParamAsInteger(ParamName: string): integer;
-begin
+function TExtObject.ParamAsInteger(ParamName : string) : integer; begin
   Result := StrToIntDef(CurrentFCGIThread.Query[ParamName], 0);
 end;
 
-function TExtObject.ParamAsDouble(ParamName: string): double;
-begin
+function TExtObject.ParamAsDouble(ParamName : string) : double; begin
   Result := StrToFloatDef(CurrentFCGIThread.Query[ParamName], 0);
 end;
 
-function TExtObject.ParamAsBoolean(ParamName: string): boolean;
-begin
+function TExtObject.ParamAsBoolean(ParamName : string) : boolean; begin
   Result := CurrentFCGIThread.Query[ParamName] = 'true';
 end;
 
-function TExtObject.ParamAsString(ParamName: string): string;
-begin
+function TExtObject.ParamAsString(ParamName : string) : string; begin
   Result := CurrentFCGIThread.Query[ParamName];
 end;
 
-function TExtObject.ParamAsTDateTime(ParamName: string): TDateTime;
-begin
+function TExtObject.ParamAsTDateTime(ParamName : string) : TDateTime; begin
   Result := ParamAsDouble(ParamName);
 end;
 
-function TExtObject.ParamAsObject(ParamName: string): TExtObject;
-begin
+function TExtObject.ParamAsObject(ParamName : string) : TExtObject; begin
   Result := TExtObject(CurrentFCGIThread.FindObject(CurrentFCGIThread.Query[ParamName]));
 end;
 
+begin
+  ExtUtilTextMetrics.FJSName := 'TextMetrics';
 end.

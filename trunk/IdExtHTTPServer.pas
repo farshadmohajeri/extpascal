@@ -49,7 +49,6 @@ type
     property Charset: string read FCharset write FCharset;
   published
     procedure Home; virtual; abstract;
-    procedure TreatObjEvent; virtual; abstract;
     procedure Logout; virtual;
   end;
   {$M-}
@@ -396,7 +395,8 @@ begin
   I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, '_', ''));
   if I >= 0 then
     Result := FGarbageCollector.Objects[I]
-  else Result := nil;  
+  else
+    Result := nil;
 end;
 
 destructor TIdExtSession.Destroy;
