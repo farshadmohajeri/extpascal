@@ -210,7 +210,7 @@ begin
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
     //Handler  := Ajax(AddTab);
-    OnExtButtonClick := TreatExtButtonClick;
+    OnClick := TreatExtButtonClick;
     //Free;
   end;
   Tabs := TExtTabPanel.Create;
@@ -371,9 +371,7 @@ procedure TSamples.SelectNodeEventServerSide; begin
   ExtMessageBox.Alert('Server Side', Query['Name']);
 end;
 
-procedure TSamples.TreatExtButtonClick(This: TExtButton;
-  E: TExtEventObjectSingleton);
-begin
+procedure TSamples.TreatExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton); begin
   ExtMessageBox.Alert('alert', 'event handled successfully');
 end;
 
@@ -516,7 +514,7 @@ var
   Data : TExtObjectList;
 begin
 //  if Grid <> nil then Grid.Free;
-  ExtQuickTips.Init;
+  ExtQuickTips.Init(true);
   Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
   with TExtDataField.AddTo(Data) do begin Name := 'common';    TypeJS := 'string' end;
