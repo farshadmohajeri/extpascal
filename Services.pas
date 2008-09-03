@@ -8,7 +8,8 @@ unit Services;
 
 interface
 
-uses WinSvc, Classes;
+uses
+  WinSvc, Classes;
 
 {$R *.res}
 

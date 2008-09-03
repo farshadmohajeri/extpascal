@@ -39,7 +39,7 @@ unit ExtPascal;
 // Enabling WebServer directive ExtPascal can be used within an embedded Indy based WebServer
 {.$DEFINE WebServer}
 {$IFNDEF WebServer}
-  {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$DEFINE SERVICE}{$ENDIF}
+{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {$ENDIF}
 
 // Uses ext-all-debug.js to facilitate JS debugging

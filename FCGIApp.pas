@@ -57,9 +57,13 @@ type
     FCookie : TStringList;
     FLastAccess : TDateTime;
     function GetRequestHeader(Name: string): string;
-    function GetQuery(Name: string) : string;
     procedure CompleteRequestHeaderInfo;
     function GetCookie(Name: string): string;
+    function GetQuery(Name: string) : string;
+    function GetQueryAsDouble(Name: string): double;
+    function GetQueryAsInteger(Name: string): integer;
+    function GetQueryAsTDateTime(Name: string) : TDateTime;
+    function GetQueryAsBoolean(Name: string): boolean;
   protected
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
@@ -84,8 +88,12 @@ type
     property LastAccess : TDateTime read FLastAccess; // Last TDateTime access of this thread
     property RequestMethod : TRequestMethod read FRequestMethod; // HTTP request method for the current request
     property RequestHeader[Name : string] : string read GetRequestHeader; // HTTP headers read in the current request
-    property Query[Name : string] : string read GetQuery; // HTTP query info parameters read in the current request
     property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
+    property Query[Name : string] : string read GetQuery; // HTTP query info parameters read in the current request
+    property QueryAsBoolean[Name : string] : boolean read GetQueryAsBoolean;
+    property QueryAsInteger[Name : string] : integer read GetQueryAsInteger;
+    property QueryAsDouble[Name : string] : double read GetQueryAsDouble;
+    property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime;
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -527,6 +535,22 @@ end;
 
 function TFCGIThread.GetQuery(Name: string) : string;  begin
   Result := FQuery.Values[Name]
+end;
+
+function TFCGIThread.GetQueryAsBoolean(Name: string): boolean; begin
+  Result := Query[Name] = 'true';
+end;
+
+function TFCGIThread.GetQueryAsDouble(Name: string): double; begin
+  Result := StrToFloatDef(Query[Name], 0)
+end;
+
+function TFCGIThread.GetQueryAsInteger(Name: string): integer; begin
+  Result := StrToIntDef(Query[Name], 0)
+end;
+
+function TFCGIThread.GetQueryAsTDateTime(Name: string): TDateTime; begin
+  Result := StrToFloatDef(Query[Name], 0)
 end;
 
 function TFCGIThread.GetCookie(Name: string): string; begin
