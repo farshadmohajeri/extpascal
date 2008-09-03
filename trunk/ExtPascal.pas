@@ -41,7 +41,9 @@ unit ExtPascal;
 {$IFNDEF WebServer}
   {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$DEFINE SERVICE}{$ENDIF}
 {$ENDIF}
-{$DEFINE DEBUGJS}
+
+// Uses ext-all-debug.js to facilitate JS debugging
+{.$DEFINE DEBUGJS}
 
 interface
 
@@ -899,8 +901,8 @@ var
   I : integer;
 begin
   with TExtThread(CurrentFCGIThread) do begin
-    Mark := '-7' + GetSequence + '7';
-    Result := StrToInt(Mark);
+    Result := StrToInt('-$7' + GetSequence + '7');
+    Mark   := IntToStr(Result);
     for I := 0 to high(MethodsValues) do
       with MethodsValues[I] do
         if VType = vtObject then begin
