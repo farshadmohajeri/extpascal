@@ -799,7 +799,7 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
-    if (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
+    if (pos('.nm="', JS) = 0) and (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;

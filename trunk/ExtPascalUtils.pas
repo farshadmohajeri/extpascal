@@ -232,7 +232,7 @@ end;
 
 function StrToJS(const S : string) : string; begin
   Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
-  if (Result = '') or ((Result <> '') and (Result[1] <> '%')) then Result := '"' + Result + '"'
+  if not((length(Result) > 1) and (Result[1] = '%') and (Result[2] in ['0'..'9'])) then Result := '"' + Result + '"'
 end;
 
 function CaseOf(const S : string; const Cases : array of string) : integer; begin
