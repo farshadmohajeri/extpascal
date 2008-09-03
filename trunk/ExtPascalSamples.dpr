@@ -1,8 +1,7 @@
 program ExtPascalSamples;
 
-{$INCLUDE ExtPascal.inc}
 uses
-  {$IFDEF CGI}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE} Services,{$ENDIF}
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -209,7 +208,7 @@ begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
-    //Handler  := Ajax(AddTab);
+    Handler  := Ajax(AddTab);
     OnClick := TreatExtButtonClick;
     //Free;
   end;
@@ -723,11 +722,11 @@ end;
 
 {$IFNDEF SERVICE}
 begin
-  {$IFDEF CGI}
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.8.9', TSamples, 2014, 5);
-  {$ELSE}
-  Application := TIdExtApplication.Create('ExtPascal Samples 0.8.9', TSamples, 80, 5);
-  {$ENDIF}
+{$IFNDEF WebServer}
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.9.2', TSamples, 2014, 5);
+{$ELSE}
+  Application := TIdExtApplication.Create('ExtPascal Samples 0.9.2', TSamples, 80, 5);
+{$ENDIF}
   Application.Run;
 {$ELSE}
 type
@@ -740,14 +739,14 @@ procedure TServiceThread.Execute; begin
 end;
 
 begin
-  Service := TService.Create('ExtPascalSamples', 'v.0.8.9');
+  Service := TService.Create('ExtPascalSamples', 'v.0.9.2');
   with Service do try
     if Install then
       writeln('Service installed')
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := TFCGIApplication.Create('ExtPascal Samples 0.8.9', TSamples, 2014, 5);
+      Application := TFCGIApplication.Create('ExtPascal Samples 0.9.2', TSamples, 2014, 5);
       if Exists then
         Run([TServiceThread.Create(true)])
       else
