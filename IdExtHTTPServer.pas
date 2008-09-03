@@ -4,9 +4,6 @@ interface
 
 uses Classes, Forms, StdCtrls, IdCustomHTTPServer, IdHTTPServer, IdContext;
 
-const
-  DefaultCharset : string = 'utf-8'; // Default charset when a <link TFCGIThread, thread> is created
-
 type
   TIdExtHTTPServer = class;
   {$M+}
