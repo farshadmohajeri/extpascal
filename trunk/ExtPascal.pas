@@ -42,7 +42,7 @@ unit ExtPascal;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {$ENDIF}
 
-// Uses ext-all-debug.js to facilitate JS debugging
+// Uses ext-all-debug.js and break line at ";" char to facilitate JS debugging
 {.$DEFINE DEBUGJS}
 
 interface
@@ -116,7 +116,6 @@ type
     JSCommand : string; // Last command written in Response
     Created : boolean; // Tests if object already created
     function ConfigAvailable(JSName : string) : boolean;
-    function IsParent(CName : string): boolean;
     function ExtractJSCommand : string;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
@@ -506,7 +505,7 @@ end;
 
 {
 Does tasks after Request processing.
-1. Extracts Comments, auxiliary chars, convert to utf-8 and sets:
+1. Extracts Comments, auxiliary chars, and sets:
 2. HTML body,
 3. Title,
 4. Charset,
@@ -542,7 +541,7 @@ begin
     I := PosEx('/*', Response, I);
   end;
   HandleJSReturns;
-  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars and convert to utf-8
+  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
@@ -560,6 +559,9 @@ begin
       'function AjaxSuccess(response){eval(response.responseText)};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
+  {$IFDEF DEBUGJS}
+  Response := AnsiReplaceStr(Response, ';', ';'^M^J)
+  {$ENDIF}
 end;
 
 {
@@ -598,7 +600,7 @@ destructor TExtObjectList.Destroy;
 var
   I : integer;
 begin
-  for I := 0 to length(FObjects)-1 do try FObjects[I].Free except end;
+  for I := 0 to high(FObjects) do try FObjects[I].Free except end;
   inherited;
 end;
 
@@ -651,12 +653,15 @@ begin
 end;
 
 {
-Returns the Ith object in the list, start with 0.
+Returns the Ith object in the list, starts with 0.
 @param I Position in list
 @return <link TExtObject>
 }
 function TExtObjectList.GetFObjects(I : integer): TExtObject; begin
-  Result := FObjects[I]
+  if (I >= 0) and (I <= high(FObjects)) then
+    Result := FObjects[I]
+  else
+    Result := nil
 end;
 
 // Returns the number of Objects in the list
@@ -773,26 +778,6 @@ function TExtObject.JSClassName: string; begin
 end;
 
 {
-Tests if a class name is parent of this object
-@param CName Class name with "T" prefix
-@return True if CName is parent of this object and false if not
-}
-function TExtObject.IsParent(CName : string) : boolean;
-var
-  Cls : TClass;
-begin
-  if (CName <> '') and (CName[1] = 'T') then begin
-    Result := true;
-    Cls    := ClassType;
-    while Cls.ClassName <> 'TExtFunction' do begin
-      if Cls.ClassName = CName then exit;
-      Cls := Cls.ClassParent
-    end;
-  end;
-  Result := false;
-end;
-
-{
 Starts Self-translating mechanism invoking <link TExtThread.JSCode, JSCode>.
 Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 @param JS JS commands or declarations
@@ -802,7 +787,7 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
     if (pos('.nm="', JS) = 0) and (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
-      if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
+      if (JSCommand <> '') and (pJSName <> '') and not InheritsFrom(TExtFunction) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;
@@ -827,7 +812,6 @@ constructor TExtObject.AddTo(List : TExtObjectList); begin
   end;
   List.Add(Self);
 end;
-
 
 // Inits a JS Object with a <link TExtFunction>
 constructor TExtObject.Init(Method : TExtFunction); begin
@@ -897,7 +881,7 @@ with TExtWindow.Create do
 }
 function TExtObject.JSExpression(Expression : string; MethodsValues : array of const) : integer;
 var
-  Mark : string;
+  Mark, Command : string;
   I : integer;
 begin
   with TExtThread(CurrentFCGIThread) do begin
@@ -906,8 +890,9 @@ begin
     for I := 0 to high(MethodsValues) do
       with MethodsValues[I] do
         if VType = vtObject then begin
-          VAnsiString := pointer(TExtFunction(VObject).ExtractJSCommand);
-          VType := vtAnsiString;
+          Command     := TExtFunction(VObject).ExtractJSCommand; // FPC idiosincrasy
+          VAnsiString := pointer(Command);
+          VType       := vtAnsiString;
         end;
     JSReturns.Values[Mark] := Format(Expression, MethodsValues);
   end;
