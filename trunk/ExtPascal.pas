@@ -316,9 +316,10 @@ Display error message with exception message, method name and method params.
 @exception TAccessViolation If current request is AJAX the session can be fixed reloading the page.
 }
 procedure TExtThread.OnError(Msg, Method, Params : string); begin
+  Response := '';
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  ErrorMessage(Msg + '<br/>Method: ' + Method + IfThen(Params = '', '', '<br/>Params: ' + Params));
+  ErrorMessage(Msg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params: ' + Params));
 end;
 
 {
