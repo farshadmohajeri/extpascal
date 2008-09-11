@@ -756,21 +756,21 @@ begin
     FRequest := pRequest;
   Response := '';
   if BeforeHandleRequest then
-    if PathInfo = '' then
-      Home
-    else begin
-      MethodCode := MethodAddress(PathInfo);
-      if MethodCode <> nil then begin
-        PageMethod.Code := MethodCode;
-        PageMethod.Data := Self;
-        try
+    try
+      if PathInfo = '' then
+        Home
+      else begin
+        MethodCode := MethodAddress(PathInfo);
+        if MethodCode <> nil then begin
+          PageMethod.Code := MethodCode;
+          PageMethod.Data := Self;
           MethodCall(PageMethod); // Call published method
-        except
-          on E : Exception do OnError(E.Message, PathInfo, pRequest)
-        end;
-      end
-      else
-        OnNotFoundError;
+        end
+        else
+          OnNotFoundError;
+      end;
+    except
+      on E : Exception do OnError(E.Message, PathInfo, pRequest)
     end;
   AfterHandleRequest;
   Result := UTF8Encode(Response);
