@@ -78,6 +78,7 @@ type
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
+    procedure AfterThreadConstruction; virtual; abstract;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -627,6 +628,7 @@ begin
       Thread := GUIDToString(GUID);
       SetCookie('FCGIThread', Thread);
       Application.Threads.AddObject(Thread, Self);
+      AfterThreadConstruction;
     end
   end
   else begin

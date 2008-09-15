@@ -546,7 +546,7 @@ begin
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
-      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + Application.Icon + '"/>') +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>') +
       '<title>' + Application.Title + '</title>' +
       '<meta http-equiv="content-type" content="charset=utf-8">' +
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
