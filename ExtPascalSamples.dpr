@@ -2,7 +2,7 @@ program ExtPascalSamples;
 
 uses
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDD, ExtLayout, ExtMenu, ExtState, ExtTree;
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
   TSamples = class(TExtThread)
