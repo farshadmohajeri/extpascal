@@ -219,7 +219,6 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FCookie.StrictDelimiter := true;
   FCookie.Delimiter := ';';
   ContentType := 'text/html';
-  FreeOnTerminate := true;
   inherited Create(false);
 end;
 
@@ -628,7 +627,6 @@ begin
       Thread := GUIDToString(GUID);
       SetCookie('FCGIThread', Thread);
       Application.Threads.AddObject(Thread, Self);
-      FreeOnTerminate := false;
     end
   end
   else begin
@@ -730,6 +728,7 @@ begin
     CurrentFCGIThread.FLastAccess := 0;
     Application.GarbageNow := true;
   end;
+  Terminate;
 end;
 
 {
