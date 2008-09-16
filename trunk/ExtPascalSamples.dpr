@@ -381,7 +381,7 @@ end;
 procedure TSamples.BorderLayout;
 var
  Tree : TExtTreeTreePanel;
- Root, Node : TExtTreeTreeNode;
+ Node : TExtTreeTreeNode;
 begin
   SetStyle('html,body{font:normal 12px verdana;margin:0;padding:0;border:0 none;overflow:hidden;height:100%}' +
 	  'p{margin:5px}' +
@@ -390,8 +390,8 @@ begin
   Tree := TExtTreeTreePanel.Create;
   Tree.Border := false;
   //set root node
-  Root := TExtTreeTreeNode.Create;
-  with Root do begin
+  Tree.Root := TExtTreeTreeNode.Create;
+  with Tree.Root do begin
     Text := 'Root';
     AllowChildren := True;
     Expandable := True;
@@ -399,14 +399,13 @@ begin
     Leaf := False;
     on('click', JSFunction(SelectNodeEventBrowserSide));
   end;
-  Tree.SetRootNode(Root);
   //set child node
   Node := TExtTreeTreeNode.Create;
   with Node do begin
     Text := 'child0';
     on('click', Ajax(SelectNodeEventServerSide, ['Name', '%0.text']));
   end;
-  Root.AppendChild(Node);
+  Tree.Root_.AppendChild(Node);
 
   with TExtViewport.Create do begin
     Layout := 'border';
@@ -472,7 +471,7 @@ begin
         Html    := '<p>Hi. I''m the west panel.</p>';
         Border  := false;
         IconCls := 'nav';
-        Tree.AddTo(Items)
+        Tree.AddTo(Items);
       end;
       with TExtPanel.AddTo(Items) do begin
         Title   := 'Settings';
