@@ -78,7 +78,7 @@ type
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
-    procedure AfterThreadConstruction; virtual; abstract;
+    procedure AfterThreadConstruction; virtual; 
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -464,6 +464,8 @@ Processing to execute after <link TFCGIThread.HandleRequest, HandleRequest> meth
 @see TExtThread.AfterHandleRequest
 }
 procedure TFCGIThread.AfterHandleRequest; begin end;
+
+procedure TFCGIThread.AfterThreadConstruction; begin end;
 
 {
 Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> method.
