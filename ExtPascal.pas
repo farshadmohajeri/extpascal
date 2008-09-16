@@ -117,6 +117,7 @@ type
     Created : boolean; // Tests if object already created
     function ConfigAvailable(JSName : string) : boolean;
     function ExtractJSCommand : string;
+    function IsParent(CName : string): boolean;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
     function VarToJSON(Strs : TArrayOfString)  : string; overload;
@@ -779,6 +780,26 @@ function TExtObject.JSClassName: string; begin
 end;
 
 {
+Tests if a class name is parent of this object
+@param CName Class name with "T" prefix
+@return True if CName is parent of this object and false if not
+}
+function TExtObject.IsParent(CName : string) : boolean;
+var
+  Cls : TClass;
+begin
+  if (CName <> '') and (CName[1] = 'T') then begin
+    Result := true;
+    Cls    := ClassType;
+    while Cls.ClassName <> 'TExtFunction' do begin
+      if Cls.ClassName = CName then exit;
+      Cls := Cls.ClassParent
+    end;
+  end;
+  Result := false;
+end;
+
+{
 Starts Self-translating mechanism invoking <link TExtThread.JSCode, JSCode>.
 Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 @param JS JS commands or declarations
@@ -788,7 +809,7 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
   if JS <> '' then begin
     if (pos('.nm="', JS) = 0) and (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
-      if (JSCommand <> '') and (pJSName <> '') and not InheritsFrom(TExtFunction) then begin
+      if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
         exit;
       end;
