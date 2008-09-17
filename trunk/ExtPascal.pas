@@ -92,12 +92,9 @@ type
     procedure SetLibrary(pLibrary : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
-    {$IFNDEF WebServer}
-    constructor Create(NewSocket : integer); override;
-    {$ELSE}
+    {$IFDEF WebServer}
     procedure InitSessionDefs; override;
     {$ENDIF}
-    destructor Destroy; override;
   published
     procedure HandleEvent; virtual;
   end;
@@ -471,24 +468,16 @@ begin
       if NewThread then begin
         ErrorMessage('Session expired or lost.<br/>A new session will be created now.', 'window.location.reload()');
         Result := false;
-      end
+      end;
+  JSReturns := TStringList.Create;
 end;
 
-{$IFNDEF WebServer}
-constructor TExtThread.Create(NewSocket : integer);
-{$ELSE}
-procedure TExtThread.InitSessionDefs;
-{$ENDIF}
-begin
+{$IFDEF WebServer}
+procedure TExtThread.InitSessionDefs; begin
   inherited;
-  JSReturns := TStringList.Create;
   Sequence := 0;
 end;
-
-destructor TExtThread.Destroy; begin
-  JSReturns.Free;
-  inherited;
-end;
+{$ENDIF}
 
 procedure TExtThread.HandleEvent;
 var
@@ -526,11 +515,10 @@ procedure TExtThread.AfterHandleRequest;
   var
     I : integer;
   begin
-    if JSReturns.Count <> 0 then begin
+    if JSReturns.Count <> 0 then
       for I := 0 to JSReturns.Count-1 do
         Response := AnsiReplaceStr(Response, JSReturns.Names[I], JSReturns.ValueFromIndex[I]);
-      JSReturns.Clear;
-    end;
+    JSReturns.Free;
   end;
 
 var

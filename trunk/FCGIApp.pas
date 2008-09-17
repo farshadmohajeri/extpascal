@@ -638,6 +638,7 @@ begin
     CurrentFCGIThread.FRequestHeader.Assign(FRequestHeader);
     CurrentFCGIThread.FCookie.Assign(FCookie);
     CurrentFCGIThread.NewThread := false;
+    Application.Threads.AddObject('0', Self);
   end;
   Application.AccessThreads.Leave;
 end;
@@ -728,11 +729,13 @@ begin
     end;
   end;
   FSocket.Free;
-  if FGarbage then begin
-    CurrentFCGIThread.FLastAccess := 0;
+  if (not NewThread) or FGarbage then begin
+    if FGarbage then
+      CurrentFCGIThread.FLastAccess := 0
+    else
+      FLastAccess := 0;
     Application.GarbageNow := true;
   end;
-  Terminate;
 end;
 
 {
