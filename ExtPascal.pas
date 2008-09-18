@@ -479,6 +479,7 @@ procedure TExtThread.InitSessionDefs; begin
 end;
 {$ENDIF}
 
+// Calls events using Delphi style
 procedure TExtThread.HandleEvent;
 var
   Obj : TExtObject;
@@ -912,7 +913,7 @@ function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
   Result := JSExpression('%s', [Method]);
 end;
 
-// Must be implemented on extended classes where events can be handled 
+// Must be implemented on extended classes where events can be handled
 procedure TExtObject.HandleEvent(const AEvtName: string); begin end;
 
 {

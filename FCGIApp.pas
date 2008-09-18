@@ -78,7 +78,8 @@ type
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
-    procedure AfterThreadConstruction; virtual; 
+    procedure AfterThreadConstruction; virtual;
+    procedure BeforeThreadDestruction; virtual;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -88,13 +89,13 @@ type
     property PathInfo : string read FPathInfo; // Path info string for the current request
     property LastAccess : TDateTime read FLastAccess; // Last TDateTime access of this thread
     property RequestMethod : TRequestMethod read FRequestMethod; // HTTP request method for the current request
-    property RequestHeader[Name : string] : string read GetRequestHeader; // HTTP headers read in the current request
-    property Cookie[Name : string] : string read GetCookie; // HTTP cookies read in the current request
-    property Query[Name : string] : string read GetQuery; // HTTP query info parameters read in the current request
-    property QueryAsBoolean[Name : string] : boolean read GetQueryAsBoolean;
-    property QueryAsInteger[Name : string] : integer read GetQueryAsInteger;
-    property QueryAsDouble[Name : string] : double read GetQueryAsDouble;
-    property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime;
+    property RequestHeader[Name : string] : string read GetRequestHeader; // Returns HTTP headers read in the current request
+    property Cookie[Name : string] : string read GetCookie; // Returns HTTP cookies read in the current request
+    property Query[Name : string] : string read GetQuery; // Returns HTTP query info parameters read in the current request as a string
+    property QueryAsBoolean[Name : string] : boolean read GetQueryAsBoolean; // Returns HTTP query info parameters as a boolean
+    property QueryAsInteger[Name : string] : integer read GetQueryAsInteger; // Returns HTTP query info parameters as an integer
+    property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
+    property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -236,6 +237,7 @@ begin
     FGarbageCollector.Delete(I);
 end;
 
+// Finds a TObject in Garbage collector using its JavaScript name
 function TFCGIThread.FindObject(Name : string): TObject;
 var
   I: Integer;
@@ -465,7 +467,11 @@ Processing to execute after <link TFCGIThread.HandleRequest, HandleRequest> meth
 }
 procedure TFCGIThread.AfterHandleRequest; begin end;
 
+// Override this method to takes some action after the FastCGI thread is created
 procedure TFCGIThread.AfterThreadConstruction; begin end;
+
+// Override this method to takes some action before the FastCGI thread is destroyed
+procedure TFCGIThread.BeforeThreadDestruction; begin end;
 
 {
 Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> method.
@@ -849,7 +855,10 @@ begin
     Thread := TFCGIThread(Threads.Objects[I]);
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
       AccessThreads.Enter;
-      try Thread.Free except end;
+      try
+        if Threads.Strings[I] <> '0' then Thread.BeforeThreadDestruction;
+        Thread.Free
+      except end;
       Threads.Delete(I);
       AccessThreads.Leave;
     end;
