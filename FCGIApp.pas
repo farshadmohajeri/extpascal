@@ -742,6 +742,7 @@ begin
       FLastAccess := 0;
     Application.GarbageNow := true;
   end;
+  {$IFNDEF MSWINDOWS}EndThread(0){$ENDIF} // Unix RTL FPC bug
 end;
 
 {
