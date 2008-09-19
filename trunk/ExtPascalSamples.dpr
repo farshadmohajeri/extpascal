@@ -728,6 +728,8 @@ begin
 {$ENDIF}
   Application.Run;
 {$ELSE}
+
+{$R UAC.res}
 type
   TServiceThread = class(TThread)
     procedure Execute; override;
