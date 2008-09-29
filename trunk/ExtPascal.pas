@@ -36,11 +36,16 @@ unit ExtPascal;
 //@@Overview
 //<copy ExtPascal.pas>
 
-// Enabling WebServer directive ExtPascal can be used within an embedded Indy based WebServer
-{.$DEFINE WebServer}
-{$IFNDEF WebServer}
-{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
+// Enabling SERVICE directive ExtPascal application can be used as a Windows Service,
+// In command line use -INSTALL to install the service and - UNINSTALL to uninstall the service
+{$IFDEF MSWINDOWS}
+{.$DEFINE SERVICE}
 {$ENDIF}
+
+// Enabling WebServer directive ExtPascal can be used within an embedded Indy based WebServer
+{$IF Defined(MSWINDOWS) and not Defined(SERVICE)}
+{.$DEFINE WebServer}
+{$IFEND}
 
 // Uses ext-all-debug.js and break line at ";" char to facilitate JS debugging
 {.$DEFINE DEBUGJS}
