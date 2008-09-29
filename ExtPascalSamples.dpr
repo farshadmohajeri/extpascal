@@ -1,8 +1,12 @@
 program ExtPascalSamples;
 
 uses
-  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, ExtPascal, SysUtils, {$IFDEF SERVICE}Services,{$ENDIF}
+  ExtPascal, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+
+{$IFNDEF WebServer}
+{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
+{$ENDIF}
 
 type
   TSamples = class(TExtThread)
@@ -70,7 +74,7 @@ begin
           Html := Html + Desc + '</a></td></table>';
         Collapsible := true;
       end;
-    //Free;
+    Free;
   end;
 end;
 
@@ -729,7 +733,7 @@ begin
   Application.Run;
 {$ELSE}
 
-{$R UAC.res}
+{$R UAC.res} // For Windows Vista services
 type
   TServiceThread = class(TThread)
     procedure Execute; override;
