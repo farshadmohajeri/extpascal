@@ -80,6 +80,7 @@ Creates a new socket stream
 @param S Assigns an existing socket to the TBlockSocket
 }
 constructor TBlockSocket.Create(S : integer = 0); begin
+  {$IFNDEF MSWINDOWS}fpSetErrNo(0);{$ENDIF}
 	if S = 0 then
   	Socket := fpSocket(AF_INET, SOCK_STREAM, 0)
 	else
