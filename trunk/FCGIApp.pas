@@ -230,7 +230,7 @@ Deletes a TObject from the Thread Garbage Collector
 }
 procedure TFCGIThread.DeleteFromGarbage(Obj : TObject);
 var
-  I: Integer;
+  I : Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
   if I >= 0 then
@@ -238,9 +238,9 @@ begin
 end;
 
 // Finds a TObject in Garbage collector using its JavaScript name
-function TFCGIThread.FindObject(Name : string): TObject;
+function TFCGIThread.FindObject(Name : string) : TObject;
 var
-  I: Integer;
+  I : Integer;
 begin
   I := FGarbageCollector.IndexOf(Name);
   if I >= 0 then
@@ -452,13 +452,23 @@ begin
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
+function CleanName(Name : string) : string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 1 to length(Name) do
+    if Name[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '_'] then
+      Result := Result + Name[I];
+end;
+
 {
 Adds a TObject to the Thread Garbage Collector
 @param Name JS name or other object identification
 @param Obj TObject to add
 }
 procedure TFCGIThread.AddToGarbage(const Name : string; Obj : TObject); begin
-  FGarbageCollector.AddObject(AnsiReplaceStr(Name, '_', ''), Obj);
+  FGarbageCollector.AddObject(CleanName(Name), Obj);
 end;
 
 {
