@@ -229,7 +229,9 @@ uses
   SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
 
 const
-  DeclareJS = '/*var*/ '; // Declare JS objects as global
+  DeclareJS    = '/*var*/ '; // Declare JS objects as global
+  CommandDelim = #3;
+  IdentDelim   = '_';
 
 { TExtThread }
 
@@ -367,7 +369,7 @@ begin
         if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
     end;
   insert(JS, Response, I);
-  if (pos('O_', JS) <> 0) and (pos('O_', JSName) <> 0) then begin
+  if (pos('O' + IdentDelim, JS) <> 0) and (pos('O' + IdentDelim, JSName) <> 0) then begin
     if Owner <> '' then JSName := Owner;
     RelocateVar(JS, JSName, I+length(JS));
   end;
@@ -387,7 +389,7 @@ var
 begin
   J := LastDelimiter(':,', JS);
   if J <> 0 then
-    VarName := copy(JS, J+1, posex('_', JS, J+3)-J)
+    VarName := copy(JS, J+1, posex(IdentDelim, JS, J+3)-J)
   else
     VarName := JS;
   J := posex('/*' + VarName + '*/', Response, I);
@@ -396,7 +398,7 @@ begin
     K := posex(';', Response, K)+1;
     J := posex(';', Response, J);
     VarBody := copy(Response, K, J-K+1);
-    J := LastDelimiter('|', VarBody)+1;
+    J := LastDelimiter(CommandDelim, VarBody)+1;
     VarBody := copy(VarBody, J, length(VarBody));
     delete(Response, K+J-1, length(VarBody));
     insert(VarBody, Response, pos(DeclareJS + JSName + '=new', Response));
@@ -502,7 +504,7 @@ end;
 
 {
 Does tasks after Request processing.
-1. Extracts Comments, auxiliary chars, and sets:
+1. Extracts Comments, auxiliary delimiters, and sets:
 2. HTML body,
 3. Title,
 4. Charset,
@@ -537,7 +539,7 @@ begin
     I := PosEx('/*', Response, I);
   end;
   HandleJSReturns;
-  Response := AnsiReplaceStr(AnsiReplaceStr(Response, '|', ''), '_', ''); // Extracts aux chars
+  Response := AnsiReplaceStr(AnsiReplaceStr(Response, CommandDelim, ''), IdentDelim, ''); // Extracts aux delimiters
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
@@ -580,7 +582,7 @@ constructor TExtObjectList.Create(pOwner : TExtObject = nil; pAttribute : string
   Attribute := pAttribute;
   Owner := pOwner;
   if CurrentFCGIThread <> nil then
-    JSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
+    JSName := 'O' + IdentDelim + TExtThread(CurrentFCGIThread).GetSequence + IdentDelim;
 end;
 
 {
@@ -640,7 +642,7 @@ begin
       ListAdd := Format(ListAdd, ['{/*' + Obj.JSName + '*/}']);
   end
   else
-    if pos(Obj.JSName, Obj.JSCommand) = 1 then
+    if pos(Obj.JSName + '.clone', Obj.JSCommand) = 1 then
       ListAdd := obj.ExtractJSCommand
     else
       ListAdd := Obj.JSName;
@@ -669,7 +671,7 @@ end;
 
 // Set an unique <link TExtObject.JSName, JSName> using <link TExtThread.GetSequence, GetSequence>
 procedure TExtObject.CreateJSName; begin
-  FJSName := 'O_' + TExtThread(CurrentFCGIThread).GetSequence + '_';
+  FJSName := 'O' + IdentDelim + TExtThread(CurrentFCGIThread).GetSequence + IdentDelim;
 end;
 
 {
@@ -710,7 +712,7 @@ procedure TExtObject.CreateVar(JS : string); begin
   CurrentFCGIThread.AddToGarbage(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '=new ' + JS);
+  JSCode(CommandDelim + DeclareJS + JSName + '=new ' + JS);
   JSCode(JSName + '.nm="' + JSName + '";');
 end;
 
@@ -723,7 +725,7 @@ procedure TExtObject.CreateVarAlt(JS : string); begin
   CurrentFCGIThread.AddToGarbage(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '= ' + JS);
+  JSCode(CommandDelim + DeclareJS + JSName + '= ' + JS);
   JSCode(JSName + '.nm="' + JSName + '";');
 end;
 
@@ -833,14 +835,14 @@ end;
 constructor TExtObject.Init(Method : TExtFunction); begin
   CreateJSName;
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
+  JSCode(CommandDelim + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
 end;
 
 constructor TExtObject.Init(Command: string); begin
   CreateJSName;
   CurrentFCGIThread.AddToGarbage(JSName, Self);
   Created := true;
-  JSCode('|' + DeclareJS + JSName + '=' + Command + ';');
+  JSCode(CommandDelim + DeclareJS + JSName + '=' + Command + ';');
 end;
 
 procedure TExtObject.InitDefaults; begin end;

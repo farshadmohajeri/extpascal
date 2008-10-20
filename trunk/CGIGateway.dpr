@@ -84,20 +84,20 @@ end;
 // Returns the environment variables encapsulated using FastCGI protocol
 function EnvVariables : string;
 const
-  EnvVar : array[0..38] of string = (
+  EnvVar : array[0..39] of string = (
     'QUERY_STRING', 'PATH_INFO', 'REQUEST_METHOD', 'HTTP_COOKIE', 'HTTP_ACCEPT_LANGUAGE', 'SCRIPT_NAME', 'DOCUMENT_ROOT', //6 only essential
     'CONTENT_LENGTH', 'REQUEST_URI', 'SCRIPT_FILENAME', 'SERVER_ADMIN', //10
     'HTTP_USER_AGENT', 'HTTP_HOST', 'HTTP_ACCEPT', 'HTTP_ACCEPT_CHARSET', 'HTTP_ACCEPT_ENCODING', 'HTTP_KEEP_ALIVE', 'HTTP_CONNECTION', 'HTTP_REFERER', //18
     'AUTH_TYPE', 'CONTENT_TYPE', 'PATH_TRANSLATED',
     'REMOTE_ADDR', 'REMOTE_HOST', 'REMOTE_PORT', 'REMOTE_IDENT', 'REMOTE_USER',
     'SERVER_ADDR', 'SERVER_NAME', 'SERVER_PORT', 'SERVER_SIGNATURE', 'SERVER_SOFTWARE', 'SERVER_PROTOCOL', 'GATEWAY_INTERFACE',
-    'HTTP_IF_MODIFIED_SINCE', 'PATH', 'SystemRoot', 'COMSPECC', 'WINDIR');
+    'HTTP_IF_MODIFIED_SINCE', 'PATH', 'SystemRoot', 'COMSPECC', 'WINDIR', 'HTTP_X_REQUESTED_WITH');
 var
   I : integer;
   Value : string;
 begin
   Result := #1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request
-  for I := 0 to 6 (*high(EnvVar)*) do begin
+  for I := 0 to high(EnvVar) do begin
     Value := GetEnvironmentVariable(EnvVar[I]);
     if Value <> '' then AddParam(Result, [EnvVar[I], Value]);
   end;
@@ -150,14 +150,30 @@ begin
 {$IFDEF MSWINDOWS}
   Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
 {$ELSE}
+  Result := false;
 	case fpFork of
 		-Maxint..-1 : Result := false;
-     0 : begin
-      SetLength(ArgV, 2);
-      ArgV[0] := pchar(Prog);
-      ArgV[1] := nil;
-      fpExecv(Prog, ArgV);
-      Result := false;
+    0 : begin
+      FpSetSid; // set process as session leader
+      // re-fork in order to enable session leader process get exited
+      if fpFork = 0 then begin
+        FpChDir(ExtractFilePath(Prog)); // make sure process path
+        FpUMask(0); // reset umask
+        // close all std
+        FpClose(2);
+        FpClose(1);
+        FpClose(0);
+        // open new std point to /dev/null
+        FpOpen('/dev/null', O_RDWR);
+        FpDup2(0, 1);
+        FpDup2(0, 2);
+        // run fcgi
+        SetLength(ArgV, 2);
+        ArgV[0] := pchar(Prog);
+        ArgV[1] := nil;
+        FpExecv(Prog, ArgV);
+      end;
+      FpExit(0);
     end
   else
   	Result := true
@@ -176,6 +192,7 @@ begin
   	Socket.Free;
     FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
     if Exec(FCGIApp) then begin
+      sleep(1000);
     	Socket := TBlockSocket.Create;
       Socket.Connect(Host, Port);
       if Socket.Error = 0 then

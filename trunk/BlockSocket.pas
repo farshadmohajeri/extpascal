@@ -176,6 +176,7 @@ var
 begin
   Tam := WaitingData;
   SetLength(Result, Tam);
+  {$IFNDEF MSWINDOWS}fpSetErrNo(0);{$ENDIF}
   fpRecv(Socket, @Result[1], Tam, 0);
 end;
 
