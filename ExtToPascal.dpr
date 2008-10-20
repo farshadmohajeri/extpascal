@@ -85,6 +85,10 @@ begin
     Result := ''
 end;
 
+function FixJSName(JSName : string) : string; begin
+  Result := AnsiReplaceStr(JSName, '_', '')
+end;
+
 type
   TUnit = class
     Name, UsesList : string;
@@ -203,7 +207,7 @@ end;
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Name       := FixIdent(pName, true);
   SimpleName := Copy(pName, LastDelimiter('.', pName) + 1, MaxInt);
-  JSName     := pName;
+  JSName     := FixJSName(pName);
   Parent     := FixIdent(pParent, true);
   UnitName   := FixIdent(pUnitName);
   Properties := TStringList.Create;
@@ -252,7 +256,7 @@ end;
 
 constructor TProp.Create(pName, pJSName, pType : string; pStatic, pConfig : boolean; pDefault : string = ''); begin
   Name    := FixIdent(pName);
-  JSName  := pJSName;
+  JSName  := FixJSName(pJSName);
   Static  := pStatic or IsUpper(pName);
   Config  := pConfig;
   Typ     := FixType(pType);
@@ -267,7 +271,7 @@ end;
 
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
   Name     := FixIdent(pName);
-  JSName   := pName;
+  JSName   := FixJSName(pName);
   Params   := pParams;
   Static   := pStatic;
   Overload := pOverload;
@@ -279,7 +283,7 @@ var
   I : integer;
 begin
   Name     := pName;
-  JSName   := pJSName;
+  JSName   := FixJSName(pJSName);
   Params   := pParams;
   Overload := pOverload;
   if pReturn <> '' then Return := 'TExtFunction';

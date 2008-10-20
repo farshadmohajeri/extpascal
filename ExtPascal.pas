@@ -230,8 +230,8 @@ uses
 
 const
   DeclareJS    = '/*var*/ '; // Declare JS objects as global
-  CommandDelim = #3;
-  IdentDelim   = '_';
+  CommandDelim = #3;         // Internal JS command delimiter
+  IdentDelim   = #4;         // Internal JS identifier delimiter
 
 { TExtThread }
 
