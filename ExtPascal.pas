@@ -610,7 +610,6 @@ procedure TExtObjectList.Add(Obj : TExtObject);
 var
   ListAdd, Response, OwnerName : string;
 begin
-  Obj.DeleteFromGarbage;
   if length(FObjects) = 0 then
     if Owner <> nil then begin
       if pos('/*' + Owner.JSName + '*/', CurrentFCGIThread.Response) <> 0 then
