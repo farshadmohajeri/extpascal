@@ -67,7 +67,7 @@ begin
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
-        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=_blank>';
+        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=blank>';
         if Gif <> '' then
           Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
         else

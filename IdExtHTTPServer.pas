@@ -453,7 +453,7 @@ procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo;
     Result := True;
     if (ARequest.RawHeaders.Values['if-Modified-Since'] <> '') then
     begin
-      FileAge(FileName, FFileDateTime);
+      FFileDateTime := FileDateToDateTime(FileAge(FileName));
       Result := not SameText(FormatDateTime(FCompareDateFmt,
         FFileDateTime), FormatDateTime(FCompareDateFmt,
         StrInternetToDateTime(ARequest.RawHeaders.Values['if-Modified-Since'])));
@@ -478,7 +478,7 @@ procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo;
         AResponse.ContentStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
         AResponse.FreeContentStream := True;
         AResponse.ContentLength := AResponse.ContentStream.Size;
-        FileAge(FileName, FileDateTime);
+        FFileDateTime := FileDateToDateTime(FileAge(FileName));
         AResponse.LastModified := FileDateTime;
         AResponse.ContentType := FileType2MimeType(FileName);
       end else AResponse.ResponseNo := 304; //Not Modified, use cache version

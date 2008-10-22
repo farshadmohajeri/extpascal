@@ -30,6 +30,10 @@ uses
     {$ENDIF}
   {$ENDIF}
 
+const
+  Host = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
+  Port = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
+
 {
 Adds a pair Name/Value to a <link FCGIApp.pas, FastCGI> <link TRecType, rtGetValuesResult> record type
 @param S Body of <link TRecType, rtGetValuesResult> record type
@@ -85,13 +89,13 @@ end;
 function EnvVariables : string;
 const
   EnvVar : array[0..39] of string = (
-    'QUERY_STRING', 'PATH_INFO', 'REQUEST_METHOD', 'HTTP_COOKIE', 'HTTP_ACCEPT_LANGUAGE', 'SCRIPT_NAME', 'DOCUMENT_ROOT', //6 only essential
-    'CONTENT_LENGTH', 'REQUEST_URI', 'SCRIPT_FILENAME', 'SERVER_ADMIN', //10
-    'HTTP_USER_AGENT', 'HTTP_HOST', 'HTTP_ACCEPT', 'HTTP_ACCEPT_CHARSET', 'HTTP_ACCEPT_ENCODING', 'HTTP_KEEP_ALIVE', 'HTTP_CONNECTION', 'HTTP_REFERER', //18
+    'QUERY_STRING', 'PATH_INFO', 'REQUEST_METHOD', 'HTTP_COOKIE', 'HTTP_ACCEPT_LANGUAGE', 'SCRIPT_NAME', 'DOCUMENT_ROOT', 'HTTP_X_REQUESTED_WITH', //7 only essential
+    'CONTENT_LENGTH', 'REQUEST_URI', 'SCRIPT_FILENAME', 'SERVER_ADMIN', //11
+    'HTTP_USER_AGENT', 'HTTP_HOST', 'HTTP_ACCEPT', 'HTTP_ACCEPT_CHARSET', 'HTTP_ACCEPT_ENCODING', 'HTTP_KEEP_ALIVE', 'HTTP_CONNECTION', 'HTTP_REFERER', //19
     'AUTH_TYPE', 'CONTENT_TYPE', 'PATH_TRANSLATED',
     'REMOTE_ADDR', 'REMOTE_HOST', 'REMOTE_PORT', 'REMOTE_IDENT', 'REMOTE_USER',
     'SERVER_ADDR', 'SERVER_NAME', 'SERVER_PORT', 'SERVER_SIGNATURE', 'SERVER_SOFTWARE', 'SERVER_PROTOCOL', 'GATEWAY_INTERFACE',
-    'HTTP_IF_MODIFIED_SINCE', 'PATH', 'SystemRoot', 'COMSPECC', 'WINDIR', 'HTTP_X_REQUESTED_WITH');
+    'HTTP_IF_MODIFIED_SINCE', 'PATH', 'SystemRoot', 'COMSPECC', 'WINDIR');
 var
   I : integer;
   Value : string;
@@ -103,10 +107,6 @@ begin
   end;
   Result := Result + #1#4#0#1#0#0#0#0; // FCGI End Params
 end;
-
-const
-  Host = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
-  Port = 2014;        // Socket port to comunicate with FastCGI application
 
 var
   Socket : TBlockSocket; // Block socket object
