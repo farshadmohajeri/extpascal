@@ -661,9 +661,9 @@ end;
 
 {
 The thread main loop.<p>
-On receive a request, each request, on its execution cycle, do:
+On receive a request, each request, on its execution cycle, does:
   * <link MoveToFCGIHeader, Reads its FCGI header>
-  * Depending on <link TRecType, record type> do:
+  * Depending on <link TRecType, record type> does:
     * <link TFCGIThread.ReadBeginRequest, Starts a request> or
     * <link TFCGIThread.Logout, Aborts the request> or
     * <link TFCGIThread.SendEndRequest, Ends the request> or
@@ -758,7 +758,7 @@ end;
 {
 Calls the published method indicated by PathInfo. Before calls <link TFCGIThread.BeforeHandleRequest, BeforeHandleRequest> method and after calls <link TFCGIThread.AfterHandleRequest, AfterHandleRequest> method.
 If PathInfo is null then <link TFCGIThread.Home, Home> method will be called.
-The published method will use the FRequest as input and the Response as output.
+The published method will use the Request as input and the Response as output.
 <link TFCGIThread.OnError, OnError> method is called if an exception is raised in published method.
 <link TFCGIThread.OnNotFoundError, OnNotFoundError> method is called if the published method is not declared in this thread.
 @param pRequest Request body assigned to FRequest field or to <link TFCGIThread.Query, Query> array if FRequestMethod is <link TRequestMethod, rmPost>, it is the input to the published method
@@ -912,7 +912,7 @@ begin
   I := 0;
   FThreadsCount := -1;
   with TBlockSocket.Create do begin
-    Bind(Port, 100);
+    Bind(Port, 1000);
     if Error = 0 then
       repeat
         NewSocket := Accept(250);

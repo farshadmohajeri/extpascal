@@ -89,7 +89,7 @@ type
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
-    property Language : string read FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
+    property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property IsIE : boolean read FIsIE; // Tests if session is using IE
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
@@ -114,9 +114,9 @@ type
   private
     function WriteFunction(Command : string): string;
   protected
-    FJSName : string; // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
-    JSCommand : string; // Last command written in Response
-    Created : boolean; // Tests if object already created
+    FJSName   : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
+    JSCommand : string;  // Last command written in Response
+    Created   : boolean; // Tests if object already created
     function ConfigAvailable(JSName : string) : boolean;
     function ExtractJSCommand : string;
     function IsParent(CName : string): boolean;
@@ -580,7 +580,8 @@ Creates a TExtObjectList instance.
 }
 constructor TExtObjectList.Create(pOwner : TExtObject = nil; pAttribute : string = ''); begin
   Attribute := pAttribute;
-  Owner := pOwner;
+  Owner     := pOwner;
+  Created   := true;
   if CurrentFCGIThread <> nil then
     JSName := 'O' + IdentDelim + TExtThread(CurrentFCGIThread).GetSequence + IdentDelim;
 end;
@@ -767,6 +768,7 @@ Used by Parser to build <link TExtObject.InitDefaults, InitDefaults> methods use
 }
 constructor TExtObject.CreateInternal(Owner : TExtObject; Attribute : string); begin
   FJSName := Owner.JSName + '.' + Attribute;
+  Created := true;
 end;
 
 // Returns 'Object' that is the default class name for Ext JS objects
