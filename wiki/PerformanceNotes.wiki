@@ -10,8 +10,9 @@
  * WebServers:
    * IIS 6.0 and 
    * Apache 2.2.8 
- * Benchmark software: ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
  * Compiler: Turbo Delphi
+ * Benchmark software: ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
+ * Command: ab -v 0 -n 1000 -c 10 <URL>
 
 == Details ==
 
