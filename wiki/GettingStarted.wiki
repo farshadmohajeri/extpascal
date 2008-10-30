@@ -26,7 +26,7 @@ The main advantages are:
 = First Steps =
 01. Compile ExtToPascal.dpr source using your favorite ObjectPascal compiler.
 
-02. For Delphi I recommend set these Syntax options (menu \Project\Options\Compiler):
+02. For Delphi set these Syntax options (menu \Project\Options\Compiler):
 {{{
 OFF Strict var-strings
 OFF Complete boolean eval
@@ -37,7 +37,7 @@ ON Huge strings
 ON Assignable typed constants
 }}}
 
-03. For FreePascal I recommend _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append this options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release version.
+03. For FreePascal use _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append this options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release version.
 
 04. Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
 {{{
