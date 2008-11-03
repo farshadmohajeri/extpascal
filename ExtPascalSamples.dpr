@@ -1,5 +1,5 @@
 program ExtPascalSamples;
-
+{.$DEFINE SERVICE}
 uses
   ExtPascal, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
