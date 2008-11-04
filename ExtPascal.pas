@@ -1247,8 +1247,8 @@ Free is successful even if called repeatedly to the same object.
 procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
   if (Self <> nil) and Created then begin
     if CallDestroyJS then DestroyJS;
-    Destroy;
     Created := false;
+    Destroy;
   end;
 end;
 

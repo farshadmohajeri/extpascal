@@ -263,7 +263,7 @@ begin
   FQuery.Free;
   FCookie.Free;
   dec(Application.FThreadsCount);
-  inherited;
+  {$IFDEF MSWINDOWS}inherited;{$ENDIF} // Collateral effect of Unix RTL FPC bug
 end;
 
 {
