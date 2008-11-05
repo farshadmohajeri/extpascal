@@ -1248,7 +1248,7 @@ procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
   if (Self <> nil) and Created then begin
     if CallDestroyJS then DestroyJS;
     Created := false;
-    Destroy;
+    inherited Free;
   end;
 end;
 
