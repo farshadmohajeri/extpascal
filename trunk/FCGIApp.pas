@@ -24,7 +24,7 @@ interface
 
 uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
-  BlockSocket, SysUtils, SyncObjs, Classes{$IFDEF FPC}, ExtPascalUtils{$ENDIF};
+  BlockSocket, SysUtils, SyncObjs, Classes, ExtPascalUtils;
 
 type
   // FastCGI record types, i.e. the general function that the record performs
