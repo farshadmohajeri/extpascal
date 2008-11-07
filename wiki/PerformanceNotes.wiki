@@ -3,30 +3,41 @@
 
 ==Environment Description==
 
- * Processor: Intel Pentium 4 (531-Prescott) 3.0 GHz 
- * Memory: 1GB DDR1 
- * Network: Ethernet 100 Mbps. Both server and client on the same segment. No significant traffic.
- * OSes: Windows 2003 Service Pack 1 and Linux Fedora 9
- * WebServers:
+ * Sever:
+  * Processor: Intel Pentium 4 (Prescott) 3.2 GHz 
+  * Memory: 1GB DDR1 
+ * Client:
+  * Processor: Intel Pentium 4 (Prescott) 3.0 GHz 
+  * Memory: 1GB DDR1 
+ * Network: 
+  * Ethernet 100 Mbps. 
+  * Server and Client on the same segment. 
+  * No significant traffic.
+ * Server OSes: 
+  * Windows 2003 Service Pack 1 
+  * Linux Fedora 9
+ * Client OS:
+  * Windows XP Service Pack 2
+ * WebServer:
    * Apache 2.2.8 
- * Compilers: Turbo Delphi and FreePascal 2.2.2 (linux and windows)
- * Benchmark software: ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
- * Command: `ab -v 0 -n 1000 -c 10 <URL>`
-
-Observation:
- #	Service/Daemon running on a Pentium 4 3.2 GHz (Prescott) with 1.0 GB RAM
- #	Requests submitted by Apache Benchmark (ab) running on a workstation Pentium 4  3.0 GHz with 1.0 GB RAM
- #	Both on same 100 Mbps Ethernet network segment
- #	Http Server Apache 2.2.8
+ * Compilers: 
+   * Turbo Delphi 2006
+   * FreePascal 2.2.2 (linux and windows)
+ * Benchmark software:
+  * ab.exe - ApacheBench, Version 2.0.40-dev <$Revision: 1.146 $>
+ * Command: 
+  * ab -v 0 -n 1000 -c 10
+ * Webserver Comunication Protocol: 
+  * Fastcgi
 
 
 ||Legend || ||
 ||# ||Number of the execution of Apache Benchmark(ab) with parameters specified in top line ||
-||Errors || Number of error occurred in execution of ab ||
-||RPS || Requests Per Second – Average number o requests attended by the server during execution of ab ||
+||Errors || Number of errors occurred in execution of ab ||
+||RPS || Requests Per Second – Average number of requests attended by the server during execution of ab ||
 ||Mem || Total Physical Memory used by server (reported by Task Manager in Windows e Top in Linux) ||
 ||T || Time in seconds that the service takes to attend the demand ||
-||* || means that all calls to ab was made consecutively without interval to take notes ||
+||^*^ || means that all calls to ab was made consecutively without interval to take notes ||
 
 ==Server Windows 2003 – Delphi generated code – 1,000 requests / 10 concurrents==
 
