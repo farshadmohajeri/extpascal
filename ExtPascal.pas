@@ -56,7 +56,9 @@ uses
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
 const
-  ExtPath = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
+  ExtPath      = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
+  CommandDelim = #3;     // Internal JS command delimiter
+  IdentDelim   = #4;     // Internal JS identifier delimiter
 
 type
   TArrayOfString  = array of string;
@@ -230,8 +232,6 @@ uses
 
 const
   DeclareJS    = '/*var*/ '; // Declare JS objects as global
-  CommandDelim = #3;         // Internal JS command delimiter
-  IdentDelim   = #4;         // Internal JS identifier delimiter
 
 { TExtThread }
 
@@ -523,10 +523,10 @@ procedure TExtThread.AfterHandleRequest;
   var
     I : integer;
   begin
-    if JSReturns.Count <> 0 then
+    if (JSReturns <> nil) and (JSReturns.Count <> 0) then
       for I := 0 to JSReturns.Count-1 do
         Response := AnsiReplaceStr(Response, JSReturns.Names[I], JSReturns.ValueFromIndex[I]);
-    JSReturns.Free;
+    FreeAndNil(JSReturns);
   end;
 
 var
