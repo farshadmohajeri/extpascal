@@ -99,9 +99,6 @@ type
     procedure SetLibrary(pLibrary : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
-    {$IFDEF WebServer}
-    procedure InitSessionDefs; override;
-    {$ENDIF}
   published
     procedure HandleEvent; virtual;
   end;
@@ -478,13 +475,6 @@ begin
       end;
   JSReturns := TStringList.Create;
 end;
-
-{$IFDEF WebServer}
-procedure TExtThread.InitSessionDefs; begin
-  inherited;
-  Sequence := 0;
-end;
-{$ENDIF}
 
 // Calls events using Delphi style
 procedure TExtThread.HandleEvent;

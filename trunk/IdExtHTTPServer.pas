@@ -2,7 +2,8 @@ unit IdExtHTTPServer;
 
 interface
 
-uses Classes, Forms, StdCtrls, IdCustomHTTPServer, IdHTTPServer, IdContext;
+uses
+  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext;
 
 type
   TIdExtHTTPServer = class;
@@ -28,7 +29,6 @@ type
     Response: string;
     constructor CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); override;
     destructor Destroy; override;
-    procedure InitSessionDefs; virtual;
     procedure HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
     procedure AddToGarbage(const Name: string; Obj: TObject);
     procedure DeleteFromGarbage(Obj: TObject); overload;
@@ -61,7 +61,7 @@ type
     procedure InitComponent; override;
     procedure CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
   public
-    constructor Create(const AOwner: TComponent; const AExtSessionClass: TIdExtSessionClass); reintroduce;
+    constructor Create(const AExtSessionClass: TIdExtSessionClass); reintroduce;
   published
     property ExtSessionClass: TIdExtSessionClass read FExtSessionClass write FExtSessionClass;
   end;
@@ -69,16 +69,11 @@ type
   TIdExtApplication = class
   private
     FServer: TIdExtHTTPServer;
-    FMainForm: TForm;
-    FListBox: TListBox;
-    FIcon: string;
-    procedure DoSessionStart(Sender: TIdHTTPSession);
-    procedure DoSessionEnd(Sender: TIdHTTPSession);
-    procedure DoTerminate(Sender: TObject);
+    FIcon : string;
   public
+    Title: string;
     constructor Create(ATitle : string; ASessionClass : TIdExtSessionClass; APort : word = 80; AMaxIdleMinutes : word = 30; AMaxConns : integer = 1000);
     procedure Run;
-    function Title: string;
     property Icon: string read FIcon write FIcon;
   end;
 
@@ -276,7 +271,7 @@ threadvar
 implementation
 
 uses
-  Controls, StrUtils, SysUtils, IdGlobalProtocols, ExtPascal, ExtPascalUtils;
+  Windows, Messages, StrUtils, SysUtils, IdGlobalProtocols, ExtPascal, ExtPascalUtils;
 
 function FileType2MimeType(const AFileName: string): string;
 var
@@ -294,9 +289,9 @@ end;
 
 { TIdExtHTTPServer }
 
-constructor TIdExtHTTPServer.Create(const AOwner: TComponent; const AExtSessionClass: TIdExtSessionClass); begin
+constructor TIdExtHTTPServer.Create(const AExtSessionClass: TIdExtSessionClass); begin
   ExtSessionClass := AExtSessionClass;
-  inherited Create(AOwner);
+  inherited Create(nil);
 end;
 
 procedure TIdExtHTTPServer.CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); begin
@@ -340,7 +335,6 @@ constructor TIdExtSession.CreateInitialized(AOwner: TIdHTTPCustomSessionList; co
   FNewThread := False;
   FGarbageCollector := TStringList.Create;
   FGarbageCollector.Sorted := True;
-  InitSessionDefs;
 end;
 
 procedure TIdExtSession.DeleteFromGarbage(Obj: TObject);
@@ -495,10 +489,6 @@ begin
     FCurrentReponse.ContentText := Response;
 end;
 
-procedure TIdExtSession.InitSessionDefs; begin
-//  Charset :=  DefaultCharset;
-end;
-
 procedure TIdExtSession.Logout; begin
   Response := 'window.close();';
   FLastTimeStamp := 0;
@@ -517,50 +507,37 @@ end;
 constructor TIdExtApplication.Create(ATitle: string; ASessionClass: TIdExtSessionClass; APort, AMaxIdleMinutes: word; AMaxConns: integer);
 begin
   inherited Create;
-  Forms.Application.Initialize;
-  Forms.Application.Title := ATitle;
-  Forms.Application.CreateForm(TForm, FMainForm);
-  FMainForm.OnDestroy := DoTerminate;
-  FListBox := TListBox.Create(FMainForm);
-  with FListBox do begin
-    Parent := FMainForm;
-    Align := alClient;
-  end;
-  FServer := TIdExtHTTPServer.Create(FMainForm, ASessionClass);
+  Title := ATitle;
+  FServer := TIdExtHTTPServer.Create(ASessionClass);
   FServer.OnCommandGet   := FServer.CommandGet;
   FServer.SessionTimeOut := AMaxIdleMinutes;
   FServer.MaxConnections := AMaxConns;
   FServer.ServerSoftware := ATitle;
   FServer.DefaultPort    := APort;
-  FServer.OnSessionStart := DoSessionStart;
-  FServer.OnSessionEnd   := DoSessionEnd;
-  FServer.SessionList.OnSessionStart := DoSessionStart;
-  FServer.SessionList.OnSessionEnd   := DoSessionEnd;
 end;
 
-procedure TIdExtApplication.DoSessionEnd(Sender: TIdHTTPSession); begin
-  FListBox.Items.Add(Format('Session %0:s closed', [Sender.SessionID]));
-end;
-
-procedure TIdExtApplication.DoSessionStart(Sender: TIdHTTPSession); begin
-  FListBox.Items.Add(Format('Session %0:s started from IP: %1:s', [Sender.SessionID, Sender.RemoteHost]));
-end;
-
-procedure TIdExtApplication.DoTerminate(Sender: TObject); begin
-  FServer.OnSessionStart := nil;
-  FServer.OnSessionEnd   := nil;
-  FServer.SessionList.OnSessionStart := nil;
-  FServer.SessionList.OnSessionEnd   := nil;
-end;
-
-procedure TIdExtApplication.Run; begin
-  FMainForm.Show;
+procedure TIdExtApplication.Run;
+var
+  Msg : TMsg;
+  Unicode : boolean;
+begin
   FServer.Startup;
-  Forms.Application.Run;
-end;
-
-function TIdExtApplication.Title : string; begin
-  Result := Forms.Application.Title;
+  while true do begin
+    if PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE) then begin
+      Unicode := (Msg.hwnd <> 0) and IsWindowUnicode(Msg.hwnd);
+      if Unicode then
+        PeekMessageW(Msg, 0, 0, 0, PM_REMOVE)
+      else
+        PeekMessage(Msg, 0, 0, 0, PM_REMOVE);
+      if Msg.Message = WM_QUIT then exit;
+      TranslateMessage(Msg);
+      if Unicode then
+        DispatchMessageW(Msg)
+      else
+        DispatchMessage(Msg);
+    end;
+    sleep(1);
+  end;
 end;
 
 end.
