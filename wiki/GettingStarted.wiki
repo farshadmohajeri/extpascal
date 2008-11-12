@@ -19,7 +19,7 @@ The main advantages are:
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. For FastCGI thru CGIGateway none extra configuration on Apache or IIS is necessary.
  * Download ExtJS 2.2 or later, _*with the documentation*_.
  * Install ExtJS below Apache's Document Root at folder *ext*
- * For Windows install Delphi (7, Turbo, 2006 or 2007) or FreePascal 2.2.2+ with Lazarus 0.9.24+ or [http://sourceforge.net/projects/mseide-msegui MSEide 1.8+]. I used Turbo Delphi, FreePascal 2.2.2 and MSEide 1.8.
+ * For Windows install Delphi (7, Turbo, 2006, 2007 or 2009) or FreePascal 2.2.2+ with Lazarus 0.9.24+ or [http://sourceforge.net/projects/mseide-msegui MSEide 1.8+]. I used Turbo Delphi, FreePascal 2.2.2 and MSEide 1.8.
  * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.2.2+ with Lazarus 0.9.24+ or MSEide 1.8+. I used FreePascal 2.2.2 and MSEide 1.8.
  * Download ExtPascal package to a working directory, for example: C:\ExtPascal. 
 
