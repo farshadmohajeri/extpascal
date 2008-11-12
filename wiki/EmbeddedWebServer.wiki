@@ -1,0 +1,13 @@
+From 0.92 release or SVN rev.224 ExtPascal supports an Embedded (or Internal) Web Server mode. This mode makes unnecessary to install and configure Apache, but you lose the flexibility and facilities that the Apache server can offer through its modules.
+
+= Steps =
+
+Because this mode works on Windows only, you will need:
+1. Delphi (7..2009)
+2. Follow the *First Steps* on GettingStarted page.
+3. Download [http://www.indyproject.org Indy] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
+4. Update Delphi *Search Path* (menu: Project/Options/Directories/Defines): to point Indy sources.
+5. Add a new define *WEBSERVER* on *Conditional defines* entry (menu: Project/Options/Directories/Defines)
+6. Build all.
+7. Start ExtPascalSamples.
+8. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
