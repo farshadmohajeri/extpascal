@@ -3,6 +3,7 @@ From 0.92 release or SVN rev.224 ExtPascal supports an Embedded (or Internal) We
 = Steps =
 
 Because this mode works on Windows only, you will need:
+
 1. Delphi (7..2009)
 
 2. Follow the *First Steps* on GettingStarted page.
