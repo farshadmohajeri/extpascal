@@ -10,13 +10,12 @@ type
   {$M+}
   TIdExtSession = class(TIdHTTPSession)
   private
-    FCurrentRequest: TIdHTTPRequestInfo;
-    FCurrentReponse: TIdHTTPResponseInfo;
-    FNewThread: boolean;
+    FCurrentRequest   : TIdHTTPRequestInfo;
+    FCurrentResponse  : TIdHTTPResponseInfo;
+    FNewThread        : boolean;
     FGarbageCollector : TStringList;
-    FCharset: string;
     function GetPathInfo: string;
-    function GetRequestHeader(const HeaderName: string): string;
+    function GetRequestHeader(HeaderName: string): string;
     function GetQuery(const ParamName: string): string;
     function GetCookie(const CookieName: string): string;
   protected
@@ -36,10 +35,9 @@ type
     function FindObject(Name: string): TObject;
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
-    property RequestHeader[const HeaderName: string]: string read GetRequestHeader;
+    property RequestHeader[HeaderName: string]: string read GetRequestHeader;
     property Cookie[const CookieName: string]: string read GetCookie;
     property NewThread : boolean read FNewThread write FNewThread;
-    property Charset: string read FCharset write FCharset;
   published
     procedure Home; virtual; abstract;
     procedure Logout; virtual;
@@ -81,7 +79,7 @@ type
     Ext: string;
     MimeType: string;
   end;
-  
+
 const
   MIMEExtensions: array[1..175] of TMimeExtension = (
     (Ext: '.gif'; MimeType: 'image/gif'),
@@ -379,7 +377,7 @@ end;
 
 function TIdExtSession.GetCookie(const CookieName: string): string;
 var
-  FCookieIndex: Integer;
+  FCookieIndex : Integer;
 begin
   FCookieIndex := FCurrentRequest.Cookies.GetCookieIndex(0, CookieName);
   if FCookieIndex >= 0 then
@@ -388,7 +386,7 @@ end;
 
 function TIdExtSession.GetPathInfo: string; begin
   Result := FCurrentRequest.Document;
-  if (Length(Result) > 0) and (Result[1] = '/') then
+  if (Result <> '') and (Result[1] = '/') then
     Delete(Result, 1, 1);
 end;
 
@@ -396,13 +394,11 @@ function TIdExtSession.GetQuery(const ParamName: string): string; begin
   Result := FCurrentRequest.Params.Values[ParamName];
 end;
 
-function TIdExtSession.GetRequestHeader(const HeaderName: string): string; begin
-  if SameText(HeaderName, 'HTTP_ACCEPT_LANGUAGE') then
-    Result := FCurrentRequest.AcceptLanguage
-  else begin
-    Result := FCurrentRequest.RawHeaders.Values[HeaderName];
-    if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
-  end;
+function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
+  if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
+  HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
+  Result := FCurrentRequest.RawHeaders.Values[HeaderName];
+  if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
 end;
 
 procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
@@ -441,7 +437,7 @@ procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: T
         AResponse.ContentLength := AResponse.ContentStream.Size;
         FileDateTime := FileDateToDateTime(FileAge(FileName));
         AResponse.LastModified := FileDateTime;
-        AResponse.ContentType := FileType2MimeType(FileName);
+        AResponse.ContentType  := FileType2MimeType(FileName);
       end
         else
           AResponse.ResponseNo := 304; //Not Modified, use cache version
@@ -457,16 +453,21 @@ var
   MethodCode : pointer;
 begin
   CurrentFCGIThread := Self;
-  FCurrentRequest := ARequest;
-  FCurrentReponse := AResponse;
+  FCurrentRequest   := ARequest;
+  FCurrentResponse  := AResponse;
   if ARequest.Cookies.GetCookieIndex(0, 'FCGIThread') = -1 then
     with AResponse.Cookies.Add do begin
       CookieName := 'FCGIThread';
-      Value := SessionID;
+      Value      := SessionID;
       ARequest.Cookies.AddSrcCookie(CookieText);
     end;
   AResponse.ContentType := 'text/html';
   Response := '';
+  with FCurrentRequest, Params do begin
+    StrictDelimiter := true;
+    Delimiter       := '&';
+    DelimitedText   := UnparsedParams;
+  end;
   if BeforeHandleRequest then
     if PathInfo = '' then
       Home
@@ -486,7 +487,7 @@ begin
     end;
   AfterHandleRequest;
   if not Assigned(AResponse.ContentStream) and (Response <> '') and (AResponse.ResponseNo <> 304) then
-    FCurrentReponse.ContentText := Response;
+    FCurrentResponse.ContentText := Response;
 end;
 
 procedure TIdExtSession.Logout; begin
@@ -522,7 +523,7 @@ var
   Unicode : boolean;
 begin
   FServer.Startup;
-  while true do begin
+  while true do
     if PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE) then begin
       Unicode := (Msg.hwnd <> 0) and IsWindowUnicode(Msg.hwnd);
       if Unicode then
@@ -535,9 +536,9 @@ begin
         DispatchMessageW(Msg)
       else
         DispatchMessage(Msg);
-    end;
-    sleep(1);
-  end;
+    end
+    else
+      sleep(1);
 end;
 
 end.
