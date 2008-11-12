@@ -3,7 +3,7 @@ unit IdExtHTTPServer;
 interface
 
 uses
-  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext;
+  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils;
 
 type
   TIdExtHTTPServer = class;
@@ -13,6 +13,7 @@ type
     FCurrentRequest   : TIdHTTPRequestInfo;
     FCurrentResponse  : TIdHTTPResponseInfo;
     FNewThread        : boolean;
+    FParams,
     FGarbageCollector : TStringList;
     function GetPathInfo: string;
     function GetRequestHeader(HeaderName: string): string;
@@ -269,7 +270,7 @@ threadvar
 implementation
 
 uses
-  Windows, Messages, StrUtils, SysUtils, IdGlobalProtocols, ExtPascal, ExtPascalUtils;
+  Windows, Messages, StrUtils, SysUtils, IdGlobalProtocols, ExtPascal;
 
 function FileType2MimeType(const AFileName: string): string;
 var
@@ -333,6 +334,9 @@ constructor TIdExtSession.CreateInitialized(AOwner: TIdHTTPCustomSessionList; co
   FNewThread := False;
   FGarbageCollector := TStringList.Create;
   FGarbageCollector.Sorted := True;
+  FParams := TStringList.Create;
+  FParams.StrictDelimiter := true;
+  FParams.Delimiter       := '&';
 end;
 
 procedure TIdExtSession.DeleteFromGarbage(Obj: TObject);
@@ -372,6 +376,7 @@ begin
     Free;
   end;
   FGarbageCollector := nil;
+  FreeAndNil(FParams);
   inherited;
 end;
 
@@ -391,7 +396,7 @@ function TIdExtSession.GetPathInfo: string; begin
 end;
 
 function TIdExtSession.GetQuery(const ParamName: string): string; begin
-  Result := FCurrentRequest.Params.Values[ParamName];
+  Result := FParams.Values[ParamName];
 end;
 
 function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
@@ -463,11 +468,7 @@ begin
     end;
   AResponse.ContentType := 'text/html';
   Response := '';
-  with FCurrentRequest, Params do begin
-    StrictDelimiter := true;
-    Delimiter       := '&';
-    DelimitedText   := UnparsedParams;
-  end;
+  FParams.DelimitedText := FCurrentRequest.UnParsedParams;
   if BeforeHandleRequest then
     if PathInfo = '' then
       Home
@@ -479,7 +480,7 @@ begin
         try
           MethodCall(PageMethod); // Call published method
         except
-          on E : Exception do OnError(E.Message, PathInfo, FCurrentRequest.QueryParams)
+          on E : Exception do OnError(E.Message, PathInfo, FCurrentRequest.UnParsedParams)
         end;
       end
       else
