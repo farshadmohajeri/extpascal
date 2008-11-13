@@ -9,7 +9,7 @@ Because this mode works on Windows only, you will need:
 
 2. Follow the *First Steps* on GettingStarted page.
 
-3. Download [http://www.indyproject.org Indy] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
+3. Download [http://www.indyproject.org Indy 10] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
 
 4. Update Delphi *Search Path* (menu: Project/Options/Directories/Defines) to point Indy sources.
 
