@@ -17,6 +17,8 @@ Because this mode works on Windows only, you will need:
 
 6. Build all.
 
-7. Start ExtPascalSamples.
+7. Install ExtJS at folder *ext* below the folder of ExtPascalSamples.exe.
 
-8. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
+8. Start ExtPascalSamples.
+
+9. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
