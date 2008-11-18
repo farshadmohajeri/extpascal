@@ -29,6 +29,8 @@
   * ab -v 0 -n 1000 -c 10
  * Webserver Comunication Protocol: 
   * Fastcgi
+ * HTTP compression
+  * Deflate activated
 
 
 ||Legend || ||
