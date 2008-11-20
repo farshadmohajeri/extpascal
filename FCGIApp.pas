@@ -156,7 +156,7 @@ threadvar
 implementation
 
 uses
-  StrUtils;
+  StrUtils, ExtPascal;
 
 type
   // FastCGI header
@@ -256,7 +256,7 @@ var
 begin
   with FGarbageCollector do begin
     for I := 0 to Count-1 do
-      try TObject(Objects[I]).Free except end;
+      try TExtObject(Objects[I]).Free except end;
     Free;
   end;
   FRequestHeader.Free;

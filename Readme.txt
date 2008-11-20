@@ -1,5 +1,7 @@
 Ext JS wrapper for Object Pascal
 
+version: 0.9.3, bug fix release, 21-nov-2008
+
 version: 0.9.2, Beta 5 release, 13-nov-2008
 
 ExtPascal is an Ext JS wrapper. 
@@ -14,7 +16,11 @@ Live demos: http://pitinnu.fazenda.df.gov.br/ExtPascal/SrvExtPascal
 Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
 
-Changes since last release
+0.9.3 changes
+
+- Fixed double free.
+
+0.9.2 changes
 
 - CHM and HTML help using Doc-O-Matic.
 - Embedded WebServer option for Windows using Indy 10 by Vagner.
@@ -25,7 +31,7 @@ Changes since last release
 - Fix for Response issue pointed by Rovi.
 - Fixes for CGIGateway (loading forever issue) and BlockSocket on Linux/MacOS by Bee.
 - New TApplication.Icon property.
-- New TExtObject.JSReturn method.
+- New TExtObject.JSExpression method.
 - New TExtObject.Delete method.
 - Updated TExtObject.Free method.
 - New TFCGIThread.QueryAs methods.
