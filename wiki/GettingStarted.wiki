@@ -44,7 +44,8 @@ ON Assignable typed constants
 ExtToPascal C:\Ext\docs\output 
 ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-2.1\docs\output"
 }}}
-05. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.1 of ExtJS.
+05. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.2 of ExtJS.
+
 06. Compile ExtPascalSamples as example.
 
 = Setting using FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
