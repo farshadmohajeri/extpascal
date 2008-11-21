@@ -726,9 +726,9 @@ end;
 {$IFNDEF SERVICE}
 begin
 {$IFNDEF WebServer}
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.9.2', TSamples, 2014, 5);
+  Application := TFCGIApplication.Create('ExtPascal Samples 0.9.3', TSamples, 2014, 5);
 {$ELSE}
-  Application := TIdExtApplication.Create('ExtPascal Samples 0.9.2', TSamples, 80, 5);
+  Application := TIdExtApplication.Create('ExtPascal Samples 0.9.3', TSamples, 80, 5);
 {$ENDIF}
   Application.Run;
 {$ELSE}
@@ -744,14 +744,14 @@ procedure TServiceThread.Execute; begin
 end;
 
 begin
-  Service := TService.Create('ExtPascalSamples', 'v.0.9.2');
+  Service := TService.Create('ExtPascalSamples', 'v.0.9.3');
   with Service do try
     if Install then
       writeln('Service installed')
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := TFCGIApplication.Create('ExtPascal Samples 0.9.2', TSamples, 2014, 5);
+      Application := TFCGIApplication.Create('ExtPascal Samples 0.9.3', TSamples, 2014, 5);
       if Exists then
         Run([TServiceThread.Create(true)])
       else
