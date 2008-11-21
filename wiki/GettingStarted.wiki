@@ -63,7 +63,7 @@ ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPasca
 the program, which states:
 
 {{{
-Application := TFCGIApplication.Create('ExtPascal Samples 0.9.2', TSamples, 2014, 5, true);
+Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
 }}}
 
 07. Compile.
