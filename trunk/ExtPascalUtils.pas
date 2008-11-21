@@ -12,11 +12,11 @@ uses
   Classes;
 
 const
-  Version = '0.9.2';
+  ExtPascalVersion = '0.9.3';
 
 {$IF Defined(FPC) or (RTLVersion <= 17)}
 type
-  // Implements StrictDelimiter property for FPC, Delphi 7 and older versions
+  // Implements StrictDelimiter property for FPC 2.2.2, Delphi 7 and older versions
   TStringList = class(Classes.TStringList)
   private
     function GetDelimitedText : string;

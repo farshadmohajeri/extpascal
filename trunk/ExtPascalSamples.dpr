@@ -1,7 +1,7 @@
 program ExtPascalSamples;
 {.$DEFINE SERVICE}
 uses
-  ExtPascal, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
+  ExtPascal, ExtPascalUtils, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 {$IFNDEF WebServer}
@@ -726,9 +726,9 @@ end;
 {$IFNDEF SERVICE}
 begin
 {$IFNDEF WebServer}
-  Application := TFCGIApplication.Create('ExtPascal Samples 0.9.3', TSamples, 2014, 5);
+  Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
 {$ELSE}
-  Application := TIdExtApplication.Create('ExtPascal Samples 0.9.3', TSamples, 80, 5);
+  Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 80, 5);
 {$ENDIF}
   Application.Run;
 {$ELSE}
@@ -744,14 +744,14 @@ procedure TServiceThread.Execute; begin
 end;
 
 begin
-  Service := TService.Create('ExtPascalSamples', 'v.0.9.3');
+  Service := TService.Create('ExtPascalSamples', 'v.' + ExtPascalVersion);
   with Service do try
     if Install then
       writeln('Service installed')
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := TFCGIApplication.Create('ExtPascal Samples 0.9.3', TSamples, 2014, 5);
+      Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
       if Exists then
         Run([TServiceThread.Create(true)])
       else
