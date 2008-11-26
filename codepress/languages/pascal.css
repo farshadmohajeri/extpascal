@@ -1,0 +1,7 @@
+/* CodePress color styles for Pascal, by Wanderlan Santos dos Anjos */
+b{color:blue;font-weight:bold} /* reserved words */
+a{color:green;font-weight:bold} /* numbers */
+i,i b,i a{color:magenta;font-style:italic} /* comments */
+s,s b,s a,s i{color:red;font-weight:normal} /* strings */
+u,u b,u a{color:green;font-weight:bold} /* directives */
+
