@@ -4,7 +4,7 @@
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
 *
 * Adding and updating methods:
-<class name>,<JavaScript method name>,<return type>,<if is a static method>,<if is a overload method>
+<class name>,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
 *
 * For each method parameter:
 <parameter name>,<type>,<if is a optional parameter>
@@ -16,7 +16,7 @@
 <parameter name>,<type>
 *
 * Adding new classes:
-<class name>,<parent class name>,<unit name>
+<class name>,<parent class name>,<unit name>,<JavaScript class name>
 *
 ExtComponent, region, string, false, true,
 ExtComponent, split, Boolean, false, true,
@@ -33,7 +33,7 @@ ExtComponent, el, string, false, true,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false, false,
 ExtGridColumnModel, renderer, String, false, true, FORCEADD
-ExtDataField,, ExtData
+ExtDataField,, ExtData, Object
 ExtDataField, name, string, false, true,
 ExtDataField, mapping, string, false, true,
 ExtDataField, type, string, false, true,
@@ -45,7 +45,7 @@ ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtD
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
 ExtFormFormPanel, buttons, ExtObjectList, false, true,
 ExtContainer, items, ExtObjectList, false, true,
-ExtShowConfig,, Ext
+ExtShowConfig,, Ext, Object
 ExtShowConfig, animEl, string, false, true,
 ExtShowConfig, buttons, ExtObject, false, true,
 ExtShowConfig, closable, Boolean, false, true, true
@@ -73,7 +73,7 @@ ExtMessageBoxSingleton, ERROR, string, true, false, 'ext-mb-error'
 ExtMessageBoxSingleton, INFO, string, true, false, 'ext-mb-info'
 ExtMessageBoxSingleton, QUESTION, string, true, false, 'ext-mb-question'
 ExtMessageBoxSingleton, WARNING, string, true, false, 'ext-mb-warning'
-ExtProgressWaitConfig,, Ext
+ExtProgressWaitConfig,, Ext, Object
 ExtProgressWaitConfig, duration, Integer, false, true,
 ExtProgressWaitConfig, interval, Integer, false, true, 1000
 ExtProgressWaitConfig, increment, Integer, false, true, 10
@@ -95,3 +95,27 @@ ExtButton, Menushow, Event, This, ExtButton, Menu, ExtObject
 ExtButton, Menutriggerout, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
 ExtButton, Menutriggerover, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
 ExtContainer, Afterlayout, Event, This, ExtContainer, Layout, ExtObject
+ExtUxCodePress, ExtFormField, ExtForm, Ext.ux.CodePress
+ExtUxCodePress, autoComplete, Boolean, false, true, true
+ExtUxCodePress, autoResize, Boolean, false, true,
+ExtUxCodePress, code, string, false, true,
+ExtUxCodePress, height, Integer, false, true,
+ExtUxCodePress, language, string, false, true, 'pascal'
+ExtUxCodePress, lineNumbers, Boolean, false, true, true
+ExtUxCodePress, path, string, false, true,
+ExtUxCodePress, readOnly, Boolean, false, true,
+ExtUxCodePress, sourceEl, string, false, true,
+ExtUxCodePress, trim, Boolean, false, true, true
+ExtUxCodePress, url, string, false, true,
+ExtUxCodePress, width, Integer, false, true,
+ExtUxCodePress, edit, void, false, false, obj, ExtObject, false, language, string, false
+ExtUxCodePress, setCode, void, false, false, code, string, false
+ExtUxCodePress, getCode, string, false, false
+ExtUxCodePress, getLanguage, string, false, false
+ExtUxCodePress, setValue, void, false, false, code, string, false
+ExtUxCodePress, getValue, string, false, false
+ExtUxCodePress, resize, void, false, false
+ExtUxCodePress, toggleAutoComplete, void, false, false
+ExtUxCodePress, toggleReadOnly, void, false, false
+ExtUxCodePress, toggleLineNumbers, void, false, false
+ExtUxCodePress, toggleEditor, void, false, false

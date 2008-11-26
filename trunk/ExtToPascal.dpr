@@ -669,7 +669,7 @@ begin
           I := Units.IndexOf(Fields[2]);
           if I <> -1 then begin
             NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-            NewClass.JSName := 'Object';
+            NewClass.JSName := Fields[3];
             AllClasses.AddObject(NewClass.Name, NewClass);
             TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
           end

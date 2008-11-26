@@ -24,7 +24,7 @@ type
     procedure MessageBoxes;
     procedure Layout;
     procedure AdvancedTabs;
-    procedure AddTab; // Ajax
+    procedure AddTab; (* Ajax *)
     procedure BorderLayout;
     procedure ArrayGrid;
     procedure EditableGrid;
@@ -51,7 +51,7 @@ const
     (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
     (Name: 'Simple Login';   Proc: 'Login';         Gif: '';              Desc: 'A simple login form showing AJAX use with parameters.')
   );
-var
+var            
   I : integer;
 begin
   // Theme := 'gray';
@@ -59,10 +59,23 @@ begin
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';
-    Width       := 400;
+    Width       := 1000;
     Floating    := true;
     Collapsible := true;
     SetPosition(300, 0);
+      with TExtPanel.AddTo(Items) do begin
+        Title := 'codigo';
+        frame := true;
+        height:= 400;
+        with TExtUxCodePress.AddTo(Items) do begin
+          ReadOnly := false;
+          Url := '/extpascal/extpascalsamples.dpr';
+        end;
+        //JSCode('items:[new Ext.ux.CodePress({readOnly:false,url:"/extpascal/extpascalsamples.dpr"})]');
+
+        //code:"program ExtPascalSamples;\n{$DEFINE SERVICE}\nuses//teste ghghghg ghghg\n'+'(Name: ''Array Grid'';     Proc: ''ArrayGrid'';     Gif: ''grid-array'';    Desc: ''A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.''),"})]');
+//        trabalhocode:"new absolute ''ásas'' program teste;"})]')
+      end;
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
@@ -213,7 +226,7 @@ begin
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
     Handler  := Ajax(AddTab);
-    OnClick := TreatExtButtonClick;
+    OnClick  := TreatExtButtonClick; // Delphi style event handler
     //Free;
   end;
   Tabs := TExtTabPanel.Create;

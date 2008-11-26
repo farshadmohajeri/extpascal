@@ -1,0 +1,2 @@
+BECAUSE OF SIZE LIMITATION WHERE REMOVE GNU LESSER LICENSE OF CodePress.
+Please read at http://www.opensource.org/licenses/lgpl-2.1.php
