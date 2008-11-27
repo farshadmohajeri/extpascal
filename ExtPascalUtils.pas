@@ -12,7 +12,7 @@ uses
   Classes;
 
 const
-  ExtPascalVersion = '0.9.3';
+  ExtPascalVersion = '0.9.4';
 
 {$IF Defined(FPC) or (RTLVersion <= 17)}
 type
