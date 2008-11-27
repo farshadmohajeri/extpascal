@@ -18,13 +18,14 @@ type
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
     procedure TreatExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
+    procedure AddShowSourceButton(Buttons : TExtObjectList; Proc : string);
   published
     procedure Home; override;
     procedure BasicTabPanel;
     procedure MessageBoxes;
     procedure Layout;
     procedure AdvancedTabs;
-    procedure AddTab; (* Ajax *)
+    procedure AddTab; // Ajax
     procedure BorderLayout;
     procedure ArrayGrid;
     procedure EditableGrid;
@@ -35,7 +36,50 @@ type
     procedure SelectNodeEventServerSide;
     procedure Login;
     procedure CheckLogin; // Ajax
+    procedure ShowSource;
   end;
+
+procedure TSamples.AddShowSourceButton(Buttons : TExtObjectList; Proc : string); begin
+  with TExtButton.AddTo(Buttons) do begin
+    Text := 'Show Source Code';
+    Handler := Ajax(ShowSource, ['Proc', '"' + Proc + '"']);
+  end;
+end;
+
+procedure TSamples.ShowSource;
+var
+  Source : text;
+  Line, Lines, Proc : string;
+begin
+  Proc := Query['Proc'];
+  assign(Source, 'ExtPascalSamples.dpr');
+  reset(Source);
+  repeat
+    readln(Source, Line);
+  until (pos('procedure TSamples.' + Proc, Line) = 1) or EOF(Source);
+  Lines := '';
+  while (pos('end;', Line) <> 1) and not EOF(Source) do begin
+    Lines := Lines + Line + '\n';
+    readln(Source, Line);
+  end;
+  Lines := Lines + 'end;';
+  close(Source);
+  with TExtWindow.Create do begin
+    Title  := 'Object Pascal Source Code: procedure ' + Proc;
+    Width  := 600;
+    Height := 400;
+    Modal  := true;
+    with TExtUxCodePress.AddTo(Items) do begin
+      ReadOnly   := true;
+      AutoResize := true;
+      Code       := Lines;
+    end;
+    if Proc <> 'ShowSource' then
+      AddShowSourceButton(Buttons, 'ShowSource');
+    Show;
+    Free;
+  end;
+end;
 
 procedure TSamples.Home;
 const
@@ -51,7 +95,7 @@ const
     (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
     (Name: 'Simple Login';   Proc: 'Login';         Gif: '';              Desc: 'A simple login form showing AJAX use with parameters.')
   );
-var            
+var
   I : integer;
 begin
   // Theme := 'gray';
@@ -59,23 +103,12 @@ begin
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';
-    Width       := 1000;
-    Floating    := true;
+    Width       := 400;
+    Frame       := true;
+//    Floating    := true;
     Collapsible := true;
-    SetPosition(300, 0);
-      with TExtPanel.AddTo(Items) do begin
-        Title := 'codigo';
-        frame := true;
-        height:= 400;
-        with TExtUxCodePress.AddTo(Items) do begin
-          ReadOnly := false;
-          Url := '/extpascal/extpascalsamples.dpr';
-        end;
-        //JSCode('items:[new Ext.ux.CodePress({readOnly:false,url:"/extpascal/extpascalsamples.dpr"})]');
-
-        //code:"program ExtPascalSamples;\n{$DEFINE SERVICE}\nuses//teste ghghghg ghghg\n'+'(Name: ''Array Grid'';     Proc: ''ArrayGrid'';     Gif: ''grid-array'';    Desc: ''A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.''),"})]');
-//        trabalhocode:"new absolute ''ásas'' program teste;"})]')
-      end;
+//    SetPosition(300, 0);
+    AddShowSourceButton(TbarArray, 'Home');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
@@ -135,6 +168,7 @@ begin
     Modal    := true;
     Nav.AddTo(Items);
     Tabs.AddTo(Items);
+    AddShowSourceButton(Buttons, 'Layout');
     Show;
     //Free;
   end;
@@ -154,6 +188,7 @@ procedure TSamples.CheckLogin; begin
         BodyStyle := 'padding: 5px 8px';
         HTML      := 'Welcome, ' + Query['UserName'] + '.<br/>Password: ' + Query['Password'];
       end;
+      AddShowSourceButton(Buttons, 'CheckLogin');
       Show;
     end
   else
@@ -196,6 +231,7 @@ begin
         Text    := 'LOGIN';
         Handler := Ajax(CheckLogin, ['UserName', UserName.GetValue, 'Password', Password.GetValue]);
       end;
+      AddShowSourceButton(Buttons, 'Login');
     end;
     Show;
   end;
@@ -242,6 +278,7 @@ begin
     EnableTabScroll := true;
     Plugins         := JSObject('', 'Ext.ux.TabCloseMenu');
     for I := 1 to 7 do AddTab;
+    AddShowSourceButton(Buttons, 'AdvancedTabs');
   end;
 end;
 
@@ -335,6 +372,7 @@ begin
       Text    := 'Show modal dialog using Ajax';
       Handler := Ajax(Self.Layout);
     end;
+    AddShowSourceButton(Buttons, 'ArrayGrid');
     StripeRows := true;
     Height     := 350;
     Width      := 600;
@@ -378,6 +416,7 @@ begin
       Text    := 'Close';
       Handler := JSFunction('window.close()');// try this: Handler := Window.Close; for another effect.
     end;
+    AddShowSourceButton(Buttons, 'BasicTabPanel');
     Show;
 //    Free;
   end;
@@ -428,9 +467,10 @@ begin
     Layout := 'border';
     with TExtPanel.AddTo(Items) do begin
       Region := 'north';
-      Height := 32;
+      Height := 64;
       Frame  := true;
       Html   := '<p>north - generally for menus, toolbars and/or advertisements</p>';
+      AddShowSourceButton(TbarArray, 'BorderLayout');
     end;
     with TExtPanel.AddTo(Items) do begin
       Region  := 'south';
@@ -620,6 +660,7 @@ begin
       Text    := 'Logout';
       Handler := Ajax(Logout);
     end;
+    AddShowSourceButton(Buttons, 'EditableGrid');
   end;
   DataStore.Load(nil);
 end;
@@ -732,6 +773,7 @@ begin
       Handler := ExtMessageBox.Show(ShowConfig);
       ShowConfig.Free;
     end;
+    AddShowSourceButton(Buttons, 'MessageBoxes');
     //Free;
   end;
 end;

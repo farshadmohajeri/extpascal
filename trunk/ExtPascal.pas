@@ -1063,7 +1063,7 @@ end;
 
 {
 Invokes an Object Pascal published procedure with parameters in AJAX mode.
-To get event parameters use %0, %1 until %9 place holders.<p>
+To get event parameters use %0 until %9 place holders.<p>
 @param Method Published procedure to invoke
 @param Params Array of Parameters, each parameter is a pair: Name, Value.
 To get them on server side use <link TFCGIThread.Query> array property in AJAX method.
