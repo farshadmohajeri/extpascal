@@ -186,8 +186,10 @@ Converts a Request string into a FastCGI Header
 }
 procedure MoveToFCGIHeader(var Buffer : char; var FCGIHeader : TFCGIHeader); begin
   move(Buffer, FCGIHeader, sizeof(TFCGIHeader));
+{$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
+{$ENDIF}
 end;
 
 {
@@ -197,8 +199,10 @@ Converts a Request string into a FastCGI Header
 @see MoveToFCGIHeader
 }
 procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
+{$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
+{$ENDIF}
   move(FCGIHeader, Buffer, sizeof(TFCGIHeader));
 end;
 
