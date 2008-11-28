@@ -1,7 +1,7 @@
 #labels Featured
   * *Eneas*
     * Advanced Configuration docs
-    * Performance tests upon Linux and Windows
+    * PerformanceNotes upon Linux and Windows
   * *Bee* 
     * Tests and bug fixes on Linux and MacOSX(Intel)
     * CGI gateway fixes
