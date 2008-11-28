@@ -127,4 +127,4 @@ http://localhost/cgi-bin/ExtPascalSamples.exe
 
 12. See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
 
-13. I also recommend to activate the HTTP compression to boost the performance.
+13. I also recommend to activate the HTTP compression to boost the performance. See [http://extpascal.googlecode.com/files/ExtPascal-Advanced-Configuration-complete-eng-v4.pdf Advanced configuration].
