@@ -1,0 +1,12 @@
+#labels Featured
+  * *Eneas*
+    * Advanced Configuration docs
+    * Performance tests upon Linux and Windows
+  * *Bee* 
+    * Tests and bug fixes on Linux and MacOSX(Intel)
+    * CGI gateway fixes
+  * *Vagner Santana*
+    * Embedded Web Server
+    * Delphi style events
+  * *Patricio Diaz*
+    * Vista Services support
