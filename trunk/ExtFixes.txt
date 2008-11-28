@@ -97,7 +97,7 @@ ExtButton, Menutriggerover, Event, This, ExtButton, Menu, ExtObject, E, ExtEvent
 ExtContainer, Afterlayout, Event, This, ExtContainer, Layout, ExtObject
 ExtUxCodePress, ExtFormField, ExtForm, Ext.ux.CodePress
 ExtUxCodePress, autoComplete, Boolean, false, true, true
-ExtUxCodePress, autoResize, Boolean, false, true,
+ExtUxCodePress, autoResize, Boolean, false, true, true
 ExtUxCodePress, code, string, false, true,
 ExtUxCodePress, height, Integer, false, true,
 ExtUxCodePress, language, string, false, true, 'pascal'

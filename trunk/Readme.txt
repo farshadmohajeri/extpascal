@@ -1,5 +1,7 @@
 Ext JS wrapper for Object Pascal
 
+version: 0.9.4, CodePress, 28-nov-2008 
+
 version: 0.9.3, bug fix release, 21-nov-2008
 
 version: 0.9.2, Beta 5 release, 13-nov-2008
@@ -15,6 +17,10 @@ Getting Started: http://code.google.com/p/extpascal/wiki/GettingStarted
 Live demos: http://pitinnu.fazenda.df.gov.br/ExtPascal/SrvExtPascal
 Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
+
+0.9.4 
+
+- New CodePress widget with Object Pascal syntax highlighting
 
 0.9.3 changes
 
