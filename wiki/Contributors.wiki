@@ -12,3 +12,5 @@
     * Windows Vista Services support
   * *Rovi*
     * SimplifiedFlow graph
+  * *Phil Hess*
+    * PowerPC fixes
