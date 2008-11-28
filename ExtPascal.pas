@@ -539,7 +539,7 @@ begin
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
       '<script src=' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
-      '<script src=' + ExtPath + '/codepress/Ext.ux.CodePress.js></script>' +
+      '<script src=' + ExtPath + '/codepress/Ext.ux.CodePress' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
       IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
       IfThen(FLanguage = 'en', '', '<script src=' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js></script>') +
       GetStyle + Libraries +
@@ -640,6 +640,8 @@ begin
       ListAdd := Obj.JSName;
   Obj.Created := true;
   Obj.JSCode(ListAdd, JSName, OwnerName);
+  if Obj.JSClassName = 'Ext.ux.CodePress' then
+    Owner.JSCode(OwnerName + '.on("resize", function(){' + OwnerName + '.items.get(' + IntToStr(high(FObjects)) + ').resize();});');
 end;
 
 {

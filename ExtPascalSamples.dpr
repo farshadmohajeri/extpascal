@@ -70,9 +70,8 @@ begin
     Height := 400;
     Modal  := true;
     with TExtUxCodePress.AddTo(Items) do begin
-      ReadOnly   := true;
-      AutoResize := true;
-      Code       := Lines;
+      ReadOnly := true;
+      Code     := Lines;
     end;
     if Proc <> 'ShowSource' then
       AddShowSourceButton(Buttons, 'ShowSource');
