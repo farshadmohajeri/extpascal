@@ -9,4 +9,6 @@
     * Embedded Web Server
     * Delphi style events
   * *Patricio Diaz*
-    * Vista Services support
+    * Windows Vista Services support
+  * *Rovi*
+    * SimplifiedFlow graph
