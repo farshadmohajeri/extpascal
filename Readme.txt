@@ -1,10 +1,6 @@
 Ext JS wrapper for Object Pascal
 
-version: 0.9.4, CodePress, 28-nov-2008 
-
-version: 0.9.3, bug fix release, 21-nov-2008
-
-version: 0.9.2, Beta 5 release, 13-nov-2008
+version: 0.9.5, Enumerated types
 
 ExtPascal is an Ext JS wrapper. 
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
@@ -18,15 +14,22 @@ Live demos: http://pitinnu.fazenda.df.gov.br/ExtPascal/SrvExtPascal
 Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
 
-0.9.4 
+
+version: 0.9.5, Enumerated types
+
+- Pascal enumerated types support, see ExtFixes.txt for more informations
+- PowerPC support
+- CacheFly option
+
+0.9.4, CodePress, 28-nov-2008, changes
 
 - New CodePress widget with Object Pascal syntax highlighting
 
-0.9.3 changes
+0.9.3, Bug fix release, 21-nov-2008, changes:
 
 - Fixed double free.
 
-0.9.2 changes
+0.9.2, Beta 5 release, 13-nov-2008, changes:
 
 - CHM and HTML help using Doc-O-Matic.
 - Embedded WebServer option for Windows using Indy 10 by Vagner.

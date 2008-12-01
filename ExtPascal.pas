@@ -50,10 +50,13 @@ unit ExtPascal;
 // Uses ext-all-debug.js and break line at ";" char to facilitate JS debugging
 {.$DEFINE DEBUGJS}
 
+// Uses CacheFly for performance boost see: http://extjs.com/blog/2008/11/18/ext-cdn-custom-builds-compression-and-fast-performance/
+{.$DEFINE CacheFly}
+
 interface
 
 uses
-  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes, TypInfo;
 
 const
   ExtPath      = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
@@ -147,6 +150,7 @@ type
     procedure Free(CallDestroyJS : boolean = false);
     procedure Delete;
     procedure DeleteFromGarbage;
+    function EnumToJSString(TypeInfo : PTypeInfo; Value : integer) : string;
     function JSClassName : string; virtual;
     function JSArray(JSON : string) : TExtObjectList;
     function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
@@ -536,9 +540,14 @@ begin
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>') +
       '<title>' + Application.Title + '</title>' +
       '<meta http-equiv="content-type" content="charset=utf-8">' +
+      {$IFNDEF CacheFly}
       '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
       '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
       '<script src=' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
+      {$ELSE}
+      '<link rel=stylesheet href=http://extjs.cachefly.net/ext-2.2/resources/css/ext-all.css />' +
+      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>' + 
+      {$ENDIF}
       '<script src=' + ExtPath + '/codepress/Ext.ux.CodePress' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
       IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
       IfThen(FLanguage = 'en', '', '<script src=' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js></script>') +
@@ -1243,6 +1252,25 @@ procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
     Created := false;
     inherited Free;
   end;
+end;
+
+{
+Converts a Pascal enumerated type constant into a JS string, used internally by ExtToPascal wrapper. See ExtFixes.txt for more information.
+@param TypeInfo Type information record that describes the enumerated type, use TypeInfo() function with enumerated type
+@param Value The enumerated value, represented as an integer
+@return JS string
+}
+function TExtObject.EnumToJSString(TypeInfo: PTypeInfo; Value: integer): string;
+var
+  I : integer;
+begin
+  Result := GetEnumName(TypeInfo, Value);
+  for I := 1 to length(Result) do
+    if Result[I] in ['A'..'Z'] then begin
+      Result := LowerCase(copy(Result, I, 100));
+      if Result = 'perc' then Result := '%'; 
+      exit
+    end;
 end;
 
 {
