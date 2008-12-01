@@ -130,7 +130,7 @@ var
 begin
   Tabs := TExtTabPanel.Create;
   with Tabs do begin
-    Region   := 'center';
+    Region   := rgCenter;
     Margins  := '3 3 3 0';
     Defaults := JSObject('autoScroll:true');
     ActiveTabNumber := 0;
@@ -151,7 +151,7 @@ begin
   Nav := TExtPanel.Create;
   with Nav do begin
     Title       := 'Navigation';
-    Region      := 'west';
+    Region      := rgWest;
     Split       := true;
     Width       := 200;
     Collapsible := true;
@@ -163,7 +163,7 @@ begin
     Width    := 600;
     Height   := 350;
     Plain    := true;
-    Layout   := 'border';
+    Layout   := lyBorder;
     Modal    := true;
     Nav.AddTo(Items);
     Tabs.AddTo(Items);
@@ -180,7 +180,7 @@ procedure TSamples.CheckLogin; begin
       Width    := 380;
       Height   := 140;
       Plain    := true;
-      Layout   := 'fit';
+      Layout   := lyFit;
       Closable := false;
       with TExtPanel.AddTo(Items) do begin
         Border    := false;
@@ -204,13 +204,13 @@ begin
     Width    := 380;
     Height   := 140;
     Plain    := true;
-    Layout   := 'fit';
+    Layout   := lyFit;
     Closable := false;
     with TExtFormFormPanel.AddTo(Items) do begin
       LabelWidth  := 70;
       Border      := false;
-      XType       := 'form';
-      ButtonAlign := 'right';
+      XType       := xtForm;
+      ButtonAlign := fbaRight;
       BodyStyle   := 'padding: 10px 15px';
       DefaultType := 'textfield';
       Defaults    := JSObject('width: 250');
@@ -391,7 +391,7 @@ begin
   Window := TExtWindow.Create;
   with Window do begin
     Title  := 'Hello Dialog';
-    Layout := 'fit';
+    Layout := lyFit;
     Plain  := true;
     Width  := 500;
     Height := 300;
@@ -463,16 +463,16 @@ begin
   Tree.Root_.AppendChild(Node);
 
   with TExtViewport.Create do begin
-    Layout := 'border';
+    Layout := lyBorder;
     with TExtPanel.AddTo(Items) do begin
-      Region := 'north';
+      Region := rgNorth;
       Height := 64;
       Frame  := true;
       Html   := '<p>north - generally for menus, toolbars and/or advertisements</p>';
       AddShowSourceButton(TbarArray, 'BorderLayout');
     end;
     with TExtPanel.AddTo(Items) do begin
-      Region  := 'south';
+      Region  := rgSouth;
       Html    := '<p>south - generally for informational stuff, also could be for status bar</p>';
       Split   := true;
       Height  := 100;
@@ -483,13 +483,13 @@ begin
       Collapsible := true;
     end;
     with TExtPanel.AddTo(Items) do begin
-      Region  := 'east';
+      Region  := rgEast;
       Split   := true;
       Height  := 100;
       Title   := 'East Side';
       Margins := '0 5 0 0';
       Width   := 225;
-      Layout  := 'fit';
+      Layout  := lyFit;
       MinSize := 175;
       MaxSize := 400;
       Collapsible := true;
@@ -511,13 +511,13 @@ begin
       end;
     end;
     with TExtPanel.AddTo(Items) do begin
-      Region  := 'west';
+      Region  := rgWest;
       Id      := 'west-panel';
       Split   := true;
       Width   := 200;
       Title   := 'West';
       Margins := '0 0 0 5';
-      Layout  := 'accordion';
+      Layout  := lyAccordion;
       MinSize := 175;
       MaxSize := 400;
       Collapsible  := true;
@@ -537,7 +537,7 @@ begin
       end;
     end;
     with TExtTabPanel.AddTo(Items) do begin
-      Region := 'center';
+      Region := rgCenter;
       DeferredRender  := false;
       ActiveTabNumber := 0;
       with TExtPanel.AddTo(Items) do begin
@@ -621,7 +621,7 @@ begin
     with TExtGridColumnModel.AddTo(Columns) do begin
       Header := 'Price';
       Width  := 70;
-      Align  := 'right';
+      Align  := alRight;
       DataIndex := 'price';
       RendererString := 'usMoney';
       Editor := TExtFormNumberField.Create;
@@ -678,7 +678,7 @@ var
 begin
   with TExtPanel.Create do begin
     Title    := 'Message Boxes';
-    Width    := 700;
+    Width    := 815;
     RenderTo := 'body';
     Frame    := true;
     with TExtButton.AddTo(Buttons) do begin

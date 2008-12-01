@@ -3,6 +3,9 @@
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
 *
+* Changing a property type to enumerated
+<class name>,<JavaScript property name>,<(enumerated list)>
+*
 * Adding and updating methods:
 <class name>,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
 *
@@ -119,3 +122,11 @@ ExtUxCodePress, toggleAutoComplete, void, false, false
 ExtUxCodePress, toggleReadOnly, void, false, false
 ExtUxCodePress, toggleLineNumbers, void, false, false
 ExtUxCodePress, toggleEditor, void, false, false
+ExtContainer, layout, (lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyTable)
+ExtComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
+ExtComponent, xtype, (xtBox, xtButton, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtGrid, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtForm, xtCheckBox, xtCombo, xtDateField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtTextArea, xtTextField, xtTimeField, xtTrigger)
+ExtElement, defaultUnit, (duPX, duPerc, duEM, duEX, duIN, duCM, duMM, duPT, duPC)
+ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
+ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
+ExtFormFormPanel, buttonAlign, (fbaCenter, fbaLeft, fbaRight)
+ExtFormFormPanel, labelAlign, (laLeft, laTop, laRight)

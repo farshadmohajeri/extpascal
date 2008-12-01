@@ -109,7 +109,7 @@ type
 
   TProp = class
     Name, JSName, Typ, Default : string;
-    Static, Config : boolean;
+    Static, Config, Enum : boolean;
     constructor Create(pName, pJSName, pType : string; pStatic, pConfig : boolean; pDefault : string = '');
   end;
 
@@ -610,61 +610,74 @@ begin
       if (Fix <> '') and (Fix[1] in ['A'..'Z', 'a'..'z', '_']) then begin // else comments
         Fields := Explode(',', Fix);
         I := AllClasses.IndexOf('T' + Fields[0]);
-        if I <> -1 then begin
+        if I <> -1 then
           with TClass(AllClasses.Objects[I]) do
-            if Fields.Count = 6 then // props
-              if lowercase(Fields[5]) = 'forceadd' then
-                Properties.AddObject(Fields[1] + Fields[2],
-                  TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', ''))
-              else begin
-                J := Properties.IndexOf(Fields[1]);
-                if J = -1 then // Add
-                  Properties.AddObject(Fields[1],
-                    TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
-                else // Update
-                  with TProp(Properties.Objects[J]) do begin
-                    Typ     := FixType(Fields[2]);
-                    Static  := lowercase(Fields[3]) = 'true';
-                    Config  := lowercase(Fields[4]) = 'true';
-                    Default := Fields[5]
+            if pos('(', Fields[2]) = 1 then begin// Enums
+              J := Properties.IndexOf(Fields[1]);
+              if J <> -1 then
+                with TProp(Properties.Objects[J]) do begin
+                  Enum := true;
+                  Typ  := '';
+                  for K := 2 to Fields.Count-1 do begin
+                    Typ := Typ + Fields[K];
+                    if K <> Fields.Count-1 then
+                      Typ := Typ + ', '
                   end;
-              end
-            else begin // Methods or Events
-              if SameText(Fields[2], 'Event') then begin // Events
-                J := Events.IndexOf('On' + Fields[1]);
-                if J = -1 then begin // Add
-                  Params := TStringList.Create;
-                  Events.AddObject('On' + Fields[1], TMethod.Create('On' + Fields[1], '', Params, false, false));
-                  for K := 0 to ((Fields.Count-2) div 2)-1 do
-                    Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
+                end;
+            end
+            else
+              if Fields.Count = 6 then // props
+                if lowercase(Fields[5]) = 'forceadd' then
+                  Properties.AddObject(Fields[1] + Fields[2],
+                    TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', ''))
+                else begin
+                  J := Properties.IndexOf(Fields[1]);
+                  if J = -1 then // Add
+                    Properties.AddObject(Fields[1],
+                      TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
+                  else // Update
+                    with TProp(Properties.Objects[J]) do begin
+                      Typ     := FixType(Fields[2]);
+                      Static  := lowercase(Fields[3]) = 'true';
+                      Config  := lowercase(Fields[4]) = 'true';
+                      Default := Fields[5]
+                    end
                 end
-                else // Update
-                  with TMethod(Events.Objects[J]) do begin
-                    Params.Clear;
+              else begin // Methods or Events
+                if SameText(Fields[2], 'Event') then begin // Events
+                  J := Events.IndexOf('On' + Fields[1]);
+                  if J = -1 then begin // Add
+                    Params := TStringList.Create;
+                    Events.AddObject('On' + Fields[1], TMethod.Create('On' + Fields[1], '', Params, false, false));
                     for K := 0 to ((Fields.Count-2) div 2)-1 do
                       Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
-                  end;
-              end
-              else begin
-                J := Methods.IndexOf(Fields[1]);
-                if J = -1 then begin // Add
-                  Params := TStringList.Create;
-                  Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
-                  for K := 0 to ((Fields.Count-4) div 3)-1 do
-                    Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+                  end
+                  else // Update
+                    with TMethod(Events.Objects[J]) do begin
+                      Params.Clear;
+                      for K := 0 to ((Fields.Count-2) div 2)-1 do
+                        Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
+                    end;
                 end
-                else // Update
-                  with TMethod(Methods.Objects[J]) do begin
-                    Return   := FixType(Fields[2]);
-                    Static   := lowercase(Fields[3]) = 'true';
-                    Overload := lowercase(Fields[4]) = 'true';
-                    Params.Clear;
+                else begin
+                  J := Methods.IndexOf(Fields[1]);
+                  if J = -1 then begin // Add
+                    Params := TStringList.Create;
+                    Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
                     for K := 0 to ((Fields.Count-4) div 3)-1 do
                       Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
-                  end;
-              end;
-            end;
-        end
+                  end
+                  else // Update
+                    with TMethod(Methods.Objects[J]) do begin
+                      Return   := FixType(Fields[2]);
+                      Static   := lowercase(Fields[3]) = 'true';
+                      Overload := lowercase(Fields[4]) = 'true';
+                      Params.Clear;
+                      for K := 0 to ((Fields.Count-4) div 3)-1 do
+                        Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+                    end;
+                end;
+              end
         else begin // Create new Class
           I := Units.IndexOf(Fields[2]);
           if I <> -1 then begin
@@ -795,10 +808,11 @@ end;
 procedure WriteClassType(Cls : TClass);
 var
   I : integer;
+  HasEnum : boolean;
 begin
   with Cls do begin
     if Events.Count > 0 then begin
-      writeln(Pas, Tab, '// Procedural types for events of class ', Name);
+      writeln(Pas, Tab, '// Procedural types for class events ', Name);
       for I := 0 to Events.Count - 1 do
         with TMethod(Events.Objects[I]) do begin
           write(Pas, Tab, Cls.Name, Name, ' = procedure');
@@ -807,6 +821,17 @@ begin
         end;
       writeln(Pas);
     end;
+    // Write Enumerateds
+    HasEnum := false;
+    for I := 0 to Properties.Count-1 do
+      with TProp(Properties.Objects[I]) do
+        if Enum then begin
+          if not HasEnum then writeln(Pas, Tab, '// Enumerated types for class properties');
+          HasEnum := true;
+          writeln(Pas, Tab, Cls.Name, Name, ' = ', Typ, ';');
+          Typ := Cls.Name + Name;
+        end;
+    if HasEnum then writeln(Pas);
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'TExtFunction', Parent), ')');
     if (Properties.Count > 0) or (Events.Count > 0) then writeln(Pas, Tab, 'private');
     // Write private fields
@@ -1017,7 +1042,7 @@ begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
                 BoolParam := AddBoolParam(Typ);
-                if BoolParam = ', false' then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
+                if (BoolParam = ', false') and not Enum then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
                 if Config then begin
                   // If there is an alternative method, and its parameters are
                   // compatible, implement an workaround to reconfig objects created in a previous request
@@ -1037,10 +1062,16 @@ begin
                     end;
                     write(Pas, Tab);
                   end;
-                  writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), '));')
+                  if not Enum then
+                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), '));')
+                  else 
+                    writeln(Pas, Tab, 'JSCode(''', JSName, ':"'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''"'');');
                 end
                 else
-                  writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), ') + '';'');');
+                  if not Enum then
+                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), ') + '';'');')
+                  else
+                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '="'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''";'');');
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
@@ -1085,13 +1116,13 @@ begin
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
                 if not Static then
-                  if Default <> '' then
+                  if (Default <> '') and not Enum then
                     writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
                   else
                     if Typ = 'TExtObjectList' then
                       writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
                     else
-                      if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
+                      if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
                         writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
             writeln(Pas, 'end;'^M^J);
           end;
@@ -1120,7 +1151,7 @@ begin
             writeln(Pas, Tab, 'try');
             for K := 0 to Properties.Count-1 do
               with TProp(Properties.Objects[K]) do
-                if not Static and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
+                if not Static and not Enum and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
                   writeln(Pas, Tab(2), 'F' + Name + '.Free;');
             writeln(Pas, Tab, 'except end;');
             writeln(Pas, Tab, 'inherited;');
