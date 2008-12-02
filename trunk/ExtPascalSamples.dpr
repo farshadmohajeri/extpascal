@@ -131,7 +131,7 @@ begin
   Tabs := TExtTabPanel.Create;
   with Tabs do begin
     Region   := rgCenter;
-    Margins  := '3 3 3 0';
+    Margins  := SetMargins(3, 3, 3);
     Defaults := JSObject('autoScroll:true');
     ActiveTabNumber := 0;
     with TExtPanel.AddTo(Items) do begin
@@ -155,7 +155,7 @@ begin
     Split       := true;
     Width       := 200;
     Collapsible := true;
-    Margins     := '3 0 3 3';
+    Margins     := SetMargins(3, 0, 3, 3);
   end;
   with TExtWindow.Create do begin
     Title    := 'Layout Window';
@@ -184,7 +184,7 @@ procedure TSamples.CheckLogin; begin
       Closable := false;
       with TExtPanel.AddTo(Items) do begin
         Border    := false;
-        BodyStyle := 'padding: 5px 8px';
+        BodyStyle := SetPaddings(5, 8);
         HTML      := 'Welcome, ' + Query['UserName'] + '.<br/>Password: ' + Query['Password'];
       end;
       AddShowSourceButton(Buttons, 'CheckLogin');
@@ -210,8 +210,8 @@ begin
       LabelWidth  := 70;
       Border      := false;
       XType       := xtForm;
-      ButtonAlign := fbaRight;
-      BodyStyle   := 'padding: 10px 15px';
+      ButtonAlign := baRight;
+      BodyStyle   := SetPaddings(10, 15);
       DefaultType := 'textfield';
       Defaults    := JSObject('width: 250');
       UserName    := TExtFormTextField.Create;
@@ -477,7 +477,7 @@ begin
       Split   := true;
       Height  := 100;
       Title   := 'South';
-      Margins := '0 0 0 0';
+      Margins := SetMargins(0);
       MinSize := 100;
       MaxSize := 200;
       Collapsible := true;
@@ -487,7 +487,7 @@ begin
       Split   := true;
       Height  := 100;
       Title   := 'East Side';
-      Margins := '0 5 0 0';
+      Margins := SetMargins(0, 5);
       Width   := 225;
       Layout  := lyFit;
       MinSize := 175;
@@ -516,7 +516,7 @@ begin
       Split   := true;
       Width   := 200;
       Title   := 'West';
-      Margins := '0 0 0 5';
+      Margins := SetMargins(0, 0, 0, 5);
       Layout  := lyAccordion;
       MinSize := 175;
       MaxSize := 400;

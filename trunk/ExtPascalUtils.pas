@@ -9,7 +9,7 @@ unit ExtPascalUtils;
 interface
 
 uses
-  Classes;
+  Classes, TypInfo;
 
 const
   ExtPascalVersion = '0.9.5';
@@ -26,6 +26,9 @@ type
     property DelimitedText : string read GetDelimitedText write SetDelimitedText; // Property override for FPC, Delphi 7 an older versions
   end;
 {$IFEND}
+
+type
+  TCSSUnit = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone);
 
 {
 Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter
@@ -74,6 +77,32 @@ Finds S in Cases array, returning its index or -1 if not found. Good to use in P
 @param Cases String array where to search
 }
 function CaseOf(const S : string; const Cases : array of string) : integer;
+
+{
+Converts a Pascal enumerated type constant into a JS string, used internally by ExtToPascal wrapper. See ExtFixes.txt for more information.
+@param TypeInfo Type information record that describes the enumerated type, use TypeInfo() function with enumerated type
+@param Value The enumerated value, represented as an integer
+@return JS string
+}
+function EnumToJSString(TypeInfo : PTypeInfo; Value : integer) : string;
+
+{
+Helper function to make code more pascalish, use
+@example <code>BodyStyle := SetPaddings(10, 15);</code>
+instead
+@example <code>BodyStyle := 'padding:10px 15px';</code>
+}
+function SetPaddings(Top : integer; Right : integer = 0; Bottom : integer = -1; Left : integer = 0; CSSUnit : TCSSUnit = cssPX;
+  Header : boolean = true) : string;
+
+{
+Helper function to make code more pascalish, use
+@example <code>Margins := SetMargins(3, 3, 3);</code>
+instead
+@example <code>Margins := '3 3 3 0';</code>
+}
+function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
+  Header : boolean = false) : string;
 
 implementation
 
@@ -239,6 +268,36 @@ function CaseOf(const S : string; const Cases : array of string) : integer; begi
   for Result := 0 to high(Cases) do
     if SameText(S, Cases[Result]) then exit;
   Result := -1;
+end;
+
+function EnumToJSString(TypeInfo : PTypeInfo; Value : integer) : string;
+var
+  I : integer;
+  JS: string;
+begin
+  Result := '';
+  JS := GetEnumName(TypeInfo, Value);
+  for I := 1 to length(JS) do
+    if JS[I] in ['A'..'Z'] then begin
+      Result := LowerCase(copy(JS, I, 100));
+      if Result = 'perc' then Result := '%';
+      exit
+    end;
+end;
+
+function SetPaddings(Top : integer; Right : integer = 0; Bottom : integer = -1; Left : integer = 0; CSSUnit : TCSSUnit = cssPX;
+  Header : boolean = true) : string;
+begin
+  Result := Format('%s%d%3:s %2:d%3:s', [IfThen(Header, 'padding:', ''), Top, Right, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
+  if Bottom <> -1 then
+    Result := Result + Format('%d%2:s %1:d%2:s', [Bottom, Left, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
+end;
+
+function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
+  Header : boolean = false) : string;
+begin
+  Result := Format('%s%d%5:s %2:d%5:s %3:d%5:s %4:d%s', [IfThen(Header, 'margin:', ''), Top, Right, Bottom, Left,
+    EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
 end.

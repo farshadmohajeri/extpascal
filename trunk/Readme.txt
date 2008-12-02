@@ -15,13 +15,14 @@ Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
 
 
-version: 0.9.5, Enumerated types
+version: 0.9.5, Enumerated types, changes:
 
 - Pascal enumerated types support, see ExtFixes.txt for more informations
 - PowerPC support
 - CacheFly option
+- New helper functions SetMargins and SetPaddings
 
-0.9.4, CodePress, 28-nov-2008, changes
+0.9.4, CodePress, 28-nov-2008, changes:
 
 - New CodePress widget with Object Pascal syntax highlighting
 
