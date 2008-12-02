@@ -56,7 +56,7 @@ unit ExtPascal;
 interface
 
 uses
-  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes, TypInfo;
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
 const
   ExtPath      = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
@@ -150,7 +150,6 @@ type
     procedure Free(CallDestroyJS : boolean = false);
     procedure Delete;
     procedure DeleteFromGarbage;
-    function EnumToJSString(TypeInfo : PTypeInfo; Value : integer) : string;
     function JSClassName : string; virtual;
     function JSArray(JSON : string) : TExtObjectList;
     function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
@@ -1252,25 +1251,6 @@ procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
     Created := false;
     inherited Free;
   end;
-end;
-
-{
-Converts a Pascal enumerated type constant into a JS string, used internally by ExtToPascal wrapper. See ExtFixes.txt for more information.
-@param TypeInfo Type information record that describes the enumerated type, use TypeInfo() function with enumerated type
-@param Value The enumerated value, represented as an integer
-@return JS string
-}
-function TExtObject.EnumToJSString(TypeInfo: PTypeInfo; Value: integer): string;
-var
-  I : integer;
-begin
-  Result := GetEnumName(TypeInfo, Value);
-  for I := 1 to length(Result) do
-    if Result[I] in ['A'..'Z'] then begin
-      Result := LowerCase(copy(Result, I, 100));
-      if Result = 'perc' then Result := '%'; 
-      exit
-    end;
 end;
 
 {
