@@ -2,13 +2,15 @@
  * *Eneas*
   * Advanced Configuration docs
   * PerformanceNotes upon Linux and Windows
+  * Linux fixes
 
  * *Bee* 
   * Tests and bug fixes on Linux and MacOSX(Intel)
   * CGI gateway fixes
+  * Helper functions
 
  * *Vagner Santana*
-  * Embedded Web Server
+  * Embedded Web Server for Windows
   * Delphi style events
 
  * *Patricio Diaz*
