@@ -255,7 +255,7 @@ var
 begin
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
-  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu.js');
+  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu');
   with TExtButton.Create do begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
