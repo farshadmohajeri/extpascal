@@ -100,18 +100,18 @@ end;
 procedure TpitThread.About; begin
   with TExtWindow.Create do begin
     Title  := Application.Title;
-    Layout := 'border';
+    Layout := lyBorder;
     Width  := 317;
     Height := 200;
     Modal  := true;
     Resizable := false;
     with TExtPanel.AddTo(Items) do begin
-      Region := 'west';
+      Region := rgWest;
       Border := false;
       Html   := '<img src=' + ImagePath + 'pitbrowser.jpg />';
     end;
     with TExtPanel.AddTo(Items) do begin
-      Region := 'center';
+      Region := rgCenter;
       Border := false;
       Html   := '<br/><img src=' + ImagePath + 'logofreepascal.jpg /><br/><br/><img src=' + ImagePath + 'logoturbodelphi.jpg />';
     end;
@@ -258,7 +258,7 @@ var
 begin
   Result := TExtTreeTreePanel.Create;
   with Result do begin
-    Region  := 'west';
+    Region  := rgWest;
     Title   := 'Classes';
     Split   := true;
     Width   := 200;
@@ -320,7 +320,7 @@ function PascalTypeToJS(Prop : PPropInfo) : string; begin
   with Prop.PropType^{$IFNDEF FPC}^{$ENDIF} do
     case Kind of
       tkInteger, tkInt64 : Result := 'int';
-      tkString, tkLString, tkChar, tkWChar, tkWString, tkVariant : Result := 'string';
+      tkString, tkSet, tkLString, tkChar, tkWChar, tkWString, tkVariant : Result := 'string';
       tkFloat :
         if GetDateTimeType(Name) = dtNone then
           Result := 'float'
@@ -332,7 +332,6 @@ function PascalTypeToJS(Prop : PPropInfo) : string; begin
         else
           Result := 'int';
       {$IFDEF FPC}tkBool : Result := 'boolean';{$ENDIF}
-      tkSet : Result := 'int';
     else
       Result := 'auto'; // class
     end;
@@ -341,10 +340,19 @@ end;
 function ClearEnumName(S : string) : string;
 var
   I : integer;
+  C : boolean;
 begin
-  for I := 1 to length(S) do
-    if S[I] in ['A'..'Z'] then break;
-  Result := copy(S, I, length(S));
+  C := false;
+  Result := '';
+  for I := 1 to length(S) do begin
+    if S[I] in ['A'..'Z'] then
+      if C then
+        Result := Result + ' '
+      else
+        C := true;
+    if C then Result := Result + S[I];
+  end;
+  Result := trim(Result);
 end;
 
 function GetMaskWidth(Mask : string) : integer;
@@ -375,61 +383,38 @@ end;
 function TpitThread.CreateEditor(Props : TProperties; I : integer; var EditorLength : integer) : TExtFormField;
 var
   Mask, Enum : string;
-  J, CheckBoxLength : integer;
+  J, Pad : integer;
   CompType, PropType : PTypeInfo;
 begin
   EditorLength := 0;
+  if IsIE then
+    Pad := 1
+  else
+    Pad := 0;
   with Props do begin
     Mask := MaskProp[I];
     case CaseOf(PascalTypeToJS(Properties[I]), ['int', 'float', 'boolean', 'date', 'auto', 'string']) of
       0, 1 : // number
-        case TypeProp[I] of
-          tkEnumeration : begin
-            Result := TExtFormComboBox.Create;
-            with TExtFormComboBox(Result) do begin
-              AllowBlank := false;
-              ForceSelection := true;
-              TriggerAction := 'all';
-              TypeAhead  := true;
-              SelectOnFocus := true;
-              Mode  := 'local';
-              Enums := '';
-              PropType := Properties[I].PropType{$IFNDEF FPC}^{$ENDIF};
-              for J := MinValueProp[I] to MaxValueProp[I] do begin
-                Enum := ClearEnumName(GetEnumName(PropType, J));
-                EditorLength := max(EditorLength, length(Enum) + 2);
-                Enums := Enums + '[' + IntToStr(J) + ',"' + Enum + '"],'
-              end;
-              Enums := copy(Enums, 1, length(Enums)-1);
-              StoreArray := JSArray(Enums);
+        if TypeProp[I] = tkEnumeration then begin
+          Result := TExtFormComboBox.Create;
+          with TExtFormComboBox(Result) do begin
+            AllowBlank := false;
+            ForceSelection := true;
+            TriggerAction := 'all';
+            TypeAhead  := true;
+            SelectOnFocus := true;
+            Mode  := 'local';
+            Enums := '';
+            PropType := Properties[I].PropType{$IFNDEF FPC}^{$ENDIF};
+            for J := MinValueProp[I] to MaxValueProp[I] do begin
+              Enum := ClearEnumName(GetEnumName(PropType, J));
+              EditorLength := max(EditorLength, length(Enum) + Pad);
+              Enums := Enums + '["' + IntToStr(J) + '","' + Enum + '"],'
             end;
+            Enums := copy(Enums, 1, length(Enums)-1);
+            StoreArray := JSArray(Enums);
           end;
-          tkSet : begin
-            Result := TExtFormCheckBoxGroup.Create;
-            with TExtFormCheckBoxGroup(Result) do begin
-              Enums := '';
-              PropType := Properties[I].PropType{$IFNDEF FPC}^{$ENDIF};
-              CompType := GetTypeData(PropType).CompType{$IFNDEF FPC}^{$ENDIF};
-              if IsIE then
-                ColumnsNumber := trunc(sqrt(GetTypeData(CompType).MaxValue))
-              else
-                ColumnsNumber := 1;
-              CheckBoxLength := 0;
-              for J := 0 to GetTypeData(CompType).MaxValue do begin
-                Enum := ClearEnumName(GetEnumName(CompType, J));
-                if J < 4 then inc(EditorLength, length(Enum));
-                CheckBoxLength := max(CheckBoxLength, length(Enum));
-                Enums := Enums + '[' + IntToStr(trunc(power(2,J))) + ',"' + Enum + '"],';
-                with TExtFormCheckBox.AddTo(Items) do BoxLabel := Enum;
-              end;
-              Width := JSExpression('%s * %d + 70', [ExtUtilTextMetrics.GetWidth('g'), CheckBoxLength]);
-              Enums := copy(Enums, 1, length(Enums)-1);
-              //on('beforeshow', JSFunction('DG', 'if(DG.getValue())for(var i=0;i<DG.items.getCount();i++){if(DG.items.get(i).getValue()&Math.pow(2,i)){DG.items.get(i).setValue(true)}else{item.setValue(false)};};'));
-              on('beforeshow', JSFunction('DG', 'DG.items.each(function(item,i){if(DG.getValue()&Math.pow(2,i)){item.setValue(true)}else{item.setValue(false)};});'));
-              on('specialkey', JSFunction('DG', 'var V=0;if(DG.getValue()){DG.items.each(function(item,i){if(item.getValue()){V=V+Math.pow(2,i)};});DG.setValue(V);};'));
-              on('blur', JSFunction('DG', 'return false')); // necessary for IE
-            end;
-          end;
+        end
         else begin // number
           Result := TExtFormNumberField.Create;
           with TExtFormNumberField(Result) do begin
@@ -444,7 +429,6 @@ begin
               EditorLength := trunc(Log10(max(abs(MaxValueProp[I]), abs(MinValueProp[I]+1)))+1);
           end;
         end;
-      end;
       2 : begin
         Result := TExtFormCheckBox.Create; // boolean
         Result.Width := 20;
@@ -486,13 +470,42 @@ begin
           TExtFormTextField(Result).InputType := 'file';
         end;
       else // string
-        Result := TExtFormTextField.Create;
-        with TExtFormTextField(Result) do begin
-          Grow := true;
-          if Mask <> '' then begin
-            RegEx := Mask;
-            EditorLength := LengthRegExp(Mask);
-          end
+        if TypeProp[I] = tkSet then begin
+          Result := TExtUxFormLovCombo.Create;
+          with TExtUxFormLovCombo(Result) do begin
+            AllowBlank := false;
+            ForceSelection := true;
+            TriggerAction := 'all';
+            TypeAhead  := true;
+            SelectOnFocus := true;
+            Mode  := 'local';
+            Enums := '';
+            PropType := Properties[I].PropType{$IFNDEF FPC}^{$ENDIF};
+            CompType := GetTypeData(PropType).CompType{$IFNDEF FPC}^{$ENDIF};
+            EditorLength := 1;
+            for J := 0 to GetTypeData(CompType).MaxValue do begin
+              Enum := ClearEnumName(GetEnumName(CompType, J));
+              if J < 4 then inc(EditorLength, length(Enum) + Pad);
+              Enums := Enums + '["' + IntToStr(J) + '","' + Enum + '"],';
+            end;
+            Enums := copy(Enums, 1, length(Enums)-1);
+            StoreArray := JSArray(Enums);
+//              on('beforeshow', JSFunction('LC', 'LC.setValue("Modify,Delete");'));
+//              on('beforeshow', JSFunction('LC', 'if(LC.getValue())for(var i=0;i<DG.items.getCount();i++){if(DG.items.get(i).getValue()&Math.pow(2,i)){DG.items.get(i).setValue(true)}else{item.setValue(false)};};'));
+//              on('beforeshow', JSFunction('DG', 'DG.items.each(function(item,i){if(DG.getValue()&Math.pow(2,i)){item.setValue(true)}else{item.setValue(false)};});'));
+//              on('specialkey', JSFunction('DG', 'var V=0;if(DG.getValue()){DG.items.each(function(item,i){if(item.getValue()){V=V+Math.pow(2,i)};});DG.setValue(V);};'));
+//              on('blur', JSFunction('DG', 'return false')); // necessary for IE*)
+          end;
+        end
+        else begin
+          Result := TExtFormTextField.Create;
+          with TExtFormTextField(Result) do begin
+            Grow := true;
+            if Mask <> '' then begin
+              RegEx := Mask;
+              EditorLength := LengthRegExp(Mask);
+            end
+          end;
         end;
       end;
       if EditorLength = 0 then EditorLength := 30;
@@ -644,7 +657,7 @@ begin
             if I = 0 then begin
               Header := Id;
               EditorLength := 10;
-              Align := 'right';
+              Align := alRight;
             end
             else begin
               if InConstraints(I, NotNull) then
@@ -653,10 +666,10 @@ begin
                 Header := AliasProp[I];
               Editor := CreateEditor(Props, I, EditorLength);
               Editors[I] := TExtFormField(Editor);
-              if Editor is TExtFormNumberField   then Align := 'right' else
+              if Editor is TExtFormNumberField   then Align := alRight else
+              if Editor is TExtUxFormLovCombo    then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
               if Editor is TExtFormComboBox      then Renderer := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
               if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
-              if Editor is TExtFormCheckBoxGroup then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];for(i in E){if(E[i][0]&V)R.push(E[i][1]);};return R.toString();') else
               if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
               if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
             end;
@@ -739,7 +752,7 @@ begin
   inc(I);
   with TExtPanel.AddTo(CentralPanel.Items) do begin
     Id       := 'objects' + IntToStr(I);
-    Layout   := 'border';
+    Layout   := lyBorder;
     Title    := 'Objetos em ' + ServerName;
     IconCls  := 'objects';
     Closable := true;
@@ -747,7 +760,7 @@ begin
     GridPanel  := TExtPanel.Create;
     GridPanel.AutoScroll := true;
     ClassTreePanel.AddTo(Items);
-    GridPanel.AddTo(Items).Region := 'center';
+    GridPanel.AddTo(Items).Region := rgCenter;
     Keys := JSObject('ctrl:true,key:"o",fn:function(s,e){e.preventDefault();alert(s + " was pressed");}');
     CentralPanel.Activate(Id);
   end;
@@ -759,16 +772,17 @@ procedure TpitThread.Home; begin
               'upclass', 'filter', 'format', 'print', 'find', 'execute', 'back', 'advance', 'package', 'abstract']);
   SetStyle('.CenterCheck{position:absolute;left:10px;}');
   SetStyle('.invalid{border:red solid thin}');
-//  SetLibrary(ExtPath + '/examples/grid/RowExpander.js');
+  SetLibrary('/ux/Ext.ux.form.LovCombo', true);
+//  SetLibrary(ExtPath + '/examples/grid/RowExpander');
   LoadUserInfo;
   ExtQuickTips.Init(true);
   InitialPage := nil;
   LoadTaskMenu;
   with TExtViewport.Create do begin
-    Layout := 'border';
+    Layout := lyBorder;
     // Menu principal
     with TExtPanel.AddTo(Items) do begin
-      Region := 'north';
+      Region := rgNorth;
       Height := 27;
       with TExtToolbar.AddTo(Items) do begin
         Border := false;
@@ -818,7 +832,7 @@ procedure TpitThread.Home; begin
     // Status bar
     with TExtPanel.AddTo(Items) do begin
       Id := 'statusbar';
-      Region := 'south';
+      Region := rgSouth;
       Height := 27;
       Border := false;
       with TExtStatusBar.AddTo(BbarArray) do
@@ -828,7 +842,7 @@ procedure TpitThread.Home; begin
     // Painel central
     CentralPanel := TExtTabPanel.Create;
     with CentralPanel.AddTo(Items) do begin
-      Region := 'center';
+      Region := rgCenter;
       EnableTabScroll := true;
       ShowInitialPage;
       Keys := JSObject('ctrl:true,key:"o",fn:function(s,e){e.preventDefault();alert(s + " was pressed");}');
@@ -880,17 +894,14 @@ var
 begin
   with TExtWindow.Create do begin
     Title  := Props.AliasProp[0];
-    Layout := 'form';
+    Layout := lyColumn;
     Modal  := true;
     Frame  := true;
     Width  := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]); // 317
     AutoHeight := true;
     AutoScroll := true;
     for I := 1 to Props.PropCount-1 do
-      if Editors[I] is TExtFormCheckBoxGroup then
-        CreateEditor(Props, I, Dummy).AddTo(Items).Free // Ext JS bug: TExtFormCheckBoxGroup does not Clones its children
-      else
-        Editors[I].CloneConfig(JSObject('')).AddTo(Items);
+      Editors[I].CloneConfig(JSObject('')).AddTo(Items);
     with TExtButton.AddTo(Buttons) do begin
       IconCls := 'commit';
       Text    := 'Ok';

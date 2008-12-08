@@ -130,3 +130,18 @@ ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
 ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
 ExtFormFormPanel, buttonAlign, (ExtPanelButtonAlign)
 ExtFormFormPanel, labelAlign, (laLeft, laTop, laRight)
+ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
+ExtUxFormLovCombo, separator, string, false, true,
+ExtUxGridRecordForm, ExtUtilObservable, ExtGrid, Ext.ux.grid.RecordForm
+ExtUxGridRecordForm, cancelIconCls, string, false, true, 'icon-cancel'
+ExtUxGridRecordForm, cancelText, string, false, true, 'Cancel'
+ExtUxGridRecordForm, columnCount, Integer, false, true, 1
+ExtUxGridRecordForm, dirtyRowCls, string, false, true, 'ux-grid3-dirty-row'
+ExtUxGridRecordForm, iconCls, string, false, true,
+ExtUxGridRecordForm, okIconCls, string, false, true, 'icon-ok'
+ExtUxGridRecordForm, okText, string, false, true, 'OK'
+ExtUxGridRecordForm, newRowCls, string, false, true, 'ux-grid3-new-row'
+ExtUxGridRecordForm, title, string, false, true,
+ExtUxGridRecordForm, showButtons, Boolean, false, true, true
+ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, AnimEl, ExtElement, true
+

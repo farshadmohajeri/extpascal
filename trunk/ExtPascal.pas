@@ -99,7 +99,7 @@ type
     property IsIE : boolean read FIsIE; // Tests if session is using IE
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
-    procedure SetLibrary(pLibrary : string = '');
+    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false);
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   published
@@ -231,7 +231,7 @@ uses
   SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
 
 const
-  DeclareJS    = '/*var*/ '; // Declare JS objects as global
+  DeclareJS = '/*var*/ '; // Declare JS objects as global
 
 { TExtThread }
 
@@ -253,16 +253,19 @@ end;
 Adds/Removes an user JS library to be used in current response.
 Common requests does reset for user libraries and user style.
 In opposite the AJAX requests does not reset and becomes part or rest of the same request.
-@param pLibrary JS library with Path based on Web server document root.
+@param pLibrary JS library without extension (.js), but with Path based on Web server document root.
+@param CSS pLibrary has a companion stylesheet (.css) with same path and name.
 If pLibrary is '' then all user JS libraries to this session will be removed from response.
 @example <code>SetLibrary('');</code>
-@example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu.js');</code>
+@example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
-procedure TExtThread.SetLibrary(pLibrary : string); begin
+procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false); begin
   if pLibrary = '' then
     Libraries := ''
-  else
-    Libraries := Libraries + '<script src=' + pLibrary + '></script>';
+  else begin
+    Libraries := Libraries + '<script src=' + pLibrary{$IFDEF DEBUGJS}+ '-debug'{$ENDIF} + '.js></script>';
+    if CSS then Libraries := Libraries + '<link rel=stylesheet href=' + pLibrary + '.css />';
+  end;
 end;
 
 (*
@@ -545,7 +548,7 @@ begin
       '<script src=' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
       {$ELSE}
       '<link rel=stylesheet href=http://extjs.cachefly.net/ext-2.2/resources/css/ext-all.css />' +
-      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>' + 
+      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>' +
       {$ENDIF}
       '<script src=' + ExtPath + '/codepress/Ext.ux.CodePress' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
       IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
