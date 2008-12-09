@@ -233,6 +233,9 @@ uses
 const
   DeclareJS = '/*var*/ '; // Declare JS objects as global
 
+threadvar
+  InJSFunction : boolean;
+
 { TExtThread }
 
 {
@@ -1011,6 +1014,7 @@ function TExtObject.JSFunction(Method : TExtProcedure; Silent : boolean = false)
 var
   CurrentResponse : string;
 begin
+  InJSFunction := true;
   Result := TExtFunction(Self);
   with TExtThread(CurrentFCGIThread) do begin
     CurrentResponse := Response;
@@ -1023,6 +1027,7 @@ begin
     Response  := CurrentResponse;
     JSCode(JSCommand);
   end;
+  InJSFunction := false;
 end;
 
 {
@@ -1163,6 +1168,7 @@ var
   lParams : string;
   I : integer;
 begin
+  InJSFunction := false;
   Result := TExtFunction(Self);
   lParams := 'Ajax=1';
   if IsEvent then begin
@@ -1264,7 +1270,7 @@ Converts an array of const to JSON (JavaScript Object Notation) to be used in co
 function TExtObject.VarToJSON(A : array of const) : string;
 var
   I : integer;
-  Command : string;
+  Command, JSName : string;
 begin
   Result := '';
   I := 0;
@@ -1278,8 +1284,15 @@ begin
               Result := Result + WriteFunction(Command);
               TExtThread(CurrentFCGIThread).RemoveJS(Command);
             end
-            else
-              Result := Result + TExtObject(VObject).JSName
+            else begin
+              JSName := TExtObject(VObject).JSName;
+              if InJSFunction and (pos(JSName, Command) = 1) then begin
+                Result := Result + copy(Command, 1, length(Command)-1);
+                TExtThread(CurrentFCGIThread).RemoveJS(Command);
+              end
+              else
+                Result := Result + JSName;
+            end;
           end
           else
             if Result = '' then
