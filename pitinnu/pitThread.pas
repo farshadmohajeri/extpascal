@@ -50,9 +50,10 @@ type
     Action   : TBrowserButton;
     UserInfo : TUserInfo;
     ConnectionDateTime : TDateTime;
-    Grid : TExtGridEditorGridPanel;
+    EditorGrid : TExtGridEditorGridPanel;
     Selection : TExtGridCheckboxSelectionModel;
     GridPanel : TExtPanel;
+    RecordForm : TExtUxGridRecordForm;
     DataStore : TExtDataJsonStore;
     PrevalentList : TPrevalentList;
     Props : TProperties;
@@ -79,6 +80,7 @@ type
     procedure AddObject;
     procedure DeleteObject;
     procedure EditObject;
+    procedure EditRecordForm;
     procedure UpdateObject;
     procedure ValidateField;
     procedure About;
@@ -575,9 +577,9 @@ begin
   BeginTransaction;
   Prevalent := TPrevalentClass(PrevalentList.ObjectClass).Create;
   Prevalent.Add;
-  Grid.StopEditing;
+  EditorGrid.StopEditing;
   with DataStore do Insert(0, JSArray('new Ext.data.Record(' + Props.PropsToJSON(Prevalent) + ')'));
-  Grid.StartEditing(0, 0);
+  EditorGrid.StartEditing(0, 0);
 end;
 
 procedure TpitThread.BrowseClass;
@@ -585,16 +587,18 @@ var
   I, Linhas, EditorLength, MaxHeader : integer;
   ClassName, EditorSample : string;
 begin
-  if Grid <> nil then begin
-    GridPanel.Remove(Grid);
+  if EditorGrid <> nil then begin
+    GridPanel.Remove(EditorGrid);
     DataStore.RemoveAll;
     DataStore.Free;
-    Grid.Free(true);
+    EditorGrid.Free(true);
+    RecordForm.Free(true);
   end;
   Selection := TExtGridCheckBoxSelectionModel.Create;
   Selection.MoveEditorOnEnter := true;
-  Grid := TExtGridEditorGridPanel.Create;
+  EditorGrid := TExtGridEditorGridPanel.Create;
   DataStore := TExtDataJsonStore.Create;
+  RecordForm := TExtUxGridRecordForm.Create;
   ClassName := Prevalence.Prevalents[QueryAsInteger['Class']];
   Props := Prevalence.Metadata(ClassName);
   PrevalentList := Prevalence.PrevalentLists(ClassName + 'List');
@@ -624,7 +628,13 @@ begin
     Load(JSObject('params:{start:0,limit:' + IntToStr(Linhas)+'},callback:function(){' + Selection.JSName + '.selectFirstRow()}'));
     Selection.On('rowdeselect', Ajax(UpdateObject, ['ID', '%2.get("ID")', 'Changes', ExtUtilJSON.Encode('%2.getChanges()')]));
   end;
-  with Grid do begin
+  with RecordForm do begin
+    ColumnCount := trunc(Sqrt(Props.PropCount))-1;
+    CancelIconCls := 'cancel';
+    OkIconCls := 'commit';
+  end;
+  with EditorGrid do begin
+    Plugins := RecordForm;
     ViewConfig := TExtGridGridView.Create;
     TExtGridGridView(ViewConfig).EmptyText := '<center><big>Nenhum dado a apresentar</big></center>';
     Store  := DataStore;
@@ -702,7 +712,8 @@ begin
       with TExtToolbarButton.AddTo(Items) do begin
         IconCls := 'edit';
         Tooltip := 'Editar linha selecionada em um formulário';
-        Handler := Ajax(EditObject, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID')]);
+        Handler := JSFunction(EditRecordForm);
+//        Handler := Ajax(EditObject, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID')]);
       end;
       TExtToolbarSeparator.AddTo(Items);
       with TExtToolbarButton.AddTo(Items) do begin
@@ -773,6 +784,7 @@ procedure TpitThread.Home; begin
   SetStyle('.CenterCheck{position:absolute;left:10px;}');
   SetStyle('.invalid{border:red solid thin}');
   SetLibrary('/ux/Ext.ux.form.LovCombo', true);
+  SetLibrary('/ux/Ext.ux.grid.RecordForm-debug', true);
 //  SetLibrary(ExtPath + '/examples/grid/RowExpander');
   LoadUserInfo;
   ExtQuickTips.Init(true);
@@ -890,7 +902,7 @@ end;
 
 procedure TpitThread.EditObject;
 var
-  I, Dummy : integer;
+  I : integer;
 begin
   with TExtWindow.Create do begin
     Title  := Props.AliasProp[0];
@@ -914,6 +926,10 @@ begin
     end;
     Show;
   end;
+end;
+
+procedure TpitThread.EditRecordForm; begin
+  RecordForm.Show(TExtDataRecord(Selection.GetSelected));//, TExtElement(EditorGrid.GetEl))
 end;
 
 procedure TpitThread.Error(Message: string); begin
@@ -955,7 +971,7 @@ end;
 
 procedure TpitThread.ValidateField; begin
   InvalidField := abs(Props.PropByName(Query['Field']));
-  with Grid do begin
+  with EditorGrid do begin
     StartEditing(QueryAsInteger['Row'], InvalidField);
     InvalidMessage := 'Mensagem de Erro';
     Ajax(Mark);
