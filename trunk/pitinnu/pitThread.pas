@@ -584,8 +584,8 @@ end;
 
 procedure TpitThread.BrowseClass;
 var
-  I, Linhas, EditorLength, MaxHeader : integer;
-  ClassName, EditorSample : string;
+  I, J, Linhas, EditorLength, MaxHeader : integer;
+  ClassName, EditorSample, ROFields : string;
 begin
   if EditorGrid <> nil then begin
     GridPanel.Remove(EditorGrid);
@@ -628,13 +628,7 @@ begin
     Load(JSObject('params:{start:0,limit:' + IntToStr(Linhas)+'},callback:function(){' + Selection.JSName + '.selectFirstRow()}'));
     Selection.On('rowdeselect', Ajax(UpdateObject, ['ID', '%2.get("ID")', 'Changes', ExtUtilJSON.Encode('%2.getChanges()')]));
   end;
-  with RecordForm do begin
-    ColumnCount := trunc(Sqrt(Props.PropCount))-1;
-    CancelIconCls := 'cancel';
-    OkIconCls := 'commit';
-  end;
   with EditorGrid do begin
-    Plugins := RecordForm;
     ViewConfig := TExtGridGridView.Create;
     TExtGridGridView(ViewConfig).EmptyText := '<center><big>Nenhum dado a apresentar</big></center>';
     Store  := DataStore;
@@ -689,10 +683,28 @@ begin
             end
             else
               Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength]);
-            MaxHeader := max(MaxHeader, length(Header));
-            FormWidth := max(FormWidth, EditorLength)
+            J := pos(' ', AliasProp[I]);
+            if J = 0 then J := length(AliasProp[I]);
+            MaxHeader := max(MaxHeader, J);
+            FormWidth := max(FormWidth, min(40, EditorLength))
           end;
-          inc(FormWidth, MaxHeader + 2);
+      inc(FormWidth, MaxHeader + 2);
+      with RecordForm do begin
+        if length(Editors) < 10 then
+          ColumnCount := 1
+        else
+          ColumnCount := 2;
+        CancelIconCls := 'cancel';
+        CancelText := 'Cancelar';
+        OkIconCls := 'commit';
+        formConfig := JSObject('width:' + IntToStr(7 * FormWidth * ColumnCount) + ',labelWidth:' + IntToStr(7 * MaxHeader));
+        ROFields := 'ID:true,';
+        for I := 1 to length(Editors)-1 do
+          if Editors[I].ReadOnly then
+            ROFields := ROFields + Properties[I].Name + ':true,';
+        DisabledFields := JSObject(copy(ROFields, 1, length(ROFields)-1));
+      end;
+      Plugins := RecordForm;
     end;
     TBar := TExtPagingToolbar.Create;
     with TExtPagingToolbar(TBar) do begin
@@ -929,7 +941,7 @@ begin
 end;
 
 procedure TpitThread.EditRecordForm; begin
-  RecordForm.Show(TExtDataRecord(Selection.GetSelected));//, TExtElement(EditorGrid.GetEl))
+  RecordForm.Show(TExtDataRecord(Selection.GetSelected));
 end;
 
 procedure TpitThread.Error(Message: string); begin
