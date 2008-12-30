@@ -259,9 +259,21 @@ begin
   until I = 0;
 end;
 
-function StrToJS(const S : string) : string; begin
+function StrToJS(const S : string) : string;
+var
+  I : integer;
+begin
   Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
-  if not((length(Result) > 1) and (Result[1] = '%') and (Result[2] in ['0'..'9'])) then Result := '"' + Result + '"'
+  if not((length(Result) > 1) and (Result[1] = '%') and (Result[2] in ['0'..'9'])) then begin
+    if Pos('/', Result) = 1 then begin // Tests if is RegEx
+      I := PosEx('/', Result, 2);
+      case length(Result) - I of
+        0   : exit;
+        1,2 : if Result[I+1] in ['i','g','m'] then exit;
+      end;
+    end;
+    Result := '"' + Result + '"'
+  end;
 end;
 
 function CaseOf(const S : string; const Cases : array of string) : integer; begin
