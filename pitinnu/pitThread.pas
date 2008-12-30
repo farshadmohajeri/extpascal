@@ -400,13 +400,13 @@ begin
         if TypeProp[I] = tkEnumeration then begin
           Result := TExtFormComboBox.Create;
           with TExtFormComboBox(Result) do begin
-            AllowBlank := false;
+            AllowBlank     := false;
             ForceSelection := true;
-            TriggerAction := 'all';
-            TypeAhead  := true;
-            SelectOnFocus := true;
-            Mode  := 'local';
-            Enums := '';
+            TriggerAction  := 'all';
+            TypeAhead      := true;
+            SelectOnFocus  := true;
+            Mode           := 'local';
+            Enums          := '';
             PropType := Properties[I].PropType{$IFNDEF FPC}^{$ENDIF};
             for J := MinValueProp[I] to MaxValueProp[I] do begin
               Enum := ClearEnumName(GetEnumName(PropType, J));
@@ -604,20 +604,19 @@ begin
   PrevalentList := Prevalence.PrevalentLists(ClassName + 'List');
   with DataStore, Props do
     for I := 0 to PropCount-1 do
-      //if InConstraints(I, Visible) then
-        with TExtDataField.AddTo(Fields) do begin
-          Name   := Properties[I].Name;
-          TypeJS := PascalTypetoJS(Properties[I]);
-          //DefaultValue :=
-          if TypeJS = 'date' then
-            if MaskProp[I] <> '' then
-              DateFormat := MaskProp[I]
-            else
-              case GetDateTimeType(TypeNameProp[I]) of
-                dtDateTime : DateFormat := 'd/m/Y, h:i:s';
-                dtTime     : DateFormat := 'h:i:s';
-              end;
-        end;
+      with TExtDataField.AddTo(Fields) do begin
+        Name   := Properties[I].Name;
+        TypeJS := PascalTypetoJS(Properties[I]);
+        //DefaultValue :=
+        if TypeJS = 'date' then
+          if MaskProp[I] <> '' then
+            DateFormat := MaskProp[I]
+          else
+            case GetDateTimeType(TypeNameProp[I]) of
+              dtDateTime : DateFormat := 'd/m/Y, h:i:s';
+              dtTime     : DateFormat := 'h:i:s';
+            end;
+      end;
   Linhas := round((QueryAsInteger['GridHeight'] / 21) - 4.6); //4.1 sem frame
   with DataStore do begin
     {$IFDEF MSWINDOWS}Url := '/extpascal/pitinnu/pitinnu.exe/LoadData';{$ELSE}Url := '/fcgi/pitinnu/LoadData';{$ENDIF}
@@ -652,42 +651,41 @@ begin
       SetLength(Editors, PropCount);
       FormWidth := 0; MaxHeader := 0;
       for I := 0 to PropCount-1 do
-        //if InConstraints(I, Visible) then
-          with TExtGridColumnModel.AddTo(Columns) do begin
-            Sortable := true;
-            Id := Properties[I].Name;
-            DataIndex := Properties[I].Name;
-            if HintProp[I] <> '' then Tooltip := HintProp[I];
-            if I = 0 then begin
-              Header := Id;
-              EditorLength := 10;
-              Align := alRight;
-            end
-            else begin
-              if InConstraints(I, NotNull) then
-                Header := '<b>' + AliasProp[I] + ' *</b>'
-              else
-                Header := AliasProp[I];
-              Editor := CreateEditor(Props, I, EditorLength);
-              Editors[I] := TExtFormField(Editor);
-              if Editor is TExtFormNumberField   then Align := alRight else
-              if Editor is TExtUxFormLovCombo    then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
-              if Editor is TExtFormComboBox      then Renderer := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
-              if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
-              if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
-              if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
-            end;
-            if (length(Header) + 2) >= EditorLength then begin
-              EditorSample := Header + IfThen(length(Header) < 10, 'wW', 'W');
-              Width := JSExpression(ExtUtilTextMetrics.GetWidth(EditorSample));
-            end
+        with TExtGridColumnModel.AddTo(Columns) do begin
+          Sortable := true;
+          Id := Properties[I].Name;
+          DataIndex := Properties[I].Name;
+          if HintProp[I] <> '' then Tooltip := HintProp[I];
+          if I = 0 then begin
+            Header := Id;
+            EditorLength := 10;
+            Align := alRight;
+          end
+          else begin
+            if InConstraints(I, NotNull) then
+              Header := '<b>' + AliasProp[I] + ' *</b>'
             else
-              Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength]);
-            J := pos(' ', AliasProp[I]);
-            if J = 0 then J := length(AliasProp[I]);
-            MaxHeader := max(MaxHeader, J);
-            FormWidth := max(FormWidth, min(40, EditorLength))
+              Header := AliasProp[I];
+            Editor := CreateEditor(Props, I, EditorLength);
+            Editors[I] := TExtFormField(Editor);
+            if Editor is TExtFormNumberField   then Align := alRight else
+            if Editor is TExtUxFormLovCombo    then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
+            if Editor is TExtFormComboBox      then Renderer := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
+            if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
+            if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
+            if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
           end;
+          if (length(Header) + 2) >= EditorLength then begin
+            EditorSample := Header + IfThen(length(Header) < 10, 'wW', 'W');
+            Width := JSExpression(ExtUtilTextMetrics.GetWidth(EditorSample));
+          end
+          else
+            Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength]);
+          J := pos(' ', AliasProp[I]);
+          if J = 0 then J := length(AliasProp[I]);
+          MaxHeader := max(MaxHeader, J);
+          FormWidth := max(FormWidth, min(40, EditorLength))
+        end;
       inc(FormWidth, MaxHeader + 2);
       with RecordForm do begin
         if length(Editors) < 10 then
@@ -700,7 +698,7 @@ begin
         formConfig := JSObject('width:' + IntToStr(7 * FormWidth * ColumnCount) + ',labelWidth:' + IntToStr(7 * MaxHeader));
         ROFields := 'ID:true,';
         for I := 1 to length(Editors)-1 do
-          if Editors[I].ReadOnly then
+          if (Editors[I] <> nil) and Editors[I].ReadOnly then
             ROFields := ROFields + Properties[I].Name + ':true,';
         DisabledFields := JSObject(copy(ROFields, 1, length(ROFields)-1));
       end;
@@ -924,7 +922,7 @@ begin
     Width  := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]); // 317
     AutoHeight := true;
     AutoScroll := true;
-    for I := 1 to Props.PropCount-1 do
+    for I := 0 to Props.PropCount-1 do
       Editors[I].CloneConfig(JSObject('')).AddTo(Items);
     with TExtButton.AddTo(Buttons) do begin
       IconCls := 'commit';
