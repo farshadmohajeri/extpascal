@@ -911,7 +911,7 @@ begin
           end
           else
             if I > 0 then Result := Result + ', ';
-          Result := Result + Name + AddBoolParam(Typ);
+          Result := Result + IfThen(Typ = 'TRegExp', '#3 + ', '') + Name + AddBoolParam(Typ);
         end
         else begin
           if not InitCommonParam then Result := Result + ']) + '',''';
@@ -1013,7 +1013,7 @@ procedure WriteUnits;
 
 var
   I, J, K, M : integer;
-  CName, CJSName, BoolParam : string;
+  CName, CJSName, BoolParam, RegExParam : string;
 begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
@@ -1045,7 +1045,8 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
-                BoolParam := AddBoolParam(Typ);
+                RegExParam := IfThen(Typ = 'TRegExp', '#3 +', '');
+                BoolParam  := AddBoolParam(Typ);
                 if (BoolParam = ', false') and not Enum then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
                 if Config then begin
                   // If there is an alternative method, and its parameters are
@@ -1067,13 +1068,15 @@ begin
                     write(Pas, Tab);
                   end;
                   if not Enum then
-                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), '));')
+                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(',
+                      IfThen(pos('TArrayOf', Typ) = 0, '[' + RegExParam + 'Value' + BoolParam + ']', RegExParam + 'Value'), '));')
                   else
                     writeln(Pas, Tab, 'JSCode(''', JSName, ':"'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''"'');');
                 end
                 else
                   if not Enum then
-                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', IfThen(pos('TArrayOf', Typ) = 0, '[Value' + BoolParam + ']', 'Value'), ') + '';'');')
+                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(',
+                      IfThen(pos('TArrayOf', Typ) = 0, '[' + RegExParam + 'Value' + BoolParam + ']', RegExParam + 'Value'), ') + '';'');')
                   else
                     writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '="'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''";'');');
                 writeln(Pas, 'end;'^M^J);

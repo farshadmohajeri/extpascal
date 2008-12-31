@@ -3,7 +3,7 @@ program pitinnu;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  FCGIApp, Classes, SysUtils, {$IFDEF MSWINDOWS}Services,{$ENDIF}
+  FCGIApp, ExtPascal, Classes, SysUtils, {$IFDEF MSWINDOWS}Services,{$ENDIF}
   pitPrevalence, pitUtils, pitThread, pitModel, pitinnuModel, pitServer;//, pitSupportGDB, pitProxyDebugger;
 
 {$IFDEF MSWINDOWS}
@@ -21,8 +21,9 @@ begin
   DateSeparator := '/'; ShortDateFormat := 'd/M/yyyy';
   TimeSeparator := ':'; ShortTimeFormat := 'hh:mm';
   FileMode      := fmShareDenyWrite + fmOpenReadWrite;
-{$IFDEF MSWINDOWS} 
-  Service       := TService.Create(ServerName, PrevVersion + ' - ' + GetEnvironment);
+{$IFDEF MSWINDOWS}
+  ImagePath := '/extpascal/pitinnu/images';
+  Service   := TService.Create(ServerName, PrevVersion + ' - ' + GetEnvironment);
   with Service do try
     if Install then
       writeln('Service installed')
@@ -32,7 +33,7 @@ begin
       Prevalence  := TPrevalence.Create(ServerName);
       Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
       NoService   := not Exists;
-      Application.Icon := ImagePath + 'pitinnu16.ico';
+      Application.Icon := ImagePath + '/pitinnu16.ico';
       Recover;
       if Exists then
         Run([TServiceThread.Create(true)])
@@ -44,9 +45,10 @@ begin
     on E : Exception do ReportEventLog(EventError, 1, E.Message);
   end;
 {$ELSE}
+  ImagePath   := '/fcgi/images';
   Prevalence  := TPrevalence.Create(ServerName);
   Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
-  Application.Icon := ImagePath + 'pitinnu16.ico';
+  Application.Icon := ImagePath + '/pitinnu16.ico';
   Recover;
   Application.Run;
   Snapshot;
