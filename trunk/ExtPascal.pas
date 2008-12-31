@@ -59,9 +59,8 @@ uses
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
 const
-  ExtPath      = '/ext'; // Installation path of Ext JS framework, below the your Web server document root
-  CommandDelim = #3;     // Internal JS command delimiter
-  IdentDelim   = #4;     // Internal JS identifier delimiter
+  ExtPath   = '/ext';             // Installation path of Ext JS framework, below the your Web server document root
+  ImagePath : string = '/images'; // Default image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method
 
 type
   TArrayOfString  = array of string;
@@ -100,6 +99,7 @@ type
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false);
+    procedure SetIconCls(Cls : array of string);
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   published
@@ -231,7 +231,9 @@ uses
   SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
 
 const
-  DeclareJS = '/*var*/ '; // Declare JS objects as global
+  DeclareJS    = '/*var*/ '; // Declare JS objects as global
+  CommandDelim = #3;         // Internal JS command delimiter
+  IdentDelim   = #4;         // Internal JS identifier delimiter
 
 threadvar
   InJSFunction : boolean;
@@ -269,6 +271,26 @@ procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false); 
     Libraries := Libraries + '<script src=' + pLibrary{$IFDEF DEBUGJS}+ '-debug'{$ENDIF} + '.js></script>';
     if CSS then Libraries := Libraries + '<link rel=stylesheet href=' + pLibrary + '.css />';
   end;
+end;
+
+{
+Creates CSS classes to use with IconCls properties in Buttons. The images are .png files in 16x16 format.
+Set <link ImagePath> variable to appropriate value before to use this method.
+@param Cls String array with the names of .png files.
+@example <code>
+SetIconCls(['task', 'objects', 'commit', 'cancel', 'refresh', 'info', 'help', 'pitinnu', 'exit']);
+with TExtToolbarButton.AddTo(Items) do begin
+  Text    := 'Tasks';
+  IconCls := 'task';
+  Menu    := TaskMenu;
+end;</code>
+}
+procedure TExtThread.SetIconCls(Cls : array of string);
+var
+  I : integer;
+begin
+  for I := 0 to high(Cls) do
+    SetStyle('.' + Cls[I] + '{background-image:url(' + ImagePath + '/' + Cls[I] + '.png) !important}');
 end;
 
 (*

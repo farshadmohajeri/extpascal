@@ -8,11 +8,6 @@ uses
 
 const
   ResponseTimeout = 60000;
-  {$IFDEF MSWINDOWS}
-  ImagePath = '/extpascal/pitinnu/images/';
-  {$ELSE}
-  ImagePath = '/fcgi/images/';
-  {$ENDIF}
 
 type
   TUserInfo = record
@@ -35,7 +30,6 @@ type
     Enums, InvalidMessage : string;
     InvalidField, FormWidth : integer;
     Editors : array of TExtFormField;
-    procedure SetIconCls(Cls : array of string);
     function LoadUserInfo : boolean;
     function ClassTreePanel : TExtTreeTreePanel;
     procedure LoadTaskMenu;
@@ -110,12 +104,12 @@ procedure TpitThread.About; begin
     with TExtPanel.AddTo(Items) do begin
       Region := rgWest;
       Border := false;
-      Html   := '<img src=' + ImagePath + 'pitbrowser.jpg />';
+      Html   := '<img src=' + ImagePath + '/pitbrowser.jpg />';
     end;
     with TExtPanel.AddTo(Items) do begin
       Region := rgCenter;
       Border := false;
-      Html   := '<br/><img src=' + ImagePath + 'logofreepascal.jpg /><br/><br/><img src=' + ImagePath + 'logoturbodelphi.jpg />';
+      Html   := '<br/><img src=' + ImagePath + '/logofreepascal.jpg /><br/><br/><img src=' + ImagePath + '/logoturbodelphi.jpg />';
     end;
     Show;
     Free;
@@ -132,14 +126,6 @@ procedure TpitThread.AfterHandleRequest; begin
   FThreadTrans := ThreadTrans
 end;
 
-procedure TpitThread.SetIconCls(Cls : array of string);
-var
-  I : integer;
-begin
-  for I := 0 to high(Cls) do
-    SetStyle('.' + Cls[I] + '{background-image:url(' + ImagePath + Cls[I] + '.png) !important}');
-end;
-
 procedure TpitThread.FreeInitialPage; begin
   FreeAndNil(InitialPage);
 end;
@@ -153,7 +139,7 @@ procedure TpitThread.ShowInitialPage; begin
       IconCls    := 'info';
       Closable   := true;
       AutoScroll := true;
-      AutoLoadString := ImagePath + 'pitinnu.html';
+      AutoLoadString := ImagePath + '/pitinnu.html';
       on('destroy', Ajax(FreeInitialPage));
     end;
   end;
