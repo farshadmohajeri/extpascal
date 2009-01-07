@@ -36,6 +36,7 @@ type
     function CreateEditor(Props: TProperties; I: integer; var EditorLength : integer): TExtFormField;
     procedure DeleteSelection;
     procedure DeleteSelections;
+    procedure AddFieldsToForm(Items : TExtObjectList);
   protected
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
@@ -50,6 +51,7 @@ type
     RecordForm : TExtUxGridRecordForm;
     DataStore : TExtDataJsonStore;
     PrevalentList : TPrevalentList;
+    InitialProp : integer;
     Props : TProperties;
     function Confirm(Msg : string; TimeOut : integer = ResponseTimeout) : boolean;
     function Edit(Obj : TPrevalent; PropOrder : string = ''; Title : string = ''; Message : string = ''; Buttons : TBrowserButtons = [bbNext, bbCancel]; ReadOnly : boolean = false; TimeOut : integer = ResponseTimeout) : TBrowserButton; overload;
@@ -478,11 +480,6 @@ begin
             end;
             Enums := copy(Enums, 1, length(Enums)-1);
             StoreArray := JSArray(Enums);
-//              on('beforeshow', JSFunction('LC', 'LC.setValue("Modify,Delete");'));
-//              on('beforeshow', JSFunction('LC', 'if(LC.getValue())for(var i=0;i<DG.items.getCount();i++){if(DG.items.get(i).getValue()&Math.pow(2,i)){DG.items.get(i).setValue(true)}else{item.setValue(false)};};'));
-//              on('beforeshow', JSFunction('DG', 'DG.items.each(function(item,i){if(DG.getValue()&Math.pow(2,i)){item.setValue(true)}else{item.setValue(false)};});'));
-//              on('specialkey', JSFunction('DG', 'var V=0;if(DG.getValue()){DG.items.each(function(item,i){if(item.getValue()){V=V+Math.pow(2,i)};});DG.setValue(V);};'));
-//              on('blur', JSFunction('DG', 'return false')); // necessary for IE*)
           end;
         end
         else begin
@@ -500,10 +497,15 @@ begin
     end;
     with TExtFormTextField(Result) do begin
       if Width = 0 then Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength + 1]);
-      FieldLabel := AliasProp[I];
+      if I = 0 then
+        FieldLabel := Properties[I].Name
+      else
+        FieldLabel := AliasProp[I];
+      Name := Properties[I].Name;
 //      On('change', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'), 'Field', '%0.getEl()', 'Value', '%1']));
       if Result is TExtFormTextField then AllowBlank := not InConstraints(I, NotNull);
-      ReadOnly := InConstraints(I, pitCommon.ReadOnly);
+      ReadOnly := InConstraints(I, pitCommon.ReadOnly) or (I = 0);
+      if I = 0 then Disabled := true;
       //Disabled := not InConstraints(I, Enabled);
       //if InConstraints(I, Check) then Validator := Ajax();
     end;
@@ -625,9 +627,7 @@ begin
     Frame := true;
     SelModel := Selection;
     AutoScroll := true;
-//    Width  := JSExpression(GridPanel.GetInnerWidth);
     Height := JSExpression('%s - 2', [GridPanel.GetInnerHeight]);
-//    AutoHeight := true;
     AutoWidth  := true;
 //    On('validateedit', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'),
 //       'Field', '%0.field', 'Value', '%0.value', 'Row', '%0.row']));
@@ -636,31 +636,27 @@ begin
 //      Selection.AddTo(Columns);
       SetLength(Editors, PropCount);
       FormWidth := 0; MaxHeader := 0;
-      for I := 0 to PropCount-1 do
+      for I := InitialProp to PropCount-1 do
         with TExtGridColumnModel.AddTo(Columns) do begin
           Sortable := true;
           Id := Properties[I].Name;
           DataIndex := Properties[I].Name;
           if HintProp[I] <> '' then Tooltip := HintProp[I];
-          if I = 0 then begin
-            Header := Id;
-            EditorLength := 10;
-            Align := alRight;
-          end
-          else begin
+          if I = 0 then
+            Header := Id
+          else
             if InConstraints(I, NotNull) then
               Header := '<b>' + AliasProp[I] + ' *</b>'
             else
               Header := AliasProp[I];
-            Editor := CreateEditor(Props, I, EditorLength);
-            Editors[I] := TExtFormField(Editor);
-            if Editor is TExtFormNumberField   then Align := alRight else
-            if Editor is TExtUxFormLovCombo    then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
-            if Editor is TExtFormComboBox      then Renderer := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
-            if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
-            if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
-            if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
-          end;
+          Editor := CreateEditor(Props, I, EditorLength);
+          Editors[I] := TExtFormField(Editor);
+          if Editor is TExtFormNumberField   then Align := alRight else
+          if Editor is TExtUxFormLovCombo    then Renderer := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
+          if Editor is TExtFormComboBox      then Renderer := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
+          if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
+          if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
+          if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
           if (length(Header) + 2) >= EditorLength then begin
             EditorSample := Header + IfThen(length(Header) < 10, 'wW', 'W');
             Width := JSExpression(ExtUtilTextMetrics.GetWidth(EditorSample));
@@ -679,10 +675,10 @@ begin
         else
           ColumnCount := 2;
         CancelIconCls := 'cancel';
-        CancelText := 'Cancelar';
-        OkIconCls := 'commit';
-        formConfig := JSObject('width:' + IntToStr(7 * FormWidth * ColumnCount) + ',labelWidth:' + IntToStr(7 * MaxHeader));
-        ROFields := 'ID:true,';
+        CancelText    := 'Cancelar';
+        OkIconCls     := 'commit';
+        FormConfig    := JSObject('width:' + IntToStr(7 * FormWidth * ColumnCount) + ',labelWidth:' + IntToStr(7 * MaxHeader));
+        ROFields      := 'ID:true,';
         for I := 1 to length(Editors)-1 do
           if (Editors[I] <> nil) and Editors[I].ReadOnly then
             ROFields := ROFields + Properties[I].Name + ':true,';
@@ -708,8 +704,8 @@ begin
       with TExtToolbarButton.AddTo(Items) do begin
         IconCls := 'edit';
         Tooltip := 'Editar linha selecionada em um formulário';
-        Handler := JSFunction(EditRecordForm);
-//        Handler := Ajax(EditObject, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID')]);
+//        Handler := JSFunction(EditRecordForm);
+        Handler := Ajax(EditObject, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID')]);
       end;
       TExtToolbarSeparator.AddTo(Items);
       with TExtToolbarButton.AddTo(Items) do begin
@@ -774,6 +770,10 @@ begin
 end;
 
 procedure TpitThread.Home; begin
+  if GetShowID or GetShowAll then
+    InitialProp := 0
+  else
+    InitialProp := 1;
   SetIconCls(['task', 'objects', 'commit', 'cancel', 'refresh', 'info', 'help', 'pitinnu', 'exit']);
   SetIconCls(['first', 'prevpage', 'previous', 'next', 'nextpage', 'last', 'add', 'delete', 'edit', 'addfavourite', 'gotofavourite',
               'upclass', 'filter', 'format', 'print', 'find', 'execute', 'back', 'advance', 'package', 'abstract']);
@@ -896,20 +896,77 @@ begin
   Result := bbBack;
 end;
 
-procedure TpitThread.EditObject;
+procedure TpitThread.AddFieldsToForm(Items : TExtObjectList);
 var
-  I : integer;
+  I, J : integer;
+  FLayout  : TStringList;
+  SubItems : TExtObjectList;
+  TabPanel : TExtTabPanel;
 begin
+  TabPanel := nil;
+  SubItems := Items;
+  FLayout  := Explode(',', Props.ExtraRTTI[0].PropOrder);
+  if GetShowAll or (FLayout.Count = 0) then
+    for I := InitialProp to Props.PropCount-1 do
+      Editors[I].CloneConfig(nil).AddTo(Items)
+  else
+    for I := 0 to FLayout.Count-1 do begin
+      case FLayout[I][1] of
+        '<', '>', '|' : begin // FieldSet
+          if FLayout[I][2] in ['<', '>', '|'] then
+            SubItems := Items
+          else
+            with TExtFormFieldSet.AddTo(Items) do begin
+              Title := copy(FLayout[I], 2, length(FLayout[I])-2);
+              Collapsible := FLayout[I][1] <> '|';
+              Collapsed   := FLayout[I][1]  = '>';
+              AutoHeight  := true;
+              SubItems    := Items;
+            end;
+          continue;
+        end;
+        '/' : FLayout[I] := copy(FLayout[I], 2, length(FLayout[I])-2); // CRLF obrigatório
+        '[' : begin // TabPanel
+          if FLayout[I][2] = ']' then
+            SubItems := Items
+          else begin
+            if TabPanel = nil then begin
+              TabPanel := TExtTabPanel.AddTo(Items);
+              TabPanel.ActiveTabNumber := 0;
+              TabPanel.Border := false;
+              TabPanel.EnableTabScroll := true;
+            end;
+            with TExtPanel.AddTo(TabPanel.Items) do begin
+              Title := copy(FLayout[I], 2, length(FLayout[I])-2);
+              AutoHeight := true;
+              Frame    := true;
+              Layout   := lyForm;
+              SubItems := Items;
+            end;
+          end;
+          continue;
+        end;
+      end;
+      for J := InitialProp to high(Editors) do
+        if lowercase(Editors[J].Name) = lowercase(FLayout[I]) then begin
+          Editors[J].CloneConfig(nil).AddTo(SubItems);
+          break
+        end;
+    end;
+  FLayout.Free;
+end;
+
+procedure TpitThread.EditObject; begin
   with TExtWindow.Create do begin
     Title  := Props.AliasProp[0];
-    Layout := lyColumn;
     Modal  := true;
-    Frame  := true;
-    Width  := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]); // 317
-    AutoHeight := true;
-    AutoScroll := true;
-    for I := 0 to Props.PropCount-1 do
-      Editors[I].CloneConfig(JSObject('')).AddTo(Items);
+    Shadow := false;
+    Width  := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth + 5]); // 317
+    with TExtFormFormPanel.AddTo(Items) do begin
+      Frame := true;
+      AddFieldsToForm(Items);
+//      LabelAlign := laTop;
+    end;
     with TExtButton.AddTo(Buttons) do begin
       IconCls := 'commit';
       Text    := 'Ok';
@@ -921,6 +978,7 @@ begin
       Handler := Close;
     end;
     Show;
+    Free;
   end;
 end;
 
