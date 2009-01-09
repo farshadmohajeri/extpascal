@@ -125,6 +125,7 @@ ExtUxCodePress, toggleEditor, void, false, false
 ExtContainer, layout, (lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyTable)
 ExtComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
 ExtComponent, xtype, (xtBox, xtButton, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtGrid, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtForm, xtCheckBox, xtCombo, xtDateField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtTextArea, xtTextField, xtTimeField, xtTrigger)
+ExtContainer, defaultType, (ExtComponentXType)
 ExtElement, defaultUnit, (CSSUnit)
 ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
 ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
@@ -148,4 +149,5 @@ ExtUxGridRecordForm, readonlyFields, ExtObject, false, true,
 ExtUxGridRecordForm, disabledFields, ExtObject, false, true,
 ExtUxGridRecordForm, formConfig, ExtObject, false, true,
 ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, AnimEl, ExtElement, true
+ExtFormField, inputType, (itText, itButton, itCheckbox, itFile, itHidden, itImage, itPassword, itRadio, itReset, itSubmit)
 

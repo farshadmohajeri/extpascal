@@ -212,19 +212,19 @@ begin
       XType       := xtForm;
       ButtonAlign := baRight;
       BodyStyle   := SetPaddings(10, 15);
-      DefaultType := 'textfield';
+      DefaultType := xtTextField;
       Defaults    := JSObject('width: 250');
       UserName    := TExtFormTextField.Create;
       with UserName.AddTo(Items) do begin
         Name       := 'user';
         FieldLabel := 'Username';
-        InputType  := 'textfield';
+        InputType  := itText;
       end;
       Password := TExtFormTextField.Create;
       with Password.AddTo(Items) do begin
         Name       := 'pass';
         FieldLabel := 'Password';
-        InputType  := 'password';
+        InputType  := itPassword;
       end;
       with TExtButton.AddTo(Buttons) do begin
         Text    := 'LOGIN';
