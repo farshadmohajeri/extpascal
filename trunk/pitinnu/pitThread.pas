@@ -28,7 +28,7 @@ type
     CentralPanel: TExtTabPanel;
     InitialPage : TExtPanel;
     Enums, InvalidMessage : string;
-    InvalidField, FormWidth : integer;
+    InvalidField, FormWidth, MaxHeader : integer;
     Editors : array of TExtFormField;
     function LoadUserInfo : boolean;
     function ClassTreePanel : TExtTreeTreePanel;
@@ -457,7 +457,7 @@ begin
         end;
         2 : begin
           Result := TExtFormTextField.Create;
-          TExtFormTextField(Result).InputType := 'file';
+          TExtFormTextField(Result).InputType := itFile;
         end;
       else // string
         if TypeProp[I] = tkSet then begin
@@ -572,8 +572,10 @@ end;
 
 procedure TpitThread.BrowseClass;
 var
-  I, J, Linhas, EditorLength, MaxHeader : integer;
+  I, J, Linhas, EditorLength : integer;
   ClassName, EditorSample, ROFields : string;
+  FLayout : TStringList;
+  HiddenRest : boolean;
 begin
   if EditorGrid <> nil then begin
     GridPanel.Remove(EditorGrid);
@@ -635,7 +637,8 @@ begin
       //AutoExpandColumn := Properties[Props.PropCount-1].Name;
 //      Selection.AddTo(Columns);
       SetLength(Editors, PropCount);
-      FormWidth := 0; MaxHeader := 0;
+      FLayout := Explode(',', Props.ExtraRTTI[0].PropOrder);
+      FormWidth := 0; MaxHeader := 0; HiddenRest := false;
       for I := InitialProp to PropCount-1 do
         with TExtGridColumnModel.AddTo(Columns) do begin
           Sortable := true;
@@ -649,6 +652,10 @@ begin
               Header := '<b>' + AliasProp[I] + ' *</b>'
             else
               Header := AliasProp[I];
+          if not GetShowAll and (FLayout.Count <> 0) and (FLayout.IndexOf(Id) = -1) then begin
+            Hidden := true;
+            Hideable := false;
+          end;
           Editor := CreateEditor(Props, I, EditorLength);
           Editors[I] := TExtFormField(Editor);
           if Editor is TExtFormNumberField   then Align := alRight else
@@ -657,17 +664,20 @@ begin
           if Editor is TExtFormCheckbox      then Renderer := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
           if Editor is TExtFormDateField     then Renderer := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
           if Editor is TExtFormTimeField     then Renderer := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
-          if (length(Header) + 2) >= EditorLength then begin
-            EditorSample := Header + IfThen(length(Header) < 10, 'wW', 'W');
-            Width := JSExpression(ExtUtilTextMetrics.GetWidth(EditorSample));
-          end
-          else
-            Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength]);
-          J := pos(' ', AliasProp[I]);
-          if J = 0 then J := length(AliasProp[I]);
-          MaxHeader := max(MaxHeader, J);
-          FormWidth := max(FormWidth, min(40, EditorLength))
+          if not Hidden then begin
+            if (length(Header) + 2) >= EditorLength then begin
+              EditorSample := Header + IfThen(length(Header) < 10, 'wW', 'W');
+              Width := JSExpression(ExtUtilTextMetrics.GetWidth(EditorSample));
+            end
+            else
+              Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength]);
+            J := pos(' ', AliasProp[I]);
+            if J = 0 then J := length(AliasProp[I]);
+            MaxHeader := max(MaxHeader, J);
+            FormWidth := max(FormWidth, min(40, EditorLength))
+          end;
         end;
+      FLayout.Free;
       inc(FormWidth, MaxHeader + 2);
       with RecordForm do begin
         if length(Editors) < 10 then
@@ -773,7 +783,7 @@ procedure TpitThread.Home; begin
   if GetShowID or GetShowAll then
     InitialProp := 0
   else
-    InitialProp := 1;
+    InitialProp := 2;
   SetIconCls(['task', 'objects', 'commit', 'cancel', 'refresh', 'info', 'help', 'pitinnu', 'exit']);
   SetIconCls(['first', 'prevpage', 'previous', 'next', 'nextpage', 'last', 'add', 'delete', 'edit', 'addfavourite', 'gotofavourite',
               'upclass', 'filter', 'format', 'print', 'find', 'execute', 'back', 'advance', 'package', 'abstract']);
@@ -961,14 +971,16 @@ procedure TpitThread.EditObject; begin
     Title  := Props.AliasProp[0];
     Modal  := true;
     Shadow := false;
-    Width  := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth + 5]); // 317
+    Constrain := true;
+    Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth + 3]); // 317
     with TExtFormFormPanel.AddTo(Items) do begin
+      LabelWidth := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), MaxHeader]);
       Frame := true;
       AddFieldsToForm(Items);
 //      LabelAlign := laTop;
     end;
     with TExtButton.AddTo(Buttons) do begin
-      IconCls := 'commit';
+      IconCls := 'commit';         
       Text    := 'Ok';
       Handler := Close;
     end;
