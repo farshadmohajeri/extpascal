@@ -22,8 +22,7 @@ begin
   TimeSeparator := ':'; ShortTimeFormat := 'hh:mm';
   FileMode      := fmShareDenyWrite + fmOpenReadWrite;
 {$IFDEF MSWINDOWS}
-  ImagePath := '/extpascal/pitinnu/images';
-  Service   := TService.Create(ServerName, PrevVersion + ' - ' + GetEnvironment);
+  Service := TService.Create(ServerName, PrevVersion + ' - ' + GetEnvironment);
   with Service do try
     if Install then
       writeln('Service installed')
@@ -33,7 +32,6 @@ begin
       Prevalence  := TPrevalence.Create(ServerName);
       Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
       NoService   := not Exists;
-      Application.Icon := ImagePath + '/pitinnu16.ico';
       Recover;
       if Exists then
         Run([TServiceThread.Create(true)])
@@ -45,10 +43,8 @@ begin
     on E : Exception do ReportEventLog(EventError, 1, E.Message);
   end;
 {$ELSE}
-  ImagePath   := '/fcgi/images';
   Prevalence  := TPrevalence.Create(ServerName);
   Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
-  Application.Icon := ImagePath + '/pitinnu16.ico';
   Recover;
   Application.Run;
   Snapshot;
