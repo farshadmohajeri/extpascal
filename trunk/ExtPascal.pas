@@ -58,10 +58,6 @@ interface
 uses
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
-const
-  ExtPath   = '/ext';             // Installation path of Ext JS framework, below the your Web server document root
-  ImagePath : string = '/images'; // Default image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method
-
 type
   TArrayOfString  = array of string;
   TArrayOfInteger = array of Integer;
@@ -93,9 +89,12 @@ type
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
+    ExtPath : string; // Installation path of Ext JS framework, below the your Web server document root. Default value is '/ext'
+    ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property IsIE : boolean read FIsIE; // Tests if session is using IE
+    constructor Create(NewSocket : integer); override;
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false);
@@ -505,6 +504,12 @@ begin
         Result := false;
       end;
   JSReturns := TStringList.Create;
+end;
+
+constructor TExtThread.Create(NewSocket: integer); begin
+  ExtPath   := '/ext';
+  ImagePath := '/images';
+  inherited;
 end;
 
 // Calls events using Delphi style

@@ -28,7 +28,7 @@ type
     CentralPanel: TExtTabPanel;
     InitialPage : TExtPanel;
     Enums, InvalidMessage : string;
-    InvalidField, FormWidth, MaxHeader : integer;
+    InvalidField, FormWidth, MaxHeader, Pad : integer;
     Editors : array of TExtFormField;
     function LoadUserInfo : boolean;
     function ClassTreePanel : TExtTreeTreePanel;
@@ -36,7 +36,7 @@ type
     function CreateEditor(Props: TProperties; I: integer; var EditorLength : integer): TExtFormField;
     procedure DeleteSelection;
     procedure DeleteSelections;
-    procedure AddFieldsToForm(Items : TExtObjectList);
+    procedure AddFieldsToForm(Items : TExtObjectList; var HasGroup : boolean);
   protected
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
@@ -373,14 +373,10 @@ end;
 function TpitThread.CreateEditor(Props : TProperties; I : integer; var EditorLength : integer) : TExtFormField;
 var
   Mask, Enum : string;
-  J, Pad : integer;
+  J : integer;
   CompType, PropType : PTypeInfo;
 begin
   EditorLength := 0;
-  if IsIE then
-    Pad := 1
-  else
-    Pad := 0;
   with Props do begin
     Mask := MaskProp[I];
     case CaseOf(PascalTypeToJS(Properties[I]), ['int', 'float', 'boolean', 'date', 'auto', 'string']) of
@@ -453,6 +449,7 @@ begin
         end;
         1 : begin
           Result := TExtFormHTMLEditor.Create;
+          TExtFormHTMLEditor(Result).EnableSourceEdit := false;
           EditorLength := GetMaskWidth(Mask);
         end;
         2 : begin
@@ -484,13 +481,11 @@ begin
         end
         else begin
           Result := TExtFormTextField.Create;
-          with TExtFormTextField(Result) do begin
-            Grow := true;
+          with TExtFormTextField(Result) do 
             if Mask <> '' then begin
               RegEx := Mask;
-              EditorLength := LengthRegExp(Mask);
+              EditorLength := min(LengthRegExp(Mask), 40);
             end
-          end;
         end;
       end;
       if EditorLength = 0 then EditorLength := 30;
@@ -617,6 +612,10 @@ begin
     Load(JSObject('params:{start:0,limit:' + IntToStr(Linhas)+'},callback:function(){' + Selection.JSName + '.selectFirstRow()}'));
     Selection.On('rowdeselect', Ajax(UpdateObject, ['ID', '%2.get("ID")', 'Changes', ExtUtilJSON.Encode('%2.getChanges()')]));
   end;
+  if IsIE then
+    Pad := 1
+  else
+    Pad := 0;
   with EditorGrid do begin
     ViewConfig := TExtGridGridView.Create;
     TExtGridGridView(ViewConfig).EmptyText := '<center><big>Nenhum dado a apresentar</big></center>';
@@ -674,11 +673,11 @@ begin
             J := pos(' ', AliasProp[I]);
             if J = 0 then J := length(AliasProp[I]);
             MaxHeader := max(MaxHeader, J);
-            FormWidth := max(FormWidth, min(40, EditorLength))
+            FormWidth := max(FormWidth, EditorLength)
           end;
         end;
       FLayout.Free;
-      inc(FormWidth, MaxHeader + 2);
+      inc(FormWidth, MaxHeader + 2 + Pad);
       with RecordForm do begin
         if length(Editors) < 10 then
           ColumnCount := 1
@@ -780,6 +779,12 @@ begin
 end;
 
 procedure TpitThread.Home; begin
+  {$IFDEF MSWINDOWS}
+  ImagePath := '/extpascal/pitinnu/images';
+  {$ELSE}
+  ImagePath := '/fcgi/images';
+  {$ENDIF}
+  Application.Icon := ImagePath + '/pitinnu16.ico';
   if GetShowID or GetShowAll then
     InitialProp := 0
   else
@@ -906,13 +911,14 @@ begin
   Result := bbBack;
 end;
 
-procedure TpitThread.AddFieldsToForm(Items : TExtObjectList);
+procedure TpitThread.AddFieldsToForm(Items : TExtObjectList; var HasGroup : boolean);
 var
   I, J : integer;
   FLayout  : TStringList;
   SubItems : TExtObjectList;
   TabPanel : TExtTabPanel;
 begin
+  HasGroup := false;
   TabPanel := nil;
   SubItems := Items;
   FLayout  := Explode(',', Props.ExtraRTTI[0].PropOrder);
@@ -923,6 +929,7 @@ begin
     for I := 0 to FLayout.Count-1 do begin
       case FLayout[I][1] of
         '<', '>', '|' : begin // FieldSet
+          HasGroup := true;
           if FLayout[I][2] in ['<', '>', '|'] then
             SubItems := Items
           else
@@ -937,6 +944,7 @@ begin
         end;
         '/' : FLayout[I] := copy(FLayout[I], 2, length(FLayout[I])-2); // CRLF obrigatório
         '[' : begin // TabPanel
+          HasGroup := true;
           if FLayout[I][2] = ']' then
             SubItems := Items
           else begin
@@ -966,21 +974,24 @@ begin
   FLayout.Free;
 end;
 
-procedure TpitThread.EditObject; begin
+procedure TpitThread.EditObject;
+var
+  HasGroup : boolean;
+begin
   with TExtWindow.Create do begin
     Title  := Props.AliasProp[0];
     Modal  := true;
     Shadow := false;
     Constrain := true;
-    Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth + 3]); // 317
     with TExtFormFormPanel.AddTo(Items) do begin
       LabelWidth := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), MaxHeader]);
       Frame := true;
-      AddFieldsToForm(Items);
-//      LabelAlign := laTop;
+      AddFieldsToForm(Items, HasGroup);
     end;
+    if IsIE then
+      Width := JSExpression('Math.max(%s * %d, 200)', [ExtUtilTextMetrics.GetWidth('g'), FormWidth + IfThen(HasGroup, 6, 3)]);
     with TExtButton.AddTo(Buttons) do begin
-      IconCls := 'commit';         
+      IconCls := 'commit';
       Text    := 'Ok';
       Handler := Close;
     end;
@@ -990,7 +1001,7 @@ procedure TpitThread.EditObject; begin
       Handler := Close;
     end;
     Show;
-    Free;
+//    Free;
   end;
 end;
 
