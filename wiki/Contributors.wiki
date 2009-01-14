@@ -5,9 +5,10 @@
   * Linux fixes
 
  * *Bee* 
-  * Tests and bug fixes on Linux and MacOSX(Intel)
+  * Tests and bug fixes on Linux and Mac OS X (Intel)
   * CGI gateway fixes
   * Helper functions
+  * Pascal enumerations suggestions 
 
  * *Vagner Santana*
   * Embedded Web Server for Windows
@@ -21,3 +22,4 @@
 
  * *Phil Hess*
   * PowerPC fixes
+  * Delphi/Lazarus forms converter to ExtPascal (under construction)
