@@ -112,7 +112,7 @@ fastcgiexternalserver C:/apache/cgi-bin/ExtPascalApp.exe –host localhost:2014 
 
 06. C:/apache is the path where Apache is installed
 
-07. –host parameter declare the server where is hosted the FastCGI application (by example localhost).
+07. `–host` parameter declare the server where is hosted the FastCGI application (by example localhost).
 
 08. The default TCP/IP port is 2014, but another could be declared.
 
