@@ -1,9 +1,8 @@
-= Introduction =
+==Introduction==
 
-The Ext JS community has produced various free extensions for ExtJS framework, increasing the Ext JS funcionality and power. This tutorial show how importing these extensions into ExtPascal.
+The Ext JS community has produced various free extensions for Ext JS framework, increasing the Ext JS funcionality and power. This tutorial shows how importing these extensions into ExtPascal.
 
-
-= Where to find Ext JS User Extensions(UX)? =
+==Where to find Ext JS User Extensions(UX)?==
 Some links to good extensions:
   * http://extjs.eu
   * http://extjs-ux.org
@@ -13,4 +12,11 @@ Some links to good extensions:
   * http://www.siteartwork.de/wizardcomponent
   * http://e2cs.mm-mendez.com/?page_id=3&language=en
 
-  and googling: ext.ux
+  or googling: ext.ux
+
+==Steps==
+  # Copy the extension sources to folder *ux* below *ext* folder
+  # (Optional) Optimize the sources (.js and .css files) using this online [http://www.javascriptcompressor.com JavaScript Compressor]
+  # (Optional) Rename the original sources (.js and .css files) appending "-debug" string to the file name. By example:
+Ext.ux.form.LovCombo.js to Ext.ux.form.LovCombo-debug.js
+Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
