@@ -1,0 +1,16 @@
+= Introduction =
+
+The Ext JS community has produced various free extensions for ExtJS framework, increasing the Ext JS funcionality and power. This tutorial show how importing these extensions into ExtPascal.
+
+
+= Where to find Ext JS User Extensions(UX)? =
+Some links to good extensions:
+  * http://extjs.eu
+  * http://extjs-ux.org
+  * http://www.siteartwork.de/livegrid/
+  * http://www.siteartwork.de/gridviewmenuplugin
+  * http://www.siteartwork.de/youtubeplayer/
+  * http://www.siteartwork.de/wizardcomponent
+  * http://e2cs.mm-mendez.com/?page_id=3&language=en
+
+  and googling: ext.ux
