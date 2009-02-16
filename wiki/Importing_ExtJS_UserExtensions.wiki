@@ -16,7 +16,9 @@ Some links to good extensions:
 
 ==Steps==
   # Copy the extension sources to folder *ux* below *ext* folder
-  # (Optional) Optimize the sources (.js and .css files) using this online [http://www.javascriptcompressor.com JavaScript Compressor]
   # (Optional) Rename the original sources (.js and .css files) appending "-debug" string to the file name. By example:
+{{{
 Ext.ux.form.LovCombo.js to Ext.ux.form.LovCombo-debug.js
 Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
+}}}
+  # (Optional) Optimize the sources (.js and .css files) using this online [http://www.javascriptcompressor.com JavaScript Compressor]. The optimized sources will retain the original names without "-debug"
