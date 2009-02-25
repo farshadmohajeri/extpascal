@@ -2,7 +2,7 @@ program ExtPascalSamples;
 {.$DEFINE SERVICE}
 uses
   ExtPascal, ExtPascalUtils, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 {$IFNDEF WebServer}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}

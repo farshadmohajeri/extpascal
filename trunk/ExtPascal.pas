@@ -222,6 +222,7 @@ type
   TTreeSelectionModel = TExtObject; // doc fault
   TSelectionModel = TExtObject; // doc fault
   TDataSource = TExtObject; // doc fault
+  TAirNotificationType = TExtObject; // doc fault
 //DOM-IGNORE-END*)
 
 implementation
