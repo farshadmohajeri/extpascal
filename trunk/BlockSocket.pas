@@ -132,6 +132,7 @@ function TBlockSocket.WaitingData : cardinal;
 var
   Tam : dword;
 begin
+  sleep(1);
 	if IOCtlSocket(Socket, FIONREAD, @Tam) <> 0 then
     Result := 0
   else
