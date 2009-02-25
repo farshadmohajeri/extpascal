@@ -14,7 +14,7 @@ uses
 const
   ExtPascalVersion = '0.9.5';
 
-{$IF Defined(FPC) or (RTLVersion <= 17)}
+{$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 type
   // Implements StrictDelimiter property for FPC 2.2.2, Delphi 7 and older versions
   TStringList = class(Classes.TStringList)
@@ -109,7 +109,7 @@ implementation
 uses
   StrUtils, SysUtils;
 
-{$IF Defined(FPC) or (RTLVersion <= 17)}
+{$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 function TStringList.GetDelimitedText: string;
 var
   I : integer;
@@ -259,10 +259,7 @@ begin
   until I = 0;
 end;
 
-function StrToJS(const S : string) : string;
-var
-  I : integer;
-begin
+function StrToJS(const S : string) : string; begin
   Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
   if (Result <> '') and (Result[1] = #3) then begin // RegEx
     delete(Result, 1, 1);
