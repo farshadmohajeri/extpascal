@@ -3,7 +3,7 @@
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
 *
-* Changing a property type to enumerated
+* Changing a property type to enumeration
 <class name>,<JavaScript property name>,<(enumerated list)>
 *
 * Adding and updating methods:
@@ -36,14 +36,14 @@ ExtComponent, el, string, false, true,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false, false,
 ExtGridColumnModel, renderer, String, false, true, FORCEADD
-ExtDataField,, ExtData, Object
-ExtDataField, name, string, false, true,
-ExtDataField, mapping, string, false, true,
-ExtDataField, type, string, false, true,
-ExtDataField, sortTypes, string, false, true,
-ExtDataField, sortDir, string, false, true,
-ExtDataField, convert, ExtFunction, false, true,
-ExtDataField, dateFormat, string, false, true,
+*ExtDataField,, ExtData, Object
+*ExtDataField, name, string, false, true,
+*ExtDataField, mapping, string, false, true,
+*ExtDataField, type, string, false, true,
+*ExtDataField, sortTypes, string, false, true,
+*ExtDataField, sortDir, string, false, true,
+*ExtDataField, convert, ExtFunction, false, true,
+*ExtDataField, dateFormat, string, false, true,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
 ExtFormFormPanel, buttons, ExtObjectList, false, true,

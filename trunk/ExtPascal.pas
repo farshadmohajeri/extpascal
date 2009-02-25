@@ -916,11 +916,11 @@ function TExtObject.JSObject(JSON : string; ObjectConstructor : string = '') : T
 end;
 
 {
-Lets use a JS expression to set a ExtJS property or parameter.   <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
+Lets use a JS expression to set a ExtJS property or parameter on browser side. <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
 The expression will be called in the browser side and should returns an integer.
-@param Expression JS Expression using or not Delphi Format specifiers: (%s, %d and etc), use %s for Methods and %d for integers
+@param Expression JS Expression using or not Delphi Format specifiers: (%s, %d and etc), use %s for ExtPascal methods' results and %d for integers
 @param MethodsValues Array of Methods or Integer values to use in Expression
-@return Integer Internal and fake value to return
+@return Integer Internal value to return used by ExtPascal to generate the corresponding Javascript code
 @example <code>
 Grid := TExtGridEditorGridPanel.Create;
 with Grid do begin

@@ -664,6 +664,11 @@ begin
                     end;
                 end
                 else begin
+                  if Fields.Count < 5 then begin
+                    writeln(^M^J'*** WARNING: Class ', Fields[0], ' already exists. ***'^M^J);
+                    Fields.Free;
+                    continue;
+                  end;
                   J := Methods.IndexOf(Fields[1]);
                   if J = -1 then begin // Add
                     Params := TStringList.Create;
