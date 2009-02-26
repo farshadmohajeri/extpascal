@@ -986,7 +986,7 @@ procedure WriteUnits;
     for I := 0 to Event.Params.Count - 1 do
       with TParam(Event.Params.Objects[I]) do
         if not AnsiEndsText('Singleton', Name) then begin
-          write(Pas, IfThen(not First, ','), '''', Name, '''');
+          write(Pas, IfThen(not First, ',', ''), '''', Name, '''');
           First := false;
           // Simple types
           if CaseOf(Typ, ['integer', 'string', 'boolean', 'double', 'TDateTime']) <> -1 then
