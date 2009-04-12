@@ -123,8 +123,8 @@ type
     function IsParent(CName : string): boolean;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
-    function VarToJSON(Strs : TArrayOfString)  : string; overload;
-    function VarToJSON(Ints : TArrayOfInteger) : string; overload;
+    function VarToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString {$ELSE}array of string {$IFEND}) : string; overload;
+    function VarToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string; overload;
     function ParamAsInteger(ParamName : string) : integer;
     function ParamAsDouble(ParamName : string) : double;
     function ParamAsBoolean(ParamName : string) : boolean;
@@ -945,9 +945,14 @@ begin
     for I := 0 to high(MethodsValues) do
       with MethodsValues[I] do
         if VType = vtObject then begin
-          Command     := TExtFunction(VObject).ExtractJSCommand; // FPC idiosincrasy
+          Command := TExtFunction(VObject).ExtractJSCommand; // FPC idiosincrasy
+          {$IFNDEF UNICODE}
           VAnsiString := pointer(Command);
           VType       := vtAnsiString;
+          {$ELSE}
+          VUnicodeString := pointer(Command);
+          VType          := vtUnicodeString;
+          {$ENDIF}
         end;
     JSReturns.Values[Mark] := Format(Expression, MethodsValues);
   end;
@@ -1209,6 +1214,10 @@ begin
         case VType of
           vtAnsiString : lParams := lParams + '"+' + string(VAnsiString) + '+"';
           vtString     : lParams := lParams + '"+' + VString^ + '+"';
+          vtWideString : lParams := lParams + '"+' + string(VWideString) + '+"';
+          {$IFDEF UNICODE}
+          vtUnicodeString : lParams := lParams + '"+' + string(VUnicodeString) + '+"';
+          {$ENDIF}
           vtObject     : begin
             lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
             TExtObject(VObject).JSCommand := '';
@@ -1216,14 +1225,22 @@ begin
           vtInteger    : lParams := lParams + IntToStr(VInteger);
           vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
           vtExtended   : lParams := lParams + FloatToStr(VExtended^);
+          vtCurrency   : lParams := lParams + CurrToStr(VCurrency^);
+          vtInt64      : lParams := lParams + IntToStr(VInt64^);
           vtVariant    : lParams := lParams + string(VVariant^);
           vtChar       : lParams := lParams + '"+' + VChar + '+"';
+          vtWideChar   : lParams := lParams + '"+' + VWideChar + '+"';
         end
       else
         case VType of
           vtAnsiString : lParams := lParams + '&' + string(VAnsiString) + '=';
           vtString     : lParams := lParams + '&' + VString^ + '=';
+          vtWideString : lParams := lParams + '&' + string(VWideString) + '=';
+          {$IFDEF UNICODE}
+          vtUnicodeString : lParams := lParams + '&' + string(VUnicodeString) + '=';
+          {$ENDIF}
           vtChar       : lParams := lParams + '&' + VChar + '=';
+          vtWideChar   : lParams := lParams + '&' + VWideChar + '=';
         else
           JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MethodName +
             ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
@@ -1333,10 +1350,18 @@ begin
         end;
         vtAnsiString: Result := Result + StrToJS(string(VAnsiString));
         vtString:     Result := Result + StrToJS(VString^);
+        vtWideString: Result := Result + StrToJS(string(VWideString));
+        {$IFDEF UNICODE}
+        vtUnicodeString: Result := Result + StrToJS(string(VUnicodeString));
+        {$ENDIF}
         vtInteger:    Result := Result + IntToStr(VInteger);
         vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
         vtExtended:   Result := Result + FloatToStr(VExtended^);
-        vtVariant:    Result := Result + string(VVariant^)
+        vtCurrency:   Result := Result + CurrToStr(VCurrency^);
+        vtInt64:      Result := Result + IntToStr(VInt64^);
+        vtVariant:    Result := Result + string(VVariant^);
+        vtChar:       Result := Result + VChar;
+        vtWideChar:   Result := Result + VWideChar;
       end;
     if I < high(A) then Result := Result + ',';
     inc(I);
@@ -1361,7 +1386,7 @@ Converts an <link TArrayOfString, array of strings> to JSON (JavaScript Object N
 @param Strs An <link TArrayOfString, array of strings> to convert
 @return JSON representation of Strs
 }
-function TExtObject.VarToJSON(Strs : TArrayOfString) : string;
+function TExtObject.VarToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString{$ELSE}array of string{$IFEND}) : string;
 var
   I : integer;
 begin
@@ -1378,7 +1403,7 @@ Converts an <link TArrayOfInteger, array of integers> to JSON (JavaScript Object
 @param Ints An <link TArrayOfInteger, array of integers> to convert
 @return JSON representation of Ints
 }
-function TExtObject.VarToJSON(Ints : TArrayOfInteger) : string;
+function TExtObject.VarToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string;
 var
   I : integer;
 begin
