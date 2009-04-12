@@ -13,7 +13,7 @@ uses
 
 const
   UsesPublished = false;
-  
+
 function FixReserved(S : string) : string;
 const
   Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
@@ -1205,7 +1205,7 @@ begin
     AllClasses := TStringList.Create;
     Units := TStringList.Create;
     writeln('ExtToPascal wrapper, version ', ExtPascalVersion);
-    writeln('(c) 2008 by Wanderlan Santos dos Anjos, BSD license'^M^J);
+    writeln('(c) 2009 by Wanderlan Santos dos Anjos, BSD license'^M^J);
     writeln('Reading HTML files...');
     T := now;
     repeat

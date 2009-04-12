@@ -276,8 +276,8 @@ function fpaccept(s:cint; addrx : psockaddr; addrlen : plongint):cint; begin
   fpAccept:=WinSockDelphi.Accept(S,WinSockDelphi.PSockAddr(Addrx), AddrLen);
 end;
 
-function fpgetsockname(s:cint; name  : psockaddr; namelen : psocklen):cint; begin
-  fpGetSockName:=WinSockDelphi.GetSockName(S,WinSockDelphi.TSockAddr(name^),nameLen^);
+function fpgetsockname(s:cint; name : psockaddr; namelen : psocklen):cint; begin
+  fpGetSockName:=WinSockDelphi.GetSockName(S, WinSockDelphi.PSockAddr(name)^,nameLen^);
 end;
 
 type

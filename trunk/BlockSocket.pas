@@ -25,8 +25,8 @@ type
     procedure Connect(Host : string; pPort : word);
 		procedure Purge;
 		procedure Close;
-		function RecvString : string;
-    procedure SendString(const Data: string);
+		function RecvString : AnsiString;
+    procedure SendString(const Data: AnsiString);
     function WaitingData : cardinal;
     function CanRead(Timeout: Integer): Boolean;
     function Error : integer;
@@ -171,7 +171,7 @@ end;
 
 // Returns the socket input stream as a string
 // @see Error
-function TBlockSocket.RecvString : string;
+function TBlockSocket.RecvString : AnsiString;
 var
 	Tam : integer;
 begin
@@ -186,7 +186,7 @@ Sends a string by the socket
 @param Data String to send
 @see Error
 }
-procedure TBlockSocket.SendString(const Data: string); begin
+procedure TBlockSocket.SendString(const Data: AnsiString); begin
 	fpSend(Socket, @Data[1], length(Data), 0);
 end;
 
