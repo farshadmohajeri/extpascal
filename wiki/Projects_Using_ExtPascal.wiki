@@ -1,4 +1,3 @@
 #labels Featured
-= Projects using ExtPascal =
 
   * [http://reidspace.co.uk/home/ Ext4Delphi]
