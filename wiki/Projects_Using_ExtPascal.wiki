@@ -1,3 +1,2 @@
 #labels Featured
-
-  * [http://reidspace.co.uk/home/ Ext4Delphi]
+  * [http://home.reidspace.co.uk/ Ext4Delphi]
