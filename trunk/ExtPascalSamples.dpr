@@ -173,7 +173,7 @@ begin
 end;
 
 procedure TSamples.CheckLogin; begin
-  if true {user account verification should be done here} then
+//  if true {user account verification should be done here} then
     with TExtWindow.Create do begin
       Title    := 'Login';
       Width    := 380;
@@ -189,8 +189,8 @@ procedure TSamples.CheckLogin; begin
       AddShowSourceButton(Buttons, 'CheckLogin');
       Show;
     end
-  else
-    ExtMessageBox.Alert('Unknown', 'User is not known.');
+//  else
+//    ExtMessageBox.Alert('Unknown', 'User is not known.');
 end;
 
 procedure TSamples.Login;

@@ -196,7 +196,7 @@ type
   TRegExp = type string;
   TCSSRule = class(TExtObject);
   TXMLDocument = class(TExtObject);
-  TNodeList = class(TExtObject);
+  TNodeList = class(TExtObjectList);
   TExtDataNode = class(TExtObject);
   TRegion = type string;
   TNativeMenu = TExtObject;
@@ -223,6 +223,10 @@ type
   TSelectionModel = TExtObject; // doc fault
   TDataSource = TExtObject; // doc fault
   TAirNotificationType = TExtObject; // doc fault
+  TIterable = TExtObjectList; // doc fault
+  TAnything = TExtObject; // doc fault
+  TNodeLists = class(TExtObjectList); // doc fault
+  TArrays = TExtObjectList; // doc fault
 //DOM-IGNORE-END*)
 
 implementation
@@ -250,7 +254,7 @@ procedure TExtThread.RemoveJS(JS : string);
 var
   I : integer;
 begin
-  I := RPos(JS, Response);
+  I := RPosEx(JS, Response);
   if I <> 0 then delete(Response, I, length(JS))
 end;
 
@@ -450,7 +454,7 @@ function TExtThread.JSConcat(PrevCommand, NextCommand : string) : string;
 var
   I , J : integer;
 begin
-  J := RPos(PrevCommand, Response);
+  J := RPosEx(PrevCommand, Response);
   I := Pos('.', NextCommand);
   if (I <> 0) and (J <> 0) then begin
     NextCommand := copy(NextCommand, I, length(NextCommand));
