@@ -37,7 +37,7 @@ Mimics preg_match php function. Searches S for a match to delimiter strings give
 @param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches (TStringList) should already be created</b>.
 @return True if some match hit, false otherwise
 }
-function Extract(const Delims : array of string; const S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList) : boolean;
 
 {
 Mimics explode php function.
@@ -58,8 +58,8 @@ If none of the characters in Delimiters appears in string S, function returns ze
 }
 function FirstDelimiter(const Delimiters, S : string; Offset : integer = 1) : integer;
 
-// The opposite of "System.Pos" function. Returns the index value of the last occurrence of a specified substring in a given string.
-function RPos(const Substr, Str : string) : integer;
+// The opposite of "StrUtils.PosEx" function. Returns the index value of the last occurrence of a specified substring in a given string.
+function RPosEx(const Substr, Str : string; Offset : integer = 1) : integer;
 
 {
 Returns the number of occurrences of Substr in Str
@@ -103,6 +103,9 @@ instead
 }
 function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
   Header : boolean = false) : string;
+
+function Before(const BeforeS, AfterS, S : string) : boolean;
+function IsUpperCase(S : string) : boolean;
 
 implementation
 
@@ -189,26 +192,28 @@ begin
 end;
 {$IFEND}
 
-function Extract(const Delims : array of string; const S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList) : boolean;
 var
   I, J : integer;
+  Points : array of integer;
 begin
   Result := false;
   if Matches <> nil then Matches.Clear;
+  SetLength(Points, length(Delims));
   J := 1;
   for I := 0 to high(Delims) do begin
     J := PosEx(Delims[I], S, J);
+    Points[I] := J;
     if J = 0 then
       exit
     else
       inc(J, length(Delims[I]));
   end;
-  J := 1;
   for I := 0 to high(Delims)-1 do begin
-    J := PosEx(Delims[I], S, J);
-    inc(J, length(Delims[I]));
-    Matches.Add(trim(copy(S, J, posex(Delims[I+1], S, J)-J)));
+    J := Points[I] + length(Delims[I]);
+    Matches.Add(trim(copy(S, J, Points[I+1]-J)));
   end;
+  S := copy(S, Points[high(Delims)] + length(Delims[high(Delims)]), length(S));
   Result := true
 end;
 
@@ -233,11 +238,11 @@ begin
   Result := 0;
 end;
 
-function RPos(const Substr, Str : string) : integer;
+function RPosEx(const Substr, Str : string; Offset : integer = 1) : integer;
 var
   I : integer;
 begin
-  Result := Pos(Substr, Str);
+  Result := PosEx(Substr, Str, Offset);
   while Result <> 0 do begin
     I := PosEx(Substr, Str, Result+1);
     if I = 0 then
@@ -306,4 +311,21 @@ begin
     EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
+function Before(const BeforeS, AfterS, S : string) : boolean;
+var
+  I : integer;
+begin
+  I := pos(BeforeS, S);
+  Result := (I <> 0) and (I < pos(AfterS, S))
+end;
+
+function IsUpperCase(S : string) : boolean;
+var
+  I : integer;
+begin
+  Result := false;
+  for I := 1 to length(S) do
+    if S[I] in ['a'..'z'] then exit;
+  Result := true;
+end;
 end.
