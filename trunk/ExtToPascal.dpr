@@ -500,8 +500,7 @@ begin
           continue;
         end;
       InMethods, InEvents :
-        if Extract(['<b>', '</b>', '):', '<div class="mdesc">'], Line, Matches) or
-           Extract(['<b>', '</b>', ')',  '<div class="mdesc">'], Line, Matches) then begin
+        if Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
           JSName := ClearHRef(Matches[0]);
           if JSName = 'create' then begin
             CurClass.AltCreate := true;
@@ -514,7 +513,7 @@ begin
           else begin
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            Return  := Matches[2];
+            Return  := FixIdent(Matches[2]);
             if Return = '' then begin
               MetName := 'Create';
               with CurClass do if Defaults or Arrays or Objects or Singleton then continue; // already have Create
