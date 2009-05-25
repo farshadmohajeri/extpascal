@@ -150,4 +150,5 @@ ExtUxGridRecordForm, disabledFields, ExtObject, false, true,
 ExtUxGridRecordForm, formConfig, ExtObject, false, true,
 ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, AnimEl, ExtElement, true
 ExtFormField, inputType, (itText, itButton, itCheckbox, itFile, itHidden, itImage, itPassword, itRadio, itReset, itSubmit)
-
+ExtStateProvider, on, void, false, false, EventName, string, false, Handler, ExtFunction, false
+ExtStateProvider, un, void, false, false, EventName, string, false, Handler, ExtFunction, false

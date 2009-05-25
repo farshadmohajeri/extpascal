@@ -421,7 +421,7 @@ begin
           else
             Package := TUnit(Units.Objects[I]);
           Package.Classes.AddObject(PackName, CurClass);
-          if Before('ext:cls="', '</tr>', Line) and Extract(['Extends:', 'ext:cls="', '"'], Line, Matches) then
+          if Extract(['Extends:</td><td class="hd-info"><a ', 'ext:cls="', '"'], Line, Matches) then
             CurClass.Parent := FixIdent(Matches[1], true);
           if pos('This class is a singleton', Line) <> 0 then begin
             CurClass.Singleton := true;
@@ -429,14 +429,17 @@ begin
           end;
           Config := pos('<h2>Config Options</h2>', Line) <> 0;
           Line := copy(Line, pos('<h2>', Line), length(Line));
-          if pos('This class has no public properties', Line) <> 0 then
-            if pos('This class has no public methods', Line) <> 0 then
-              if pos('This class has no public events', Line) <> 0 then
-                break
+          if Config then
+            State := InProperties
+          else
+            if pos('This class has no public properties', Line) <> 0 then
+              if pos('This class has no public methods', Line) <> 0 then
+                if pos('This class has no public events', Line) <> 0 then
+                  break
+                else
+                  State := InEvents
               else
-                State := InEvents
-            else
-              State := InMethods
+                State := InMethods
           else
             State := InProperties;
           continue;
@@ -456,7 +459,7 @@ begin
           if CurClass.Properties.IndexOf(FixIdent(PropName)) <> -1 then PropName := PropName + '_';
           if PropName <> 'config' then begin
             PropTypes := Explode('/', Matches[2]);
-            I := pos(' ', PropTypes[0]);
+            I := FirstDelimiter(' <>', PropTypes[0]);
             if I <> 0 then // doc fault
               PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
             for I := 0 to PropTypes.Count-1 do
@@ -467,7 +470,8 @@ begin
               else
                 CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static, Config));
           end;
-          if Before('(default', '"mdesc">', Line) and (Extract(['(defaults to', ')'], Line, Matches) or Extract(['(default to', ')'], Line, Matches)) then begin
+          if (Before('(default to',  '"mdesc">', Line) and Extract(['(default to',  ')'], Line, Matches)) or
+             (Before('(defaults to', '"mdesc">', Line) and Extract(['(defaults to', ')'], Line, Matches)) then begin
             SetDefault(CurProp, Matches[0], Matches);
             if (CurProp.Default <> '') and not CurClass.Defaults then begin
               CurClass.Defaults := true;
@@ -508,7 +512,7 @@ begin
           end;
           if State = InEvents then begin
             MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
-            Params  := Explode(',', Matches[2]);
+            Params  := Explode(',', Matches[1]);
           end
           else begin
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
@@ -757,9 +761,7 @@ var
 begin
   for I := 0 to AllClasses.Count - 1 do
     with TClass(AllClasses.Objects[I]) do
-      if Parent = '' then // workaround to ignore classes that has events but do not descend from Observable
-        Events.Clear
-      else
+      if Parent <> '' then
         for J := 0 to Events.Count - 1 do
           with TMethod(Events.Objects[J]) do
             for K := 0 to Params.Count - 1 do
