@@ -181,7 +181,10 @@ procedure TUnit.ReviewTypes;
       if T[1] = 'T' then delete(T, 1, 1);
       for I := 0 to Units.Count-1 do
         if AllClasses.IndexOf('T' + Units[I] + T) <> -1 then begin
-          Typ := 'T' + Units[I] + T;
+          if AllClasses.IndexOf('T' + Name + T) <> -1 then
+            Typ := 'T' + Name + T
+          else
+            Typ := 'T' + Units[I] + T;
           if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
           if (Name = 'Ext')       and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
@@ -623,13 +626,18 @@ end;
 procedure LoadFixes;
 var
   Fixes : text;
-  Fix   : string;
+  Fix, FixesFile : string;
   Fields, Params : TStringList;
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  if FileExists('ExtFixes.txt') then begin
-    assign(Fixes, 'ExtFixes.txt');
+  if IsExt3 then
+    FixesFile := 'ExtFixes3.txt'
+  else
+    FixesFile := 'ExtFixes.txt';
+  writeln('Reading ' + FixesFile);
+  if FileExists(FixesFile) then begin
+    assign(Fixes, FixesFile);
     reset(Fixes);
     repeat
       readln(Fixes, Fix);
@@ -730,7 +738,7 @@ begin
     close(Fixes);
   end
   else begin
-    writeln('ExtFixes.txt file not found. Generation aborted.'^M^J'Press enter.');
+    writeln(FixesFile + ' file not found. Generation aborted.'^M^J'Press enter.');
     readln;
   end;
 end;
@@ -1241,7 +1249,6 @@ begin
     FindClose(F);
     writeln('Fixing Event Prototypes...');
     FixEvents;
-    writeln('Reading ExtFixes.txt');
     LoadFixes;
     writeln('Writing Unit files...');
     WriteUnits;
