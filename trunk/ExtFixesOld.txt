@@ -1,5 +1,4 @@
-* For Ext JS 3.0 and later
-* USED FORMATS in ExtFixes3.txt
+* USED FORMATS in ExtFixes.txt
 *
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
@@ -22,6 +21,7 @@
 * Adding new classes:
 <class name>,<parent class name>,<unit name>,<JavaScript class name>
 *
+ExtComponent, region, string, false, true,
 ExtComponent, split, Boolean, false, true,
 ExtComponent, collapseMode, string, false, true,
 ExtComponent, minWidth, Integer, false, true,
@@ -123,11 +123,11 @@ ExtUxCodePress, toggleReadOnly, void, false, false
 ExtUxCodePress, toggleLineNumbers, void, false, false
 ExtUxCodePress, toggleEditor, void, false, false
 ExtContainer, layout, (lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyTable)
-ExtBoxComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
+ExtComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
 ExtComponent, xtype, (xtBox, xtButton, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtGrid, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtForm, xtCheckBox, xtCombo, xtDateField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtTextArea, xtTextField, xtTimeField, xtTrigger)
 ExtContainer, defaultType, (ExtComponentXType)
 ExtElement, defaultUnit, (CSSUnit)
-ExtGridColumn, align, (alInherit, alLeft, alRight, alCenter, alJustify)
+ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
 ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
 ExtFormFormPanel, buttonAlign, (ExtPanelButtonAlign)
 ExtFormFormPanel, labelAlign, (laLeft, laTop, laRight)

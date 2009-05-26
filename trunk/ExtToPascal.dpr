@@ -632,9 +632,9 @@ var
   NewClass : TClass;
 begin
   if IsExt3 then
-    FixesFile := 'ExtFixes3.txt'
+    FixesFile := 'ExtFixes.txt'
   else
-    FixesFile := 'ExtFixes.txt';
+    FixesFile := 'ExtFixesOld.txt';
   writeln('Reading ' + FixesFile);
   if FileExists(FixesFile) then begin
     assign(Fixes, FixesFile);
