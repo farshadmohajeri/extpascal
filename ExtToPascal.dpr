@@ -563,7 +563,7 @@ begin
             CurClass.Events.AddObject(CurMethod.Name, CurMethod)
           else
             DoOverloads(CurClass, CurMethod);
-          if Before('<td class="msource">', '"mdesc">', Line) and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
+          if Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
             if Matches[0][1] = '<' then begin
               if State = InEvents then
                 EventsOrMethods := CurClass.Events
