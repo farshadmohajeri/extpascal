@@ -35,9 +35,10 @@ Mimics preg_match php function. Searches S for a match to delimiter strings give
 @param Delims Delimiter strings to match
 @param S Subject string
 @param Matches Substrings from Subject string delimited by Delimiter strings. <b>Matches (TStringList) should already be created</b>.
+@param Remove matches strings from S, default is true
 @return True if some match hit, false otherwise
 }
-function Extract(const Delims : array of string; var S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
 
 {
 Mimics explode php function.
@@ -192,7 +193,7 @@ begin
 end;
 {$IFEND}
 
-function Extract(const Delims : array of string; var S : string; var Matches : TStringList) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
 var
   I, J : integer;
   Points : array of integer;
@@ -213,7 +214,7 @@ begin
     J := Points[I] + length(Delims[I]);
     Matches.Add(trim(copy(S, J, Points[I+1]-J)));
   end;
-  S := copy(S, Points[high(Delims)] + length(Delims[high(Delims)]), length(S));
+  if Remove then S := copy(S, Points[high(Delims)] + length(Delims[high(Delims)]), length(S));
   Result := true
 end;
 
