@@ -132,6 +132,7 @@ type
 
 var
   AllClasses, Units : TStringList;
+  IsExt3 : boolean;
 
 constructor TUnit.Create(pName : string); begin
   Name    := FixIdent(pName);
@@ -182,6 +183,7 @@ procedure TUnit.ReviewTypes;
         if AllClasses.IndexOf('T' + Units[I] + T) <> -1 then begin
           Typ := 'T' + Units[I] + T;
           if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
+          if (Name = 'Ext')       and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
         end;
@@ -365,6 +367,7 @@ var
   Match : TStringList;
 begin
   if pos('<a', S) <> 0 then begin
+    IsExt3 := true;
     Match := TStringList.Create;
     Extract(['">', '</'], S, Match);
     Result := Match[0];
@@ -611,7 +614,7 @@ begin
   Line := '';
   repeat
     readln(Html, L);
-    Line := Line + trim(L)
+    Line := Line + ' ' + trim(L)
   until SeekEOF(Html);
   LoadElements(FixHtml(Line));
   close(Html);
@@ -1054,9 +1057,12 @@ begin
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
-      if Units[I] = 'Ext' then // Exception, this workaround resolve circular reference in Ext Unit
+      if Units[I] = 'Ext' then begin // Exception, this workaround resolve circular reference in Ext Unit
         writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J,
-                     Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;');
+                     Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;'^M^J,
+                     Tab, 'TExtMenuMenu = TExtContainer;'^M^J, Tab, 'TExtDirectProvider = TExtUtilObservable;');
+        if IsExt3 then writeln(Pas, Tab, 'TExtToolbarButton = TExtContainer;'); // Ext JS 3.0 doc fault
+      end;
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));

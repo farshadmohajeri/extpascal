@@ -227,10 +227,10 @@ type
   TAnything = TExtObject; // doc fault
   TNodeLists = class(TExtObjectList); // doc fault
   TArrays = TExtObjectList; // doc fault
-  TExtDirectExceptionEvent = TEvent; // doc fault
-  TExtDirectEvent = TEvent; // doc fault
-  TExtDirectTransaction = TExtObject; // doc fault
-  TMenuThe = TExtObject; // doc fault
+  TExtDirectExceptionEvent = TEvent; // doc fault Ext 3.0
+  TExtDirectEvent = TEvent; // doc fault Ext 3.0
+  TExtDirectTransaction = TExtObject; // doc fault Ext 3.0
+  TDOMElement = TExtObject; // doc fault Ext 3.0
 //DOM-IGNORE-END*)
 
 implementation
