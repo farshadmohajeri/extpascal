@@ -598,6 +598,7 @@ begin
   while I <> 0 do begin
     J := posex(';', Result, I);
     if J = 0 then exit;
+    if (J-I) > 15 then J := I+1;
     delete(Result, I, J-I);
     Result[I] := ' ';
     I := pos('&', Result);
