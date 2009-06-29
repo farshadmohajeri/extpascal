@@ -26,7 +26,7 @@ The main advantages are:
  * Copy *codepress* folder, which is in ExtPascal package, underneath the *ext* folder. 
 
 = First Steps =
-01. Compile ExtToPascal.dpr source using your favorite ObjectPascal compiler.
+01. Open ExtToPascal.dpr source using your favorite ObjectPascal IDE.
 
 02. For Delphi set these Syntax options (menu \Project\Options\Compiler):
 {{{
@@ -41,7 +41,7 @@ ON Assignable typed constants
 
 03. For FreePascal, Lazarus or MSEide use _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
 
-04. Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
+04. Compile and run it informing the path of the ExtJS documentation, the HTML files, as parameter. Use quotes if path contain whitespaces. For example:
 {{{
 ExtToPascal C:\Ext\docs\output 
 ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-3\docs\output"
