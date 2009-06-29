@@ -64,6 +64,7 @@ type
   TExtObjectList  = class;
   TExtFunction    = class;
   TExtProcedure   = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
+  TBrowser        = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
 
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
@@ -76,10 +77,7 @@ type
     JSReturns : TStringList;
     Sequence  : cardinal;
     FIsAjax   : boolean;
-    FIsIE     : boolean;
-    FIsFirefox: boolean;
-    FIsChrome : boolean;
-    FIsSafari : boolean;
+    FBrowser  : TBrowser;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
@@ -96,10 +94,7 @@ type
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
-    property IsIE : boolean read FIsIE; // Tests if session is using Internet Explorer browser
-    property IsFirefox : boolean read FIsFirefox; // Tests if session is using Firefox browser
-    property IsChrome : boolean read FIsChrome; // Tests if session is using Chrome browser
-    property IsSafari : boolean read FIsSafari; // Tests if session is using Safari browser
+    property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); override;
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
@@ -481,9 +476,10 @@ Does tasks related to the Request that occur before the method call invoked by B
 1. Detects the browser language.
 2. If that language has corresponding JS resource file in framework uses it, for example: '/ext/source/locale/ext-lang-?????.js',
 3. Else uses the default language (English).
-4. Tests if is an AJAX request.
-5. If not is AJAX request resets Sequence, Style and Libraries.
-6. Tests if cookies are enabled.
+4. Identify the browser.
+5. Tests if is an AJAX request.
+6. If not is AJAX request resets Sequence, Style and Libraries.
+7. Tests if cookies are enabled.
 @return False if Cookies are disable or if is Ajax executing the first thread request else returns true.
 }
 function TExtThread.BeforeHandleRequest : boolean;
@@ -501,15 +497,8 @@ begin
     end;
   end;
   Response := '';
-  FIsIE := pos('MSIE', RequestHeader['HTTP_USER_AGENT']) <> 0;
-  if not FIsIE then begin
-    FIsFirefox := pos('Firefox', RequestHeader['HTTP_USER_AGENT']) <> 0;
-    if not FIsFirefox then begin
-      FIsChrome := pos('Chrome', RequestHeader['HTTP_USER_AGENT']) <> 0;
-      if not FIsChrome then
-        FIsSafari := pos('Safari', RequestHeader['HTTP_USER_AGENT']) <> 0;
-    end;
-  end;
+  if Browser = brUnknown then
+    FBrowser := TBrowser(CaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
   if not IsAjax then begin
     //Sequence  := 0;
