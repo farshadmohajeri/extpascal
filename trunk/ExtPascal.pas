@@ -77,6 +77,9 @@ type
     Sequence  : cardinal;
     FIsAjax   : boolean;
     FIsIE     : boolean;
+    FIsFirefox: boolean;
+    FIsChrome : boolean;
+    FIsSafari : boolean;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
@@ -93,7 +96,10 @@ type
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
-    property IsIE : boolean read FIsIE; // Tests if session is using IE
+    property IsIE : boolean read FIsIE; // Tests if session is using Internet Explorer browser
+    property IsFirefox : boolean read FIsFirefox; // Tests if session is using Firefox browser
+    property IsChrome : boolean read FIsChrome; // Tests if session is using Chrome browser
+    property IsSafari : boolean read FIsSafari; // Tests if session is using Safari browser
     constructor Create(NewSocket : integer); override;
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
@@ -487,7 +493,7 @@ begin
   Result := true;
   if FLanguage = '' then begin // Set language
     FLanguage := RequestHeader['HTTP_ACCEPT_LANGUAGE'];
-    I := LastDelimiter('-', FLanguage);
+    I := pos('-', FLanguage);
     if I <> 0 then begin
       FLanguage := copy(FLanguage, I-2, 2) + '_' + Uppercase(copy(FLanguage, I+1, 2));
       if not FileExists(RequestHeader['DOCUMENT_ROOT'] + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js') then
@@ -495,8 +501,16 @@ begin
     end;
   end;
   Response := '';
-  FIsIE    := pos('MSIE', RequestHeader['HTTP_USER_AGENT']) <> 0;;
-  FIsAjax  := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+  FIsIE := pos('MSIE', RequestHeader['HTTP_USER_AGENT']) <> 0;
+  if not FIsIE then begin
+    FIsFirefox := pos('Firefox', RequestHeader['HTTP_USER_AGENT']) <> 0;
+    if not FIsFirefox then begin
+      FIsChrome := pos('Chrome', RequestHeader['HTTP_USER_AGENT']) <> 0;
+      if not FIsChrome then
+        FIsSafari := pos('Safari', RequestHeader['HTTP_USER_AGENT']) <> 0;
+    end;
+  end;
+  FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
   if not IsAjax then begin
     //Sequence  := 0;
     Style     := '';
