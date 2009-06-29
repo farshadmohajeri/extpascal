@@ -190,7 +190,7 @@ begin
     TalkFCGI
   else begin
   	Socket.Free;
-    FCGIApp := ChangeFileExt(GetEnvironmentVariable('SCRIPT_FILENAME'), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
+    FCGIApp := ChangeFileExt(paramstr(0), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
     if Exec(FCGIApp) then begin
       sleep(1000);
     	Socket := TBlockSocket.Create;
@@ -198,10 +198,10 @@ begin
       if Socket.Error = 0 then
         TalkFCGI
       else
-        Log('FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
+        Log('CGIGateway: FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
     end
     else
-      Log(FCGIApp + ' not found or has no execute permission.');
+      Log('CGIGateway: ' + FCGIApp + ' not found or has no execute permission.');
   end;
   try Socket.Free; except end;
 end.

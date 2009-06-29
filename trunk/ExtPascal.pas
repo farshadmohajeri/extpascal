@@ -598,7 +598,7 @@ begin
       GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
-      'function AjaxSuccess(response){eval(response.responseText)};' +
+      'function AjaxSuccess(response){eval(response.responseText);};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
   {$IFDEF DEBUGJS}
