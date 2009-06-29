@@ -278,7 +278,7 @@ end;
 
 function CaseOf(const S : string; const Cases : array of string) : integer; begin
   for Result := 0 to high(Cases) do
-    if SameText(S, Cases[Result]) then exit;
+    if pos(Cases[Result], S) <> 0 then exit;
   Result := -1;
 end;
 

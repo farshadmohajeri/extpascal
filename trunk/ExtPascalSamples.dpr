@@ -4,7 +4,7 @@ program ExtPascalSamples; // for Ext JS 3 and later
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {$ENDIF}
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
+  ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
@@ -677,7 +677,7 @@ var
 begin
   with TExtPanel.Create do begin
     Title    := 'Message Boxes';
-    Width    := 815;
+    Width    := IfThen(Browser = brChrome, 850, 815);
     RenderTo := 'body';
     Frame    := true;
     with TExtButton.AddTo(Buttons) do begin
