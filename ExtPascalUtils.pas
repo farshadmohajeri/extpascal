@@ -73,9 +73,9 @@ function CountStr(const Substr, Str : string) : integer;
 function StrToJS(const S : string) : string;
 
 {
-Finds S in Cases array, returning its index or -1 if not found. Good to use in Pascal "case" command
-@param S String to find in Cases array
-@param Cases String array where to search
+Finds Cases array in S string, returning its index or -1 if not found. Good to use in Pascal "case" command. Similar to AnsiIndexStr, but more flexible.
+@param S Source string where to search
+@param Cases String array to find in S
 }
 function CaseOf(const S : string; const Cases : array of string) : integer;
 
