@@ -50,7 +50,7 @@ ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPasca
 
 06. Compile ExtPascalSamples as example. For Ext JS 2.2.1 compile ExtPascalSamplesOld instead. 
 
-= Setting for FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
+= Setting up for FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
 01. Open CGIGateway.dpr.
 
 02. Modify Port constant if necessary, default 2014.
@@ -91,7 +91,7 @@ http://localhost/cgi-bin/ExtPascalSamples.cgi
 
 13. ExtPascalSamples.cgi (the gateway) will start automatically ExtPascalSamples.exe (the real FastCGI application). 
 
-= Setting for native FastCGI, only for Apache 2.2+ =
+= Setting up for native FastCGI, only for Apache 2.2+ =
 01. Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
 
 02. Rename to `mod_fastcgi.so` 
@@ -112,7 +112,7 @@ fastcgiexternalserver cgi-bin/ExtPascalSamples –host localhost:2014 –idle-ti
 
 *CAUTION: Don't cut and paste lines from this wiki! This will cause Apache fails to start!!! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is 45).* 
 
-06. `cgi-bin/ExtPascalSamples` is the URL that you will use to invoke the ExtPascal application by browser. Is not necessary copy the executable to cgi-bin folder.
+06. `cgi-bin/ExtPascalSamples` is the URL that you will use to invoke the ExtPascal application by browser. Is not necessary copy the executable to cgi-bin folder. This URL is case-sensitive.
 
 07. `–host` parameter declare the server where is hosted the FastCGI application (by example localhost).
 
