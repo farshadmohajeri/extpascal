@@ -39,7 +39,7 @@ ON Huge strings/Long strings by default
 ON Assignable typed constants
 }}}
 
-03. For FreePascal or Lazarus use _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
+03. For FreePascal, Lazarus or MSEide use _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
 
 04. Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
 {{{
