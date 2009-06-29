@@ -110,7 +110,7 @@ LoadModule fastcgi_module modules/mod_fastcgi.so
 fastcgiexternalserver cgi-bin/ExtPascalSamples –host localhost:2014 –idle-timeout 3
 }}} 
 
-*CAUTION: Don't cut and paste lines from this wiki! This will cause Apache fails to start!!! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is the 45).* 
+*CAUTION: Don't cut and paste lines from this wiki! This will cause Apache fails to start!!! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is 45).* 
 
 06. `cgi-bin/ExtPascalSamples` is the URL that you will use to invoke the ExtPascal application by browser. Is not necessary copy the executable to cgi-bin folder.
 
