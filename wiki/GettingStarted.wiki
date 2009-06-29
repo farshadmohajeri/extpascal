@@ -44,13 +44,13 @@ ON Assignable typed constants
 04. Run it informing the path of the ExtJS documentation, the HTML files. Use quotes if path contain whitespaces. For example:
 {{{
 ExtToPascal C:\Ext\docs\output 
-ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-2.2.1\docs\output"
+ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-3\docs\output"
 }}}
-05. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 12 units in version 2.2 of ExtJS.
+05. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 13 units in version 3 of ExtJS.
 
-06. Compile ExtPascalSamples as example.
+06. Compile ExtPascalSamples as example. For Ext JS 2.2.1 compile ExtPascalSamplesOld instead. 
 
-= Setting using FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
+= Setting for FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
 01. Open CGIGateway.dpr.
 
 02. Modify Port constant if necessary, default 2014.
@@ -91,14 +91,14 @@ http://localhost/cgi-bin/ExtPascalSamples.cgi
 
 13. ExtPascalSamples.cgi (the gateway) will start automatically ExtPascalSamples.exe (the real FastCGI application). 
 
-= Setting using native FastCGI, only for Apache 2.2+ =
+= Setting for native FastCGI, only for Apache 2.2+ =
 01. Download FastCGI module at: http://www.fastcgi.com/dist/mod_fastcgi-2.4.6-AP22.dll
 
 02. Rename to `mod_fastcgi.so` 
 
-03. Copy to Apache's modules folder (by example c:\apache\modules)
+03. Copy to Apache's *modules* folder (by example c:\apache\modules)
 
-04. In httpd.conf file at LoadModules session insert the line below:
+04. In httpd.conf file (Apache's *conf* folder) in LoadModule session insert the line below:
 
 {{{
 LoadModule fastcgi_module modules/mod_fastcgi.so
@@ -107,27 +107,25 @@ LoadModule fastcgi_module modules/mod_fastcgi.so
 05. Declare the FastCGI application as external server, appending this line in httpd.conf:
 
 {{{
-fastcgiexternalserver C:/apache/cgi-bin/ExtPascalApp.exe –host localhost:2014 –idle-timeout 3
+fastcgiexternalserver cgi-bin/ExtPascalSamples –host localhost:2014 –idle-timeout 3
 }}} 
 
-*CAUTION: Don't cut and paste lines from this wiki! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is the 45).* 
+*CAUTION: Don't cut and paste lines from this wiki! This will cause Apache fails to start!!! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is the 45).* 
 
-06. C:/apache is the path where Apache is installed
+06. `cgi-bin/ExtPascalSamples` is the URL that you will use to invoke the ExtPascal application by browser. Is not necessary copy the executable to cgi-bin folder.
 
 07. `–host` parameter declare the server where is hosted the FastCGI application (by example localhost).
 
-08. The default TCP/IP port is 2014, but another could be declared.
+08. The default TCP/IP port is 2014, but another could be declared, if you to recompile the application changing the port in source code.
 
-09. Copy your FastCGI application (by example ExtPascalSamples.exe) to cgi-bin directory
+09. Start manually your FastCGI application, via console for example. Your executable can be anywhere in the HD. It will works as a service or a daemon for the Web Server, receiving requests by the TCP port. To debugging set a breakpoint in your application and start it by the IDE.
 
-10. Start manually your FastCGI application, via console for example. It will works as a service or a daemon for the Web Server, receiving requests by the TCP port.
-
-11. In your browser call Samples using:
+10. In your browser call Samples using:
 
 {{{
-http://localhost/cgi-bin/ExtPascalSamples.exe
+http://localhost/cgi-bin/ExtPascalSamples
 }}}
 
-12. See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
+11. See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
 
-13. I also recommend to activate the HTTP compression to boost the performance. See [http://extpascal.googlecode.com/files/ExtPascal-Advanced-Configuration-complete-eng-v4.pdf Advanced configuration].
+12. I also recommend to activate the HTTP compression to boost the performance. See [http://extpascal.googlecode.com/files/ExtPascal-Advanced-Configuration-complete-eng-v4.pdf Advanced configuration].
