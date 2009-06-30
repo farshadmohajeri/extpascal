@@ -45,7 +45,6 @@ type
   private
     FRequestID : word; // FastCGI request ID for this thread
     FRole : TRole; // FastCGI Thread role
-    FRequest, FPathInfo : string;
     FRequestMethod : TRequestMethod; // Current HTTP request method
     FGarbageCollector : TStringList; // Object list to free when the thread to end
     FSocket : TBlockSocket; // Current socket for current FastCGI request
@@ -65,6 +64,7 @@ type
     function GetQueryAsTDateTime(Name: string) : TDateTime;
     function GetQueryAsBoolean(Name: string): boolean;
   protected
+    FRequest, FPathInfo : string;
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
@@ -715,6 +715,7 @@ begin
                           break;
                       end
                       else begin
+                        if pos('|', FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         FGarbage := CurrentFCGIThread.FGarbage;

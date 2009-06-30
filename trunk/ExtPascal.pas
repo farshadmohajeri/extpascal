@@ -598,8 +598,9 @@ begin
       GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
-      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){alert(err.description+"\n\n"+response.responseText);}};' +
-      'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
+      'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br><br>"+response.responseText);}};' +
+      'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
   {$IFDEF DEBUGJS}
   Response := AnsiReplaceStr(Response, ';', ';'^M^J)
