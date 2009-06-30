@@ -73,11 +73,18 @@ function CountStr(const Substr, Str : string) : integer;
 function StrToJS(const S : string) : string;
 
 {
-Finds Cases array in S string, returning its index or -1 if not found. Good to use in Pascal "case" command. Similar to AnsiIndexStr, but more flexible.
+Finds S string in Cases array, returning its index or -1 if not found. Good to use in Pascal "case" command. Similar to AnsiIndexText.
 @param S Source string where to search
 @param Cases String array to find in S
 }
 function CaseOf(const S : string; const Cases : array of string) : integer;
+
+{
+Finds Cases array in S string, returning its index or -1 if not found. Good to use in Pascal "case" command. Reverse to AnsiIndexStr.
+@param S string to find in Cases array
+@param Cases String array where to search
+}
+function RCaseOf(const S : string; const Cases : array of string) : integer;
 
 {
 Converts a Pascal enumerated type constant into a JS string, used internally by ExtToPascal wrapper. See ExtFixes.txt for more information.
@@ -277,6 +284,12 @@ function StrToJS(const S : string) : string; begin
 end;
 
 function CaseOf(const S : string; const Cases : array of string) : integer; begin
+  for Result := 0 to high(Cases) do
+    if SameText(S, Cases[Result]) then exit;
+  Result := -1;
+end;
+
+function RCaseOf(const S : string; const Cases : array of string) : integer; begin
   for Result := 0 to high(Cases) do
     if pos(Cases[Result], S) <> 0 then exit;
   Result := -1;
