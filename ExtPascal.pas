@@ -232,6 +232,8 @@ type
   TExtDirectEvent = TEvent; // doc fault Ext 3.0
   TExtDirectTransaction = TExtObject; // doc fault Ext 3.0
   TDOMElement = TExtObject; // doc fault Ext 3.0
+  TRecord = TExtObject;
+  TNull = TExtObject;
 //DOM-IGNORE-END*)
 
 implementation
