@@ -48,10 +48,12 @@ end;
 procedure TSamples.ShowSource;
 var
   Source : text;
-  Line, Lines, Proc : string;
+  Line, Lines, Proc, FName : string;
 begin
   Proc := Query['Proc'];
-  assign(Source, 'ExtPascalSamples.dpr');
+  FName := 'ExtPascalSamples.dpr';
+  if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName;
+  assign(Source, FName);
   reset(Source);
   repeat
     readln(Source, Line);
