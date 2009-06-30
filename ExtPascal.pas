@@ -498,7 +498,7 @@ begin
   end;
   Response := '';
   if Browser = brUnknown then
-    FBrowser := TBrowser(CaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
+    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
   if not IsAjax then begin
     //Sequence  := 0;
@@ -598,7 +598,7 @@ begin
       GetStyle + Libraries +
       '<script>Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
-      'function AjaxSuccess(response){eval(response.responseText);};' +
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){alert(err.description+"\n\n"+response.responseText);}};' +
       'function AjaxFailure(){Ext.Msg.show({title:"Error",msg:"Server unavailable, try later.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
   {$IFDEF DEBUGJS}
@@ -1258,7 +1258,7 @@ begin
           exit;
         end;
   JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName +
-    '",params:"' + lParams + '",success:AjaxSuccess,failure:AjaxFailure});');
+    '",params:"' + lParams + '|",success:AjaxSuccess,failure:AjaxFailure});');
 end;
 
 {

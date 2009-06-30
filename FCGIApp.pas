@@ -895,8 +895,8 @@ Can be overrided in descendent thread class. It shall be overrided if the applic
 @see Run
 }
 procedure TFCGIApplication.OnPortInUseError; begin
-  writeln('Port: ', Port, ' already in use.'^M^J'Press ENTER.');
-  readln;
+  writeln('Port: ', Port, ' already in use.');
+  sleep(10000);
 end;
 
 type

@@ -5,7 +5,7 @@ program ExtPascalSamples; // for Ext JS 3 and later
 {$ENDIF}
 uses
   ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
   TSamples = class(TExtThread)
