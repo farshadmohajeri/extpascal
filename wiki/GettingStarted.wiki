@@ -74,14 +74,14 @@ Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, 
 
 09. Rename CGIGateway.exe to the same name of your FastCGI application changing the extension to .cgi or anything extension supported by your Web Server as CGI application.
 
-10. To play the Samples, by example, you will have this files at cgi-bin:
+10. To run the Samples, by example, you will have this files at cgi-bin:
 
 {{{
 ExtPascalSamples.exe // The real FastCGI application. The extension is `.fcgi` for Posix platforms.
 ExtPascalSamples.cgi // The CGI Gateway.
 }}}
 
-11. None configuration is necessary on Apache, _*but I recommend to activate the HTTP compression to boost the performance (on IIS too)*_.
+11. None configuration is necessary on Apache or IIS, _*but I recommend to activate the HTTP compression to boost the performance (on IIS too)*_.
 
 12. In your browser call Samples using:
 
