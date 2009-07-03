@@ -115,10 +115,14 @@ function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Le
 function Before(const BeforeS, AfterS, S : string) : boolean;
 function IsUpperCase(S : string) : boolean;
 
+// beautify generated script file from ExtPascal
+function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
+function BeautifyCSS(const AStyle : string) : string;
+
 implementation
 
 uses
-  StrUtils, SysUtils;
+  StrUtils, SysUtils, Math;
 
 {$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 function TStringList.GetDelimitedText: string;
@@ -342,4 +346,285 @@ begin
     if S[I] in ['a'..'z'] then exit;
   Result := true;
 end;
+
+function SpaceIdents(const aLevel : word; const aWidth : string = '  ') : string; begin
+  Result := DupeString(aWidth, aLevel);
+end;
+
+function MinValueOf(Values : array of integer; const MinValue : integer = 0) : integer; begin
+  Result := MinIntValue(Values);
+  if Result < MinValue then Result := MinValue;
+end;
+
+function BeautifyJS(const AScript: string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
+var
+  pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
+  pFunction, pString, pOpPlus, pOpMinus, pOpTime, pOpDivide, pOpEqual : integer;
+  P, Lvl : integer;
+  Res : string;
+
+  function AddNewLine(const atPos : integer; const AddText : string) : integer; begin
+    insert(^M^J + AddText, Res, atPos);
+    Result := length(^M^J + AddText);
+  end;
+
+  function SplitHTMLString(const AStart, AEnd : integer): integer;  // range is including the quotes
+  var
+    br,pe,ps: integer;
+    s: string;
+  begin
+    Result := AEnd;
+    s := copy(res, AStart, AEnd);
+    // find html new line (increase verbosity)
+    br := PosEx('<br>', res, AStart+1);
+    pe := PosEx('</p>', res, AStart+1);
+    ps := MinValueOf([br,pe]);
+    // html new line is found
+    // Result-5 is to skip the mark at the end of the line
+    while (ps > 0) and (ps < Result-5) do begin
+      s := '"+'^M^J+SpaceIdents(Lvl)+SpaceIdents(3,'  ')+'"';
+      Insert(s, res, ps+4);
+      Result := Result + length(s);
+      // find next new line
+      br := PosEx('<br>', res, ps+length(s)+4);
+      pe := PosEx('</p>', res, ps+length(s)+4);
+      ps := MinValueOf([br,pe]);
+    end;
+  end;
+
+var
+  Backward, onReady, inProp, inNew : boolean;
+  LvlProp, i, j, k : integer;
+begin
+  // skip empty script
+  if AScript = '' then exit;
+  P := 1;
+  Res := AScript;
+  inNew := true;
+  inProp := false;
+  onReady := false;
+  LvlProp := 1000; // max identation depth
+  Lvl := StartingLevel;
+  // remove space in the beginning
+  if Res[1] = ' ' then Delete(Res, 1, 1);
+  // proceed the whole generated script by scanning the text
+  while p > 0 do begin
+    // chars that will be processed (10 signs)
+    inc(P);
+    pString     := PosEx('"', Res, P);
+    pOpEqual    := PosEx('=', Res, P);
+    pOpPlus     := PosEx('+', Res, P);
+    pOpMinus    := PosEx('-', Res, P);
+    pOpTime     := PosEx('*', Res, P);
+    pOpDivide   := PosEx('/', Res, P);
+    pBlockBegin := PosEx('{', Res, P);
+    pBlockEnd   := PosEx('}', Res, P);
+    pPropBegin  := PosEx(':', Res, P);
+    pPropEnd    := PosEx(',', Res, P);
+    pStatEnd    := PosEx(';', Res, P);
+    //pFuncBegin  := PosEx('(', Res, P);
+    pSqrBegin   := PosEx('[', Res, P);
+    pSqrEnd     := PosEx(']', Res, P);
+    pFunction   := PosEx('function', Res, P);
+    // process what is found first
+    P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
+                     pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, pOpDivide, pFunction]);
+    // keep Ext's onReady function at the first line
+    if (not onReady) and (res[p] = '(') then
+      if Copy(Res, P-8, 8) = '.onReady' then begin
+        P := PosEx('{', Res, P+1)-1;
+        onReady := true;
+      end;
+    // now, let's proceed with what char is found
+    if P > 0 then begin
+      // reset inProp status based on minimum lvlProp
+      if inProp then inProp := Lvl >= LvlProp; // or (lvl > StartingLevel);
+      // process chars
+      case res[p] of // skip string by jump to the next mark
+        '"' :
+          if Res[P+1] = '"' then // skip empty string
+            inc(P)
+          else
+            if SplitHTMLNewLine then // proceed html string value
+              P := SplitHTMLString(P, PosEx('"', Res, P+1))
+            else // just skip the string
+              P := PosEx('"', Res, P+1);
+        '=', '+', '*', '/': begin // neat the math operator
+          insert(' ', Res, P);   inc(P);
+          if Res[P+1] = '=' then inc(P); // double equals
+          insert(' ', Res, P+1); inc(P);
+        end;
+        '{' : // statement block begin
+          if Res[P+1] = '}' then // skip empty statement
+            inc(P)
+          else begin
+            inc(Lvl); // Increase identation level
+            inProp := false;
+            inc(P, AddNewLine(P+1, SpaceIdents(Lvl)));
+          end;
+        '}' : begin // statement block end
+          // some pair values are treated specially: keep },{ pair intact to save empty lines
+          if (Res[P+1] = ',') and (Res[P+2] = '{') then begin
+            dec(Lvl);
+            inc(P, AddNewLine(P, SpaceIdents(Lvl)) + 2);
+            inc(Lvl);
+            inc(P, AddNewLine(P+1, SpaceIdents(Lvl)));
+            continue;
+          end;
+          if not inNew then // special })] pair for items property group object ending
+            inNew := (Res[P+1] = ')') and (Res[P+2] = ']');
+          // common treatment for block ending
+          dec(Lvl); // decrease identation level
+          p := p + AddNewLine(p, SpaceIdents(lvl));
+          // bring the following trails
+          i := p;
+          Backward := false;
+          repeat
+            i := i+1;
+            // find multiple statement block end
+            if (res[i] = '{') or (res[i] = '}') or (res[i] = ';') then backward := true;
+            if inNew and (res[i] = ']') then backward := true;
+          until (res[i] = ',') or backward;
+          if not backward then // add new line
+            inc(P, AddNewLine(i+1, SpaceIdents(Lvl)))
+          else // suspend new line to proceed with next block
+            P := i-1;
+        end;
+        ';' : begin // end of statement
+          // fix to ExtPascal parser bug which become helpful, because it could be mark of new object creation
+          if (Res[P+1] = ' ') and (Res[P+2] = 'O') then begin  // ; O string
+            inProp := false;
+            delete(Res, P+1, 1);
+            inc(P, AddNewLine(P+1, ^M^J+SpaceIdents(Lvl)));
+            continue;
+          end;
+          if Res[P+1] = '}' then continue; // skip if it's already at the end of block
+          if P = length(Res) then // skip identation on last end of statement
+            inc(P, AddNewLine(P+1, SpaceIdents(StartingLevel-1)))
+          else
+            inc(P, AddNewLine(P+1, SpaceIdents(lvl)));
+        end;
+        '[' : begin // square declaration begin
+          if Res[P+1] = '[' then begin // double square treat as sub level
+            inc(Lvl);
+            inc(P, AddNewLine(p+1, SpaceIdents(Lvl)));
+            inProp := true;
+            continue;
+          end;
+          // find special pair within square block
+          i := PosEx(']', Res, P+1);
+          j := PosEx('{', Res, P+1);
+          k := PosEx('new ', Res, P+1);
+          if (j > 0) and (j < i) then begin // new block found in property value
+            inc(Lvl);
+            // new object found in property value, add new line
+            if (k > 0) and (k < i) then begin
+              inNew := true;
+              inc(P, AddNewLine(P+1, SpaceIdents(Lvl)));
+            end
+            else begin // move forward to next block beginning
+              inNew := false;
+              inc(J, AddNewLine(J+1, SpaceIdents(Lvl)));
+              P := j-1;
+            end;
+          end
+          else // no sub block found, move at the end of square block
+            P := i;
+        end;
+        ']' : // square declaration end
+          if Res[P-1] = ']' then begin // double square ending found, end sub block
+            dec(Lvl);
+            inc(P, AddNewLine(P, SpaceIdents(Lvl)));
+          end
+          else // skip processing if not part of square sub block
+            if not inNew then
+              continue
+            else begin // end of block square items group
+              dec(Lvl);
+              inc(P, AddNewLine(P, SpaceIdents(Lvl)));
+            end;
+        (*'(' : begin // function declaration begin
+          // check whether it contains string inside
+          { TODO : currently this is a quick hack! beware! should be fixed soon! }
+          if res[p+1] = '"' then continue;
+          if inProp then begin // proceed only within property
+            // skip function without sub block
+            i := PosEx(')', res, p+1);
+            p := PosEx('{', res, p+1);
+            p := IfThen((p > 0) and (p < i), p-1, i);
+          end;
+        end; *)
+        ':' : begin // property value begin
+          if Res[P+1] <> ' ' then begin // separate name:value with a space
+            insert(' ', Res, P+1);
+            inc(P);
+          end;
+          inProp := true;
+          if Lvl < LvlProp then LvlProp := Lvl; // get minimum depth level of property
+        end;
+        ',' : // property value end
+          if inProp then inc(P, AddNewLine(P+1, SpaceIdents(Lvl)));
+        'f' : begin // independent function definition
+          if inProp then Continue; // skip function if within property
+          if copy(Res, P, 8) = 'function' then // add new line for independent function
+            inc(P, AddNewLine(P, SpaceIdents(Lvl)) + 7);
+        end;
+      end;
+    end;
+  end;
+  Result := Res;
+end;
+
+function BeautifyCSS(const AStyle : string) : string;
+var
+  pOpen, pClose, pProp, pEnd, pString : integer;
+  P, Lvl : integer;
+  Res : string;
+begin
+  P := 1;
+  Lvl := 0;
+  Res := ^M^J+AStyle;
+  while P > 0 do begin
+    inc(P);
+    pString := PosEx('''', Res, P);
+    pOpen   := PosEx('{',  Res, P);
+    pClose  := PosEx('}',  Res, P);
+    pProp   := PosEx(':',  Res, P);
+    pEnd    := PosEx(';',  Res, P);
+    P := MinValueOf([pString, pOpen, pClose, pProp, pEnd]);
+    if P > 0 then
+      case Res[p] of
+        '''' : P := PosEx('''', Res, P+1);
+        '{' : begin
+          Inc(lvl);
+          if (res[p-1] <> ' ') then begin
+            Insert(' ', res, p);
+            p := p+1;
+          end;
+          Insert(^M^J+SpaceIdents(lvl), res, p+1);
+          p := p + Length(^M^J+SpaceIdents(lvl));
+        end;
+        '}' : begin
+          dec(lvl);
+          insert(^M^J+SpaceIdents(lvl), Res, P);
+          inc(P, length(^M^J+SpaceIdents(Lvl)));
+          insert(^M^J+SpaceIdents(lvl), Res, P+1);
+          inc(P, length(^M^J+SpaceIdents(Lvl)));
+        end;
+        ':' :
+          if Res[P+1] <> ' ' then begin
+            insert(' ', Res, P+1);
+            inc(P);
+          end;
+        ';' : begin
+          if Res[P+1] = '}' then continue;
+          if Res[P+1] = ' ' then delete(Res, P+1, 1);
+          insert(^M^J+SpaceIdents(Lvl), Res, P+1);
+          inc(P, length(^M^J+SpaceIdents(Lvl)));
+        end;
+      end;
+  end;
+  Result := res;
+end;
+
 end.

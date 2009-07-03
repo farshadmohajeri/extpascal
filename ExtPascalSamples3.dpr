@@ -1,11 +1,11 @@
-program ExtPascalSamplesOld; // for Ext JS 2.2.1 and older
+program ExtPascalSamples3; // for Ext JS 3 and later
 {.$DEFINE SERVICE}
 {$IFNDEF WebServer}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {$ENDIF}
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 type
   TSamples = class(TExtThread)
@@ -48,10 +48,12 @@ end;
 procedure TSamples.ShowSource;
 var
   Source : text;
-  Line, Lines, Proc : string;
+  Line, Lines, Proc, FName : string;
 begin
   Proc := Query['Proc'];
-  assign(Source, 'ExtPascalSamples.dpr');
+  FName := 'ExtPascalSamples.dpr';
+  if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName;
+  assign(Source, FName);
   reset(Source);
   repeat
     readln(Source, Line);
@@ -282,13 +284,13 @@ end;
 
 procedure TSamples.ArrayGrid;
 var
-  DataStore  : TExtDataSimpleStore;
+  DataStore  : TExtDataArrayStore;
   ColorValue : TExtFunction;
 begin
   // Statefull !!!
   ExtStateManager.SetProvider(TExtStateCookieProvider.Create);
   // create the data store
-  DataStore := TExtDataSimpleStore.Create;
+  DataStore := TExtDataArrayStore.Create;
   with DataStore do begin
     TExtDataField.AddTo(Fields).Name := 'company';
     with TExtDataField.AddTo(Fields) do begin Name := 'price';     TypeJS := 'float' end;
@@ -331,40 +333,40 @@ begin
     ColorValue := JSFunction('V', 'if(V>0){return "<span style=''color:green''>" + V + "</span>";}else ' +
       'if(V<0){return "<span style=''color:red''>" + V + "</span>";}' +
       'return V;');
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Id        := 'company';
       Header    := 'Company';
       Width     := 160;
       Sortable  := true;
       DataIndex := Id;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Price';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'price';
-      RendererString := 'usMoney';
+      Renderer  := 'usMoney';
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'change';
-      Renderer  := ColorValue;
+      Renderer_ := ColorValue;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := '% Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'pctchange';
-      Renderer  := ColorValue;
+      Renderer_ := ColorValue;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Last Updated';
       Width     := 85;
       Sortable  := true;
       DataIndex := 'lastchange';
-      Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
+      Renderer_ := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Show modal dialog using Ajax';
@@ -597,7 +599,7 @@ begin
     RenderTo := 'body';
     ClicksToEdit := 1;
     AutoExpandColumn := 'common';
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Id := 'common';
       Header := 'Common Name';
       Width  := 220;
@@ -605,7 +607,7 @@ begin
       Editor := TExtFormTextField.Create;
       TExtFormTextField(Editor).AllowBlank := false;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header := 'Light';
       Width  := 130;
       DataIndex := 'light';
@@ -617,12 +619,12 @@ begin
         TriggerAction := 'all';
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header := 'Price';
       Width  := 70;
       Align  := alRight;
       DataIndex := 'price';
-      RendererString := 'usMoney';
+      Renderer := 'usMoney';
       Editor := TExtFormNumberField.Create;
       with TExtFormNumberField(Editor) do begin
         MaxValue      := 100000;
@@ -630,11 +632,11 @@ begin
         AllowNegative := false;
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Available';
       Width     := 95;
       DataIndex := 'availDate';
-      Renderer  := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
+      Renderer_ := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
       Editor    := TExtFormDateField.Create;
       with TExtFormDateField(Editor) do begin
         Format := 'm/d/y';
@@ -643,12 +645,12 @@ begin
         DisabledDaysText := 'Plants are not available on the weekends'
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Indoor?';
       DataIndex := 'indoor';
       Width     := 55;
       Editor    := TExtFormCheckbox.Create;
-      Renderer  := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
+      Renderer_ := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Add Plant using AJAX!';
@@ -677,7 +679,7 @@ var
 begin
   with TExtPanel.Create do begin
     Title    := 'Message Boxes';
-    Width    := 815;
+    Width    := IfThen(Browser = brChrome, 850, 815);
     RenderTo := 'body';
     Frame    := true;
     with TExtButton.AddTo(Buttons) do begin

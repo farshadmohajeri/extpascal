@@ -276,12 +276,13 @@ If pLibrary is '' then all user JS libraries to this session will be removed fro
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
 procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false); begin
-  if pLibrary = '' then
-    Libraries := ''
-  else begin
-    Libraries := Libraries + '<script src=' + pLibrary{$IFDEF DEBUGJS}+ '-debug'{$ENDIF} + '.js></script>';
-    if CSS then Libraries := Libraries + '<link rel=stylesheet href=' + pLibrary + '.css />';
-  end;
+  if pos(pLibrary, Libraries) = 0 then
+    if pLibrary = '' then
+      Libraries := ''
+    else begin
+      Libraries := Libraries + '<script src=' + pLibrary{$IFDEF DEBUGJS}+ '-debug'{$ENDIF} + '.js></script>';
+      if CSS then Libraries := Libraries + '<link rel=stylesheet href=' + pLibrary + '.css />';
+    end;
 end;
 
 {
@@ -314,10 +315,11 @@ If pStyle is '' then all user styles to this session will be removed from respon
 @example <code>SetStyle('img:hover{border:1px solid blue}');</code>
 *)
 procedure TExtThread.SetStyle(pStyle : string); begin
-  if pStyle = '' then
-    Style := ''
-  else
-    Style := Style + pStyle
+  if pos(pStyle, Style) = 0 then
+    if pStyle = '' then
+      Style := ''
+    else
+      Style := Style + pStyle
 end;
 
 // Returns all styles in use in current response
