@@ -8,7 +8,8 @@
   * Tests and bug fixes on Linux and Mac OS X (Intel)
   * CGI gateway fixes
   * Helper functions
-  * Pascal enumerations suggestions 
+  * Pascal enumerations suggestions
+  * BeautifyJS/CSS functions 
 
  * *Vagner Santana*
   * Embedded Web Server for Windows
