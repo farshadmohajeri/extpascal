@@ -277,7 +277,7 @@ constructor TProp.Create(pName, pJSName, pType : string; pStatic, pConfig : bool
 end;
 
 constructor TParam.Create(pName, pType : string; pOptional : boolean); begin
-  Name     := FixIdent(IfThen(pName = '', 'Param', pName));
+  Name     := FixIdent(pName);
   Typ      := pType;
   Optional := pOptional;
 end;
@@ -332,8 +332,7 @@ begin
           Types := Explode('/', Typ);
           Typ   := FixType(Types[0]);
           for J := 1 to Types.Count-1 do
-            if FixType(Types[J]) <> FixType(Types[J-1]) then // Discard Duplicates
-              DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
+            DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
           Types.Free;
         end;
 end;
@@ -473,14 +472,9 @@ begin
           end
           else
             Static := false;
-          if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
-          PropName := Unique(FixIdent(PropName), CurClass.Properties);
-          if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
-            State := InMethods;
-            continue; // Discard duplicates
-          end;
+          if CurClass.Properties.IndexOf(FixIdent(PropName)) <> -1 then PropName := PropName + '_';
           if PropName <> 'config' then begin
             PropTypes := Explode('/', Matches[2]);
             I := FirstDelimiter(' <>', PropTypes[0]);
@@ -651,9 +645,9 @@ var
   NewClass : TClass;
 begin
   if IsExt3 then
-    FixesFile := 'ExtFixes.txt'
+    FixesFile := 'ExtFixes3.txt'
   else
-    FixesFile := 'ExtFixesOld.txt';
+    FixesFile := 'ExtFixes.txt';
   writeln('Reading ' + FixesFile);
   if FileExists(FixesFile) then begin
     assign(Fixes, FixesFile);
