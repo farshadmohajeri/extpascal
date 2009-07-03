@@ -56,6 +56,7 @@ procedure TBlockSocket.Bind(pPort, BackLog : word); begin
     Sin_Addr.s_Addr := 0;
     Sin_Port   := htons(pPort);
   end;
+  {$IFNDEF MSWINDOWS}fpSetSockOpt(Socket, SOL_SOCKET, SO_REUSEADDR, @RemoteSin, SizeOf(RemoteSin));{$ENDIF} // remedy socket port locking on Posix platforms
   fpBind(Socket, @RemoteSin, sizeof(RemoteSin));
   fpListen(Socket, BackLog);
 end;
