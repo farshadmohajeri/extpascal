@@ -8,6 +8,26 @@ It is used to run an ExtPascal application on a Web Server that not provides Fas
 5. The CGI gateway forward <link FCGIApp.pas, FCGI application> result to the browser. The communication is done through CGI standard protocol.
 6. If there's no request over than <link TFCGIApplication.Create, MaxIdleMinutes>, the <link FCGIApp.pas, FCGI application> terminates itself.
 <image cgigateway>
+Format for optional configuration file (.INI).
+To use configuration file define the conditional symbol HAS_CONFIG.
+Must have a section named [FCGI].
+If the configuration file is not found then the value is taken from default.
+Below are the supported options:
+  Enabled: boolean     - to enable or disable FCGI service
+  Execute: boolean     - to allow or disallow CGI to execute FCGI service (only on localhost)
+  Name: file name      - FCGI executable file name to load by CGI (only on localhost)
+  Host: IP string      - host location of the FCGI service
+  Port: socket number  - socket port of the FCGI service
+  Home: path string    - path for HOME of the FCGI service
+  MaxConn: integer     - max connections allowed to FCGI service
+  MaxIdle: integer     - max idle time before time-out (in minutes)
+  AutoOff: boolean     - auto-shutdown FCGI service after all child threads finish
+  ExtPath: string      - path to ExtJS library
+  ImgPath: string      - path to image collection
+  ExtTheme: string     - Ext's theme selection
+  Password: string     - password required to shutdown and reconfigure application
+  InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
+
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
 Date: jul-2008
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
@@ -15,11 +35,15 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 program CGIGateway;
 
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
+{.$DEFINE HAS_CONFIG}
 
 uses
   SysUtils, BlockSocket
+  {$IFDEF HAS_CONFIG} // Configuration file
+    , IniFiles
+  {$ENDIF}
   {$IFNDEF MSWINDOWS} // Posix systems
-    , BaseUnix;
+    Unix, BaseUnix;
   {$ELSE}
     {$IFNDEF FPC} // Delphi
       , ShellAPI;
@@ -31,8 +55,16 @@ uses
   {$ENDIF}
 
 const
-  Host = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
-  Port = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
+  Host : string = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
+  Port : word = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
+
+var
+  Socket  : TBlockSocket; // Block socket object
+  FCGIApp : string;       // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
+  {$IFDEF HAS_CONFIG}
+  Config  : TIniFile;     // optional configuration file to control application behavior
+  CGIConf : string;       // configuration file name
+  {$ENDIF}
 
 {
 Adds a pair Name/Value to a <link FCGIApp.pas, FastCGI> <link TRecType, rtGetValuesResult> record type
@@ -107,9 +139,6 @@ begin
   end;
   Result := Result + #1#4#0#1#0#0#0#0; // FCGI End Params
 end;
-
-var
-  Socket : TBlockSocket; // Block socket object
 
 {
 Reads the data from Web Server using CGI protocol and
@@ -187,8 +216,6 @@ begin
 {$ENDIF}
 end;
 
-var
-  FCGIApp : string; // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
 begin
   Socket := TBlockSocket.Create;
   Socket.Connect(Host, Port);
