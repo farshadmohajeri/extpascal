@@ -99,6 +99,7 @@ var
   I : integer;
 begin
   // Theme := 'gray';
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('img:hover{border:1px solid blue}');
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';

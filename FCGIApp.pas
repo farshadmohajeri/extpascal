@@ -20,10 +20,17 @@ License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</ext
 }
 unit FCGIApp;
 
+// directives for config file support
+{$DEFINE HAS_CONFIG}
+{$IFDEF HAS_CONFIG}
+   {.$DEFINE CONFIG_MUST_EXIST}  // directive to make config file becomes mandatory
+{$ENDIF}
+
 interface
 
 uses
   {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
+  {$IFDEF HAS_CONFIG}IniFiles,{$ENDIF}
   BlockSocket, SysUtils, SyncObjs, Classes, ExtPascalUtils;
 
 type
@@ -35,6 +42,8 @@ type
   TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole);
   // HTTP request methods
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
+  // FastCGI remote method
+  TFCGIProcedure = procedure of object;
   {$M+}
   {
   Each browser session generates a TFCGIThread. On first request it is <link TFCGIThread.Create, created> and a Cookie is associated with it.
@@ -96,6 +105,7 @@ type
     property QueryAsInteger[Name : string] : integer read GetQueryAsInteger; // Returns HTTP query info parameters as an integer
     property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
+    property Queries : TStringList read FQuery; // Return all HTTP queries as list to ease searching
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -106,10 +116,15 @@ type
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
     procedure SetResponseHeader(Header : string);
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
+    function  MethodURI(AMethodName : string) : string; overload;
+    function  MethodURI(AMethodName : TFCGIProcedure) : string; overload;
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
     procedure Logout; virtual;
     procedure Shutdown; virtual;
+    {$IFDEF HAS_CONFIG}
+    procedure Reconfig; virtual;
+    {$ENDIF}
   end;
   {$M-}
   TFCGIThreadClass = class of TFCGIThread; // Thread class type to create when a new request arrives
@@ -122,13 +137,16 @@ type
   }
   TFCGIApplication = class
   private
-    WebServers : TStringList;
+    FExeName        : string;
+    Threads         : TStringList;
+    FThreadsCount   : integer;
+    AccessThreads   : TCriticalSection;
     FCGIThreadClass : TFCGIThreadClass;
-    Port : word;
-    MaxConns, FThreadsCount : integer;
-    Threads : TStringList;
+    // Configurable options
+    Port        : word;
+    MaxConns    : integer;
     MaxIdleTime : TDateTime;
-    AccessThreads : TCriticalSection;
+    WebServers  : TStringList;
     procedure GarbageThreads;
   public
     Terminated : boolean; // Set to true to terminate the application
@@ -136,6 +154,14 @@ type
     Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
     Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest, AfterHandleRequest>
     Icon       : string;  // Icon to show in Browser
+    Password   : string;
+    HasConfig  : boolean;
+    {$IFDEF HAS_CONFIG}
+    Config : TIniFile;
+    function ReadConfig : boolean;
+    procedure Reconfig(AReload : boolean = true);
+    {$ENDIF}
+    property ExeName : string read FExeName;
     procedure Run(OwnerThread : TThread = nil);
     function CanConnect(Address : string) : boolean;
     function GetThread(I : integer) : TFCGIThread;
@@ -186,10 +212,10 @@ Converts a Request string into a FastCGI Header
 }
 procedure MoveToFCGIHeader(var Buffer : char; var FCGIHeader : TFCGIHeader); begin
   move(Buffer, FCGIHeader, sizeof(TFCGIHeader));
-{$IFNDEF FPC_BIG_ENDIAN}
+  {$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
-{$ENDIF}
+  {$ENDIF}
 end;
 
 {
@@ -199,10 +225,10 @@ Converts a Request string into a FastCGI Header
 @see MoveToFCGIHeader
 }
 procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
-{$IFNDEF FPC_BIG_ENDIAN}
+  {$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
-{$ENDIF}
+  {$ENDIF}
   move(FCGIHeader, Buffer, sizeof(TFCGIHeader));
 end;
 
@@ -237,8 +263,7 @@ var
   I : Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then
-    FGarbageCollector.Delete(I);
+  if I >= 0 then FGarbageCollector.Delete(I);
 end;
 
 // Finds a TObject in Garbage collector using its JavaScript name
@@ -283,9 +308,10 @@ end;
 
 // Terminates the TFCGIThread calls <link TFCGIThread.Logout, Logout> method
 procedure TFCGIThread.Shutdown; begin
-  if Query['password'] = 'pitinnu' then begin
+  if Query['password'] = Application.Password then begin
     Logout;
-    Application.Terminated := true
+    SendResponse('SHUTDOWN: Service is temporarily shutdown for maintenance. Please, try again after a few moments.');
+    Application.Terminated := true;
   end;
 end;
 
@@ -604,7 +630,7 @@ Handles "method not found" error. Occurs when PathInfo not matches a published m
 @see HandleRequest
 }
 procedure TFCGIThread.OnNotFoundError; begin
-  Response := 'alert("Method: ''' + PathInfo + ''' not found");';
+  Response := 'alert("Method: ''' + PathInfo + ''' is not found");';
 end;
 
 // Handles errors raised in the method called by PathInfo in <link TFCGIThread.HandleRequest, HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
@@ -616,6 +642,16 @@ end;
 procedure TFCGIThread.Logout; begin
   Response := 'window.close();';
   FGarbage := true;
+end;
+
+function TFCGIThread.MethodURI(AMethodName : string) : string; begin
+  if AMethodName[1] <> '/' then AMethodName := '/' + AMethodName;
+  Result := FRequestHeader.Values['SCRIPT_NAME'] + AMethodName;
+end;
+
+function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
+  Result := CurrentFCGIThread.MethodName(@AMethodName);
+  if Result <> '' then Result := MethodURI(Result);
 end;
 
 {
@@ -804,8 +840,59 @@ begin
   Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
 end;
 
+{$IFDEF HAS_CONFIG}
+procedure TFCGIThread.Reconfig; begin
+  if Query['password'] = Application.Password then begin
+    Application.Reconfig;
+    SendResponse('RECONFIG: Application configurations are being re-read and reapplied.');
+  end;
+end;
+
+function TFCGIApplication.ReadConfig : boolean;
+var
+  ConfigFile : string;
+begin
+  Result := false;
+  ConfigFile := ChangeFileExt(ParamStr(0), {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
+  if FileExists(ConfigFile) then
+    try
+      Config := TINIFile.Create(ConfigFile);
+      // changing below options requires restart
+      Port := Config.ReadInteger('FCGI', 'Port', Port);
+      Password := Config.ReadString('FCGI', 'Password', Password);
+      Result := true;
+    except end;
+end;
+
+procedure TFCGIApplication.Reconfig(AReload : boolean = true);
+var
+  H, M, S, MS : word;
+  ConfigFile, WServers : string;
+begin
+  if HasConfig then begin
+    // force refresh in-memory data
+    if AReload then begin
+      ConfigFile := Config.FileName;
+      Config.Free;
+      Sleep(100);
+      Config := TINIFile.Create(ConfigFile);
+    end;
+    DecodeTime(MaxIdleTime, H, M, S, MS);
+    MaxIdleTime := EncodeTime(0, Config.ReadInteger('FCGI', 'MaxIdle', M), 0, 0);
+    MaxConns    := Config.ReadInteger('FCGI', 'MaxConn', MaxConns);
+    Shutdown    := Config.ReadBool('FCGI', 'AutoOff', Shutdown);
+    WServers    := Config.ReadString('FCGI', 'InServers', '');
+    if WServers <> '' then begin
+      if WebServers = nil then WebServers := TStringList.Create;
+      WebServers.DelimitedText := WServers;
+    end;
+  end;
+end;
+{$ENDIF}
+
 // Frees a TFCGIApplication
 destructor TFCGIApplication.Destroy; begin
+  {$IFDEF HAS_CONFIG}Config.Free;{$ENDIF}
   Threads.Free;
   AccessThreads.Free;
   WebServers.Free;
@@ -842,6 +929,12 @@ begin
     WebServers := TStringList.Create;
     WebServers.DelimitedText := WServers;
   end;
+  Password := 'extpascal';
+  FExeName := ExtractFileName(ParamStr(0));
+  {$IFDEF HAS_CONFIG}
+  HasConfig := ReadConfig;
+  Reconfig(false);
+  {$ENDIF}
 end;
 
 {
@@ -914,6 +1007,22 @@ procedure TFCGIApplication.Run(OwnerThread : TThread = nil);
 var
   NewSocket, I : integer;
 begin
+  {$IFDEF HAS_CONFIG}
+  {$IFDEF CONFIG_MUST_EXIST}
+  if not HasConfig then begin
+    writeln('Config: Required configuration file is not found.');
+    sleep(10000);
+    exit;
+  end;
+  {$ENDIF}
+  if HasConfig then begin
+    if not Config.ReadBool('FCGI', 'Enabled', true) then begin
+      writeln('Config: Application is being disabled by config file.');
+      sleep(10000);
+      exit;
+    end;
+  end;
+  {$ENDIF}
   I := 0;
   FThreadsCount := -1;
   with TBlockSocket.Create do begin
