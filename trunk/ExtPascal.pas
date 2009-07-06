@@ -47,7 +47,7 @@ unit ExtPascal;
 {.$DEFINE WebServer}
 {$IFEND}
 
-// Uses ext-all-debug.js and break line at ";" char to facilitate JS debugging
+// Uses ext-all-debug.js and format all JS/CSS source code to facilitate debugging on browser
 {.$DEFINE DEBUGJS}
 
 // Uses CacheFly for performance boost see: http://extjs.com/blog/2008/11/18/ext-cdn-custom-builds-compression-and-fast-performance/
@@ -73,7 +73,7 @@ type
   }
   TExtThread = class({$IFNDEF WebServer}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
   private
-    Style, Libraries, FLanguage : string;
+    Style, Libraries, CustomJS, FLanguage : string;
     JSReturns : TStringList;
     Sequence  : cardinal;
     FIsAjax   : boolean;
@@ -84,9 +84,11 @@ type
     procedure RemoveJS(JS : string);
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
+    procedure AfterThreadConstruction; override;
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
+    procedure ReadConfig;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -98,11 +100,13 @@ type
     constructor Create(NewSocket : integer); override;
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
-    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false);
+    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
     procedure SetIconCls(Cls : array of string);
+    procedure SetCustomJS(JS : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   published
+    procedure Reconfig; override;
     procedure HandleEvent; virtual;
   end;
 
@@ -151,17 +155,20 @@ type
     procedure Delete;
     procedure DeleteFromGarbage;
     function JSClassName : string; virtual;
-    function JSArray(JSON : string) : TExtObjectList;
-    function JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject;
+    function JSArray(JSON : string; SquareBracket : boolean = true) : TExtObjectList;
+    function JSObject(JSON : string; ObjectConstructor : string = ''; CurlyBracket : boolean = true) : TExtObject;
     function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string) : TExtFunction; overload;
     function JSFunction(Method: TExtProcedure; Silent : boolean = false) : TExtFunction; overload;
     function JSExpression(Expression : string; MethodsValues : array of const) : integer; overload;
     function JSExpression(Method : TExtFunction) : integer; overload;
+    function JSMethod(Method : TExtFunction) : string;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
+    function Ajax(Method : TExtProcedure; Params : string): TExtFunction; overload;
+    function Ajax(Method : TExtProcedure; Params : TExtFunction): TExtFunction; overload;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -232,8 +239,8 @@ type
   TExtDirectEvent = TEvent; // doc fault Ext 3.0
   TExtDirectTransaction = TExtObject; // doc fault Ext 3.0
   TDOMElement = TExtObject; // doc fault Ext 3.0
-  TRecord = TExtObject;
-  TNull = TExtObject;
+  TRecord = TExtObject; // Ext 3.0 RC2
+  TNull = TExtObject; // Ext 3.0 RC2
 //DOM-IGNORE-END*)
 
 implementation
@@ -271,18 +278,33 @@ Common requests does reset for user libraries and user style.
 In opposite the AJAX requests does not reset and becomes part or rest of the same request.
 @param pLibrary JS library without extension (.js), but with Path based on Web server document root.
 @param CSS pLibrary has a companion stylesheet (.css) with same path and name.
+@param HasDebug Library has a debug, non minified, version. Default is true.
 If pLibrary is '' then all user JS libraries to this session will be removed from response.
 @example <code>SetLibrary('');</code>
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
-procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false); begin
+procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true); begin
   if pos(pLibrary, Libraries) = 0 then
     if pLibrary = '' then
       Libraries := ''
     else begin
-      Libraries := Libraries + '<script src=' + pLibrary{$IFDEF DEBUGJS}+ '-debug'{$ENDIF} + '.js></script>';
-      if CSS then Libraries := Libraries + '<link rel=stylesheet href=' + pLibrary + '.css />';
+      Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
+      if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
     end;
+end;
+
+{
+Adds/Removes an user JS code to be used in current response.
+Common requests does reset for user libraries and user style.
+In opposite the AJAX requests does not reset and becomes part or rest of the same request.
+@param JS JS code to inject in response. If JS is '' then all user JS code to this session will be removed from response.
+}
+procedure TExtThread.SetCustomJS(JS : string = ''); begin
+  if pos(JS, CustomJS) = 0 then
+    if JS = '' then
+      CustomJS := ''
+    else
+      CustomJS := CustomJS + JS;
 end;
 
 {
@@ -302,7 +324,7 @@ var
   I : integer;
 begin
   for I := 0 to high(Cls) do
-    SetStyle('.' + Cls[I] + '{background-image:url(' + ImagePath + '/' + Cls[I] + '.png) !important}');
+    SetStyle('.' + Cls[I] + '{background-image:url("' + ImagePath + '/' + Cls[I] + '.png") !important}');
 end;
 
 (*
@@ -327,7 +349,7 @@ function TExtThread.GetStyle : string; begin
   if Style = '' then
     Result := ''
   else
-    Result := '<style>' + Style + '</style>';
+    Result := '<style>' + {$IFDEF DEBUGJS}BeautifyCSS(Style){$ELSE}Style{$ENDIF} + '</style>';
 end;
 
 {
@@ -349,8 +371,7 @@ Shows an error message in browser session using Ext JS style.
 @example <code>ErrorMessage('Illegal operation.<br/>Click OK to Shutdown.', Ajax(Shutdown));</code>
 }
 procedure TExtThread.ErrorMessage(Msg : string; Action : TExtFunction); begin
-  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
-    ',fn:function(){' + Action.ExtractJSCommand + '}});');
+  ErrorMessage(Msg, Action.ExtractJSCommand);
 end;
 
 {
@@ -508,6 +529,7 @@ begin
     //Sequence  := 0;
     Style     := '';
     Libraries := '';
+    CustomJS  := '';
   end
   else
     if Cookie['FCGIThread'] = '' then begin
@@ -523,9 +545,52 @@ begin
 end;
 
 constructor TExtThread.Create(NewSocket: integer); begin
+  inherited;
   ExtPath   := '/ext';
   ImagePath := '/images';
+end;
+
+procedure TExtThread.ReadConfig; begin
+  with Application do
+    if HasConfig then begin
+      ExtPath := Config.ReadString('FCGI', 'ExtPath', ExtPath);
+      if pos('/', ExtPath) <> 1 then ExtPath := '/' + ExtPath;
+      ImagePath := Config.ReadString('FCGI', 'ImagePath', ImagePath);
+      if pos('/', ImagePath) <> 1 then ImagePath := '/' + ImagePath;
+      Theme := Config.ReadString('FCGI', 'ExtTheme', Theme);
+    end;
+end;
+
+procedure TExtThread.AfterThreadConstruction; begin
   inherited;
+  ReadConfig; // config will be read once, only on new client thread construction
+end;
+
+procedure TExtThread.Reconfig;
+{$IFDEF DEBUGJS}
+var
+  I : integer;
+{$ENDIF}
+begin
+  with Application do
+    if Query['password'] = Password then
+      if HasConfig then begin
+        Reconfig; // reload config file
+        ReadConfig;
+        {$IFDEF DEBUGJS}
+        // show applied configuration values (only during debugging)
+        with TStringList.Create do begin
+          LoadFromFile(Config.FileName);
+          Response := 'RECONFIG: Application is reconfigured with the following values:<p>';
+          for I := 0 to Count-1 do
+            Response := Response + Strings[I] + '<br>';
+          SendResponse(Response);
+          Free;
+        end;
+        {$ELSE}
+        SendResponse('RECONFIG: Application configurations are being re-read and reapplied');
+        {$ENDIF}
+      end;
 end;
 
 // Calls events using Delphi style
@@ -556,8 +621,9 @@ Does tasks after Request processing.
 8. ExtJS language,
 9. Additional user styles,
 10. Additional user libraries,
-11. ExtJS invoke and
-12. Handlers for AJAX response
+11. Additional user JavaScript,
+12. ExtJS invoke and
+13. Handlers for AJAX response
 }
 procedure TExtThread.AfterHandleRequest;
 
@@ -584,30 +650,35 @@ begin
   Response := AnsiReplaceStr(AnsiReplaceStr(Response, CommandDelim, ''), IdentDelim, ''); // Extracts aux delimiters
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
-      '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') +
-      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>') +
-      '<title>' + Application.Title + '</title>' +
-      '<meta http-equiv="content-type" content="charset=utf-8">' +
-      {$IFNDEF CacheFly}
-      '<link rel=stylesheet href=' + ExtPath + '/resources/css/ext-all.css />' +
-      '<script src=' + ExtPath + '/adapter/ext/ext-base.js></script>' +
-      '<script src=' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
-      {$ELSE}
-      '<link rel=stylesheet href=http://extjs.cachefly.net/ext-2.2/resources/css/ext-all.css />' +
-      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>' +
+      '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
+      '<head>'^M^J +
+      '<title>' + Application.Title + '</title>'^M^J +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
+      '<meta http-equiv="content-type" content="charset=utf-8">'^M^J +
+      {$IFDEF CacheFly} // Ext JS Remote
+      '<link rel=stylesheet href=http://extjs.cachefly.net/ext-2.2/resources/css/ext-all.css />'^M^J +
+      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>'^M^J +
+      {$ELSE} // Ext JS Local
+      '<link rel=stylesheet href="' + ExtPath + '/resources/css/ext-all.css" />'^M^J +
+      '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
+      '<script src="' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
       {$ENDIF}
-      '<script src=' + ExtPath + '/codepress/Ext.ux.CodePress' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js></script>' +
-      IfThen(Theme = '', '', '<link rel=stylesheet href=' + ExtPath + '/resources/css/xtheme-' + Theme + '.css />') +
-      IfThen(FLanguage = 'en', '', '<script src=' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js></script>') +
+      IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
+      IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
       GetStyle + Libraries +
-      '<script>Ext.onReady(function(){' +
+      '</head>'^M^J +
+      '<script>'^M^J +
+      {$IFDEF DEBUGJS}BeautifyJS({$ENDIF}
+      IfThen(CustomJS = '', '', CustomJS + ^M^J) +
+      'Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br><br>"+response.responseText);}};' +
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
-      Response + '});</script><body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body></html>';
+      Response{$IFDEF DEBUGJS}){$ENDIF} + '});'^M^J +
+      '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>';
   {$IFDEF DEBUGJS}
-  Response := AnsiReplaceStr(Response, ';', ';'^M^J)
+  Response := BeautifyJS(Response)
   {$ENDIF}
 end;
 
@@ -905,9 +976,9 @@ Generates JS code to declare an inline JS Array.
 @param JSON JavaScript Object Notation, the body of Array declaration
 @return <link TExtObjectList> to be used in assigns
 }
-function TExtObject.JSArray(JSON : string) : TExtObjectList; begin
+function TExtObject.JSArray(JSON : string; SquareBracket : boolean = true) : TExtObjectList; begin
   Result := TExtObjectList(TExtObject.Create(Self));
-  TExtObject(Result).FJSName := '[' + JSON + ']';
+  TExtObject(Result).FJSName := IfThen(SquareBracket, '[' + JSON + ']', JSON);
 end;
 
 {
@@ -924,12 +995,11 @@ It is necessary in 3 cases:
 @param JSON JavaScript Object Notation, the body of JS object declaration
 @return <link TExtObject> to be used in assigns
 }
-function TExtObject.JSObject(JSON : string; ObjectConstructor : string = '') : TExtObject; begin
+function TExtObject.JSObject(JSON : string; ObjectConstructor : string = ''; CurlyBracket : boolean = true) : TExtObject; begin
   Result := TExtObject.Create(Self);
-  if ObjectConstructor = '' then
-    Result.FJSName := '{' + JSON + '}'
-  else
-    Result.FJSName := 'new ' + ObjectConstructor + '({' + JSON + '})'
+  Result.FJSName := IfThen(CurlyBracket, '{' + JSON + '}', JSON);
+  if ObjectConstructor <> '' then
+    Result.FJSName := 'new ' + ObjectConstructor + '(' + Result.FJSName + ')'
 end;
 
 {
@@ -976,6 +1046,10 @@ end;
 
 function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
   Result := JSExpression('%s', [Method]);
+end;
+
+function TExtObject.JSMethod(Method : TExtFunction) : string; begin
+  Result := Method.ExtractJSCommand;
 end;
 
 // Must be implemented on extended classes where events can be handled
@@ -1202,13 +1276,36 @@ function TExtObject.Ajax(Method : TExtProcedure; Params : array of const) : TExt
 var
   MetName : string;
 begin
-  MetName := CurrentFCGIThread.MethodName(@Method);
-  if MetName <> '' then
-    Result := Ajax(MetName, Params, false)
-  else begin
-    Result  := TExtFunction(Self);
-    JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method not published.",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
+  with TExtThread(CurrentFCGIThread) do begin
+    MetName := MethodName(@Method);
+    if MetName = '' then begin
+      ErrorMessage('Ajax method not published');
+      Result := TExtFunction(Self);
+    end
+    else
+      Result := Ajax(MetName, Params, false);
   end;
+end;
+
+// Ajax with raw string as params
+function TExtObject.Ajax(Method : TExtProcedure; Params : string): TExtFunction;
+var
+  MetName : string;
+begin
+  with TExtThread(CurrentFCGIThread) do begin
+    MetName := MethodName(@Method);
+    if MetName = '' then
+      ErrorMessage('Ajax method not published')
+    else
+      JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params + '},success:AjaxSuccess,failure:AjaxFailure});');
+  end;
+  Result := TExtFunction(Self);
+end;
+
+// Ajax with JSFunction as params
+function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction): TExtFunction; begin
+  Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
+  TExtObject(Params).JSCommand := '';
 end;
 
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
