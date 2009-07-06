@@ -9,7 +9,8 @@
   * CGI gateway fixes
   * Helper functions
   * Pascal enumerations suggestions
-  * BeautifyJS/CSS functions 
+  * BeautifyJS/CSS functions for JavaScript debugging
+  * Configuration and hot reconfiguration using .ini file
 
  * *Vagner Santana*
   * Embedded Web Server for Windows
