@@ -84,11 +84,13 @@ type
     procedure RemoveJS(JS : string);
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
+    {$IFDEF HAS_CONFIG}
     procedure AfterThreadConstruction; override;
+    procedure ReadConfig;
+    {$ENDIF}
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
-    procedure ReadConfig;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -106,7 +108,9 @@ type
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
   published
+    {$IFDEF HAS_CONFIG}
     procedure Reconfig; override;
+    {$ENDIF}
     procedure HandleEvent; virtual;
   end;
 
@@ -525,13 +529,7 @@ begin
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
-  if not IsAjax then begin
-    //Sequence  := 0;
-    Style     := '';
-    Libraries := '';
-    CustomJS  := '';
-  end
-  else
+  if IsAjax then 
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
       Result := false;
@@ -550,6 +548,7 @@ constructor TExtThread.Create(NewSocket: integer); begin
   ImagePath := '/images';
 end;
 
+{$IFDEF HAS_CONFIG}
 procedure TExtThread.ReadConfig; begin
   with Application do
     if HasConfig then begin
@@ -592,6 +591,7 @@ begin
         {$ENDIF}
       end;
 end;
+{$ENDIF}
 
 // Calls events using Delphi style
 procedure TExtThread.HandleEvent;
