@@ -23,7 +23,7 @@ Below are the supported options:
   MaxIdle: integer     - max idle time before time-out (in minutes)
   AutoOff: boolean     - auto-shutdown FCGI service after all child threads finish
   ExtPath: string      - path to ExtJS library
-  ImgPath: string      - path to image collection
+  ImagePath: string    - path to image collection
   ExtTheme: string     - Ext's theme selection
   Password: string     - password required to shutdown and reconfigure application
   InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
@@ -56,7 +56,7 @@ uses
 
 const
   Host : string = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
-  Port : word = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
+  Port : word = 2014;          // Socket port to comunicate with FastCGI application. Change this if necessary.
 
 var
   Socket  : TBlockSocket; // Block socket object
@@ -117,8 +117,12 @@ begin
   writeln(Msg);
 end;
 
-// Returns the environment variables encapsulated using FastCGI protocol
-function EnvVariables : string;
+{
+Returns the environment variables encapsulated using FastCGI protocol
+@param EnvName Environment variable name to override
+@param EnvValue value to override
+}
+function EnvVariables(EnvName : string = ''; EnvValue : string = '') : string;
 const
   EnvVar : array[0..39] of string = (
     'QUERY_STRING', 'PATH_INFO', 'REQUEST_METHOD', 'HTTP_COOKIE', 'HTTP_ACCEPT_LANGUAGE', 'SCRIPT_NAME', 'DOCUMENT_ROOT', 'HTTP_X_REQUESTED_WITH', //7 only essential
@@ -134,7 +138,20 @@ var
 begin
   Result := #1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request
   for I := 0 to high(EnvVar) do begin
-    Value := GetEnvironmentVariable(EnvVar[I]);
+    // override default value
+    if EnvVar[I] = EnvName then
+      Value := EnvValue
+    else
+      Value := GetEnvironmentVariable(EnvVar[I]);
+    {$IFDEF HAS_CONFIG}
+    if I = 1 then // override PATH_INFO
+      if CGIConf <> '' then begin
+        // override HOME path
+        if (Value = '') or (Value = '/') then Value := '/' + Config.ReadString('FCGI', 'Home', '');
+        // force shutdown request
+        if not Config.ReadBool('FCGI', 'Enabled', true) then Value := '/shutdown';
+      end;
+    {$ENDIF}
     if Value <> '' then AddParam(Result, [EnvVar[I], Value]);
   end;
   Result := Result + #1#4#0#1#0#0#0#0; // FCGI End Params
@@ -144,7 +161,7 @@ end;
 Reads the data from Web Server using CGI protocol and
 writes the same data to FastCGI application using FastCGI protocol
 }
-procedure TalkFCGI;
+procedure TalkFCGI(AParams : string);
 var
   Request : string;
   Tam : word;
@@ -154,17 +171,19 @@ begin
     Request := '';
     if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then
       repeat
-        Read(R);
-        if R = '|' then break; // for ISS bug
+        read(R);
+        if R = '|' then break; // for IIS bug
         Request := Request + R;
       until seekeof(Input);
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
-    SendString(EnvVariables + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
+    SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
+               AParams + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
     Request := '';
     CanRead(3000);
     repeat
       Request := Request + RecvString;
+      Sleep(1);  // required on some environments to prevent streaming truncation
     until WaitingData = 0;
     if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
@@ -182,59 +201,132 @@ var
   ArgV : array of pchar;
 {$ENDIF}
 begin
-{$IFDEF MSWINDOWS}
-  Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
-{$ELSE}
+  {$IFDEF HAS_CONFIG}
+  Result := true;
+  if CGIConf <> '' then
+    if not Config.ReadBool('FCGI', 'Execute', true) then exit;
+  {$ENDIF}
+  // allow execution only on local machine
   Result := false;
-	case fpFork of
-		-Maxint..-1 : Result := false;
-    0 : begin
-      FpSetSid; // set process as session leader
-      // re-fork in order to enable session leader process get exited
-      if fpFork = 0 then begin
-        FpChDir(ExtractFilePath(Prog)); // make sure process path
-        FpUMask(0); // reset umask
-        // close all std
-        FpClose(2);
-        FpClose(1);
-        FpClose(0);
-        // open new std point to /dev/null
-        FpOpen('/dev/null', O_RDWR);
-        FpDup2(0, 1);
-        FpDup2(0, 2);
-        // run fcgi
-        SetLength(ArgV, 2);
-        ArgV[0] := pchar(Prog);
-        ArgV[1] := nil;
-        FpExecv(Prog, ArgV);
-      end;
-      FpExit(0);
-    end
-  else
-  	Result := true
+  if (Host = 'localhost') or (Host = '127.0.0.1') then begin
+    {$IFDEF MSWINDOWS}
+    Result := ShellExecute(0, nil, pchar(Prog), nil, nil, 0) > 31
+    {$ELSE}
+    Result := false;
+    case fpFork of
+      -Maxint..-1 : Result := false;
+      0 : begin
+        FpSetSid; // set process as session leader
+        // re-fork in order to enable session leader process get exited
+        if fpFork = 0 then begin
+          FpChDir(ExtractFilePath(Prog)); // make sure process path
+          FpUMask(0); // reset umask
+          // close all std
+          FpClose(2);
+          FpClose(1);
+          FpClose(0);
+          // open new std point to /dev/null
+          FpOpen('/dev/null', O_RDWR);
+          FpDup2(0, 1);
+          FpDup2(0, 2);
+          // run fcgi
+          SetLength(ArgV, 2);
+          ArgV[0] := pchar(Prog);
+          ArgV[1] := nil;
+          FpExecv(Prog, ArgV);
+        end;
+        FpExit(0);
+      end
+    else
+      Result := true
+    end;
+    {$ENDIF}
   end;
-{$ENDIF}
 end;
 
+{$IFDEF HAS_CONFIG}
+function ReadConfig(AFileName : string) : boolean; begin
+  Result := false;
+  if FileExists(AFileName) then begin
+    Config  := TINIFile.Create(AFileName);
+    FCGIApp := Config.ReadString('FCGI', 'Name', FCGIApp);
+    Host    := Config.ReadString('FCGI', 'Host', Host);
+    Port    := Config.ReadInteger('FCGI', 'Port', Port);
+    Result  := true;
+  end;
+end;
+
+function ShutdownFCGI : boolean; begin
+  Result := false;
+  if CGIConf <> '' then
+    // force shutdown any running FCGI instances through request
+    if not Config.ReadBool('FCGI', 'Enabled', true) then begin
+      TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + Config.ReadString('FCGI', 'Password', 'extpascal')));
+      Result := true;
+    end;
+end;
+
+function KillFCGI : boolean; begin
+  Result := false;
+  if CGIConf <> '' then
+    // force shutdown any running FCGI instances through system call
+    if not Config.ReadBool('FCGI', 'Enabled', true) then begin
+      if (Host = 'localhost') or (Host = '127.0.0.1') then begin
+        {$IFNDEF MSWINDOWS}
+        fpSystem('killall '+ ExtractFileName(FCGIApp));
+        {$ELSE}
+        { TODO : windows way to force kill an app }
+        {$ENDIF}
+      end;
+      Result := true;
+    end;
+end;
+{$ENDIF}
+
+var
+  I : integer;
 begin
+  FCGIApp := ChangeFileExt(ExtractFileName(paramstr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
+  {$IFDEF HAS_CONFIG}
+  CGIConf := ChangeFileExt(FCGIApp, {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
+  if not ReadConfig(CGIConf) then begin
+    CGIConf := ''; // indicates no config found
+    {$IFDEF MUST_EXIST}
+    Log('ERROR: Configuration file is not found. Please contact the application provider.');
+    exit;
+    {$ENDIF}
+  end;
+  {$ENDIF}
   Socket := TBlockSocket.Create;
   Socket.Connect(Host, Port);
-  if Socket.Error = 0 then
-    TalkFCGI
+  if Socket.Error = 0 then begin
+    {$IFDEF HAS_CONFIG}
+    if not ShutdownFCGI then
+    {$ENDIF}
+    TalkFCGI(EnvVariables);
+  end
   else begin
   	Socket.Free;
-    FCGIApp := ChangeFileExt(ExtractFileName(paramstr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
+    {$IFDEF HAS_CONFIG}
+    if KillFCGI then
+      Log('ERROR: Service is temporarily disabled or being updated. Please, try again after a few moments. ')
+    else
+    {$ENDIF}
     if Exec(FCGIApp) then begin
-      sleep(1000);
     	Socket := TBlockSocket.Create;
-      Socket.Connect(Host, Port);
+      for I := 1 to 3 do begin
+        sleep(1000 * I);
+        Socket.Connect(Host, Port);
+        if Socket.Error = 0 then break;
+      end;
       if Socket.Error = 0 then
-        TalkFCGI
+        TalkFCGI(EnvVariables)
       else
-        Log('CGIGateway: FastCGI application (' + FCGIApp + ') not connect at port ' + IntToStr(Port));
+        Log('CGIGateway: FastCGI application (' + FCGIApp + ') not connect at ' + Host + ':' + IntToStr(Port));
     end
     else
       Log('CGIGateway: ' + FCGIApp + ' not found or has no execute permission.');
   end;
+  {$IFDEF HAS_CONFIG}Config.Free;{$ENDIF}
   try Socket.Free; except end;
 end.
