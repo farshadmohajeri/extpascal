@@ -36,6 +36,7 @@ program CGIGateway;
 
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {.$DEFINE HAS_CONFIG}
+{.$DEFINE CONFIG_MUST_EXIST}
 
 uses
   SysUtils, BlockSocket
@@ -291,7 +292,7 @@ begin
   CGIConf := ChangeFileExt(FCGIApp, {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
   if not ReadConfig(CGIConf) then begin
     CGIConf := ''; // indicates no config found
-    {$IFDEF MUST_EXIST}
+    {$IFDEF CONFIG_MUST_EXIST}
     Log('ERROR: Configuration file is not found. Please contact the application provider.');
     exit;
     {$ENDIF}

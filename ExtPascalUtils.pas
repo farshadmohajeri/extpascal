@@ -115,7 +115,7 @@ function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Le
 function Before(const BeforeS, AfterS, S : string) : boolean;
 function IsUpperCase(S : string) : boolean;
 
-// beautify generated script file from ExtPascal
+// Beautify generated script file from ExtPascal, automatically used when DEBUGJS is defined
 function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
 function BeautifyCSS(const AStyle : string) : string;
 

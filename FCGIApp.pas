@@ -21,7 +21,7 @@ License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</ext
 unit FCGIApp;
 
 // directives for config file support
-{$DEFINE HAS_CONFIG}
+{.$DEFINE HAS_CONFIG}
 {$IFDEF HAS_CONFIG}
    {.$DEFINE CONFIG_MUST_EXIST}  // directive to make config file becomes mandatory
 {$ENDIF}
