@@ -11,6 +11,7 @@
   * Pascal enumerations suggestions
   * BeautifyJS/CSS functions for JavaScript debugging
   * Configuration and hot reconfiguration using .ini file
+  * First ExtPascal live site!
 
  * *Vagner Santana*
   * Embedded Web Server for Windows
