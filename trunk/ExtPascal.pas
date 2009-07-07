@@ -93,9 +93,10 @@ type
     function JSConcat(PrevCommand, NextCommand : string) : string;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
-    Theme : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
-    ExtPath : string; // Installation path of Ext JS framework, below the your Web server document root. Default value is '/ext'
+    Theme     : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
+    ExtPath   : string; // Installation path of Ext JS framework, below the your Web server document root. Default value is '/ext'
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
+    ExtBuild  : string; // Custom <extlink http://www.extjs.com/products/extjs/build/>ExtJS build</extlink>. Default is ext-all.
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property Browser : TBrowser read FBrowser; // Browser in use in this session
@@ -507,8 +508,7 @@ Does tasks related to the Request that occur before the method call invoked by B
 3. Else uses the default language (English).
 4. Identify the browser.
 5. Tests if is an AJAX request.
-6. If not is AJAX request resets Sequence, Style and Libraries.
-7. Tests if cookies are enabled.
+6. Tests if cookies are enabled.
 @return False if Cookies are disable or if is Ajax executing the first thread request else returns true.
 }
 function TExtThread.BeforeHandleRequest : boolean;
@@ -546,6 +546,7 @@ constructor TExtThread.Create(NewSocket: integer); begin
   inherited;
   ExtPath   := '/ext';
   ImagePath := '/images';
+  ExtBuild  := 'ext-all';
 end;
 
 {$IFDEF HAS_CONFIG}
@@ -656,12 +657,12 @@ begin
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=utf-8">'^M^J +
       {$IFDEF CacheFly} // Ext JS Remote
-      '<link rel=stylesheet href=http://extjs.cachefly.net/ext-2.2/resources/css/ext-all.css />'^M^J +
-      '<script src=http://extjs.cachefly.net/builds/ext-cdn-8.js></script>'^M^J +
+      '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
+      '<link rel=stylesheet href="http://extjs.cachefly.net/ext-2.2.1/resources/css/ext-all.css" />'^M^J +
       {$ELSE} // Ext JS Local
-      '<link rel=stylesheet href="' + ExtPath + '/resources/css/ext-all.css" />'^M^J +
+      '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
       '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
-      '<script src="' + ExtPath + '/ext-all' + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
+      '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
       {$ENDIF}
       IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
       IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
