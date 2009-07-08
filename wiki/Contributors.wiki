@@ -6,6 +6,7 @@
 
  * *Bee* 
   * Tests and bug fixes on Linux and Mac OS X (Intel)
+  * Google code issue template
   * CGI gateway fixes
   * Helper functions
   * Pascal enumerations suggestions
