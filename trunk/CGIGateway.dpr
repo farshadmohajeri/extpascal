@@ -36,20 +36,22 @@ program CGIGateway;
 
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {.$DEFINE HAS_CONFIG}
-{.$DEFINE CONFIG_MUST_EXIST}
+{$IFDEF HAS_CONFIG}
+  {.$DEFINE CONFIG_MUST_EXIST}
+{$ENDIF}
 
 uses
-  SysUtils, BlockSocket
+  SysUtils, BlockSocket,
   {$IFDEF HAS_CONFIG} // Configuration file
-    , IniFiles
+    IniFiles,
   {$ENDIF}
   {$IFNDEF MSWINDOWS} // Posix systems
     Unix, BaseUnix;
   {$ELSE}
     {$IFNDEF FPC} // Delphi
-      , ShellAPI;
+      ShellAPI;
     {$ELSE}
-      ; // FPC Windows optimization, ShellAPI generate a greater .exe
+      // FPC Windows optimization, ShellAPI generate a greater .exe
       function ShellExecute(hWnd: integer; Operation, FileName, Parameters,
         Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
     {$ENDIF}
@@ -180,12 +182,7 @@ begin
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
                AParams + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
-    Request := '';
-    CanRead(3000);
-    repeat
-      Request := Request + RecvString;
-      Sleep(1);  // required on some environments to prevent streaming truncation
-    until WaitingData = 0;
+    Request := RecvString(3000);
     if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
   end;

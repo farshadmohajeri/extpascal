@@ -16,7 +16,7 @@ type
     DataStore : TExtDataStore;
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
-    procedure TreatExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
+    procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
     procedure AddShowSourceButton(Buttons : TExtObjectList; Proc : string);
   published
     procedure Home; override;
@@ -98,8 +98,8 @@ const
 var
   I : integer;
 begin
-  // Theme := 'gray';
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  // Theme := 'gray';
   SetStyle('img:hover{border:1px solid blue}');
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
@@ -130,6 +130,7 @@ var
   Tabs : TExtTabPanel;
   Nav  : TExtPanel;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   Tabs := TExtTabPanel.Create;
   with Tabs do begin
     Region   := rgCenter;
@@ -200,6 +201,7 @@ procedure TSamples.Login;
 var
   UserName, Password : TExtFormTextField;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   FormLogin := TExtWindow.Create;
   with FormLogin do begin
     Title    := 'Login';
@@ -255,6 +257,7 @@ procedure TSamples.AdvancedTabs;
 var
   I : integer;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
   SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu');
@@ -263,7 +266,7 @@ begin
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
     Handler  := Ajax(AddTab);
-    OnClick  := TreatExtButtonClick; // Delphi style event handler
+    OnClick  := HandleExtButtonClick; // Delphi style event handler
     //Free;
   end;
   Tabs := TExtTabPanel.Create;
@@ -288,6 +291,7 @@ var
   DataStore  : TExtDataSimpleStore;
   ColorValue : TExtFunction;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Statefull !!!
   ExtStateManager.SetProvider(TExtStateCookieProvider.Create);
   // create the data store
@@ -390,6 +394,7 @@ procedure TSamples.BasicTabPanel;
 var
   Window : TExtWindow;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   Window := TExtWindow.Create;
   with Window do begin
     Title  := 'Hello Dialog';
@@ -427,7 +432,7 @@ procedure TSamples.SelectNodeEventServerSide; begin
   ExtMessageBox.Alert('Server Side', Query['Name']);
 end;
 
-procedure TSamples.TreatExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton); begin
+procedure TSamples.HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton); begin
   ExtMessageBox.Alert('alert', 'event handled successfully');
 end;
 
@@ -440,6 +445,7 @@ var
  Tree : TExtTreeTreePanel;
  Node : TExtTreeTreeNode;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('html,body{font:normal 12px verdana;margin:0;padding:0;border:0 none;overflow:hidden;height:100%}' +
 	  'p{margin:5px}' +
     '.settings{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_wrench.png)}' +
@@ -569,7 +575,8 @@ procedure TSamples.EditableGrid;
 var
   Data : TExtObjectList;
 begin
-//  if Grid <> nil then Grid.Free;
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  //  if Grid <> nil then Grid.Free;
   ExtQuickTips.Init(true);
   Data := TExtObjectList.Create;
   // the "name" below matches the tag name to read, except "availDate", which is mapped to the tag "availability"
@@ -678,6 +685,7 @@ procedure TSamples.MessageBoxes;
 var
   ShowConfig : TExtShowConfig;
 begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   with TExtPanel.Create do begin
     Title    := 'Message Boxes';
     Width    := IfThen(Browser = brChrome, 850, 815);

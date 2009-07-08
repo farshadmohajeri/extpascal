@@ -726,6 +726,7 @@ begin
       repeat
         if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
+          Application.AccessThreads.Enter;
           if FSocket.Error <> 0 then
             Terminate
           else begin
@@ -772,16 +773,18 @@ begin
               inc(I, FCGIHeader.Len);
             end;
           end;
+          Application.AccessThreads.Leave;
         end
         else
-          sleep(200);
+          sleep(10);
       until Terminated
     else
       Terminate;
   except
     on E : Exception do begin
-      SendResponse(E.Message);
-      SendResponse(E.Message, rtStdErr);
+      Content := E.ClassName + ': ' + E.Message + ' at ' + IntToStr(integer(ExceptAddr));
+      SendResponse(Content);
+      SendResponse(Content, rtStdErr);
       SendEndRequest;
     end;
   end;

@@ -17,6 +17,7 @@ type
   private
     Socket : TSocket;
 		RemoteSin : TInetSockAddr;
+    function RecvPacket: AnsiString;
   public
     constructor Create(S : integer = 0);
 		destructor Destroy; override;
@@ -25,7 +26,7 @@ type
     procedure Connect(Host : string; pPort : word);
 		procedure Purge;
 		procedure Close;
-		function RecvString : AnsiString;
+		function RecvString(Timeout : integer = 300) : AnsiString;
     procedure SendString(const Data: AnsiString);
     function WaitingData : cardinal;
     function CanRead(Timeout: Integer): Boolean;
@@ -170,9 +171,7 @@ begin
 	freemem(Buffer, Tam);
 end;
 
-// Returns the socket input stream as a string
-// @see Error
-function TBlockSocket.RecvString : AnsiString;
+function TBlockSocket.RecvPacket : AnsiString;
 var
 	Tam : integer;
 begin
@@ -180,6 +179,19 @@ begin
   SetLength(Result, Tam);
   {$IFNDEF MSWINDOWS}fpSetErrNo(0);{$ENDIF}
   fpRecv(Socket, @Result[1], Tam, 0);
+  Sleep(1); // required on some environments to prevent streaming truncation
+end;
+
+{
+Returns the socket input stream as a string
+@param Timeout Max time to wait until some data is available for reading
+@see Error
+}
+function TBlockSocket.RecvString(Timeout : integer = 300) : AnsiString; begin
+  Result := '';
+  if CanRead(Timeout) then
+    while WaitingData <> 0 do
+      Result := Result + RecvPacket
 end;
 
 {
