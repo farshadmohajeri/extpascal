@@ -81,7 +81,7 @@ type
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
-    procedure RemoveJS(JS : string);
+    procedure RemoveJS(const JS : string);
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
     {$IFDEF HAS_CONFIG}
@@ -123,11 +123,13 @@ type
   }
   TExtObject = class
   private
-    function WriteFunction(Command : string): string;
+    function  WriteFunction(Command : string): string;
+    function  GetJSCommand : string;
+    procedure SetJSCommand(const Value : string);
   protected
-    FJSName   : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
-    JSCommand : string;  // Last command written in Response
-    Created   : boolean; // Tests if object already created
+    FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
+    Created    : boolean; // Tests if object already created
+    FJSCommand : string;
     function ConfigAvailable(JSName : string) : boolean;
     function ExtractJSCommand : string;
     function IsParent(CName : string): boolean;
@@ -147,6 +149,7 @@ type
     procedure InitDefaults; virtual;
     function Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction; overload;
     procedure HandleEvent(const AEvtName: string); virtual;
+    property JSCommand : string read GetJSCommand write SetJSCommand; // Last commands written in Response
   public
     constructor CreateInternal(Owner : TExtObject; Attribute : string);
     constructor Create(Owner : TExtObject = nil);
@@ -257,6 +260,7 @@ const
   DeclareJS    = '/*var*/ '; // Declare JS objects as global
   CommandDelim = #3;         // Internal JS command delimiter
   IdentDelim   = #4;         // Internal JS identifier delimiter
+  JSDelim      = #5;         // Internal JSCommand delimiter
 
 threadvar
   InJSFunction : boolean;
@@ -269,7 +273,7 @@ Used internally by Self-Translating mechanism to repositioning JS commands.
 @param JS JS command with sequence identifier.
 @see TExtObject.ExtractJSCommand
 }
-procedure TExtThread.RemoveJS(JS : string);
+procedure TExtThread.RemoveJS(const JS : string);
 var
   I : integer;
 begin
@@ -1304,7 +1308,6 @@ end;
 // Ajax with JSFunction as params
 function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction): TExtFunction; begin
   Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
-  TExtObject(Params).JSCommand := '';
 end;
 
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
@@ -1330,10 +1333,7 @@ begin
           {$IFDEF UNICODE}
           vtUnicodeString : lParams := lParams + '"+' + string(VUnicodeString) + '+"';
           {$ENDIF}
-          vtObject     : begin
-            lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
-            TExtObject(VObject).JSCommand := '';
-          end;
+          vtObject     : lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
           vtInteger    : lParams := lParams + IntToStr(VInteger);
           vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
           vtExtended   : lParams := lParams + FloatToStr(VExtended^);
@@ -1417,6 +1417,34 @@ procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
     Created := false;
     inherited Free;
   end;
+end;
+
+function TExtObject.GetJSCommand : string;
+var
+  I : integer;
+begin
+  I := LastDelimiter(JSDelim, FJSCommand);
+  if I = 0 then
+    Result := FJSCommand
+  else
+    Result := copy(FJSCommand, I+1, length(FJSCommand));
+end;
+
+procedure TExtObject.SetJSCommand(const Value : string);
+var
+  I : integer;
+begin
+  if Value = '' then begin
+    if FJSCommand <> '' then begin
+      I := LastDelimiter(JSDelim, FJSCommand);
+      if I = 0 then
+        FJSCommand := ''
+      else
+        system.delete(FJSCommand, I, length(FJSCommand));
+    end
+  end
+  else
+    FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value;
 end;
 
 {
