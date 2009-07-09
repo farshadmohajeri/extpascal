@@ -6,6 +6,7 @@ uses
   Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils;
 
 type
+  TIdProcedure = procedure of object;
   TIdExtHTTPServer = class;
   {$M+}
   TIdExtSession = class(TIdHTTPSession)
@@ -25,8 +26,10 @@ type
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
+    procedure SetPaths; virtual; abstract;
   public
     Response: string;
+    constructor Create(NewSocket : integer); reintroduce; virtual; abstract;
     constructor CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); override;
     destructor Destroy; override;
     procedure HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
@@ -34,6 +37,8 @@ type
     procedure DeleteFromGarbage(Obj: TObject); overload;
     procedure DeleteFromGarbage(Name: string); overload;
     function FindObject(Name: string): TObject;
+    function MethodURI(AMethodName: string): string; overload;
+    function MethodURI(AMethodName : TIdProcedure) : string; overload;
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
     property RequestHeader[HeaderName: string]: string read GetRequestHeader;
@@ -331,6 +336,7 @@ end;
 
 constructor TIdExtSession.CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); begin
   inherited;
+  SetPaths;
   FNewThread := False;
   FGarbageCollector := TStringList.Create;
   FGarbageCollector.Sorted := True;
@@ -494,6 +500,16 @@ end;
 procedure TIdExtSession.Logout; begin
   Response := 'window.close();';
   FLastTimeStamp := 0;
+end;
+
+function TIdExtSession.MethodURI(AMethodName : string) : string; begin
+  if AMethodName[1] <> '/' then AMethodName := '/' + AMethodName;
+  Result := Query['SCRIPT_NAME'] + AMethodName;
+end;
+
+function TIdExtSession.MethodURI(AMethodName : TIdProcedure) : string; begin
+  Result := CurrentFCGIThread.MethodName(@AMethodName);
+  if Result <> '' then Result := MethodURI(Result);
 end;
 
 procedure TIdExtSession.OnError(Msg, Method, Params: string); begin
