@@ -377,8 +377,8 @@ var
   I: Integer;
 begin
   with FGarbageCollector do begin
-    for I := 0 to Count-1 do
-      try TObject(Objects[I]).Free except end;
+    for I := Count-1 downto 0 do
+      TObject(Objects[I]).Free;
     Free;
   end;
   FGarbageCollector := nil;
