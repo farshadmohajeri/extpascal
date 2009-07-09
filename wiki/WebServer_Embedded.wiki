@@ -1,5 +1,6 @@
 #labels Featured
 From 0.92 release or SVN rev.224 ExtPascal supports an Embedded (or Internal) Web Server mode. This mode makes unnecessary to install and configure Apache/IIS, but you lose the flexibility and facilities that the Apache/IIS server can offer through its modules.
+*CAUTION: This mode is experimental and is not being actively tested and supported. Bugs and instabilities may occur...*
 
 = Steps =
 
