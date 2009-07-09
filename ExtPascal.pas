@@ -605,9 +605,7 @@ begin
       OnError('Object not found in session list. It could be timed out, refresh page and try again', 'HandleEvent', '')
     else
       Obj.HandleEvent(Query['Evt']);
-  end
-  else
-  	OnError('This method only can be called by internal objects', 'HandleEvent', '');
+  end;
 end;
 
 {

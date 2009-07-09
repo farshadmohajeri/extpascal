@@ -9,7 +9,7 @@ uses
 
 type
   TSamples = class(TExtThread)
-  public
+  private
     Tabs : TExtTabPanel;
     TabIndex : integer;
     Grid : TExtGridEditorGridPanel;
@@ -31,8 +31,8 @@ type
     procedure AddPlant; // Ajax
     procedure ReadButtonAjax; // Ajax
     procedure ReadButtonJS;
-    procedure SelectNodeEventBrowserSide;
-    procedure SelectNodeEventServerSide;
+    procedure SelectNodeEventBrowserSide; // Ajax
+    procedure SelectNodeEventServerSide;  // Ajax
     procedure Login;
     procedure CheckLogin; // Ajax
     procedure ShowSource;

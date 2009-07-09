@@ -73,6 +73,7 @@ type
     function GetQueryAsTDateTime(Name: string) : TDateTime;
     function GetQueryAsBoolean(Name: string): boolean;
   protected
+    AccessThread : TCriticalSection;
     FRequest, FPathInfo : string;
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
@@ -238,6 +239,7 @@ Creates a TFCGIThread to handle a new request to be read from the NewSocket para
 }
 constructor TFCGIThread.Create(NewSocket : integer); begin
   if Application.FThreadsCount < 0 then Application.FThreadsCount := 0;
+  AccessThread := TCriticalSection.Create;
   inc(Application.FThreadsCount);
   FGarbageCollector := TStringList.Create;
   FGarbageCollector.Sorted := true;
@@ -288,6 +290,7 @@ begin
       try TExtObject(Objects[I]).Free except end;
     Free;
   end;
+  AccessThread.Free;
   FRequestHeader.Free;
   FQuery.Free;
   FCookie.Free;
@@ -691,8 +694,8 @@ begin
   end
   else begin
     CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
-    CurrentFCGIThread.FRequestHeader.Assign(FRequestHeader);
-    CurrentFCGIThread.FCookie.Assign(FCookie);
+    CurrentFCGIThread.FRequestHeader.Assign(Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText));
+    CurrentFCGIThread.FCookie.Assign(Explode(FCookie.Delimiter, FCookie.DelimitedText));
     CurrentFCGIThread.NewThread := false;
     Application.Threads.AddObject('0', Self);
   end;
@@ -719,6 +722,7 @@ var
   Buffer, Content : string;
   I : integer;
 begin
+  AccessThread.Enter; // Protect against denial of service atack
   CurrentFCGIThread := Self;
   FRequest := '';
   try
@@ -726,7 +730,6 @@ begin
       repeat
         if FSocket.WaitingData > 0 then begin
           Buffer := FSocket.RecvString;
-          Application.AccessThreads.Enter;
           if FSocket.Error <> 0 then
             Terminate
           else begin
@@ -773,10 +776,9 @@ begin
               inc(I, FCGIHeader.Len);
             end;
           end;
-          Application.AccessThreads.Leave;
         end
         else
-          sleep(10);
+          sleep(5);
       until Terminated
     else
       Terminate;
@@ -797,6 +799,7 @@ begin
     Application.GarbageNow := true;
   end;
   {$IFNDEF MSWINDOWS}EndThread(0){$ENDIF} // Unix RTL FPC bug
+  AccessThread.Leave;
 end;
 
 {
