@@ -11,9 +11,9 @@ Because this mode works on Windows only, you will need:
 
 3. Download [http://www.indyproject.org Indy 10] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
 
-4. Update Delphi *Search Path* (menu: Project/Options/Directories/Defines) to point Indy sources.
+4. Update Delphi *Search Path* (menu: Project/Options/Directories/Conditionals) to point Indy sources.
 
-5. Add a new define *WEBSERVER* on *Conditional defines* entry (menu: Project/Options/Directories/Defines).
+5. Add a new define *WEBSERVER* on *Conditional defines:* entry (menu: Project/Options/Directories/Conditionals).
 
 6. Build all.
 
