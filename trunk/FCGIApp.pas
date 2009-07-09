@@ -89,6 +89,7 @@ type
     procedure OnNotFoundError; virtual;
     procedure AfterThreadConstruction; virtual;
     procedure BeforeThreadDestruction; virtual;
+    procedure SetPaths; virtual; abstract;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -751,7 +752,9 @@ begin
                           break;
                       end
                       else begin
+                        {$IFNDEF WebServer}
                         if pos('|', FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
+                        {$ENDIF}
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         FGarbage := CurrentFCGIThread.FGarbage;

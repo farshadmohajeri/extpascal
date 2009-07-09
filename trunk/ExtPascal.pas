@@ -101,6 +101,7 @@ type
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); override;
+    procedure SetPaths; override;
     procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
@@ -251,16 +252,16 @@ type
   TNull = TExtObject; // Ext 3.0 RC2
 //DOM-IGNORE-END*)
 
-implementation
-
-uses
-  SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
-
 const
   DeclareJS    = '/*var*/ '; // Declare JS objects as global
   CommandDelim = #3;         // Internal JS command delimiter
   IdentDelim   = #4;         // Internal JS identifier delimiter
   JSDelim      = #5;         // Internal JSCommand delimiter
+
+implementation
+
+uses
+  SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
 
 threadvar
   InJSFunction : boolean;
@@ -546,11 +547,15 @@ begin
   JSReturns := TStringList.Create;
 end;
 
-constructor TExtThread.Create(NewSocket: integer); begin
-  inherited;
+procedure TExtThread.SetPaths; begin
   ExtPath   := '/ext';
   ImagePath := '/images';
   ExtBuild  := 'ext-all';
+end;
+
+constructor TExtThread.Create(NewSocket : integer); begin
+  inherited;
+  SetPaths;
 end;
 
 {$IFDEF HAS_CONFIG}
@@ -1358,9 +1363,10 @@ begin
             ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
           exit;
         end;
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName +
-    '",params:"' + lParams + '|",success:AjaxSuccess,failure:AjaxFailure});');
-end;
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName + '",params:"' + lParams +
+    {$IFNDEF WebServer}'|'+{$ENDIF} // For IIS bug
+    '",success:AjaxSuccess,failure:AjaxFailure});');
+end;                        
 
 {
 Encapsulates JS commands in an anonymous JS function, find %0..%9 place holders and declares respective event parameters
