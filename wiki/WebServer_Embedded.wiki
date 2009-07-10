@@ -1,25 +1,23 @@
 #labels Featured
-From 0.92 release or SVN rev.224 ExtPascal supports an Embedded (or Internal) Web Server mode. This mode makes unnecessary to install and configure Apache/IIS, but you lose the flexibility and facilities that the Apache/IIS server can offer through its modules.
+From 0.9.2 release or SVN rev.224 ExtPascal supports an Embedded (or Internal) Web Server mode. This mode makes unnecessary to install and configure Apache/IIS, but you lose the flexibility and facilities that the Apache/IIS server can offer through its modules.
 *CAUTION: This mode is experimental and is not being actively tested and supported. Bugs and instabilities may occur...*
 
 = Steps =
 
-Because this mode works on Windows only, you will need:
+This mode works on Windows and Posix platforms (since SVN rev. 357) you will need:
 
-1. Delphi (7..2009).
+1. Follow the *First Steps* on GettingStarted page.
 
-2. Follow the *First Steps* on GettingStarted page.
+2. Download [http://www.indyproject.org Indy 10] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
 
-3. Download [http://www.indyproject.org Indy 10] [http://www.indyproject.org/downloads/10/indy10.0.52_source.zip sources].
+3. Update Delphi/Lazarus *Search Path* (menu: Project/Options/Directories/Conditionals on Delphi) to point Indy sources.
 
-4. Update Delphi *Search Path* (menu: Project/Options/Directories/Conditionals) to point Indy sources.
+4. Add a new define *WEBSERVER* on *Conditional defines:* entry (menu: Project/Options/Directories/Conditionals on Delphi).
 
-5. Add a new define *WEBSERVER* on *Conditional defines:* entry (menu: Project/Options/Directories/Conditionals).
+5. Build all.
 
-6. Build all.
+6. Install ExtJS at folder *ext* below the folder of ExtPascalSamples.exe.
 
-7. Install ExtJS at folder *ext* below the folder of ExtPascalSamples.exe.
+7. Start ExtPascalSamples.
 
-8. Start ExtPascalSamples.
-
-9. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
+8. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
