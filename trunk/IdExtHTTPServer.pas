@@ -3,7 +3,7 @@ unit IdExtHTTPServer;
 interface
 
 uses
-  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils;
+  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils{$IFNDEF MSWINDOWS}, InterfaceBase{$ENDIF};
 
 type
   TIdProcedure = procedure of object;
@@ -275,7 +275,7 @@ threadvar
 implementation
 
 uses
-  Windows, Messages, StrUtils, SysUtils, IdGlobalProtocols, ExtPascal;
+  {$IFDEF MSWINDOWS}Windows, Messages,{$ENDIF} StrUtils, SysUtils, IdGlobalProtocols, ExtPascal;
 
 function FileType2MimeType(const AFileName: string): string;
 var
@@ -522,25 +522,36 @@ end;
 
 { TIdExtApplication }
 
-constructor TIdExtApplication.Create(ATitle: string; ASessionClass: TIdExtSessionClass; APort, AMaxIdleMinutes: word; AMaxConns: integer);
-begin
+constructor TIdExtApplication.Create(ATitle: string; ASessionClass: TIdExtSessionClass; APort, AMaxIdleMinutes: word; AMaxConns: integer); begin
   inherited Create;
   Title := ATitle;
   FServer := TIdExtHTTPServer.Create(ASessionClass);
-  FServer.OnCommandGet   := FServer.CommandGet;
-  FServer.SessionTimeOut := AMaxIdleMinutes;
-  FServer.MaxConnections := AMaxConns;
-  FServer.ServerSoftware := ATitle;
-  FServer.DefaultPort    := APort;
+  with FServer do begin
+    OnCommandGet   := CommandGet;
+    SessionTimeOut := AMaxIdleMinutes;
+    MaxConnections := AMaxConns;
+    ServerSoftware := ATitle;
+    DefaultPort    := APort;
+    {$IFNDEF MSWINDOWS}
+    with Bindings do begin
+      Clear;
+      Add;
+      Items[0].SetPeer('127.0.0.1', APort, id_IPV4);
+    end;
+    {$ENDIF}
+  end;
 end;
 
 procedure TIdExtApplication.Run;
+{$IFDEF MSWINDOWS}
 var
   Msg : TMsg;
   Unicode : boolean;
+{$ENDIF}
 begin
   FServer.Startup;
   while true do
+    {$IFDEF MSWINDOWS}
     if PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE) then begin
       Unicode := (Msg.hwnd <> 0) and IsWindowUnicode(Msg.hwnd);
       if Unicode then
@@ -555,6 +566,7 @@ begin
         DispatchMessage(Msg);
     end
     else
+    {$ENDIF}
       sleep(1);
 end;
 
