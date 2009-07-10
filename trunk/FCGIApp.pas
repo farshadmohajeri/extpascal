@@ -752,9 +752,7 @@ begin
                           break;
                       end
                       else begin
-                        {$IFNDEF WebServer}
                         if pos('|', FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
-                        {$ENDIF}
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         FGarbage := CurrentFCGIThread.FGarbage;
