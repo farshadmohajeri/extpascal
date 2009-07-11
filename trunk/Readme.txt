@@ -1,6 +1,6 @@
 Ext JS wrapper for Object Pascal
 
-version: 0.9.5, Enumerated types
+version: 0.9.5, Ext JS 2.2.1 support
 
 ExtPascal is an Ext JS wrapper. 
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
@@ -15,12 +15,29 @@ Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
 
 
-version: 0.9.5, Enumerated types, changes:
+version: 0.9.5, Ext JS 2.2.1 support, 11-jul-2009, changes:
 
+- Ext JS 2.2.1 support
 - Pascal enumerated types support, see ExtFixes.txt for more informations
-- PowerPC support
+- PowerPC and Big-endian architectures support
 - CacheFly option
 - New helper functions SetMargins and SetPaddings
+- Ext.ux.form.LovCombo support
+- Ext.ux.grid.RecordForm support
+- New SetIconCls method
+- New properties: ImagePath, ExtBuild, Browser, 
+- Improved TRegexp recognition
+- Blocksocket fixes
+- D2009 support
+- New USESPUBLISHED symbol define
+- Fixes for IIS
+- Configuration and reconfigurantion process based on .INI file
+- BeautifyJS/CSS functions for JavaScript debugging
+- Embedded WebServer compiling fixed
+- Embedded WebServer support for Linux (experimental)
+- Fixed Issue 8:  "weird behavior of tab demo"
+- Fixed Issue 14: "Ajax param can't be filled by many values which come from single control object"
+- New parser to Ext JS 3
 
 0.9.4, CodePress, 28-nov-2008, changes:
 
