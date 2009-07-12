@@ -3,7 +3,7 @@
 
   * Ext JS 2.2.1 support
   * Pascal enumerated types support, see ExtFixes.txt for more informations
-  * PowerPC and Big-endian architectures support
+  * PowerPC and Big-endian architectures support by Phil
   * CacheFly option
   * New helper functions SetMargins and SetPaddings
   * Ext.ux.form.LovCombo support
@@ -15,13 +15,13 @@
   * D2009 support
   * New USESPUBLISHED symbol define
   * Fixes for IIS
-  * Configuration and reconfigurantion process based on .INI file
-  * BeautifyJS/CSS functions for JavaScript debugging
+  * Configuration and reconfigurantion process based on .INI file by Bee
+  * BeautifyJS/CSS functions for JavaScript debugging by Bee
   * Embedded WebServer compiling fixed
-  * Embedded WebServer support for Linux (experimental)
+  * Embedded WebServer support for Linux (experimental) by Patrício
   * Fixed Issue 8 "weird behavior of tab demo"
   * Fixed Issue 14 "Ajax param can't be filled by many values which come from single control object"
-  * New parser to Ext JS 3
+  * New parser for Ext JS 3
 
 =0.9.4, CodePress, 28-nov-2008=
 
