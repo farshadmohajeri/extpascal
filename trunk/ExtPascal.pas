@@ -250,6 +250,7 @@ type
   TDOMElement = TExtObject; // doc fault Ext 3.0
   TRecord = TExtObject; // Ext 3.0 RC2
   TNull = TExtObject; // Ext 3.0 RC2
+  TMisc = TExtObject; // doc fault Ext 3.0
 //DOM-IGNORE-END*)
 
 const

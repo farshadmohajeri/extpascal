@@ -154,6 +154,7 @@ begin
         J := AllClasses.IndexOf(Parent);
         if J <> -1 then begin
           UName := TClass(AllClasses.Objects[J]).UnitName;
+          if (Self.Name = 'Ext') and (UName = 'ExtData') then continue; // remove circular reference
           if (UName <> UnitName) and (pos(', ' + UName + ',', Result + ',') = 0) then
             Result := Result + ', ' + UName
         end;
@@ -186,6 +187,7 @@ procedure TUnit.ReviewTypes;
           else
             Typ := 'T' + Units[I] + T;
           if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
+          if (Name = 'Ext')       and (Units[I] = 'ExtData') then exit; // remove circular reference
           if (Name = 'Ext')       and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
@@ -1090,7 +1092,8 @@ begin
                      Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;');
         if IsExt3 then
           writeln(Pas, Tab, 'TExtMenuMenu = TExtContainer;'^M^J, Tab, 'TExtDirectProvider = TExtUtilObservable;'^M^J,
-                       Tab, 'TExtToolbarButton = TExtContainer;'); // Ext JS 3.0 doc fault
+                       Tab, 'TExtDataStore = TExtUtilObservable;'^M^J, Tab, 'TExtDataConnection = TExtUtilObservable;'^M^J,
+                       Tab, 'TExtDataRecord = TExtObject;');
       end;
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
