@@ -54,3 +54,9 @@ The *CGIGateway* used to run an ExtPascal application on a Web Server that not p
 through CGI standard protocol.
 
 06. If there's no request over than MaxIdleTime, the FCGI app terminates itself. 
+
+=And ExtPascal has one experimental sixth component:=
+
+[http://extpascal.call.inf.br/webserverembedded.png]
+
+Read WebServer_Embedded for more details.
