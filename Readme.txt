@@ -1,6 +1,6 @@
 Ext JS wrapper for Object Pascal
 
-version: 0.9.5, Ext JS 2.2.1 support
+version: 0.9.6, Ext JS 3.0.0 support
 
 ExtPascal is an Ext JS wrapper. 
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
@@ -14,8 +14,9 @@ Live demos: http://pitinnu.fazenda.df.gov.br/ExtPascal/SrvExtPascal
 Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
 
+0.9.6, Ext JS 3.0.0 support, 13-jul-2009
 
-version: 0.9.5, Ext JS 2.2.1 support, 11-jul-2009, changes:
+0.9.5, Ext JS 2.2.1 support, 11-jul-2009, changes:
 
 - Ext JS 2.2.1 support
 - Pascal enumerated types support, see ExtFixes.txt for more informations
