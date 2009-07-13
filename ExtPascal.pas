@@ -262,7 +262,7 @@ const
 implementation
 
 uses
-  SysUtils, StrUtils, Math, ExtPascalUtils, ExtUtil;
+  SysUtils, StrUtils, Math, ExtPascalUtils, Ext, ExtUtil;
 
 threadvar
   InJSFunction : boolean;
@@ -527,7 +527,7 @@ begin
     I := pos('-', FLanguage);
     if I <> 0 then begin
       FLanguage := copy(FLanguage, I-2, 2) + '_' + Uppercase(copy(FLanguage, I+1, 2));
-      if not FileExists(RequestHeader['DOCUMENT_ROOT'] + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js') then
+      if not FileExists(RequestHeader['DOCUMENT_ROOT'] + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js') then
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
@@ -673,7 +673,7 @@ begin
       '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
       {$ENDIF}
       IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
-      IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + '/source/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
+      IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
       GetStyle + Libraries +
       '</head>'^M^J +
       '<script>'^M^J +
