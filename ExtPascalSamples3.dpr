@@ -260,7 +260,6 @@ begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
-  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu');
   with TExtButton.Create do begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
@@ -280,7 +279,6 @@ begin
     Height          := 150;
     Defaults        := JSObject('autoScroll:true');
     EnableTabScroll := true;
-    Plugins         := JSObject('', 'Ext.ux.TabCloseMenu');
     for I := 1 to 7 do AddTab;
     AddShowSourceButton(Buttons, 'AdvancedTabs');
   end;
