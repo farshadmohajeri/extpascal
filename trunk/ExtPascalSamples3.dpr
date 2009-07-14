@@ -1,3 +1,4 @@
+{$A1,B-,C-,D+,E-,F-,G+,H+,I+,J+,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V-,W-,X+,Y+,Z1}
 program ExtPascalSamples3; // for Ext JS 3 and later
 {.$DEFINE SERVICE}
 {$IFNDEF WebServer}
