@@ -1,4 +1,4 @@
 #labels Featured
   * [http://home.reidspace.co.uk/ Ext4Delphi]
 
-[http://extpascal.call.inf.br/images/ext_app_bee_1.tiff]
+[http://extpascal.call.inf.br/images/ext_app_bee_1.png]
