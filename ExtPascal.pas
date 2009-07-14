@@ -285,8 +285,8 @@ end;
 
 {
 Adds/Removes an user JS library to be used in current response.
-Common requests does reset for user libraries and user style.
-In opposite the AJAX requests does not reset and becomes part or rest of the same request.
+If the WebServer is Apache tests if the library exists.
+Repeated libraries are ignored.
 @param pLibrary JS library without extension (.js), but with Path based on Web server document root.
 @param CSS pLibrary has a companion stylesheet (.css) with same path and name.
 @param HasDebug Library has a debug, non minified, version. Default is true.
@@ -294,20 +294,27 @@ If pLibrary is '' then all user JS libraries to this session will be removed fro
 @example <code>SetLibrary('');</code>
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
-procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true); begin
-  if pos(pLibrary, Libraries) = 0 then
+procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
+var
+  Root : string;
+begin
+   if pos(pLibrary, Libraries) = 0 then
     if pLibrary = '' then
       Libraries := ''
     else begin
-      Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
-      if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
+      Root := RequestHeader['Document_Root'];
+      if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
+        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
+        if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
+      end
+      else
+        raise Exception.Create('Library: ' + Root + pLibrary + '.js not found');
     end;
 end;
 
 {
 Adds/Removes an user JS code to be used in current response.
-Common requests does reset for user libraries and user style.
-In opposite the AJAX requests does not reset and becomes part or rest of the same request.
+Repeated code is ignored.
 @param JS JS code to inject in response. If JS is '' then all user JS code to this session will be removed from response.
 }
 procedure TExtThread.SetCustomJS(JS : string = ''); begin
@@ -320,7 +327,9 @@ end;
 
 {
 Creates CSS classes to use with IconCls properties in Buttons. The images are .png files in 16x16 format.
-Set <link ImagePath> variable to appropriate value before to use this method.
+Set <link ImagePath> variable to appropriate value before to use this method. Default is /images.
+If the WebServer is Apache tests if each image exists.
+Repeated images are ignored.
 @param Cls String array with the names of .png files.
 @example <code>
 SetIconCls(['task', 'objects', 'commit', 'cancel', 'refresh', 'info', 'help', 'pitinnu', 'exit']);
@@ -333,15 +342,19 @@ end;</code>
 procedure TExtThread.SetIconCls(Cls : array of string);
 var
   I : integer;
+  Root : string;
 begin
+  Root := RequestHeader['Document_Root'];
   for I := 0 to high(Cls) do
-    SetStyle('.' + Cls[I] + '{background-image:url("' + ImagePath + '/' + Cls[I] + '.png") !important}');
+    if (Root = '') or ((Root <> '') and FileExists(Root + ImagePath + '/' + Cls[I] + '.png')) then
+      SetStyle('.' + Cls[I] + '{background-image:url("' + ImagePath + '/' + Cls[I] + '.png") !important}')
+    else
+      raise Exception.Create('Image file: ' + Root + ImagePath + '/' + Cls[I] + '.png not found');
 end;
 
 (*
 Adds/Removes a user stylesheet to be used in current response.
-Common requests does reset for user libraries and user style.
-In opposite the AJAX requests does not reset and becomes part or rest of the same request.
+Repeated style is ignored.
 @param pStyle Styles to apply upon HTML or Ext elements in this response using CSS notation.
 If pStyle is '' then all user styles to this session will be removed from response.
 @example <code>SetStyle('');</code>
@@ -406,10 +419,10 @@ Self-translating (ST) is not a compiler. It's a minimalist (very small, ultra qu
 You code in Object Pascal and when the program runs it automatically generates the corresponding JavaScript code.
 
 But there is an essential limitation; it does not create business rules or sophisticated behavior in JavaScript.
-So it does not interpret "IF", "WHILE", "CASE", "TRY", etc commands, but "IF", "WHILE", etc but realizes a conditional code generation
-on Server side as ASP and JSP does it. ST is used to create objects and widgets, to set properties and events, to call methods.
+So it does not interpret "IF", "WHILE", "CASE", "TRY", etc commands, but "IF", "WHILE", etc realizes a conditional code generation
+on Server side as ASP and JSP does it. ST is used to create objects and widgets, to set properties and events and to call methods.
 It's analogous to Delphi .dfm file role: to describe a GUI.
-There are additional facilities to invoke Server side logic using <link TExtObject.Ajax, AJAX>, to define small <link TExtObject.JSFunction, functions> in JavaScript and
+There are additional facilities to invoke complex Server side logic using <link TExtObject.Ajax, AJAX>, to define small <link TExtObject.JSFunction, functions> in JavaScript and
 to use <link TExtThread.SetLibrary, large JS libraries>. It's enough to create powerful GUIs.
 The rest (business rules, database access, etc) should be done in Object Pascal on Server side.
 
@@ -418,28 +431,30 @@ Basic work:
 * JS attributes are found in Response using yours JSName attribute and setted in place.
 * If not found, JS attributes are appended to Response.
 @param JS JS commands or assigning of attributes or events
-@param JSName Optional current JS Object name
+@param JSName Optional current JS object name
+@param Owner Optional JS object owner for TExtObjectList
 }
 procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
 var
   I : integer;
 begin
-  if JS[length(JS)] = ';' then // Command
+  if JS[length(JS)] = ';' then begin // Command
+    if (pos(IdentDelim, JSName) <> 0) and (pos(DeclareJS, JS) = 0) and (pos(JSName, JS) <> 0) and (pos(DeclareJS + JSName, Response) = 0) then begin
+      I := pos('.', JS);
+      JSName := copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1);
+      raise Exception.Create('Public property or Method: ''' + JSName + ''' requires explicit ''var'' declaration.');
+    end;
     I := length(Response) + 1
+  end
   else  // set attribute
-    if JSName = '' then begin
-      ErrorMessage('Missing '';'' in command: ' + JS);
-      exit;
-    end
+    if JSName = '' then
+      raise Exception.Create('Missing '';'' in command: ' + JS)
     else begin
       I := pos('/*' + JSName + '*/', Response);
-      if I = 0 then begin
-        ErrorMessage('Config Option: ' + JS + '<br/>is refering a previous request,' +
+      if I = 0 then
+        raise Exception.Create('Config Option: ' + JS + '<br/>is refering a previous request,' +
           '<br/>it''s not allowed in AJAX request or JS handler.<br/>Use equivalent Public Property or Method instead.');
-        exit;
-      end
-      else
-        if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
+      if not(Response[I-1] in ['{', '[', '(', ';']) then JS := ',' + JS;
     end;
   insert(JS, Response, I);
   if (pos('O' + IdentDelim, JS) <> 0) and (pos('O' + IdentDelim, JSName) <> 0) then begin
@@ -535,7 +550,7 @@ begin
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
-  if IsAjax then 
+  if IsAjax then
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
       Result := false;
@@ -548,12 +563,17 @@ begin
   JSReturns := TStringList.Create;
 end;
 
+// Override this method to change ExtPath, ImagePath and ExtBuild default values
 procedure TExtThread.SetPaths; begin
   ExtPath   := '/ext';
   ImagePath := '/images';
   ExtBuild  := 'ext-all';
 end;
 
+{
+Creates a new thread to handle a new socket request
+@param NewSocket Socket handle
+}
 constructor TExtThread.Create(NewSocket : integer); begin
   inherited;
   SetPaths;
