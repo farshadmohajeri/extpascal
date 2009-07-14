@@ -1,0 +1,5 @@
+===How to debugging an ExtPascal application?===
+If you want to debug your ExtPascal application using Delphi/LazarusMSEide, it's very
+simple. Put a break point somewhere in the code, in Home method by example. Then run your ExtPascal application from within IDE. Open the browser and hit the URL address. If everything works fine, then the IDE will hold on the breakpoint. From there you could do whatever you need, run step by step, watching values, etc. During debugging, you
+may forget the browser output because it should be off due the
+response time out. But, your ExtPascal application is still running.
