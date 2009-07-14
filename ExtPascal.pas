@@ -580,6 +580,7 @@ constructor TExtThread.Create(NewSocket : integer); begin
 end;
 
 {$IFDEF HAS_CONFIG}
+// Read ExtPath, ImagePath and Theme from configuration file
 procedure TExtThread.ReadConfig; begin
   with Application do
     if HasConfig then begin
@@ -591,11 +592,13 @@ procedure TExtThread.ReadConfig; begin
     end;
 end;
 
+// config will be read once, only on new client thread construction
 procedure TExtThread.AfterThreadConstruction; begin
   inherited;
-  ReadConfig; // config will be read once, only on new client thread construction
+  ReadConfig;
 end;
 
+// Re-read config file if password is right
 procedure TExtThread.Reconfig;
 {$IFDEF DEBUGJS}
 var
@@ -807,7 +810,7 @@ Returns the Ith object in the list, starts with 0.
 @param I Position in list
 @return <link TExtObject>
 }
-function TExtObjectList.GetFObjects(I : integer): TExtObject; begin
+function TExtObjectList.GetFObjects(I : integer) : TExtObject; begin
   if (I >= 0) and (I <= high(FObjects)) then
     Result := FObjects[I]
   else
@@ -815,7 +818,7 @@ function TExtObjectList.GetFObjects(I : integer): TExtObject; begin
 end;
 
 // Returns the number of Objects in the list
-function TExtObjectList.Count: integer; begin
+function TExtObjectList.Count : integer; begin
   Result := length(FObjects)
 end;
 
@@ -924,7 +927,7 @@ constructor TExtObject.CreateInternal(Owner : TExtObject; Attribute : string); b
 end;
 
 // Returns 'Object' that is the default class name for Ext JS objects
-function TExtObject.JSClassName: string; begin
+function TExtObject.JSClassName : string; begin
   Result := 'Object'
 end;
 
@@ -991,7 +994,7 @@ constructor TExtObject.Init(Method : TExtFunction); begin
   JSCode(CommandDelim + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
 end;
 
-constructor TExtObject.Init(Command: string); begin
+constructor TExtObject.Init(Command : string); begin
   CreateJSName;
   CurrentFCGIThread.AddToGarbage(JSName, Self);
   Created := true;
