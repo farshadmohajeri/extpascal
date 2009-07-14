@@ -10,5 +10,5 @@ For example:
 {{{
 Handler := Ajax(Server.Method, TExtFormBasicForm(AForm.getForm).getValues);
 }}}
-then all form values are serialized to server by the ExtJS framework itself. You don't need to parse manually on server side because all values are in the common name=value format
+Then all form values are serialized to server by the ExtJS framework itself. You don't need to parse manually on server side because all values are in the common name=value format
 within the POST request content.
