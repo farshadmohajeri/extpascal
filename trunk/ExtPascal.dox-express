@@ -1,4 +1,4 @@
-﻿; This is a Doc-O-Matic version 6.4.2.1326 project file.
+﻿; This is a Doc-O-Matic version 6.5.1.1382 project file.
 ; This file is maintained by Doc-O-Matic, do not edit manually.
 
 [AutoTexts]
@@ -212,11 +212,11 @@ Author=Wanderlan Santos dos Anjos
 AuthorEmail=wanderlan.anjos@gmail.com
 Copyright=Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) - License: BSD - Date: jul-2008
 Summary=Ext JS wrapper for Object Pascal
-Title=ExtPascal 0.9.2
+Title=ExtPascal 0.9.6
 VersionBuild=0
 VersionMajor=0
 VersionMinor=9
-VersionRelease=2
+VersionRelease=6
 
 [Macro Header Files]
 Count=0
@@ -249,7 +249,7 @@ TrailerChars=-+~/#
 WallCharacters="#$%&'*+-/=@[\]^_`{|}~
 
 [Project File Info]
-Version=604
+Version=605
 
 [Section\0]
 Count=3
