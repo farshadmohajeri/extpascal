@@ -5,7 +5,7 @@ simple. Put a break point somewhere in the code, in Home method by example. Then
 may forget the browser output because it should be off due the
 response time out. But, your ExtPascal application is still running.
 
-==How to send all fields from a form to server using Ajax?===
+===How to send all fields from a form to server using Ajax?===
 For example: 
 {{{
 Handler := Ajax(Server.Method, TExtFormBasicForm(AForm.getForm).getValues);
