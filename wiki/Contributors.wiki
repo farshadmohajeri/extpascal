@@ -26,4 +26,4 @@
 
  * *Phil Hess*
   * PowerPC fixes
-  * [http://extpascal.googlegroups.com/web/ExtPToolkitStatus.html?gda=1Vy8QUgAAACh8pebQU6YMyywZ4rY0spLwIPUuUMP92jEYHNOE4HiH5WlP_2gcuPue5FrrHFpWi13Vb0rL0TI2pkQqoSDTBNYGjVgdwNi-BwrUzBGT2hOzg Delphi/Lazarus forms converter to ExtPascal (under construction)]
+  * [http://extpascal.call.inf.br/ExtPToolkitStatus.html ExtP Toolkit (Delphi/Lazarus forms converter to ExtPascal (under construction))]
