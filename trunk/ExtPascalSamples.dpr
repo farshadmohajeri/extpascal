@@ -8,6 +8,10 @@ uses
   ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
+{$IF IsExt3}
+  Don´t use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead
+{$IFEND}
+
 type
   TSamples = class(TExtThread)
   private

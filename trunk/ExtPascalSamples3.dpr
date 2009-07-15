@@ -6,7 +6,11 @@ program ExtPascalSamples3; // for Ext JS 3 and later
 {$ENDIF}
 uses
   ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtAir, ExtSql, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+
+{$IF not IsExt3}
+  Don´t use this program for ExtJS 2.x compiling, use ExtPascalSamples instead
+{$IFEND}
 
 type
   TSamples = class(TExtThread)
