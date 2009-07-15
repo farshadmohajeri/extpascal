@@ -171,6 +171,7 @@ begin
 	freemem(Buffer, Tam);
 end;
 
+// Receives the next available tcp packet
 function TBlockSocket.RecvPacket : AnsiString;
 var
 	Tam : integer;
@@ -184,7 +185,7 @@ end;
 
 {
 Returns the socket input stream as a string
-@param Timeout Max time to wait until some data is available for reading
+@param Timeout Max time to wait until some data is available for reading. Default is 300 miliseconds
 @see Error
 }
 function TBlockSocket.RecvString(Timeout : integer = 300) : AnsiString; begin
@@ -199,7 +200,7 @@ Sends a string by the socket
 @param Data String to send
 @see Error
 }
-procedure TBlockSocket.SendString(const Data: AnsiString); begin
+procedure TBlockSocket.SendString(const Data : AnsiString); begin
 	fpSend(Socket, @Data[1], length(Data), 0);
 end;
 

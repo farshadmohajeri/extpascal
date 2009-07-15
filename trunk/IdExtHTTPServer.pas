@@ -21,7 +21,7 @@ type
     function GetQuery(const ParamName: string): string;
     function GetCookie(const CookieName: string): string;
   protected
-    //Methods to be implemented in your app
+    // Methods to be implemented in your app
     function BeforeHandleRequest : boolean; virtual;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
@@ -567,7 +567,7 @@ begin
     end
     else
     {$ENDIF}
-      sleep(1);
+      sleep(10);
 end;
 
 end.

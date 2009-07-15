@@ -12,7 +12,7 @@ uses
   Classes, TypInfo;
 
 const
-  ExtPascalVersion = '0.9.6';
+  ExtPascalVersion = '0.9.7';
 
 {$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 type
@@ -28,7 +28,7 @@ type
 {$IFEND}
 
 type
-  TCSSUnit = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone);
+  TCSSUnit = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
 
 {
 Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter
@@ -112,11 +112,16 @@ instead
 function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
   Header : boolean = false) : string;
 
+// Returns true if BeforesS string occurs before AfterS string in S string
 function Before(const BeforeS, AfterS, S : string) : boolean;
+
+// Returns true if all chars in S are uppercase
 function IsUpperCase(S : string) : boolean;
 
-// Beautify generated script file from ExtPascal, automatically used when DEBUGJS is defined
+// Beautify generated JS commands from ExtPascal, automatically used when DEBUGJS symbol is defined
 function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
+
+// Beautify generated CSS from ExtPascal, automatically used when DEBUGJS symbol is defined
 function BeautifyCSS(const AStyle : string) : string;
 
 implementation
