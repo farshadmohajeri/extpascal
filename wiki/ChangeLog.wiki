@@ -2,6 +2,7 @@
 ===0.9.6, Ext JS 3.0.0 support, 13-jul-2009===
 
   * New specific ExtPascalSamples3.dpr file
+  * New IsExt3 boolean constant
 
 ===0.9.5, Ext JS 2.2.1 support, 11-jul-2009===
 
