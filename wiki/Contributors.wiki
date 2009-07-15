@@ -20,6 +20,7 @@
 
  * *Patricio Diaz*
   * Windows Vista Services support
+  * Embedded Web Server port to Linux
 
  * *Rovi*
   * SimplifiedFlow graph
