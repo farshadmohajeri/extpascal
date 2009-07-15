@@ -155,10 +155,10 @@ type
     Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
     Title      : string;  // Application title used by <link TExtThread.AfterHandleRequest, AfterHandleRequest>
     Icon       : string;  // Icon to show in Browser
-    Password   : string;
-    HasConfig  : boolean;
+    Password   : string;  // Password to be informed in Browser URL, as a query parameter, to Shutdown and Reconfig methods. Default password is extpascal
+    HasConfig  : boolean; // True if this application was compiled to have a configuration file
     {$IFDEF HAS_CONFIG}
-    Config : TIniFile;
+    Config : TIniFile; // Config file handle
     function ReadConfig : boolean;
     procedure Reconfig(AReload : boolean = true);
     {$ENDIF}
@@ -267,7 +267,11 @@ begin
   if I >= 0 then FGarbageCollector.Delete(I);
 end;
 
-// Finds a TObject in Garbage collector using its JavaScript name
+{
+Finds a TObject in Garbage collector using its JavaScript name
+@param Name Object JS name
+@return The object reference if exists else returns nil
+}
 function TFCGIThread.FindObject(Name : string) : TObject;
 var
   I : Integer;
@@ -307,7 +311,7 @@ procedure TFCGIThread.SetResponseHeader(Header : string); begin
     FResponseHeader := FResponseHeader + Header + ^M^J;
 end;
 
-// Terminates the TFCGIThread calls <link TFCGIThread.Logout, Logout> method
+// Terminates the TFCGIThread, calls <link TFCGIThread.Logout, Logout> method and terminates the application
 procedure TFCGIThread.Shutdown; begin
   if Query['password'] = Application.Password then begin
     Logout;
@@ -521,6 +525,7 @@ Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> met
 }
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
+// Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
 procedure TFCGIThread.CompleteRequestHeaderInfo;
 var
   ReqMet : string;
@@ -645,11 +650,19 @@ procedure TFCGIThread.Logout; begin
   FGarbage := true;
 end;
 
+{
+Returns the URI address of a Method. Doesn't test if Method name is invalid.
+@param AMethodName Method name.
+}
 function TFCGIThread.MethodURI(AMethodName : string) : string; begin
   if AMethodName[1] <> '/' then AMethodName := '/' + AMethodName;
   Result := FRequestHeader.Values['SCRIPT_NAME'] + AMethodName;
 end;
 
+{
+Returns the URI address of a Method. If method is invalid returns ''
+@param AMethodName Method reference
+}
 function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
   Result := CurrentFCGIThread.MethodName(@AMethodName);
   if Result <> '' then Result := MethodURI(Result);
@@ -843,6 +856,8 @@ begin
 end;
 
 {$IFDEF HAS_CONFIG}
+
+// Calls <link Application.Reconfig> if the password is right
 procedure TFCGIThread.Reconfig; begin
   if Query['password'] = Application.Password then begin
     Application.Reconfig;
@@ -850,6 +865,10 @@ procedure TFCGIThread.Reconfig; begin
   end;
 end;
 
+{
+Reads FastCGI port and Password from the configuration file
+@return True if the config file exists
+}
 function TFCGIApplication.ReadConfig : boolean;
 var
   ConfigFile : string;
@@ -866,6 +885,10 @@ begin
     except end;
 end;
 
+{
+Reads MaxIdleTime, MaxConns, Shutdown and WServers fields from the config file
+@param AReload If true reload from disk
+}
 procedure TFCGIApplication.Reconfig(AReload : boolean = true);
 var
   H, M, S, MS : word;
@@ -907,8 +930,8 @@ Creates a FastCGI application instance.
 @param pFCGIThreadClass Thread class type to create when a new request arrives
 @param pPort TCP/IP port used to comunicate with the Web Server, default is 2014
 @param pMaxIdleMinutes Minutes of inactivity before the end of the thread, releasing it from memory, default is 30 minutes
-@param pShutdownAfterLastThreadDown If true Shutdown the application after the last thread to end, default is false
-@param pMaxConns Maximum accepted connections
+@param pShutdownAfterLastThreadDown If true Shutdown the application after the last thread to end, default is false. Good for commercial CGI hosting.
+@param pMaxConns Maximum accepted connections, default is 1000
 }
 constructor TFCGIApplication.Create(pTitle : string; pFCGIThreadClass : TFCGIThreadClass; pPort : word = 2014; pMaxIdleMinutes : word = 30;
   pShutdownAfterLastThreadDown : boolean = false; pMaxConns : integer = 1000);

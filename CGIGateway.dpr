@@ -10,7 +10,7 @@ It is used to run an ExtPascal application on a Web Server that not provides Fas
 <image cgigateway>
 Format for optional configuration file (.INI).
 To use configuration file define the conditional symbol HAS_CONFIG.
-Must have a section named [FCGI].
+Must have a section named [FCGI]. See sample file ExtPascalSamples.ini.
 If the configuration file is not found then the value is taken from default.
 Below are the supported options:
   Enabled: boolean     - to enable or disable FCGI service
@@ -65,8 +65,8 @@ var
   Socket  : TBlockSocket; // Block socket object
   FCGIApp : string;       // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
   {$IFDEF HAS_CONFIG}
-  Config  : TIniFile;     // optional configuration file to control application behavior
-  CGIConf : string;       // configuration file name
+  Config  : TIniFile;     // Optional configuration file to control application behavior
+  CGIConf : string;       // Configuration file name
   {$ENDIF}
 
 {
@@ -122,8 +122,8 @@ end;
 
 {
 Returns the environment variables encapsulated using FastCGI protocol
-@param EnvName Environment variable name to override
-@param EnvValue value to override
+@param EnvName Optional environment variable name to override
+@param EnvValue Optional value to override
 }
 function EnvVariables(EnvName : string = ''; EnvValue : string = '') : string;
 const
@@ -161,10 +161,11 @@ begin
 end;
 
 {
-Reads the data from Web Server using CGI protocol and
-writes the same data to FastCGI application using FastCGI protocol
+Sends Environment variables to FastCGI application using FastCGI protocol.
+Receives the response and returns this response to Web Server
+@param EnvVars Environment variables to send
 }
-procedure TalkFCGI(AParams : string);
+procedure TalkFCGI(EnvVars : string);
 var
   Request : string;
   Tam : word;
@@ -181,7 +182,7 @@ begin
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
-               AParams + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
+               EnvVars + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
     Request := RecvString(3000);
     if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
@@ -243,6 +244,12 @@ begin
 end;
 
 {$IFDEF HAS_CONFIG}
+
+{
+Reads FCGIApp name, Host and Port from configuration file
+@param AFileName Configuration file name
+@return True if AFileName exists
+}
 function ReadConfig(AFileName : string) : boolean; begin
   Result := false;
   if FileExists(AFileName) then begin
@@ -254,30 +261,34 @@ function ReadConfig(AFileName : string) : boolean; begin
   end;
 end;
 
+{
+Forces shutdown any running FCGI instances through request
+@return True if sent request
+}
 function ShutdownFCGI : boolean; begin
   Result := false;
-  if CGIConf <> '' then
-    // force shutdown any running FCGI instances through request
-    if not Config.ReadBool('FCGI', 'Enabled', true) then begin
-      TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + Config.ReadString('FCGI', 'Password', 'extpascal')));
-      Result := true;
-    end;
+  if (CGIConf <> '') and not Config.ReadBool('FCGI', 'Enabled', true) then begin
+    TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + Config.ReadString('FCGI', 'Password', 'extpascal')));
+    Result := true;
+  end;
 end;
 
+{
+Kills shutdown any running FCGI instances through system call
+@return True if called the kill command
+}
 function KillFCGI : boolean; begin
   Result := false;
-  if CGIConf <> '' then
-    // force shutdown any running FCGI instances through system call
-    if not Config.ReadBool('FCGI', 'Enabled', true) then begin
-      if (Host = 'localhost') or (Host = '127.0.0.1') then begin
-        {$IFNDEF MSWINDOWS}
-        fpSystem('killall '+ ExtractFileName(FCGIApp));
-        {$ELSE}
-        { TODO : windows way to force kill an app }
-        {$ENDIF}
-      end;
-      Result := true;
+  if (CGIConf <> '') and not Config.ReadBool('FCGI', 'Enabled', true) then begin
+    if (Host = 'localhost') or (Host = '127.0.0.1') then begin
+      {$IFNDEF MSWINDOWS}
+      fpSystem('killall '+ ExtractFileName(FCGIApp));
+      {$ELSE}
+      { TODO : windows way to force kill an app }
+      {$ENDIF}
     end;
+    Result := true;
+  end;
 end;
 {$ENDIF}
 
