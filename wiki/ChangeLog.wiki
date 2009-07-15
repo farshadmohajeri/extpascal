@@ -24,6 +24,7 @@
   * Embedded WebServer compiling fixed
   * Embedded WebServer support for Linux (experimental) by Patrício
   * New Ajax overloads
+  * New MethodURI
   * Fixed Issue 8 "weird behavior of tab demo"
   * Fixed Issue 14 "Ajax param can't be filled by many values which come from single control object"
   * New parser for Ext JS 3
