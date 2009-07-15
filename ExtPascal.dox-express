@@ -77,8 +77,8 @@ WindowPosition_Top=0
 
 [Configurations\Help 2\Image Paths]
 Count=3
-Path0=..\..\Arquivos de programas\Doc-O-Matic\graphics
-Path1=..\..\Arquivos de programas\Doc-O-Matic\graphics\en
+Path0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics
+Path1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\en
 Path2=images
 
 [Configurations\Help 2\Output Options]
@@ -89,10 +89,10 @@ ID={D3A588E0-9472-11D3-BDD1-0080C8BA053D}
 
 [Configurations\HTML Help\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\AdditionalFiles]
 Count=4
-File0=..\..\Arquivos de programas\Doc-O-Matic\graphics\footer-bkg-whitegradient.gif
-File1=..\..\Arquivos de programas\Doc-O-Matic\graphics\header-bkg-whitegradient.gif
-File2=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_fullframegradient.gif
-File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
+File0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\footer-bkg-whitegradient.gif
+File1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\header-bkg-whitegradient.gif
+File2=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_fullframegradient.gif
+File3=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_titlebkg.jpg
 
 [Configurations\HTML Help\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
 ClearDirectoryBeforeExport=1
@@ -137,22 +137,22 @@ WindowPosition_Top=0
 
 [Configurations\HTML Help\Image Paths]
 Count=3
-Path0=..\..\Arquivos de programas\Doc-O-Matic\graphics
-Path1=..\..\Arquivos de programas\Doc-O-Matic\graphics\en
+Path0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics
+Path1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\en
 Path2=images
 
 [Configurations\HTML Help\Output Options]
-ClassHierarchyLayoutOutputDir=..\..\Documents and Settings\wander.NOTEBOOK-WANDER\Meus documentos\Doc-O-Matic\graphics
+ClassHierarchyLayoutOutputDir=chm
 
 [Configurations\HTML Help\OutputFormat]
 ID={D3A588E0-9472-11D3-BDD1-0080C8BA053D}
 
 [Configurations\HTML\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\AdditionalFiles]
 Count=4
-File0=..\..\Arquivos de programas\Doc-O-Matic\graphics\footer-bkg-whitegradient.gif
-File1=..\..\Arquivos de programas\Doc-O-Matic\graphics\header-bkg-whitegradient.gif
-File2=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_fullframegradient.gif
-File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
+File0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\footer-bkg-whitegradient.gif
+File1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\header-bkg-whitegradient.gif
+File2=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_fullframegradient.gif
+File3=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_titlebkg.jpg
 
 [Configurations\HTML\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
 ClearDirectoryBeforeExport=1
@@ -197,12 +197,12 @@ WindowPosition_Top=0
 
 [Configurations\HTML\Image Paths]
 Count=3
-Path0=..\..\Arquivos de programas\Doc-O-Matic\graphics
-Path1=..\..\Arquivos de programas\Doc-O-Matic\graphics\en
+Path0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics
+Path1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\en
 Path2=images
 
 [Configurations\HTML\Output Options]
-ClassHierarchyLayoutOutputDir=..\..\Documents and Settings\wander.NOTEBOOK-WANDER\Meus documentos\Doc-O-Matic\graphics
+ClassHierarchyLayoutOutputDir=help
 
 [Configurations\HTML\OutputFormat]
 ID={D3A588E0-9472-11D3-BDD1-0080C8BA053D}
@@ -210,7 +210,7 @@ ID={D3A588E0-9472-11D3-BDD1-0080C8BA053D}
 [General]
 Author=Wanderlan Santos dos Anjos
 AuthorEmail=wanderlan.anjos@gmail.com
-Copyright=Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) - License: BSD - Date: jul-2008
+Copyright=Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com) - License: BSD - Date: jul-2009
 Summary=Ext JS wrapper for Object Pascal
 Title=ExtPascal 0.9.6
 VersionBuild=0

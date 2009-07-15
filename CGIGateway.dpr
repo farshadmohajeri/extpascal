@@ -7,26 +7,30 @@ It is used to run an ExtPascal application on a Web Server that not provides Fas
 4. The <link FCGIApp.pas, FCGI application> processes request from CGI gateway and returns the result.
 5. The CGI gateway forward <link FCGIApp.pas, FCGI application> result to the browser. The communication is done through CGI standard protocol.
 6. If there's no request over than <link TFCGIApplication.Create, MaxIdleMinutes>, the <link FCGIApp.pas, FCGI application> terminates itself.
+
 <image cgigateway>
-Format for optional configuration file (.INI).
+
+-Format for optional configuration file (.INI)-
 To use configuration file define the conditional symbol HAS_CONFIG.
 Must have a section named [FCGI]. See sample file ExtPascalSamples.ini.
 If the configuration file is not found then the value is taken from default.
+
 Below are the supported options:
-  Enabled: boolean     - to enable or disable FCGI service
-  Execute: boolean     - to allow or disallow CGI to execute FCGI service (only on localhost)
-  Name: file name      - FCGI executable file name to load by CGI (only on localhost)
-  Host: IP string      - host location of the FCGI service
-  Port: socket number  - socket port of the FCGI service
-  Home: path string    - path for HOME of the FCGI service
-  MaxConn: integer     - max connections allowed to FCGI service
-  MaxIdle: integer     - max idle time before time-out (in minutes)
-  AutoOff: boolean     - auto-shutdown FCGI service after all child threads finish
-  ExtPath: string      - path to ExtJS library
-  ImagePath: string    - path to image collection
-  ExtTheme: string     - Ext's theme selection
-  Password: string     - password required to shutdown and reconfigure application
-  InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
+
+* Enabled: boolean     - to enable or disable FCGI service
+* Execute: boolean     - to allow or disallow CGI to execute FCGI service (only on localhost)
+* Name: file name      - FCGI executable file name to load by CGI (only on localhost)
+* Host: IP string      - host location of the FCGI service
+* Port: socket number  - socket port of the FCGI service
+* Home: path string    - path for HOME of the FCGI service
+* MaxConn: integer     - max connections allowed to FCGI service
+* MaxIdle: integer     - max idle time before time-out (in minutes)
+* AutoOff: boolean     - auto-shutdown FCGI service after all child threads finish
+* ExtPath: string      - path to ExtJS library
+* ImagePath: string    - path to image collection
+* ExtTheme: string     - Ext's theme selection
+* Password: string     - password required to shutdown and reconfigure application
+* InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
 
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
 Date: jul-2008
