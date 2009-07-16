@@ -356,9 +356,15 @@ function SpaceIdents(const aLevel : word; const aWidth : string = '  ') : string
   Result := DupeString(aWidth, aLevel);
 end;
 
-function MinValueOf(Values : array of integer; const MinValue : integer = 0) : integer; begin
+function MinValueOf(Values : array of integer; const MinValue : integer = 0) : integer;
+var
+  I : integer;
+begin
+  for I := 0 to High(Values) do
+    if Values[I] <= MinValue then Values[I] := MAXINT;
   Result := MinIntValue(Values);
-  if Result < MinValue then Result := MinValue;
+  // if all are the minimum value then return 0
+  if Result = MAXINT then Result := MinValue;
 end;
 
 function BeautifyJS(const AScript: string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
