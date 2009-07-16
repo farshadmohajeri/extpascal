@@ -24,17 +24,12 @@
  * 0.9.3. Bug fix
  * 0.9.3.1. Wrap CodePress 
  * 0.9.4. CodePress support
- * 0.9.4.1. Wrap some Ext JS User Extensions (Ext.ux)
- * *0.9.4.2. Change VCL [http://www.pitinnu.com pitinnu] interface to ExtPascal <<<=== I'm doing this point*
- * 0.9.5. Convert all Ext JS demos to ExtPascal
- * 0.9.6. Release candidate
+ * 0.9.5. Wrap Ext JS 2.2.1 and some Ext JS User Extensions (Ext.ux)
+ * 0.9.6. Wrap Ext JS 3.0
+ * 0.9.7. Wrap Draw2D
+ * 0.9.8. ExtPascalUML first release
+ * 0.9.9. Convert all Ext JS demos to ExtPascal
  * 1.0. Release
- * 1.1. Wrap Draw2D
- * 1.2. Release
- * 1.3. Wrap [http://extjs.com/blog/2008/04/21/ext-js-21-and-ext-gwt-10-released-preview-of-ext-js-30/ ExtJS 3.0]
- * 1.3.1. Use JSON from [http://www.screencast.com/users/JackSlocum/folders/Default/media/f7450651-778b-4bbc-9fc4-4e921a7a2705 Ext JS 3.0 GUI Designer]
- * 1.4. Release (early 2009)
- * 1.5. ExtPascal WebIDE (Form Designer, Source Editor, Compiler (FPC/Delphi) integration and remote deployment)
- * 2.0. Release (2o. quarter 2009)
- * 2.1. ExtPascal WebIDE (Debugger and help on-line)
- * 2.2. Release (2o. semester 2009)
+ * 1.1. Use JSON from [http://www.screencast.com/users/JackSlocum/folders/Default/media/f7450651-778b-4bbc-9fc4-4e921a7a2705 Ext JS 3.1 GUI Designer]
+ * 2.0. ExtPascalUML (Form Designer, Source Editor, Compiler (FPC/Delphi) integration and remote deployment)
+ * 3.0. ExtPascalUML (Debugger and help on-line)
