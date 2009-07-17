@@ -700,18 +700,19 @@ begin
       GetStyle + Libraries +
       '</head>'^M^J +
       '<script>'^M^J +
-      {$IFDEF DEBUGJS}BeautifyJS({$ENDIF}
-      IfThen(CustomJS = '', '', CustomJS + ^M^J) +
+      {$IFDEF DEBUGJS}BeautifyJS{$ENDIF}
+      (IfThen(CustomJS = '', '', CustomJS + ^M^J) +
       'Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br><br>"+response.responseText);}};' +
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
-      Response{$IFDEF DEBUGJS}){$ENDIF} + '});'^M^J +
-      '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>';
-  {$IFDEF DEBUGJS}
-  Response := BeautifyJS(Response)
-  {$ENDIF}
+      Response) + '});'^M^J +
+      '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>'
+  else
+    {$IFDEF DEBUGJS}
+    Response := BeautifyJS(Response)
+    {$ENDIF}
 end;
 
 {

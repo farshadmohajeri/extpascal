@@ -6,7 +6,7 @@ program ExtPascalSamples3; // for Ext JS 3 and later
 {$ENDIF}
 uses
   ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, Draw2D;
 
 {$IF not IsExt3}
   Don´t use this program for ExtJS 2.x compiling, use ExtPascalSamples instead
@@ -41,6 +41,7 @@ type
     procedure Login;
     procedure CheckLogin; // Ajax
     procedure ShowSource;
+    procedure UML;
   end;
 
 procedure TSamples.AddShowSourceButton(Buttons : TExtObjectList; Proc : string); begin
@@ -84,6 +85,44 @@ begin
     Show;
     Free;
   end;
+end;
+
+procedure TSamples.UML;
+var
+  Note : TAnnotation;
+  P : TExtPanel;
+  W : TWorkFlow;
+begin
+  SetLibrary(ExtPath + '/draw2d/wz_jsgraphics');
+  SetLibrary(ExtPath + '/draw2d/mootools');
+  SetLibrary(ExtPath + '/draw2d/moocanvas');
+  SetLibrary(ExtPath + '/draw2d/draw2d');
+  P := TExtPanel.Create;
+  with P do begin
+    Title    := 'ExtPascal Samples';
+    RenderTo := 'body';
+    Width    := 600;
+    Height   := 400;
+    Frame    := true;
+    Id       := 'paintarea';
+  end;
+  W := TWorkflow.Create('paintarea');
+  with W do begin
+    // Add a simple annotation to the canvas
+    Note := TAnnotation.Create('NOTE: Drag&Drop the red port to the blue port to create a connection. Use the connection context menu to switch the router implementation.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 50);
+    Note := TAnnotation.Create('NOTE: Drag&Drop the objects from the left hand tool palette to the canvas to insert a new object.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 150);
+    Note := TAnnotation.Create('NOTE: Test the context menu of the blue connections!!!.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 250);
+    ScrollArea := P.GetEl;
+    jscode(JSName + '.scrollArea=document.getElementById(''paintarea'').parentNode;');
+//    SetBackgroundImage('grid_10.png', nil);
+  end;
+//  P.Show;
 end;
 
 procedure TSamples.Home;

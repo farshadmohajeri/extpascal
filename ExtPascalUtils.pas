@@ -119,10 +119,10 @@ function Before(const BeforeS, AfterS, S : string) : boolean;
 function IsUpperCase(S : string) : boolean;
 
 // Beautify generated JS commands from ExtPascal, automatically used when DEBUGJS symbol is defined
-function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
+function BeautifyJS(AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
 
 // Beautify generated CSS from ExtPascal, automatically used when DEBUGJS symbol is defined
-function BeautifyCSS(const AStyle : string) : string;
+function BeautifyCSS(AStyle : string) : string;
 
 implementation
 
@@ -367,7 +367,7 @@ begin
   if Result = MAXINT then Result := MinValue;
 end;
 
-function BeautifyJS(const AScript: string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
+function BeautifyJS(AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
 var
   pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
   pFunction, pString, pOpPlus, pOpMinus, pOpTime, pOpDivide, pOpEqual : integer;
@@ -379,7 +379,7 @@ var
     Result := length(^M^J + AddText);
   end;
 
-  function SplitHTMLString(const AStart, AEnd : integer): integer;  // range is including the quotes
+  function SplitHTMLString(AStart, AEnd : integer): integer;  // range is including the quotes
   var
     br,pe,ps: integer;
     s: string;
@@ -586,7 +586,7 @@ begin
   Result := Res;
 end;
 
-function BeautifyCSS(const AStyle : string) : string;
+function BeautifyCSS(AStyle : string) : string;
 var
   pOpen, pClose, pProp, pEnd, pString : integer;
   P, Lvl : integer;
@@ -635,7 +635,7 @@ begin
         end;
       end;
   end;
-  Result := res;
+  Result := Res;
 end;
 
 end.
