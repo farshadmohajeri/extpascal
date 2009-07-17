@@ -9,6 +9,7 @@ program Draw2DToPascal;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
+//  Draw2D,
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 {.$DEFINE USESPUBLISHED}
@@ -53,7 +54,10 @@ function FixType(Ident : string) : string;
 var
   I : integer;
 begin
-  if Ident <> '' then
+  if Ident <> '' then begin
+    if pos('draw2d.', Ident) = 1 then Ident := copy(Ident, 8, 100);
+    if Ident = 'Window' then Ident := Ident + 'Figure'; // doc fault
+    if Ident = 'CommandStackListener' then Ident := 'CommandStackEventListener'; // doc fault
     case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int']) of
       0, 6     : Result := 'string';
       1, 2, 11 : Result := 'Integer';
@@ -83,6 +87,7 @@ begin
         Result := FixIdent(Ident, true);
       end;
     end
+  end
   else
     Result := ''
 end;
@@ -98,7 +103,6 @@ type
     Properties, Methods, Events : TStringList;
     constructor Create(pName : string; pParent : string = '');
     function InheritLevel : integer;
-    procedure AddCreate;
   end;
 
   TProp = class
@@ -132,11 +136,6 @@ constructor TClass.Create(pName, pParent : string); begin
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
-end;
-
-procedure TClass.AddCreate; begin
-  if Methods.IndexOf('Create') = -1 then
-    Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false));
 end;
 
 function TClass.InheritLevel : integer;
@@ -234,6 +233,61 @@ begin
     Result := S;
 end;
 
+// Docs are poor!
+function TryDiscoverType(P : string) : string; begin
+  Result := 'object';
+  case RCaseOf(lowercase(P), ['name', 'text', 'index', 'width', 'height', 'x1', 'x2', 'y1', 'y2', 'xpos', 'ypos', 'size', 'radius', 'flag', 'array', 'id']) of
+    0, 1  : Result := 'string';
+    2..12 : Result := 'integer';
+    13    : Result := 'boolean';
+    14    : Result := 'array';
+    15    : if pos('id', lowercase(P)) = (length(P)-1) then Result := 'string'
+  else
+    if length(P) > 1 then begin
+      if P[2] in ['A'..'Z'] then
+        case P[1] of
+          'b' : Result := 'boolean';
+          'f' : Result := 'float';
+          'i' : Result := 'integer';
+          's' : Result := 'string';
+        end;
+    end
+    else
+      if P[1] in ['i', 'x', 'y', 'w', 'h'] then Result := 'integer';
+  end;
+end;
+
+function ReadParams(Parms : string) : TStringList;
+var
+  Params : TStringList;
+  Param, ParamType : string;
+  I, J, K : integer;
+begin
+  Params := Explode(',', Parms);
+  Result := TStringList.Create;
+  for I := 0 to Params.Count-1 do begin
+    Param := Params[I];
+    J := pos(' ', Param);
+    if J = 0 then
+      ParamType := 'object'
+    else begin
+      ParamType := ClearHRef(Param);
+      K := pos('/a>', Param);
+      if K <> 0 then
+        J := K + 4
+      else begin
+        ParamType := copy(Param, 1, J-1);
+        inc(J);
+      end;
+      Param := copy(Param, J, length(Param))
+    end;
+    Param := Unique(FixIdent(Param), Result);
+    if ParamType = '' then ParamType := TryDiscoverType(Param);
+    Result.AddObject(Param, TParam.Create(Param, FixType(ParamType), false));
+  end;
+  Params.Free;
+end;
+
 procedure LoadElements(Line : string);
 const
   CurClass  : TClass      = nil;
@@ -242,11 +296,10 @@ const
   PropName  : string      = '';
   MetName   : string      = '';
   PropTypes : TStringList = nil;
-  Params    : TStringList = nil;
 var
   State : (Initial, InClass, InProperties, InConstructor, InMethods);
-  Return, JSName, Param, ParamType : string;
-  Matches, Args : TStringList;
+  Return, JSName, Typ : string;
+  Matches : TStringList;
   Static  : boolean;
   I : integer;
 begin
@@ -263,13 +316,13 @@ begin
       InClass : begin
         if Extract(['extends <a href=''draw2d.', '.html'], Line, Matches) then
           CurClass.Parent := FixIdent(Matches[0], true);
-        if Before('END METHOD SUMMARY', '<CODE>', Line) then
+        if Before('END METHOD SUMMARY', '<CODE><B>', Line) then
           break
         else
-          if Before('END CONSTRUCTOR SUMMARY', '<CODE>', Line) then
+          if Before('END CONSTRUCTOR SUMMARY', '<CODE><B>', Line) then
             State := InMethods
           else
-            if Before('END FIELD SUMMARY', '<CODE>', Line) then
+            if Before('END FIELD SUMMARY', '<CODE><B>', Line) then
               State := InConstructor
             else
               State := InProperties;
@@ -278,9 +331,16 @@ begin
       InProperties :
         if Extract(['<CODE>', '</CODE>', '<B>', '</B>'], Line, Matches) then begin
           PropName := ClearHRef(Matches[2]);
-          Static   := pos('static', Matches[0]) <> 0;
+          Typ := Matches[0];
+          I := pos('static', Typ);
+          if I <> 0 then begin
+            Static := true;
+            Typ := trim(copy(Typ, I+6, 100))
+          end
+          else
+            Static := false;
           if IsUppercase(PropName) then Static := true;
-          CurProp := TProp.Create(PropName, PropName, Matches[0], Static);
+          CurProp := TProp.Create(PropName, PropName, Typ, Static);
           CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
           if (PropTypes <> nil) and (PropName <> 'config') and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
             if Matches[0][1] = '<' then
@@ -289,19 +349,15 @@ begin
                   Delete(IndexOf(FixIdent(PropName + IfThen(I = 0, '', PropTypes[I])))); // delete inherited properties
             FreeAndNil(PropTypes);
           end;
-          if Before('END FIELD SUMMARY', '<CODE>', Line) then begin
+          if Before('END FIELD SUMMARY', '<CODE><B>', Line) then begin
             for I := 0 to CurClass.Properties.Count-1 do
               with TProp(CurClass.Properties.Objects[I]) do
                 if not Static then
-                  if Typ = 'TExtObjectList' then begin
-                    CurClass.Arrays := true;
-                    CurClass.AddCreate;
-                  end
+                  if Typ = 'TExtObjectList' then
+                    CurClass.Arrays := true
                   else
-                    if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then begin
+                    if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
                       CurClass.Objects := true;
-                      CurClass.AddCreate;
-                    end;
             State := InConstructor;
           end;
           continue;
@@ -310,19 +366,7 @@ begin
         if Extract(['<CODE>', '<B>', '</B>(', ')</CODE>'], Line, Matches) then begin
           JSName  := ClearHRef(Matches[1]);
           MetName := 'Create';
-          Params  := Explode(',', Matches[2]);
-          Args    := TStringList.Create;
-          for I := 0 to Params.Count-1 do begin
-            Param := Params[I];
-            if Extract(['<', '>'], Param, Matches) then
-              ParamType := Matches[0]
-            else
-              ParamType := 'object';
-            Param := Unique(FixIdent(Param), Args);
-            Args.AddObject(Param, TParam.Create(Param, FixType(ParamType), false));
-          end;
-          Params.Free;
-          CurClass.Methods.AddObject('Create', TMethod.Create(MetName, JSName, '', Args, false));
+          CurClass.Methods.AddObject('Create', TMethod.Create(MetName, JSName, '', ReadParams(Matches[2]), false));
           State := InMethods;
           continue;
         end;
@@ -333,24 +377,12 @@ begin
           MetName := Unique(MetName, CurClass.Methods);
           Return  := ClearHRef(Matches[0]);
           Static  := pos('static', Return) <> 0;
-          Params  := Explode(',', Matches[4]);
-          Args    := TStringList.Create;
-          for I := 0 to Params.Count-1 do begin
-            Param := Params[I];
-            if Extract(['<', '>'], Param, Matches) then
-              ParamType := Matches[0]
-            else
-              ParamType := 'object';
-            Param := Unique(FixIdent(Param), Args);
-            Args.AddObject(Param, TParam.Create(Param, FixType(ParamType), false));
-          end;
-          Params.Free;
-          CurMethod := TMethod.Create(MetName, JSName, Return, Args, Static);
+          CurMethod := TMethod.Create(MetName, JSName, Return, ReadParams(Matches[4]), Static);
           if pos('on', CurMethod.Name) = 1 then
             CurClass.Events.AddObject(CurMethod.Name, CurMethod)
           else
             CurClass.Methods.AddObject(CurMethod.Name, CurMethod);
-          if Before('END METHOD SUMMARY', '<CODE>', Line) then break;
+          if Before('END METHOD SUMMARY', '<CODE><B>', Line) then break;
           continue;
         end;
     end;
