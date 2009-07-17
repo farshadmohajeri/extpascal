@@ -9,7 +9,6 @@ program Draw2DToPascal;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-//  Draw2D,
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 {.$DEFINE USESPUBLISHED}
@@ -241,7 +240,7 @@ function TryDiscoverType(P : string) : string; begin
     2..12 : Result := 'integer';
     13    : Result := 'boolean';
     14    : Result := 'array';
-    15    : if pos('id', lowercase(P)) = (length(P)-1) then Result := 'string'
+    15    : if pos('id', lowercase(P)) = (length(P)-1) then Result := 'string';
   else
     if length(P) > 1 then begin
       if P[2] in ['A'..'Z'] then
@@ -281,8 +280,8 @@ begin
       end;
       Param := copy(Param, J, length(Param))
     end;
+    if (ParamType = '') or (ParamType = 'object') then ParamType := TryDiscoverType(trim(Param));
     Param := Unique(FixIdent(Param), Result);
-    if ParamType = '' then ParamType := TryDiscoverType(Param);
     Result.AddObject(Param, TParam.Create(Param, FixType(ParamType), false));
   end;
   Params.Free;
@@ -375,13 +374,17 @@ begin
           JSName  := ClearHRef(Matches[3]);
           MetName := Unique(FixIdent(JSName), CurClass.Properties);
           MetName := Unique(MetName, CurClass.Methods);
-          Return  := ClearHRef(Matches[0]);
-          Static  := pos('static', Return) <> 0;
-          CurMethod := TMethod.Create(MetName, JSName, Return, ReadParams(Matches[4]), Static);
-          if pos('on', CurMethod.Name) = 1 then
-            CurClass.Events.AddObject(CurMethod.Name, CurMethod)
-          else
-            CurClass.Methods.AddObject(CurMethod.Name, CurMethod);
+          if MetName = 'Construct' then // doc fault
+            TMethod(CurClass.Methods.Objects[0]).Params := ReadParams(Matches[4])
+          else begin
+            Return  := ClearHRef(Matches[0]);
+            Static  := pos('static', Return) <> 0;
+            CurMethod := TMethod.Create(MetName, JSName, Return, ReadParams(Matches[4]), Static);
+            if pos('on', CurMethod.Name) = 1 then
+              CurClass.Events.AddObject(CurMethod.Name, CurMethod)
+            else
+              CurClass.Methods.AddObject(CurMethod.Name, CurMethod);
+          end;
           if Before('END METHOD SUMMARY', '<CODE><B>', Line) then break;
           continue;
         end;
