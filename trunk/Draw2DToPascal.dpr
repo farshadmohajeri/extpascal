@@ -438,7 +438,6 @@ var
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  exit;
   FixesFile := 'Draw2DFixes.txt';
   writeln('Reading ' + FixesFile);
   if FileExists(FixesFile) then begin
