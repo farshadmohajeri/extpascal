@@ -1,0 +1,26 @@
+* For Draw2D and later
+* USED FORMATS in ExtFixes3.txt
+*
+* Adding and updating properties:
+<class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
+*
+* Changing a property type to enumeration
+<class name>,<JavaScript property name>,<(enumerated list)>
+*
+* Adding and updating methods:
+<class name>,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
+*
+* For each method parameter:
+<parameter name>,<type>,<if is a optional parameter>
+*
+* Adding and updating events:
+<class name>,<JavaScript event name>,Event
+*
+* For each event parameter:
+<parameter name>,<type>
+*
+* Adding new classes:
+<class name>,<parent class name>,<unit name>,<JavaScript class name>
+*
+Workflow, scrollArea, ExtObject, false, false,
+
