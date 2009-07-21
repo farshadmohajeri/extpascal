@@ -322,15 +322,15 @@ end;
 function SetPaddings(Top : integer; Right : integer = 0; Bottom : integer = -1; Left : integer = 0; CSSUnit : TCSSUnit = cssPX;
   Header : boolean = true) : string;
 begin
-  Result := Format('%s%d%3:s %2:d%3:s', [IfThen(Header, 'padding:', ''), Top, Right, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
+  Result := Format('%s%d%3:s %2:d%3:s', [IfThen(Header, 'padding: ', ''), Top, Right, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
   if Bottom <> -1 then
-    Result := Result + Format('%d%2:s %1:d%2:s', [Bottom, Left, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
+    Result := Result + Format(' %d%2:s %1:d%2:s', [Bottom, Left, EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))]);
 end;
 
 function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
   Header : boolean = false) : string;
 begin
-  Result := Format('%s%d%5:s %2:d%5:s %3:d%5:s %4:d%s', [IfThen(Header, 'margin:', ''), Top, Right, Bottom, Left,
+  Result := Format('%s%d%5:s %2:d%5:s %3:d%5:s %4:d%s', [IfThen(Header, 'margin: ', ''), Top, Right, Bottom, Left,
     EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
