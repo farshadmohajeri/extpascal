@@ -11,6 +11,9 @@ interface
 uses
   Classes, TypInfo;
 
+const
+  ExtPascalVersion = '0.9.7';
+
 {$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 type
   // Implements StrictDelimiter property for FPC 2.2.2, Delphi 7 and older versions

@@ -58,9 +58,6 @@ interface
 uses
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
 
-const
-  ExtPascalVersion = '0.9.7';
-
 type
   TArrayOfString  = array of string;
   TArrayOfInteger = array of Integer;
