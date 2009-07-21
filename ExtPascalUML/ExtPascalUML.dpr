@@ -22,7 +22,7 @@ begin
   TimeSeparator := ':'; ShortTimeFormat := 'hh:mm';
   FileMode      := fmShareDenyWrite + fmOpenReadWrite;
 {$IFDEF MSWINDOWS}
-  Service := TService.Create(ServerName, PrevVersion + ' - ' + GetEnvironment);
+  Service := TService.Create(ServerName, ExtPascalVersion + ' - ' + GetEnvironment);
   with Service do try
     if Install then
       writeln('Service installed')
@@ -30,7 +30,7 @@ begin
       writeln('Service uninstalled')
     else begin
       Prevalence  := TPrevalence.Create(ServerName);
-      Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2014')));
+      Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2015')));
       NoService   := not Exists;
       Recover;
       if Exists then
@@ -44,7 +44,7 @@ begin
   end;
 {$ELSE}
   Prevalence  := TPrevalence.Create(ServerName);
-  Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2014')));
+  Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2015')));
   Recover;
   Application.Run;
   Snapshot;
