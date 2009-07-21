@@ -30,7 +30,7 @@ begin
       writeln('Service uninstalled')
     else begin
       Prevalence  := TPrevalence.Create(ServerName);
-      Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
+      Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2014')));
       NoService   := not Exists;
       Recover;
       if Exists then
@@ -44,7 +44,7 @@ begin
   end;
 {$ELSE}
   Prevalence  := TPrevalence.Create(ServerName);
-  Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
+  Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2014')));
   Recover;
   Application.Run;
   Snapshot;

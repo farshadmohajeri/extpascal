@@ -807,7 +807,7 @@ procedure TepThread.Home; begin
         with TExtButton.AddTo(Items) do begin
           Text    := 'Tarefas';
           IconCls := 'task';
-          Menu_    := TaskMenu;
+          Menu    := TaskMenu;
         end;
         with TExtButton.AddTo(Items) do begin
           Text    := 'Abrir Objetos';
