@@ -76,7 +76,7 @@ ExtProgressWaitConfig, scope, ExtObject, false, true,
 ExtToolbar, items, ExtObjectList, false, true,
 ExtMenuMenu, items, ExtObjectList, false, true,
 * Lack ExtToolbarButton component in Ext JS 3 docs!!!!!
-ExtToolbarButton, menu, ExtUtilObservable, false, true,
+ExtButton, menu, ExtUtilObservable, false, true,
 ExtMenuItem, menu, ExtMenuMenu, false, true,
 ExtGridGridPanel, loadMask, Boolean, false, true, FORCEADD
 ExtDataJsonStore, id, string, false, true,
