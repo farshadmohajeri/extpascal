@@ -604,7 +604,7 @@ begin
       end;
   Linhas := round((QueryAsInteger['GridHeight'] / 21) - 4.6); //4.1 sem frame
   with DataStore do begin
-    Url := '/ExtPascalUML/LoadData';
+    Url := '/cgi-bin/ExtPascalUML/LoadData';
     RemoteSort := true;
     Root := 'Root';
     TotalProperty := 'Total';
