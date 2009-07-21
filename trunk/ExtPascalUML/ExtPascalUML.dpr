@@ -1,10 +1,10 @@
-program pitinnu;
+program ExtPascalUML;
 
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
   FCGIApp, ExtPascal, Classes, SysUtils, {$IFDEF MSWINDOWS}Services,{$ENDIF}
-  pitPrevalence, pitUtils, pitThread, pitModel, pitinnuModel, pitServer;//, pitSupportGDB, pitProxyDebugger;
+  epPrevalence, epUtils, epThread, epModel, epServer, epSupportGDB;
 
 {$IFDEF MSWINDOWS}
 type
@@ -30,7 +30,7 @@ begin
       writeln('Service uninstalled')
     else begin
       Prevalence  := TPrevalence.Create(ServerName);
-      Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
+      Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
       NoService   := not Exists;
       Recover;
       if Exists then
@@ -44,7 +44,7 @@ begin
   end;
 {$ELSE}
   Prevalence  := TPrevalence.Create(ServerName);
-  Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TpitThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
+  Application := TFCGIApplication.Create(ServerName + ' ' + PrevVersion + ' - ' + GetEnvironment, TepThread, StrToInt(GetIniParameter('Connection', 'Port', '2016')));
   Recover;
   Application.Run;
   Snapshot;
