@@ -442,11 +442,9 @@ var
   I : integer;
 begin
   if JS[length(JS)] = ';' then begin // Command
-    if (pos(IdentDelim, JSName) <> 0) and (pos(DeclareJS, JS) = 0) and (pos(JSName, JS) <> 0) and (pos(DeclareJS + JSName, Response) = 0) then begin
-      I := pos('.', JS);
-      JSName := copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1);
-      raise Exception.Create('Public property or Method: ''' + JSName + ''' requires explicit ''var'' declaration.');
-    end;
+    I := pos('.', JS);
+    if not IsAjax and (pos(IdentDelim, JS) <> 0) and (pos(DeclareJS, JS) = 0) and (pos(DeclareJS + copy(JS, 1, I-1), Response) = 0) then 
+      raise Exception.Create('Public property or Method: ''' + JSName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
     I := length(Response) + 1
   end
   else  // set attribute
