@@ -142,7 +142,7 @@ procedure TepThread.ShowInitialPage; begin
       Closable   := true;
       AutoScroll := true;
       AutoLoadString := ImagePath + '/pitinnu.html';
-      on('destroy', Ajax(FreeInitialPage));
+      on('close', Ajax(FreeInitialPage));
     end;
   end;
   CentralPanel.Activate('InitialPage');
@@ -600,9 +600,9 @@ begin
             case GetDateTimeType(TypeNameProp[I]) of
               dtDateTime : DateFormat := 'd/m/Y, h:i:s';
               dtTime     : DateFormat := 'h:i:s';
-            end;
+            end;                                              
       end;
-  Linhas := round((QueryAsInteger['GridHeight'] / 21) - 4.6); //4.1 sem frame
+  Linhas := trunc((QueryAsInteger['GridHeight'] / 22.4) - 3.6); //4.1 sem frame
   with DataStore do begin
     Url := '/cgi-bin/ExtPascalUML/LoadData';
     RemoteSort := true;
@@ -851,10 +851,10 @@ procedure TepThread.Home; begin
     with TExtPanel.AddTo(Items) do begin
       Id := 'statusbar';
       Region := rgSouth;
-      Height := 27;
+      Height := 21;
       Border := false;
-      TExtToolbarTextItem.AddTo(BbarArray).SetText('Prevalência ' + PrevalenceVersion);
-      Keys := JSObject('ctrl:true,key:"o",fn:function(s,e){e.preventDefault();alert(s + " was pressed");}');
+      Title  := '<div align=center>Prevalence ' + PrevalenceVersion + '</div>';
+      Keys   := JSObject('ctrl:true,key:"o",fn:function(s,e){e.preventDefault();alert(s + " was pressed");}');
     end;
     // Painel central
     CentralPanel := TExtTabPanel.Create;
