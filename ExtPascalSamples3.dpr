@@ -47,7 +47,7 @@ type
 procedure TSamples.AddShowSourceButton(Buttons : TExtObjectList; Proc : string); begin
   with TExtButton.AddTo(Buttons) do begin
     Text := 'Show Source Code';
-    Handler := Ajax(ShowSource, ['Proc', '"' + Proc + '"']);
+    Handler := Ajax(ShowSource, ['Proc', Proc]);
   end;
 end;
 
