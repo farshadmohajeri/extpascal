@@ -3,7 +3,7 @@ program ExtPascalUML;
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
-  FCGIApp, ExtPascal, Classes, SysUtils, {$IFDEF MSWINDOWS}Services,{$ENDIF}
+  FCGIApp, ExtPascal, ExtPascalUtils, Classes, SysUtils, {$IFDEF MSWINDOWS}Services,{$ENDIF}
   epPrevalence, epUtils, epThread, epModel, epServer, epSupportGDB;
 
 {$IFDEF MSWINDOWS}

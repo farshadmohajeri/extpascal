@@ -436,11 +436,12 @@ Basic work:
 }
 procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
 var
-  I : integer;
+  I, J : integer;
 begin
   if JS[length(JS)] = ';' then begin // Command
     I := pos('.', JS);
-    if not IsAjax and (pos(IdentDelim, JS) <> 0) and (pos(DeclareJS, JS) = 0) and (pos(DeclareJS + copy(JS, 1, I-1), Response) = 0) then 
+    J := pos(IdentDelim, JS);
+    if not IsAjax and (pos('Singleton', JSName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and (pos(DeclareJS + copy(JS, 1, I-1), Response) = 0) then
       raise Exception.Create('Public property or Method: ''' + JSName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
     I := length(Response) + 1
   end
@@ -1344,6 +1345,17 @@ function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFu
   Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
 end;
 
+function SurroundAjaxParam(Param : string) : string;
+var
+  I : integer;
+begin
+  I := pos('%', Param);
+  if (I <> 0) and (I <> length(Param)) and (Param[I+1] in ['0'..'9']) then
+    Result := '"+' + Param + '+"'
+  else
+    Result := Param;
+end;
+
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
 function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
 var
@@ -1361,11 +1373,11 @@ begin
     with Params[I] do
       if Odd(I) then
         case VType of
-          vtAnsiString : lParams := lParams + '"+' + string(VAnsiString) + '+"';
-          vtString     : lParams := lParams + '"+' + VString^ + '+"';
-          vtWideString : lParams := lParams + '"+' + string(VWideString) + '+"';
+          vtAnsiString : lParams := lParams + SurroundAjaxParam(string(VAnsiString));
+          vtString     : lParams := lParams + SurroundAjaxParam(VString^);
+          vtWideString : lParams := lParams + SurroundAjaxParam(string(VWideString));
           {$IFDEF UNICODE}
-          vtUnicodeString : lParams := lParams + '"+' + string(VUnicodeString) + '+"';
+          vtUnicodeString : lParams := lParams + SurroundAjaxParam(string(VUnicodeString));
           {$ENDIF}
           vtObject     : lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
           vtInteger    : lParams := lParams + IntToStr(VInteger);
@@ -1374,8 +1386,8 @@ begin
           vtCurrency   : lParams := lParams + CurrToStr(VCurrency^);
           vtInt64      : lParams := lParams + IntToStr(VInt64^);
           vtVariant    : lParams := lParams + string(VVariant^);
-          vtChar       : lParams := lParams + '"+' + VChar + '+"';
-          vtWideChar   : lParams := lParams + '"+' + VWideChar + '+"';
+          vtChar       : lParams := lParams + VChar;
+          vtWideChar   : lParams := lParams + VWideChar;
         end
       else
         case VType of
