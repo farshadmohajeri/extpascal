@@ -76,6 +76,7 @@ type
     Style, Libraries, CustomJS, FLanguage : string;
     JSReturns : TStringList;
     Sequence  : cardinal;
+    RequiresReload,
     FIsAjax   : boolean;
     FBrowser  : TBrowser;
     procedure RelocateVar(JS, JSName : string; I : integer);
@@ -549,16 +550,20 @@ begin
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
-  if IsAjax then
+  if IsAjax then begin
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
       Result := false;
     end
     else
-      if NewThread then begin
+      if NewThread or RequiresReload then begin
         ErrorMessage('Session expired or lost.<br/>A new session will be created now.', 'window.location.reload()');
+        RequiresReload := true;
         Result := false;
-      end;
+      end
+  end
+  else
+    RequiresReload := false;
   JSReturns := TStringList.Create;
 end;
 

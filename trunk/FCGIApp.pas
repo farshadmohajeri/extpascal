@@ -295,7 +295,7 @@ var
 begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
-      TExtObject(Objects[I]).Free;
+      try TExtObject(Objects[I]).Free; except end;
     if FreeGarbage then Free;
   end;
 end;
