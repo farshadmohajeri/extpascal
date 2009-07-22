@@ -72,6 +72,7 @@ type
     function GetQueryAsInteger(Name: string): integer;
     function GetQueryAsTDateTime(Name: string) : TDateTime;
     function GetQueryAsBoolean(Name: string): boolean;
+    procedure GarbageCollector(FreeGarbage : boolean);
   protected
     FRequest, FPathInfo : string;
     NewThread : boolean; // True if is the first request of a thread
@@ -90,6 +91,7 @@ type
     procedure AfterThreadConstruction; virtual;
     procedure BeforeThreadDestruction; virtual;
     procedure SetPaths; virtual; abstract;
+    procedure Refresh;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -283,16 +285,24 @@ begin
     Result := nil;
 end;
 
-// Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
-destructor TFCGIThread.Destroy;
+{
+Frees all objects associated for this thread.
+@param FreeGarbage If True free garbage object itself.
+}
+procedure TFCGIThread.GarbageCollector(FreeGarbage : boolean);
 var
   I : integer;
 begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
       TExtObject(Objects[I]).Free;
-    Free;
+    if FreeGarbage then Free;
   end;
+end;
+
+// Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
+destructor TFCGIThread.Destroy; begin
+  GarbageCollector(true);
   FRequestHeader.Free;
   FQuery.Free;
   FCookie.Free;
@@ -809,6 +819,19 @@ begin
     Application.GarbageNow := true;
   end;
   {$IFNDEF MSWINDOWS}EndThread(0){$ENDIF} // Unix RTL FPC bug
+end;
+
+{
+Calls Garbage collector. Optionally used to Refresh the Home page, when user press F5 on browser
+@example <code>
+if not NewThread then begin
+  Refresh;
+  EditorGrid := nil;
+  DataStore := nil;
+end;</code>
+}
+procedure TFCGIThread.Refresh; begin
+  GarbageCollector(false);
 end;
 
 {

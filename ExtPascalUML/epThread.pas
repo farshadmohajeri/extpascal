@@ -415,10 +415,7 @@ begin
               EditorLength := trunc(Log10(max(abs(MaxValueProp[I]), abs(MinValueProp[I]+1)))+1);
           end;
         end;
-      2 : begin
-        Result := TExtFormCheckBox.Create; // boolean
-        Result.Width := 20;
-      end;
+      2 : Result := TExtFormCheckBox.Create; // boolean
       3 : begin // date
         case GetDateTimeType(TypeNameProp[I]) of
           dtDateTime : begin
@@ -481,7 +478,7 @@ begin
         end
         else begin
           Result := TExtFormTextField.Create;
-          with TExtFormTextField(Result) do 
+          with TExtFormTextField(Result) do
             if Mask <> '' then begin
               RegEx := Mask;
               EditorLength := min(LengthRegExp(Mask), 40);
@@ -492,10 +489,11 @@ begin
     end;
     with TExtFormTextField(Result) do begin
       if Width = 0 then Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), EditorLength + 1]);
-      if I = 0 then
-        FieldLabel := Properties[I].Name
-      else
-        FieldLabel := AliasProp[I];
+      if not(Result is TExtFormCheckBox) then
+        if I = 0 then
+          FieldLabel := Properties[I].Name
+        else
+          FieldLabel := AliasProp[I];
       Name := Properties[I].Name;
 //      On('change', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'), 'Field', '%0.getEl()', 'Value', '%1']));
       if Result is TExtFormTextField then AllowBlank := not InConstraints(I, NotNull);
@@ -600,9 +598,9 @@ begin
             case GetDateTimeType(TypeNameProp[I]) of
               dtDateTime : DateFormat := 'd/m/Y, h:i:s';
               dtTime     : DateFormat := 'h:i:s';
-            end;                                              
+            end;
       end;
-  Linhas := trunc((QueryAsInteger['GridHeight'] / 22.4) - 3.6); //4.1 sem frame
+  Linhas := trunc((QueryAsInteger['GridHeight'] / 24) - 3.7); // 22.4) - 3.6); //4.1 sem frame
   with DataStore do begin
     Url := '/cgi-bin/ExtPascalUML/LoadData';
     RemoteSort := true;
@@ -660,7 +658,7 @@ begin
           if Editor is TExtFormNumberField   then Align := alRight else
           if Editor is TExtUxFormLovCombo    then RendererExtFunction := JSFunction('V', 'var E=[' + Enums + '],R=[];T=V.toString().split(",");for(i in E)for(j in T)if(E[i][0]==T[j])R.push(E[i][1]);return R.toString();') else
           if Editor is TExtFormComboBox      then RendererExtFunction := JSFunction('V', 'var E=[' + Enums + '];for(i in E){if(E[i][0]==V){return E[i][1]};};return V;') else
-          if Editor is TExtFormCheckbox      then RendererExtFunction := JSFunction('V, P', 'P.css+=" x-grid3-check-col-td";return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
+          if Editor is TExtFormCheckbox      then RendererExtFunction := JSFunction('V', 'return "<div class=''x-grid3-check-col"+(V?"-on":"")+"''></div>";') else
           if Editor is TExtFormDateField     then RendererExtFunction := ExtUtilFormat.Date('%0', TExtFormDateField(Editor).Format) else
           if Editor is TExtFormTimeField     then RendererExtFunction := ExtUtilFormat.Date('%0', TExtFormTimeField(Editor).Format);
           if not Hidden then begin
@@ -779,6 +777,11 @@ begin
 end;
 
 procedure TepThread.Home; begin
+  if not NewThread then begin
+    Refresh;
+    EditorGrid := nil;
+    DataStore := nil;
+  end;
   Application.Icon := ImagePath + '/extpascal.ico'; // deve ser 16?
   if GetShowID or GetShowAll then
     InitialProp := 0
