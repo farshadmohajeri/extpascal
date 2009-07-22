@@ -12,3 +12,14 @@ Handler := Ajax(Server.Method, TExtFormBasicForm(AForm.getForm).getValues);
 }}}
 Then all form values are serialized to server by the ExtJS framework itself. You don't need to parse manually on server side because all values are in the common name=value format
 within the POST request content.
+
+===How to mix HTML and ExtPascal?===
+
+Using the Html property of TExtPanel and subclasses.
+For example: 
+{{{
+  with TExtPanel.Create do begin
+    RenderTo := 'body';
+    Html     := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/Proc target=blank><img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>blabla</a></td></table>';
+  end;
+}}}
