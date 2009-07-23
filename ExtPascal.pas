@@ -1410,7 +1410,7 @@ begin
           exit;
         end;
   JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName + '",params:"' + lParams +
-    {$IFNDEF WebServer}'|'+{$ENDIF} // For IIS bug
+    {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
 

@@ -775,7 +775,7 @@ begin
                           break;
                       end
                       else begin
-                        if pos('|', FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
+                        if pos(IISDelim, FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         FGarbage := CurrentFCGIThread.FGarbage;
