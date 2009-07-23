@@ -64,7 +64,7 @@ uses
 const
   Host : string = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
   Port : word = 2014;          // Socket port to comunicate with FastCGI application. Change this if necessary.
-
+  IISDelim = '`';              // For IIS bug
 var
   Socket  : TBlockSocket; // Block socket object
   FCGIApp : string;       // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
@@ -180,7 +180,7 @@ begin
     if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then
       repeat
         read(R);
-        if R = '|' then break; // for IIS bug
+        if R = IISDelim then break; // for IIS bug
         Request := Request + R;
       until seekeof(Input);
     Tam := length(Request);

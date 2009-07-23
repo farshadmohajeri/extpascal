@@ -29,15 +29,15 @@ Name2=Help 2
 
 [Configurations\Help 2\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\AdditionalFiles]
 Count=4
-File0=..\..\Arquivos de programas\Doc-O-Matic\graphics\footer-bkg-whitegradient.gif
-File1=..\..\Arquivos de programas\Doc-O-Matic\graphics\header-bkg-whitegradient.gif
-File2=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_fullframegradient.gif
-File3=..\..\Arquivos de programas\Doc-O-Matic\graphics\html_titlebkg.jpg
+File0=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\footer-bkg-whitegradient.gif
+File1=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\header-bkg-whitegradient.gif
+File2=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_fullframegradient.gif
+File3=..\..\Arquivos de programas\Doc-O-Matic 6 Express\graphics\html_titlebkg.jpg
 
 [Configurations\Help 2\{D3A588E0-9472-11D3-BDD1-0080C8BA053D}\General]
-ClearDirectoryBeforeExport=0
+ClearDirectoryBeforeExport=1
 HelpKind=2
-OutputDir=..\..\Documents and Settings\wander.NOTEBOOK-WANDER\Meus documentos\Doc-O-Matic\output
+OutputDir=help2
 TargetBOM=1
 TargetCodepage=utf-8
 
@@ -60,12 +60,12 @@ Help2GenericInfoType=kbRef
 Help2ID=
 Help2Locale=kbEnglish
 Help2Namespace=
-Help2PluginNamespace=0
-Help2PluginNamespaceName=MS.VSIPCC+
+Help2PluginNamespace=1
+Help2PluginNamespaceName=Borland.BDS4
 Help2RegisterType=0
 Help2UnregisterNamespace=1
 HelpCompiler=C:\Arquivos de programas\HTML Help Workshop\hhc.exe
-HTMLHelp2Filename=
+HTMLHelp2Filename=help2\ExtPascal.HxS
 HTMLHelpDisplayFontScaleButton=0
 HTMLHelpFilename=
 SaveUserPosition=1

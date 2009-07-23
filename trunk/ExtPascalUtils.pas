@@ -13,6 +13,7 @@ uses
 
 const
   ExtPascalVersion = '0.9.7';
+  IISDelim = '`'; // For CGI IIS bug
 
 {$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
 type
