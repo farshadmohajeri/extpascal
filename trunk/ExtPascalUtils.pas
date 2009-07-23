@@ -47,7 +47,7 @@ Creates a TStringList where each string is a substring formed by the splitting o
 @param S Source string to split
 @return TStringList created with substrings from S
 }
-function Explode(Delim : char; const S : string) : TStringList;
+function Explode(Delim : char; const S : string; Separator : char = '=') : TStringList;
 
 {
 The opposite of LastDelimiter RTL function.
@@ -234,7 +234,7 @@ begin
   Result := true
 end;
 
-function Explode(Delim : char; const S : string) : TStringList;
+function Explode(Delim : char; const S : string; Separator : char = '=') : TStringList;
 var
   I : integer;
 begin
@@ -242,6 +242,7 @@ begin
   Result.StrictDelimiter := true;
   Result.Delimiter := Delim;
   Result.DelimitedText := S;
+  Result.NameValueSeparator := Separator;
   for I := 0 to Result.Count-1 do Result[I] := trim(Result[I]);
 end;
 
