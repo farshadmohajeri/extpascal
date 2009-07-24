@@ -299,18 +299,19 @@ procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; H
 var
   Root : string;
 begin
-   if pos(pLibrary, Libraries) = 0 then
-    if pLibrary = '' then
-      Libraries := ''
-    else begin
-      Root := RequestHeader['Document_Root'];
-      if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
-        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
-        if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
-      end
-      else
-        raise Exception.Create('Library: ' + Root + pLibrary + '.js not found');
-    end;
+  if IsAjax then raise Exception.Create('Use SetLibrary in non AJAX requests.');
+  if pos(pLibrary, Libraries) = 0 then
+   if pLibrary = '' then
+     Libraries := ''
+   else begin
+     Root := RequestHeader['Document_Root'];
+     if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
+       Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
+       if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
+     end
+     else
+       raise Exception.Create('Library: ' + Root + pLibrary + '.js not found');
+   end;
 end;
 
 {
@@ -319,6 +320,7 @@ Repeated code is ignored.
 @param JS JS code to inject in response. If JS is '' then all user JS code to this session will be removed from response.
 }
 procedure TExtThread.SetCustomJS(JS : string = ''); begin
+  if IsAjax then raise Exception.Create('Use SetCustomJS in non AJAX requests.');
   if pos(JS, CustomJS) = 0 then
     if JS = '' then
       CustomJS := ''
@@ -362,6 +364,7 @@ If pStyle is '' then all user styles to this session will be removed from respon
 @example <code>SetStyle('img:hover{border:1px solid blue}');</code>
 *)
 procedure TExtThread.SetStyle(pStyle : string); begin
+  if IsAjax then raise Exception.Create('Use SetStyle in non AJAX requests.');
   if pos(pStyle, Style) = 0 then
     if pStyle = '' then
       Style := ''
