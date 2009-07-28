@@ -306,7 +306,7 @@ begin
    else begin
      Root := RequestHeader['Document_Root'];
      if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
-       Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>';
+       Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
        if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
      end
      else
@@ -377,7 +377,7 @@ function TExtThread.GetStyle : string; begin
   if Style = '' then
     Result := ''
   else
-    Result := '<style>' + {$IFDEF DEBUGJS}BeautifyCSS(Style){$ELSE}Style{$ENDIF} + '</style>';
+    Result := '<style>' + {$IFDEF DEBUGJS}BeautifyCSS(Style){$ELSE}Style{$ENDIF} + '</style>'^M^J;
 end;
 
 {
@@ -689,7 +689,7 @@ begin
   Response := AnsiReplaceStr(AnsiReplaceStr(Response, CommandDelim, ''), IdentDelim, ''); // Extracts aux delimiters
   if not IsAjax then
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
-      '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN"><html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
+      '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN">'^M^J'<html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
@@ -712,7 +712,7 @@ begin
       'Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br><br>"+response.responseText);}};' +
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br/><br/>"+response.responseText);}};' +
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
       Response) + '});'^M^J +
       '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>'

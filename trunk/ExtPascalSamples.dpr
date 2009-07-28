@@ -2,6 +2,7 @@
 program ExtPascalSamples; // for Ext JS 2.2.1 and older
 
 {$IFDEF FPC}{$MACRO ON}{$ENDIF}
+{.$DEFINE SERVICE}
 {$IFNDEF WebServer}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 {$ENDIF}
