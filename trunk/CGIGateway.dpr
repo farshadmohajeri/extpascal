@@ -29,25 +29,30 @@ Below are the supported options:
 * ExtPath: string      - path to ExtJS library
 * ImagePath: string    - path to image collection
 * ExtTheme: string     - Ext's theme selection
+* ExtBuild: string     - Ext's build file name
 * Password: string     - password required to shutdown and reconfigure application
 * InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
 
+Below are the conditional compiler directive available:
+
+* HAS_CONFIG           - to enable or disable file configuration support
+* CONFIG_MUST_EXIST    - to make configuration file as mandatory (required)
+
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
-Date: jul-2008
+Date: Jul-2008
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 program CGIGateway;
 
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
-{.$DEFINE HAS_CONFIG}
-{$IFDEF HAS_CONFIG}
-  {.$DEFINE CONFIG_MUST_EXIST}
-{$ENDIF}
+
+// force HAS_CONFIG flag if config file is mandatory
+{$IFDEF CONFIG_MUST_EXIST}{$DEFINE HAS_CONFIG}{$ENDIF}
 
 uses
   SysUtils, BlockSocket,
   {$IFDEF HAS_CONFIG} // Configuration file
-    IniFiles,
+    StrUtils, IniFiles,
   {$ENDIF}
   {$IFNDEF MSWINDOWS} // Posix systems
     Unix, BaseUnix;
@@ -63,14 +68,18 @@ uses
 
 const
   Host : string = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
-  Port : word = 2014;          // Socket port to comunicate with FastCGI application. Change this if necessary.
-  IISDelim = '`';              // For IIS bug
-var
-  Socket  : TBlockSocket; // Block socket object
-  FCGIApp : string;       // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
+  Port : word   = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
+  IISDelim      = '`';         // For IIS bug
   {$IFDEF HAS_CONFIG}
-  Config  : TIniFile;     // Optional configuration file to control application behavior
-  CGIConf : string;       // Configuration file name
+  ConfigSection = 'FCGI';      // Configuration section to be read
+  {$ENDIF}
+  
+var
+  Socket     : TBlockSocket;   // Block socket object
+  FCGIApp    : string;         // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
+  {$IFDEF HAS_CONFIG}
+  Config     : TIniFile;       // Optional configuration file to control application behavior
+  ConfigFile : string;         // Configuration file name
   {$ENDIF}
 
 {
@@ -143,7 +152,7 @@ var
   I : integer;
   Value : string;
 begin
-  Result := #1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request
+  // Result := #1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request (redundant!)
   for I := 0 to high(EnvVar) do begin
     // override default value
     if EnvVar[I] = EnvName then
@@ -152,11 +161,11 @@ begin
       Value := GetEnvironmentVariable(EnvVar[I]);
     {$IFDEF HAS_CONFIG}
     if I = 1 then // override PATH_INFO
-      if CGIConf <> '' then begin
+      if ConfigFile <> '' then begin
         // override HOME path
-        if (Value = '') or (Value = '/') then Value := '/' + Config.ReadString('FCGI', 'Home', '');
+        if (Value = '') or (Value = '/') then Value := '/' + Config.ReadString(ConfigSection, 'Home', '');
         // force shutdown request
-        if not Config.ReadBool('FCGI', 'Enabled', true) then Value := '/shutdown';
+        if not Config.ReadBool(ConfigSection, 'Enabled', true) then Value := '/shutdown';
       end;
     {$ENDIF}
     if Value <> '' then AddParam(Result, [EnvVar[I], Value]);
@@ -206,8 +215,8 @@ var
 begin
   {$IFDEF HAS_CONFIG}
   Result := true;
-  if CGIConf <> '' then
-    if not Config.ReadBool('FCGI', 'Execute', true) then exit;
+  if ConfigFile <> '' then
+    if not Config.ReadBool(ConfigSection, 'Execute', true) then exit;
   {$ENDIF}
   // allow execution only on local machine
   Result := false;
@@ -254,13 +263,18 @@ Reads FCGIApp name, Host and Port from configuration file
 @param AFileName Configuration file name
 @return True if AFileName exists
 }
-function ReadConfig(AFileName : string) : boolean; begin
+function ReadConfig(AFileName : string) : boolean; 
+var
+  s: string;
+begin
   Result := false;
   if FileExists(AFileName) then begin
     Config  := TINIFile.Create(AFileName);
-    FCGIApp := Config.ReadString('FCGI', 'Name', FCGIApp);
-    Host    := Config.ReadString('FCGI', 'Host', Host);
-    Port    := Config.ReadInteger('FCGI', 'Port', Port);
+    s := Config.ReadString(ConfigSection, 'Name', '');
+    FCGIApp := IfThen(s = '', FCGIApp, s);
+    s := Config.ReadString(ConfigSection, 'Host', '');
+    Host    := IfThen(s = '', Host, s);
+    Port    := Config.ReadInteger(ConfigSection, 'Port', Port);
     Result  := true;
   end;
 end;
@@ -269,10 +283,16 @@ end;
 Forces shutdown any running FCGI instances through request
 @return True if sent request
 }
-function ShutdownFCGI : boolean; begin
+function ShutdownFCGI : boolean; 
+var
+  s: string;
+begin
   Result := false;
-  if (CGIConf <> '') and not Config.ReadBool('FCGI', 'Enabled', true) then begin
-    TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + Config.ReadString('FCGI', 'Password', 'extpascal')));
+  if (ConfigFile <> '') and not Config.ReadBool(ConfigSection, 'Enabled', true) then 
+  begin
+    s := Config.ReadString(ConfigSection, 'Password', ''); 
+    s := IfThen(s = '', 'extpascal'); // default password
+    TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + s));
     Result := true;
   end;
 end;
@@ -283,7 +303,7 @@ Kills shutdown any running FCGI instances through system call
 }
 function KillFCGI : boolean; begin
   Result := false;
-  if (CGIConf <> '') and not Config.ReadBool('FCGI', 'Enabled', true) then begin
+  if (ConfigFile <> '') and not Config.ReadBool(ConfigSection, 'Enabled', true) then begin
     if (Host = 'localhost') or (Host = '127.0.0.1') then begin
       {$IFNDEF MSWINDOWS}
       fpSystem('killall '+ ExtractFileName(FCGIApp));
@@ -294,6 +314,7 @@ function KillFCGI : boolean; begin
     Result := true;
   end;
 end;
+
 {$ENDIF}
 
 var
@@ -301,11 +322,12 @@ var
 begin
   FCGIApp := ChangeFileExt(ExtractFileName(paramstr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
   {$IFDEF HAS_CONFIG}
-  CGIConf := ChangeFileExt(FCGIApp, {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
-  if not ReadConfig(CGIConf) then begin
-    CGIConf := ''; // indicates no config found
+  ConfigFile := ChangeFileExt(FCGIApp, {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
+  if not ReadConfig(ConfigFile) then begin
+    ConfigFile := ''; // indicates no config found
     {$IFDEF CONFIG_MUST_EXIST}
-    Log('ERROR: Configuration file is not found. Please contact the application provider.');
+    Log('CONFIG ERROR: Configuration file is not found or has no read permission.');
+    Config.Free;
     exit;
     {$ENDIF}
   end;
@@ -319,10 +341,11 @@ begin
     TalkFCGI(EnvVariables);
   end
   else begin
+    Socket.Close;
   	Socket.Free;
     {$IFDEF HAS_CONFIG}
     if KillFCGI then
-      Log('ERROR: Service is temporarily disabled or being updated. Please, try again after a few moments. ')
+      Log('OUT OF SERVICE: Application is temporarily disabled or being updated. Please, try again after a few moments. ')
     else
     {$ENDIF}
     if Exec(FCGIApp) then begin
@@ -335,11 +358,14 @@ begin
       if Socket.Error = 0 then
         TalkFCGI(EnvVariables)
       else
-        Log('CGIGateway: FastCGI application (' + FCGIApp + ') not connect at ' + Host + ':' + IntToStr(Port));
+        Log('CGI GATEWAY ERROR: Unable to access application '+ FCGIApp +' at '+ Host + ':' + IntToStr(Port));
     end
     else
-      Log('CGIGateway: ' + FCGIApp + ' not found or has no execute permission.');
+      Log('CGI GATEWAY ERROR: '+ FCGIApp +' is not found or has no execute permission.');
   end;
-  {$IFDEF HAS_CONFIG}Config.Free;{$ENDIF}
-  try Socket.Free; except end;
+  try 
+    {$IFDEF HAS_CONFIG}Config.Free;{$ENDIF}
+    Socket.Close;
+    Socket.Free;
+  except end;
 end.
