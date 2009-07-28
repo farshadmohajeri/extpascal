@@ -10,13 +10,18 @@ uses
   ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
-{$IF IsExtJS3 = true}
-  {$IFDEF FPC}
-    {$FATAL: Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!}
-  {$ELSE}
+{$IFDEF FPC}
+  // workaround for FPC idiosyncrazy of $IF feature!!! :P
+  const IsExtJS2 = not IsExtJS3;
+  {$IF not IsExtJS2}
+    {$FATAL Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!}
+  {$IFEND}
+{$ELSE}
+  {$IF IsExtJS3}
+    {$MESSAGE 'Don''t use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!'}
     FATAL: Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!
-  {$ENDIF}
-{$IFEND}
+  {$IFEND}
+{$ENDIF}
 
 type
   TSamples = class(TExtThread)

@@ -6,7 +6,7 @@ License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</ext
 }
 program ExtToPascal;
 
-{$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
+{$IFDEF FPC}{$MACRO ON}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 uses
@@ -1085,19 +1085,11 @@ begin
       if Name = 'Ext' then begin
         writeln(Pas, 'const');
         if IsExtJS3 then begin
-          writeln(Pas, Tab, '{$IFNDEF FPC}');
-          writeln(Pas, Tab, '  IsExtJS3 = true;');
-          writeln(Pas, Tab, '{$ELSE}');
-          writeln(Pas, Tab, '  {$DEFINE IsExtJS3 := true}');
-          writeln(Pas, Tab, '{$ENDIF}');
+          writeln(Pas, Tab, 'IsExtJS3 = true;');
           writeln(Pas, Tab, 'SourcePath = ''/src'';'^M^J);
         end
         else begin
-          writeln(Pas, Tab, '{$IFNDEF FPC}');
-          writeln(Pas, Tab, '  IsExtJS3 = false;');
-          writeln(Pas, Tab, '{$ELSE}');
-          writeln(Pas, Tab, '  {$DEFINE IsExtJS3 := false}');
-          writeln(Pas, Tab, '{$ENDIF}');
+          writeln(Pas, Tab, 'IsExtJS3 = false;');
           writeln(Pas, Tab, 'SourcePath = ''/source'';'^M^J);
         end;
       end;
