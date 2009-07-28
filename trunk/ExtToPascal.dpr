@@ -1291,8 +1291,8 @@ begin
     I := 0;
     repeat
       write('  > ');
-  		ReadHtml(P + '/' + F.Name);
-  		Inc(I);
+      ReadHtml(P + '/' + F.Name);
+      Inc(I);
     until FindNext(F) <> 0;
     FindClose(F);
     writeln(I, ' HTML files found.');
@@ -1308,6 +1308,6 @@ begin
   end
   else
     writeln('ExtJS HTML files not found at ' + P + '/*.html');
-  writeln('Done! Press enter.');
+    writeln('Done! Press enter.');
   readln;
 end.
