@@ -6,6 +6,8 @@ License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</ext
 }
 unit ExtPascalUtils;
 
+{$IFDEF FPC}{$MACRO ON}{$ENDIF}
+
 interface
 
 uses
