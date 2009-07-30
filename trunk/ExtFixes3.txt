@@ -145,3 +145,5 @@ ExtFormField, inputType, (itText, itButton, itCheckbox, itFile, itHidden, itImag
 ExtStateProvider, on, void, false, false, EventName, string, false, Handler, ExtFunction, false
 ExtStateProvider, un, void, false, false, EventName, string, false, Handler, ExtFunction, false
 ExtGridColumn, renderer, ExtFunction, false, true, FORCEADD
+ExtFormFormPanel, fileUpload, Boolean, false, true,
+
