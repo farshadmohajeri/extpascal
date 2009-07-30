@@ -450,10 +450,10 @@ begin
     P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
                      pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, pOpDivide, pFunction]);
     // keep Ext's onReady function at the first line
-    if (not onReady) and (res[p] = '(') then
-      if Copy(Res, P-8, 8) = '.onReady' then begin
-        P := PosEx('{', Res, P+1)-1;
+    if (not onReady) and (res[p] = 'f') then
+      if Copy(Res, P-9, 9) = '.onReady(' then begin
         onReady := true;
+        continue;
       end;
     // now, let's proceed with what char is found
     if P > 0 then begin

@@ -277,7 +277,7 @@ begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
-  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu');
+  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu', false, false);
   with TExtButton.Create do begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
