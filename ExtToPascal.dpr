@@ -478,6 +478,7 @@ begin
             Static := false;
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
+          if Before('<static>', '"mdesc">', lowercase(Line)) or Before('read-only.', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(PropName, CurClass.Properties);
           if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
