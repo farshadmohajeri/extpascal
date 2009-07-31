@@ -552,7 +552,7 @@ begin
   Response := '';
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
-  FIsAjax := RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+  FIsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or (pos('multipart/form-data', RequestHeader['CONTENT_TYPE']) = 1);
   if IsAjax then begin
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
@@ -876,7 +876,7 @@ procedure TExtObject.CreateVar(JS : string); begin
   CurrentFCGIThread.AddToGarbage(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
-  JSCode(CommandDelim + DeclareJS + JSName + '=new ' + JS);
+  JSCode(CommandDelim + DeclareJS + JSName + IfThen(JS[1] = '(', '= ', '=new ') + JS);
   JSCode(JSName + '.nm="' + JSName + '";');
 end;
 

@@ -59,13 +59,14 @@ type
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FGarbage,
     FKeepConn : boolean; // Not used
+    FFileUploaded,
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
     FQuery,
     FCookie : TStringList;
     FLastAccess : TDateTime;
     function GetRequestHeader(Name: string): string;
-    procedure CompleteRequestHeaderInfo;
+    procedure CompleteRequestHeaderInfo(Buffer : string; I : integer);
     function GetCookie(Name: string): string;
     function GetQuery(Name: string) : string;
     function GetQueryAsDouble(Name: string): double;
@@ -73,6 +74,7 @@ type
     function GetQueryAsTDateTime(Name: string) : TDateTime;
     function GetQueryAsBoolean(Name: string): boolean;
     procedure GarbageCollector(FreeGarbage : boolean);
+    procedure WriteUploadFile(Buffer : string);
   protected
     FRequest, FPathInfo : string;
     NewThread : boolean; // True if is the first request of a thread
@@ -90,12 +92,13 @@ type
     procedure OnNotFoundError; virtual;
     procedure AfterThreadConstruction; virtual;
     procedure BeforeThreadDestruction; virtual;
-    procedure SetPaths; virtual; abstract;
+    procedure SetPaths; virtual;
     procedure Refresh;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
     ContentType  : string; // HTTP content-type header, default is 'text/html'
+    UploadPath   : string; // Upload path below document root. Default value is '/uploads'
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
     property PathInfo : string read FPathInfo; // Path info string for the current request
@@ -108,7 +111,8 @@ type
     property QueryAsInteger[Name : string] : integer read GetQueryAsInteger; // Returns HTTP query info parameters as an integer
     property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
-    property Queries : TStringList read FQuery; // Return all HTTP queries as list to ease searching
+    property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
+    property FileUploaded : string read FFileUploaded; // Last uploaded file
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -535,10 +539,21 @@ Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> met
 }
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
-// Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
-procedure TFCGIThread.CompleteRequestHeaderInfo;
+procedure TFCGIThread.WriteUploadFile(Buffer : string);
 var
-  ReqMet : string;
+  F : file;
+begin
+  assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
+  rewrite(F, 1);
+  blockwrite(F, Buffer[1], length(Buffer));
+  close(F);
+end;
+
+// Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
+procedure TFCGIThread.CompleteRequestHeaderInfo(Buffer : string; I : integer);
+var
+  ReqMet, CT : string;
+  J : integer;
 begin
   FLastAccess := Now;
   FPathInfo := FRequestHeader.Values['PATH_INFO'];
@@ -555,6 +570,18 @@ begin
     'D' : FRequestMethod := rmDelete;
   end;
   FQuery.DelimitedText := URLDecode(FRequestHeader.Values['QUERY_STRING']);
+  CT := RequestHeader['CONTENT_TYPE'];
+  if pos('multipart/form-data', CT) <> 0 then begin
+    J := pos('=', CT);
+    CT := copy(CT, J+1, length(CT));
+    I := posex(CT, Buffer, I);
+    I := posex('filename="', Buffer, I);
+    J := posex('"', Buffer, I+10);
+    FFileUploaded := copy(Buffer, I+10, J-I-10);
+    I := posex(^M^J^M^J, Buffer, J) + 4;
+    J := posex(CT, Buffer, I);
+    WriteUploadFile(copy(Buffer, I, J-I-4));
+  end;
 end;
 
 {
@@ -723,6 +750,10 @@ begin
   Application.AccessThreads.Leave;
 end;
 
+procedure TFCGIThread.SetPaths; begin
+  UploadPath := '/uploads'
+end;
+
 {
 The thread main loop.<p>
 On receive a request, each request, on its execution cycle, does:
@@ -770,7 +801,7 @@ begin
                       if FCGIHeader.RecType = rtParams then begin
                         ReadRequestHeader(FRequestHeader, FRequest, FCookie);
                         if SetCurrentFCGIThread then
-                          CurrentFCGIThread.CompleteRequestHeaderInfo
+                          CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I)
                         else
                           break;
                       end
