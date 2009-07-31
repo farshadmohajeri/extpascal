@@ -304,7 +304,7 @@ begin
    if pLibrary = '' then
      Libraries := ''
    else begin
-     Root := RequestHeader['Document_Root'];
+     Root := RequestHeader['DOCUMENT_ROOT'];
      if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
        if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
@@ -572,6 +572,7 @@ end;
 
 // Override this method to change ExtPath, ImagePath and ExtBuild default values
 procedure TExtThread.SetPaths; begin
+  inherited;
   ExtPath   := '/ext';
   ImagePath := '/images';
   ExtBuild  := 'ext-all';
