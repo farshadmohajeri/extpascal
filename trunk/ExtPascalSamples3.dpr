@@ -131,7 +131,7 @@ begin
     Note.SetDimension(300, 70);
     AddFigure(Note, 20, 250);
     ScrollArea := P.GetEl;
-    jscode(JSName + '.scrollArea=document.getElementById(''paintarea'').parentNode;');
+    JSCode(JSName + '.scrollArea=document.getElementById(''paintarea'').parentNode;');
 //    SetBackgroundImage('grid_10.png', nil);
   end;
 //  P.Show;

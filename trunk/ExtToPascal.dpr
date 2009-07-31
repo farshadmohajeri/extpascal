@@ -226,7 +226,7 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
 end;
 
 procedure TClass.AddCreate; begin
-  if not Singleton and (Methods.IndexOf('Create') = -1) then
+  if not Singleton and (Methods.IndexOf('Create') = -1) then 
     Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
 end;
 
@@ -478,7 +478,6 @@ begin
             Static := false;
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
-          if Before('<static>', '"mdesc">', lowercase(Line)) or Before('read-only.', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(PropName, CurClass.Properties);
           if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
