@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
 <CONFIG>
   <Package Version="3">
-    <PathDelim Value="\"/>
     <Name Value="ExtP_Ctrls"/>
+    <AddToProjectUsesSection Value="False"/>
     <Author Value="Phil Hess"/>
     <CompilerOptions>
       <Version Value="8"/>
-      <PathDelim Value="\"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="units\$(TargetCPU)-$(TargetOS)"/>
+        <UnitOutputDirectory Value="units/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -24,9 +23,9 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Description Value="ExtPascal Design Controls for Lazarus"/>
+    <Description Value="ExtPascal Basic Design Controls for Lazarus"/>
     <License Value="Modified LGPL"/>
-    <Version Release="7"/>
+    <Version Release="8"/>
     <Files Count="1">
       <Item1>
         <Filename Value="extp_design_ctrls.pas"/>
@@ -41,7 +40,7 @@
       </Item1>
     </RequiredPkgs>
     <UsageOptions>
-      <UnitPath Value="$(PkgOutDir)\"/>
+      <UnitPath Value="$(PkgOutDir)/"/>
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>

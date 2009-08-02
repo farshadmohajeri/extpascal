@@ -269,7 +269,15 @@ begin
             '  ExtLayout, ExtMenu, ExtState, ExtTree;' + LineEnding +
             LineEnding +
             'type' + LineEnding +
-            '  {$M+} TExtPanel_Tab = TExtPanel; {$M-}' + LineEnding +
+            '  {$M+}' + LineEnding +
+            '  TExtPanel_Tab = TExtPanel;' + LineEnding +
+            '  TExtFormTextField_Grid = TExtFormTextField;' + LineEnding +
+            '  TExtFormNumberField_Grid = TExtFormNumberField;' + LineEnding +
+            '  TExtFormDateField_Grid = TExtFormDateField;' + LineEnding +
+            '  TExtFormTimeField_Grid = TExtFormTimeField;' + LineEnding +
+            '  TExtFormCheckBox_Grid = TExtFormCheckBox;' + LineEnding +
+            '  TExtFormComboBox_Grid = TExtFormComboBox;' + LineEnding +
+            '  {$M-}' + LineEnding +
             LineEnding +
             '{$ELSE}' + LineEnding +
             '  ExtP_Design_Ctrls;' + LineEnding +

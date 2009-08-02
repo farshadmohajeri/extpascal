@@ -1,7 +1,5 @@
   Id := 'AboutWindow';
-  Layout := 'absolute';
-  Border := False;
-  Plain := True;
+  Layout := lyAbsolute;
   Height := 287;
   Width := 358;
   Modal := True;
@@ -9,7 +7,7 @@
 
   with TExtPanel.AddTo(Items) do
     begin
-    Layout := 'absolute';
+    Layout := lyAbsolute;
     Border := False;
     BodyStyle := 'background:transparent';
     X := 128;

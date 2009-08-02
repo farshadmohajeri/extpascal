@@ -36,6 +36,26 @@ function ConvertFormToExtP(const CfgFileName      : string;
                              var ErrMsg           : string) : Boolean;
 
 
+const
+  CfgFileExt        = '.ini';    {Extension for file with same name as program
+                                   containing component and property mappings}
+  DelProjSrcFileExt = '.dpr';    {Delphi project source code file extension
+                                   ("program" file)}
+  LazProjSrcFileExt = '.lpr';    {Lazarus project source code file extension
+                                   ("program" file)}
+  LazProjInfFileExt = '.lpi';    {Lazarus project information flle extension
+                                   (an XML file)}
+  PasFileExt        = '.pas';    {Pascal source code file extension}
+  PasAltFileExt     = '.pp';     {Pascal source code alternate file extension
+                                   occasionally used for some reason with Laz}
+  IncFileExt        = '.inc';    {Pascal source code include file extension}                                 
+  DelFormFileExt    = '.dfm';    {Delphi form design file extension}
+  LazFormFileExt    = '.lfm';    {Lazarus form design file extension}
+  
+  NameSuffixExt     = '_ext';    {Add this to names of files with
+                                   opFmToExtP_AddExtToName option}
+
+
 implementation
 
 
@@ -267,6 +287,7 @@ var
   ControlProps      : TStringList;
   DefaultProps      : TStringList;
   ClassProps        : TStringList;
+  GridColIndexes    : TStringList;
   TargetPath        : string;
   ProgName          : string;
   ThreadClassName   : string;
@@ -301,6 +322,9 @@ var
   BtnWidth          : string;
   ItemStrDone       : Boolean;
   ItemStrCnt        : Integer;
+  GridColIdx        : Integer;
+  ColDataDone       : Boolean;
+  ColWidth          : string;
 
 begin
   Result := False;
@@ -334,8 +358,8 @@ begin
   ThreadClassName := 'AppThread';
   ThreadFileName := TargetPath + LowerCase(ThreadClassName);
   if opFmToExtP_AddExtToName in Options then
-    ThreadFileName := ThreadFileName + '_ext';
-  ThreadFileName := ThreadFileName + '.pas';
+    ThreadFileName := ThreadFileName + NameSuffixExt;
+  ThreadFileName := ThreadFileName + PasFileExt;
   ThreadClassName := 'T' + ThreadClassName;
 
   Write(PasFileVar, '// Generated');
@@ -402,6 +426,7 @@ begin
   DefaultProps := TStringList.Create;
   CfgFileObj.ReadSectionValues('Defaults', DefaultProps);
   ClassProps := TStringList.Create;
+  GridColIndexes := TStringList.Create;
 
    {Now generate Pascal form units that create ExtPascal windows (forms)}
   for FormNum := 0 to High(FmFileNames) do
@@ -411,9 +436,11 @@ begin
     UnitName := Copy(UnitName, 1,
                      Length(UnitName) - Length(ExtractFileExt(UnitName)));
     if opFmToExtP_AddExtToName in Options then
-      UnitName := UnitName + '_ext';
-    UnitFileName := TargetPath + UnitName + '.pas';
-    IncFileName := TargetPath + UnitName + '.inc';
+      UnitName := UnitName + NameSuffixExt;
+    UnitFileName := TargetPath + UnitName + PasAltFileExt;  {See if alt used}
+    if not FileExists(UnitFileName) then  {Okay to assume normal extension?}
+      UnitFileName := ChangeFileExt(UnitFileName, PasFileExt);
+    IncFileName := TargetPath + UnitName + IncFileExt;
     if not CreateOutputFile(PasFileVar, UnitFileName, True, ErrMsg) then
       Exit;
     if not FileExists(IncFileName) then
@@ -440,7 +467,7 @@ begin
      {Scan form for objects that need to be declared}
     AssignFile(FmFileVar, FmFileNames[FormNum]);
     Reset(FmFileVar);
-    IsDfm := SameText(ExtractFileExt(FmFileNames[FormNum]), '.dfm');
+    IsDfm := SameText(ExtractFileExt(FmFileNames[FormNum]), DelFormFileExt);
     FormHeight := 0;
     FormWidth := 0;
     ObjLevel := 0;
@@ -570,7 +597,7 @@ begin
         UsesName := Copy(UsesName, 1,
                          Length(UsesName) - Length(ExtractFileExt(UsesName))); 
         if opFmToExtP_AddExtToName in Options then
-          UsesName := UsesName + '_ext';
+          UsesName := UsesName + NameSuffixExt;
         Write(PasFileVar, '  ', UsesName); 
         end;
       end;
@@ -584,6 +611,7 @@ begin
 
      {Now generate the actual code that creates ExtPascal components}
     Reset(FmFileVar);
+    GridColIndexes.Clear;
     ObjLevel := 0;
     while not Eof(FmFileVar) do  
       begin
@@ -598,7 +626,32 @@ begin
         else  {Object on form}
           FmClassName := Trim(Copy(InStr, Pos(':', InStr)+2, MaxInt));
         CfgFileObj.ReadSectionValues(FmClassName, ClassProps);
-        if ClassProps.Count > 0 then  {Object's class is mapped?}
+        
+        if (Length(FmClassName) > 5) and
+           SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid') then
+          begin  {Column editor control column model already created with grid}
+          if GridColIndexes.Values[ObjName] = '' then  {Not part of a grid?}
+            begin
+            IgnoreObj[ObjLevel] := True;
+            ClassProps.Clear;
+            end
+          else
+            begin
+            IgnoreObj[ObjLevel] := False;
+            ExtClassName := ClassProps.Values['Class'];
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)),
+                                'with TExtGridColumn(' +
+                                GridColIndexes.Values[ObjName] + '.Columns[' +
+                                IntToStr(Integer(GridColIndexes.Objects[
+                                                  GridColIndexes.IndexOfName(ObjName)])) +
+                                ']) do  //', ObjName);
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'begin');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                'Editor := ', ExtClassName, '.Create;');
+            end;
+          end
+        
+        else if ClassProps.Count > 0 then  {Object's class is mapped?}
           begin
           IgnoreObj[ObjLevel] := False;
           ExtClassName := ClassProps.Values['Class'];
@@ -612,7 +665,7 @@ begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                                 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'Layout := ''absolute'';');
+                                'Layout := lyAbsolute;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                                 'Border := False;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
@@ -648,17 +701,21 @@ begin
             begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)), ObjName, 
                                 ' := ', ExtClassName, '.Create;');
-            Write(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)), 
-                              'with ', ObjName);
-            WriteLn(IncFileVar, '.AddTo(Items) do');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)), 
+                                'with ', ObjName, '.AddTo(Items) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'begin');
             end;
+
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                               'Id := ''', ObjName, ''';');
+
           if SameText(ExtClassName, 'TExtButton') and (BtnWidth <> '') then
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                                 'MinWidth := ', BtnWidth, ';')        
-          else if SameText(ExtClassName, 'TExtGridEditorGridPanel') then
+
+          else if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
+                 ((not SameText(FmClassName, 'TExtGridEditorGridPanel')) and
+                  (not SameText(FmClassName, 'TOvcTable'))) then
             begin  {Create dummy data store and column model objects}
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'Store := TExtDataSimpleStore.Create;');
@@ -671,7 +728,7 @@ begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'end;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                'with TExtGridColumnModel.AddTo(Columns) do');
+                                'with TExtGridColumn.AddTo(Columns) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
@@ -683,6 +740,7 @@ begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'end;');
             end;
+            
           for DefPropIdx := 0 to DefaultProps.Count-1 do  {Default properties}
             begin
             DefPropStr := DefaultProps.Strings[DefPropIdx];
@@ -830,7 +888,51 @@ begin
                                 ConvertValue(FmPropVal, ExtClassName, ExtPropName), 
                                 ';');
             end;
-          end;
+          end  {Property is mapped}
+          
+        else if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
+                SameText(FmPropName, 'ColData') then
+          begin  {TOvcTable column defs reached, so special code required}
+          GridColIdx := 0;
+          ColDataDone := False;
+          repeat  {Assume each column def is on 4 lines; width is first line}
+            ReadLn(FmFileVar, ColWidth);
+            ColWidth := Trim(ColWidth);
+            if ColWidth = ')' then  {Lazarus puts ) on its own line}
+              ColDataDone := True;
+            if not ColDataDone then
+              begin  
+              ReadLn(FmFileVar, InStr);  {Skip}
+              ReadLn(FmFileVar, InStr);  {Skip}
+              ReadLn(FmFileVar, InStr);  {Column editor object}
+              InStr := Trim(InStr);
+              if Copy(InStr, Length(InStr), 1) = ')' then
+                begin
+                InStr := Copy(InStr, 1, Length(InStr)-1);
+                ColDataDone := True;
+                end;
+              InStr := Copy(InStr, Pos('.', InStr)+1, MaxInt);  {Strip form}
+              InStr := Copy(InStr, 1, Length(InStr)-1);  {Trim trailing quote}
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                  'with TExtGridColumn.AddTo(Columns) do');
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                  'begin');
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                  'Id := ''', InStr, ''';');
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                  'Width := ', ColWidth, ';');
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                  'end;');
+              GridColIndexes.AddObject(InStr + '=' + ObjName,
+                                       TObject(GridColIdx));
+               {Save order of grid columns for use later when actual column
+                 controls are encountered. Note assuming column controls
+                 always come after grid where they're used.}
+              Inc(GridColIdx);
+              end;
+          until ColDataDone;
+          end;  {TOvcTable column defs}
+
         end;  {is property}
 
       end;  {while not Eof}
@@ -909,7 +1011,7 @@ begin
     UsesName := Copy(UsesName, 1,
                      Length(UsesName) - Length(ExtractFileExt(UsesName))); 
     if opFmToExtP_AddExtToName in Options then
-      UsesName := UsesName + '_ext';
+      UsesName := UsesName + NameSuffixExt;
     Write(ThrdFileVar, '  ', UsesName);
     if UsesNum < High(FmFileNames) then
       WriteLn(ThrdFileVar, ',')
@@ -1000,6 +1102,7 @@ begin
   ControlProps.Free;
   DefaultProps.Free;
   ClassProps.Free;
+  GridColIndexes.Free;
 
    {Create little custom config file. This is a way to signal to FPC to
      compile with ExtPascal runtime units, not Extp_Design_Ctrls unit.}
