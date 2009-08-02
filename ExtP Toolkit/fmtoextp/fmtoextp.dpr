@@ -26,23 +26,8 @@ uses
 
 const
   ConverterName     = 'FmToExtP';
-  ConverterVersion  = '0.0.7';
+  ConverterVersion  = '0.0.8';
   
-  CfgFileExt        = '.ini';    {Extension for file with same name as program
-                                   containing component and property mappings}
-  DelProjSrcFileExt = '.dpr';    {Delphi project source code file extension
-                                   ("program" file)}
-  LazProjSrcFileExt = '.lpr';    {Lazarus project source code file extension
-                                   ("program" file)}
-  LazProjInfFileExt = '.lpi';    {Lazarus project information flle extension
-                                   (an XML file)}
-  PasFileExt        = '.pas';    {Pascal source code file extension}
-  PasAltFileExt     = '.pp';     {Pascal source code alternate file extension
-                                   occasionally used for some reason with Laz}
-  DelFormFileExt    = '.dfm';    {Delphi form design file extension}
-  LazFormFileExt    = '.lfm';    {Lazarus form design file extension}
-
-
 var
   CfgFileName     : string;
   FmFileNames     : array of string;
@@ -88,7 +73,7 @@ begin
     WriteLn('Usage: ', LowerCase(ConverterName), ' [mainform|projectfile] [otherforms] [programfile] [switches]');
     WriteLn;
     WriteLn('Switches:');
-    WriteLn('  -e  Add "_ext" to names of all files created.');
+    WriteLn('  -e  Add "', NameSuffixExt, '" to names of all files created.');
     WriteLn('  -r  Reformat any error message so Lazarus will display it.');
     WriteLn;
     WriteLn('Examples:');
@@ -97,8 +82,8 @@ begin
     WriteLn('    helloabout.pas and helloabout.inc in myproj folder from');
     WriteLn('    hellomain.dfm and helloabout.dfm forms.');
     WriteLn;
-    WriteLn('  ', LowerCase(ConverterName), ' hello.lpi -e -- creates hello_ext.lpr, etc. from project .lfm forms');
-    WriteLn('    in same folder, adding "_ext" to all file names to make them unique.');
+    WriteLn('  ', LowerCase(ConverterName), ' hello.lpi -e -- creates hello', NameSuffixExt, '.lpr, etc. from project .lfm forms');
+    WriteLn('    in same folder, adding "', NameSuffixExt, '" to all file names to make them unique.');
     WriteLn;
     WriteLn('Notes:');
     WriteLn('  ', ConverterName, ' will look for its configuration data in:');
@@ -220,7 +205,7 @@ begin
        Copy(FmFileNames[0], 1, 
             Length(FmFileNames[0]) - Length(ExtractFileExt(FmFileNames[0])));
       if AddExtToName then
-        ProjSrcFileName := ProjSrcFileName + '_ext';
+        ProjSrcFileName := ProjSrcFileName + NameSuffixExt;
       ProjSrcFileName := ProjSrcFileName + DelProjSrcFileExt;
       end
     else
@@ -229,7 +214,7 @@ begin
        Copy(ProjInfFileName, 1, 
             Length(ProjInfFileName) - Length(ExtractFileExt(ProjInfFileName)));
       if AddExtToName then
-        ProjSrcFileName := ProjSrcFileName + '_ext';
+        ProjSrcFileName := ProjSrcFileName + NameSuffixExt;
       ProjSrcFileName := ProjSrcFileName + LazProjSrcFileExt; 
       end;
     end;

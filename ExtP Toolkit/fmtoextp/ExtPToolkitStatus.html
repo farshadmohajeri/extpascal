@@ -65,7 +65,7 @@ See the ExtPascal site for more information:<P>
 
 <A HREF="http://code.google.com/p/extpascal">http://code.google.com/p/extpascal</A><P>
 
-The ExtP Toolkit was tested with ExtPascal 0.9.4 and Ext JS 2.2.<P>
+The ExtP Toolkit was tested with ExtPascal 0.9.6 and Ext JS 3.0.0.<P>
 
 <LI><B>Pascal compiler</B><P>
 You will need one of these compilers:<P>
@@ -331,9 +331,9 @@ in the Create constructors to reflect the new names:
 <LI>In mainunit.pas, change it to {$I mainunit.inc}
 <LI>In aboutunit.pas, change it to {$I aboutunit.inc}
 </UL><P>
-Note that this step is necessary because Free Pascal does not support the {$I *.inc}
-syntax that Delphi does. But it's a one-time change that doesn't need to be
-made again unless you rename a form unit.
+Note that this step is necessary because Free Pascal 2.2.x does not support the 
+{$I *.inc} syntax that Delphi and FPC 2.3.1 do. But it's a one-time change that
+doesn't need to be made again unless you rename a form unit.
 <LI>Choose Project | View Source to see the project's program file and
 make sure the port is set to what your CGIGateway.dpr port is expecting
 (unless you edited CGIGateway.dpr, this will be 2014).<P>
@@ -618,7 +618,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: May 25, 2009
+Last updated: August 1, 2009
 <P>
 
 </BODY>

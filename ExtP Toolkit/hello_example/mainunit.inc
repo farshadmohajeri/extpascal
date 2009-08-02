@@ -1,7 +1,5 @@
   Id := 'MainWindow';
-  Layout := 'absolute';
-  Border := False;
-  Plain := True;
+  Layout := lyAbsolute;
   Height := 334;
   Width := 408;
   OnEsc := ExtGlobal.Ext.EmptyFn;
@@ -9,7 +7,7 @@
 
   with TExtPanel.AddTo(Items) do
     begin
-    Layout := 'absolute';
+    Layout := lyAbsolute;
     Border := False;
     BodyStyle := 'background:transparent';
     X := 152;
