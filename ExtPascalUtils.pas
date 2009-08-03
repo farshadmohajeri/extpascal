@@ -72,7 +72,7 @@ Returns the number of occurrences of Substr in Str
 }
 function CountStr(const Substr, Str : string) : integer;
 
-// Replaces " to ' and ^M^J to <br/> and surrounds the string with "
+// Replaces " to ' and ^M^J to <br/>, surrounds the string with " and insert %0..%9 JS place holders
 function StrToJS(const S : string) : string;
 
 {
@@ -285,15 +285,32 @@ begin
   until I = 0;
 end;
 
-function StrToJS(const S : string) : string; begin
+function StrToJS(const S : string) : string;
+var
+  I, J : integer;
+begin
   Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
-  if (Result <> '') and (Result[1] = #3) then begin // RegEx
+  if (Result <> '') and (Result[1] = #3) then begin // Is RegEx
     delete(Result, 1, 1);
     if Pos('/', Result) <> 1 then Result := '/' + Result + '/';
   end
-  else
-    if not((length(Result) > 1) and (Result[1] = '%') and (Result[2] in ['0'..'9'])) then
+  else begin
+    I := pos('%', Result);
+    if (pos(';', Result) = 0) and (I <> 0) and ((length(Result) > 1) and (Result[I+1] in ['0'..'9'])) then begin // Has param place holder, ";" disable place holder
+      J := FirstDelimiter(' "''[]{}><=!*-+/,', Result, I+2);
+      if J = 0 then J := length(Result)+1;
+      if J <> (length(Result)+1) then begin
+        insert('+"', Result, J);
+        Result := Result + '"';
+      end;
+      if I <> 1 then begin
+        insert('"+', Result, I);
+        Result := '"' + Result;
+      end;
+    end
+    else
       Result := '"' + Result + '"'
+  end;
 end;
 
 function CaseOf(const S : string; const Cases : array of string) : integer; begin
