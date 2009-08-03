@@ -103,7 +103,7 @@ type
     property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); override;
     procedure SetPaths; override;
-    procedure JSCode(JS : string; JSName : string = ''; Owner : string = '');
+    procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
     procedure SetIconCls(Cls : array of string);
@@ -435,15 +435,15 @@ Basic work:
 @param JSName Optional current JS object name
 @param Owner Optional JS object owner for TExtObjectList
 }
-procedure TExtThread.JSCode(JS : string; JSName : string = ''; Owner : string = '');
+procedure TExtThread.JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
 var
   I, J : integer;
 begin
   if JS[length(JS)] = ';' then begin // Command
     I := pos('.', JS);
     J := pos(IdentDelim, JS);
-    if not IsAjax and (pos('Singleton', JSName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and (pos(DeclareJS + copy(JS, 1, I-1), Response) = 0) then
-      raise Exception.Create('Public property or Method: ''' + JSName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
+    if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not ExistsReference(copy(JS, 1, I-1)) then
+      raise Exception.Create('Public property or Method: ''' + JSClassName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
     I := length(Response) + 1
   end
   else  // set attribute
@@ -776,7 +776,10 @@ begin
         Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
     end
     else
-      TExtThread(CurrentFCGIThread).JSCode(DeclareJS + JSName + '=[/*' + JSName + '*/];');
+      with TExtThread(CurrentFCGIThread) do begin
+        JSCode(DeclareJS + JSName + '=[/*' + JSName + '*/];');
+        AddToGarbage(JSName, nil);
+      end;
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
   Response := CurrentFCGIThread.Response;
@@ -787,8 +790,10 @@ begin
   if not Obj.Created or (pos(JSName, Response) = 0) then begin
     if TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
       if not Obj.Created then
-        if pos(JSName, Response) = 0 then
-          ListAdd := DeclareJS + Obj.JSName + '=' + OwnerName + '.add(%s);'
+        if pos(JSName, Response) = 0 then begin
+          ListAdd := DeclareJS + Obj.JSName + '=' + OwnerName + '.add(%s);';
+          CurrentFCGIThread.AddToGarbage(Obj.JSName, nil);
+        end
         else
           ListAdd := '%s'
       else
@@ -964,7 +969,10 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 @param pJSName Optional, by default is the <link TExtObject.JSName, JSName>, when used by <link TExtObjectList.Add> is the TExtObjectList.JSName
 @param pOwner Optional, used by <link TExtObjectList.Add> only to pass the TExtObject owner list
 }
-procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = ''); begin
+procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
+var
+ lJSName : string;
+begin
   if JS <> '' then begin
     if (pos('.nm="', JS) = 0) and (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
@@ -975,8 +983,11 @@ procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string 
     end
     else
       JSCommand := '';
-    if pJSName = '' then pJSName := JSName;
-    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, pOwner);
+    if (pJSName = '') or (pos('T', pJSName) = 1) then
+      lJSName := JSName
+    else
+      lJSName := pJSName;
+    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, lJSName, pOwner);
   end;
 end;
 
@@ -996,6 +1007,7 @@ end;
 // Inits a JS Object with a <link TExtFunction>
 constructor TExtObject.Init(Method : TExtFunction); begin
   CreateJSName;
+  CurrentFCGIThread.AddToGarbage(JSName, nil);
   Created := true;
   JSCode(CommandDelim + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
 end;

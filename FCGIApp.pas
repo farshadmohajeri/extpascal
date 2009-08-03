@@ -80,7 +80,8 @@ type
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
-    procedure AddParam(var S: string; Param: array of string);
+    function ClearName(Name : string): string;
+    procedure AddParam(var S : string; Param: array of string);
     procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
     procedure ReadBeginRequest(var FCGIHeader; Content : string);
     procedure GetValues(Content : string);
@@ -118,6 +119,7 @@ type
     procedure AddToGarbage(const Name : string; Obj: TObject);
     procedure DeleteFromGarbage(Obj : TObject);
     function FindObject(Name : string) : TObject;
+    function ExistsReference(Name : string) : boolean;
     procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
@@ -270,7 +272,7 @@ var
   I : Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then FGarbageCollector.Delete(I);
+  if I >= 0 then FGarbageCollector.Objects[I] := nil;
 end;
 
 {
@@ -290,6 +292,15 @@ begin
 end;
 
 {
+Tests if a JSObject was explicitly declared
+@param Name Object JS name ("dirty" name)
+@return True if declared
+}
+function TFCGIThread.ExistsReference(Name : string) : boolean; begin
+  Result := FGarbageCollector.IndexOf(ClearName(Name)) <> -1;
+end;
+
+{
 Frees all objects associated for this thread.
 @param FreeGarbage If True free garbage object itself.
 }
@@ -299,7 +310,9 @@ var
 begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
-      try TExtObject(Objects[I]).Free; except end;
+      try
+        if Objects[I] <> nil then TExtObject(Objects[I]).Free;
+      except end;
     if FreeGarbage then Free;
   end;
 end;
@@ -501,7 +514,7 @@ begin
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
-function CleanName(Name : string) : string;
+function TFCGIThread.ClearName(Name : string) : string;
 var
   I : integer;
 begin
@@ -517,7 +530,7 @@ Adds a TObject to the Thread Garbage Collector
 @param Obj TObject to add
 }
 procedure TFCGIThread.AddToGarbage(const Name : string; Obj : TObject); begin
-  FGarbageCollector.AddObject(CleanName(Name), Obj);
+  FGarbageCollector.AddObject(ClearName(Name), Obj);
 end;
 
 {
