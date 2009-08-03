@@ -223,10 +223,11 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
+  if pos('Ext.form.Action', JSName) <> 0 then JSName := '';
 end;
 
 procedure TClass.AddCreate; begin
-  if not Singleton and (Methods.IndexOf('Create') = -1) then 
+  if not Singleton and (Methods.IndexOf('Create') = -1) then
     Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
 end;
 
