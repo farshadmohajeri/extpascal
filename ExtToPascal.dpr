@@ -223,7 +223,7 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
-  if pos('Ext.form.Action', JSName) <> 0 then JSName := '';
+  if pos('Ext.form.Action', JSName) <> 0 then JSName := ''; // Anonymous classes
 end;
 
 procedure TClass.AddCreate; begin
