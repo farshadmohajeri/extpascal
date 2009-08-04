@@ -147,11 +147,11 @@ ExtStateProvider, un, void, false, false, EventName, string, false, Handler, Ext
 ExtGridColumn, renderer, ExtFunction, false, true, FORCEADD
 ExtFont, , Ext, Object
 ExtFont, name, string, false, true,
-ExtFont, color, integer, false, true,
+ExtFont, color, string, false, true,
 ExtFont, size, integer, false, true,
 ExtFont, bold, boolean, false, true,
 ExtBorder, , Ext, Object
-ExtBorder, color, integer, false, true,
+ExtBorder, color, string, false, true,
 ExtBorder, size, integer, false, true,
 ExtBackground, , Ext, Object
 ExtBackground, color, integer, false, true,
@@ -165,7 +165,7 @@ ExtChartStyle, , ExtChart, Object
 ExtChartStyle, padding, integer, false, true,
 ExtChartStyle, animationEnabled, boolean, false, true,
 ExtChartStyle, font, ExtFont, false, true,
-ExtChartStyle, dataTip, ExtDataTip, false, true,
+ExtChartStyle, dataTip, ExtDataTip, true, true,
 ExtChartChart, store, ExtDataStore, false, true,
 ExtChartChart, yField, string, false, true,
 ExtChartChart, xField, string, false, true,
@@ -180,3 +180,8 @@ ExtChartAxis, title, string, false, true,
 ExtChartPieChart, dataField, string, false, true,
 ExtChartPieChart, categoryField, string, false, true,
 ExtFormFormPanel, fileUpload, Boolean, false, true,
+ExtChartSeriesStyle, ,ExtChart, Object
+ExtChartSeriesStyle, image, string, false, true,
+ExtChartSeriesStyle, mode, string, false, true,
+ExtChartSeriesStyle, color, string, false, true,
+ExtChartSeries, style, ExtChartSeriesStyle, false, true,
