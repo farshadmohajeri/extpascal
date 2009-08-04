@@ -59,6 +59,7 @@ type
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FGarbage,
     FKeepConn : boolean; // Not used
+    UploadMark,
     FFileUploaded,
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
@@ -66,7 +67,7 @@ type
     FCookie : TStringList;
     FLastAccess : TDateTime;
     function GetRequestHeader(Name: string): string;
-    procedure CompleteRequestHeaderInfo(Buffer : string; I : integer);
+    function CompleteRequestHeaderInfo(Buffer : string; I : integer) : boolean;
     function GetCookie(Name: string): string;
     function GetQuery(Name: string) : string;
     function GetQueryAsDouble(Name: string): double;
@@ -77,6 +78,7 @@ type
     procedure WriteUploadFile(Buffer : string);
   protected
     FRequest, FPathInfo : string;
+    FIsUpload,
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
@@ -112,6 +114,7 @@ type
     property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
     property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
+    property IsUpload : boolean read FIsUpload;
     property FileUploaded : string read FFileUploaded; // Last uploaded file
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
@@ -544,15 +547,43 @@ function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 procedure TFCGIThread.WriteUploadFile(Buffer : string);
 var
   F : file;
+  I, J, Tam : integer;
 begin
-  assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
-  rewrite(F, 1);
-  blockwrite(F, Buffer[1], length(Buffer));
-  close(F);
+  Assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
+  I := pos(UploadMark, Buffer);
+  case I of
+    0 : begin // middle blocks
+      Reset(F, 1);
+      Seek(F, FileSize(F));
+      I := 1;
+      Tam := length(Buffer);
+    end;
+    1 : begin // begin block
+      Rewrite(F, 1);
+      I := pos(^M^J^M^J, Buffer) + 4;
+      J := posex(UploadMark, Buffer, I);
+      if J = 0 then begin
+        Tam := length(Buffer) - I + 1;
+        Response := '{success:false,file:"' + FileUploaded + '"}'
+      end
+      else begin
+        Tam := J - I - 2;
+        Response := '{success:false,file:"' + FileUploaded + '"}'
+      end;
+    end;
+  else // end block
+    Reset(F, 1);
+    Seek(F, FileSize(F));
+    Tam := I - 3;
+    I := 1;
+    Response := '{success:true,file:"' + FileUploaded + '"}'
+  end;
+  Blockwrite(F, Buffer[I], Tam);
+  Close(F);
 end;
 
 // Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
-procedure TFCGIThread.CompleteRequestHeaderInfo(Buffer : string; I : integer);
+function TFCGIThread.CompleteRequestHeaderInfo(Buffer : string; I : integer) : boolean;
 var
   ReqMet, CT : string;
   J : integer;
@@ -572,18 +603,18 @@ begin
     'D' : FRequestMethod := rmDelete;
   end;
   FQuery.DelimitedText := URLDecode(FRequestHeader.Values['QUERY_STRING']);
+  FIsUpload := false;
   CT := RequestHeader['CONTENT_TYPE'];
   if pos('multipart/form-data', CT) <> 0 then begin
+    FIsUpload := true;
     J := pos('=', CT);
-    CT := copy(CT, J+1, length(CT));
-    I := posex(CT, Buffer, I);
+    UploadMark := '--' + copy(CT, J+1, length(CT));
+    I := posex(UploadMark, Buffer, I);
     I := posex('filename="', Buffer, I);
     J := posex('"', Buffer, I+10);
     FFileUploaded := copy(Buffer, I+10, J-I-10);
-    I := posex(^M^J^M^J, Buffer, J) + 4;
-    J := posex(CT, Buffer, I);
-    WriteUploadFile(copy(Buffer, I, J-I-4));
   end;
+  Result := FIsUpload
 end;
 
 {
@@ -782,7 +813,7 @@ begin
     if Application.CanConnect(FSocket.GetHostAddress) then
       repeat
         if FSocket.WaitingData > 0 then begin
-          Buffer := FSocket.RecvString;
+          Buffer := FSocket.RecvPacket;
           if FSocket.Error <> 0 then
             Terminate
           else begin
@@ -802,13 +833,20 @@ begin
                     if Content = '' then begin
                       if FCGIHeader.RecType = rtParams then begin
                         ReadRequestHeader(FRequestHeader, FRequest, FCookie);
-                        if SetCurrentFCGIThread then
-                          CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I)
+                        if SetCurrentFCGIThread then begin
+                          FIsUpload := CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I);
+                          if FIsUpload then begin
+                            FFileUploaded := CurrentFCGIThread.FFileUploaded;
+                            UploadMark := CurrentFCGIThread.UploadMark;
+                          end;
+                        end
                         else
                           break;
                       end
                       else begin
                         if pos(IISDelim, FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
+                        CurrentFCGIThread.FIsUpload := FIsUpload;
+                        CurrentFCGIThread.Response := Response;
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
                         FGarbage := CurrentFCGIThread.FGarbage;
@@ -818,7 +856,10 @@ begin
                       FRequest := '';
                     end
                     else
-                      FRequest := FRequest + Content;
+                      if IsUpLoad then
+                        WriteUploadFile(Content)
+                      else
+                        FRequest := FRequest + Content;
                 else
                   SendResponse(char(FCGIHeader.RecType), rtUnknown);
                   Buffer := '';
@@ -889,7 +930,7 @@ begin
     FQuery.DelimitedText := URLDecode(pRequest)
   else
     FRequest := pRequest;
-  Response := '';
+  if not IsUpload then Response := '';
   if BeforeHandleRequest then
     try
       if PathInfo = '' then

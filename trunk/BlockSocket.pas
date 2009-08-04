@@ -17,7 +17,6 @@ type
   private
     Socket : TSocket;
 		RemoteSin : TInetSockAddr;
-    function RecvPacket: AnsiString;
   public
     constructor Create(S : integer = 0);
 		destructor Destroy; override;
@@ -26,6 +25,7 @@ type
     procedure Connect(Host : string; pPort : word);
 		procedure Purge;
 		procedure Close;
+    function RecvPacket : AnsiString;
 		function RecvString(Timeout : integer = 300) : AnsiString;
     procedure SendString(const Data: AnsiString);
     function WaitingData : cardinal;

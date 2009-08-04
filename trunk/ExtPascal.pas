@@ -546,10 +546,9 @@ begin
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
-  Response := '';
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
-  FIsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or (pos('multipart/form-data', RequestHeader['CONTENT_TYPE']) = 1);
+  FIsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or FIsUpload;
   if IsAjax then begin
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
