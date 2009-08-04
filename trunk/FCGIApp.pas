@@ -80,7 +80,6 @@ type
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
-    function ClearName(Name : string): string;
     procedure AddParam(var S : string; Param: array of string);
     procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
     procedure ReadBeginRequest(var FCGIHeader; Content : string);
@@ -297,7 +296,7 @@ Tests if a JSObject was explicitly declared
 @return True if declared
 }
 function TFCGIThread.ExistsReference(Name : string) : boolean; begin
-  Result := FGarbageCollector.IndexOf(ClearName(Name)) <> -1;
+  Result := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, '')) <> -1;
 end;
 
 {
@@ -514,23 +513,13 @@ begin
       Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
-function TFCGIThread.ClearName(Name : string) : string;
-var
-  I : integer;
-begin
-  Result := '';
-  for I := 1 to length(Name) do
-    if Name[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '_'] then
-      Result := Result + Name[I];
-end;
-
 {
 Adds a TObject to the Thread Garbage Collector
 @param Name JS name or other object identification
 @param Obj TObject to add
 }
 procedure TFCGIThread.AddToGarbage(const Name : string; Obj : TObject); begin
-  FGarbageCollector.AddObject(ClearName(Name), Obj);
+  FGarbageCollector.AddObject(AnsiReplaceStr(Name, IdentDelim, ''), Obj);
 end;
 
 {

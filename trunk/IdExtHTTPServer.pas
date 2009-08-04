@@ -37,6 +37,7 @@ type
     procedure DeleteFromGarbage(Obj: TObject); overload;
     procedure DeleteFromGarbage(Name: string); overload;
     function FindObject(Name: string): TObject;
+    function ExistsReference(Name: string): boolean;
     function MethodURI(AMethodName: string): string; overload;
     function MethodURI(AMethodName : TIdProcedure) : string; overload;
     property PathInfo: string read GetPathInfo;
@@ -350,7 +351,7 @@ var
   I: Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then FGarbageCollector.Delete(I);
+  if I >= 0 then FGarbageCollector.Objects[I] := nil;
 end;
 
 procedure TIdExtSession.DeleteFromGarbage(Name: string);
@@ -358,7 +359,7 @@ var
   I: Integer;
 begin
   I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, ''));
-  if I >= 0 then FGarbageCollector.Delete(I);
+  if I >= 0 then FGarbageCollector.Objects[I] := nil;
 end;
 
 function TIdExtSession.FindObject(Name: string): TObject;
@@ -372,13 +373,19 @@ begin
     Result := nil;
 end;
 
+function TIdExtSession.ExistsReference(Name : string) : boolean; begin
+  Result := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, '')) <> -1;
+end;
+
 destructor TIdExtSession.Destroy;
 var
   I: Integer;
 begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
-      TObject(Objects[I]).Free;
+      try
+        if Objects[I] <> nil then TObject(Objects[I]).Free;
+      except end;
     Free;
   end;
   FGarbageCollector := nil;
