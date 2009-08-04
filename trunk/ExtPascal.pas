@@ -709,7 +709,7 @@ begin
       'Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.description+"<br/><br/>"+response.responseText);}};' +
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/><br/>"+response.responseText);}};' +
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
       Response) + '});'^M^J +
       '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>'
@@ -961,6 +961,39 @@ begin
   Result := false;
 end;
 
+// Pops last JSCommand emited by this object
+function TExtObject.GetJSCommand : string;
+var
+  I : integer;
+begin
+  I := LastDelimiter(JSDelim, FJSCommand);
+  if I = 0 then
+    Result := FJSCommand
+  else
+    Result := copy(FJSCommand, I+1, length(FJSCommand));
+end;
+
+{
+Pushes a JSCommand to this object
+@param Value JSCommand
+}
+procedure TExtObject.SetJSCommand(const Value : string);
+var
+  I : integer;
+begin
+  if Value = '' then begin
+    if FJSCommand <> '' then begin
+      I := LastDelimiter(JSDelim, FJSCommand);
+      if I = 0 then
+        FJSCommand := ''
+      else
+        system.delete(FJSCommand, I, length(FJSCommand));
+    end
+  end
+  else
+    FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value;
+end;
+
 {
 Starts Self-translating mechanism invoking <link TExtThread.JSCode, JSCode>.
 Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
@@ -970,12 +1003,14 @@ Invokes <link TExtThread.JSConcat, JSConcat> if identify a nested typecast
 }
 procedure TExtObject.JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
 var
- lJSName : string;
+  lJSName, JSC : string;
 begin
   if JS <> '' then begin
     if (pos('.nm="', JS) = 0) and (JS[length(JS)] = ';') and not(pos(DeclareJS, JS) in [1, 2]) then begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
-        JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSCommand, JS);
+        JSC := JSCommand;
+        JSCommand := '';
+        JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSC, JS);
         exit;
       end;
       JSCommand := JS;
@@ -1198,6 +1233,7 @@ begin
     CurrentResponse := Response;
     Response := '';
     Method;
+    JSCommand := '';
     if Silent then
       JSCommand := 'try{' + Response + '}catch(e){};'
     else
@@ -1421,7 +1457,7 @@ begin
             ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
           exit;
         end;
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.RequestHeader['SCRIPT_NAME'] + '/' + MethodName + '",params:"' + lParams +
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams +
     {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
@@ -1483,39 +1519,6 @@ procedure TExtObject.Free(CallDestroyJS : boolean = false); begin
   end;
 end;
 
-// Pops last JSCommand emited by this object
-function TExtObject.GetJSCommand : string;
-var
-  I : integer;
-begin
-  I := LastDelimiter(JSDelim, FJSCommand);
-  if I = 0 then
-    Result := FJSCommand
-  else
-    Result := copy(FJSCommand, I+1, length(FJSCommand));
-end;
-
-{
-Pushes a JSCommand to this object
-@param Value JSCommand
-}
-procedure TExtObject.SetJSCommand(const Value : string);
-var
-  I : integer;
-begin
-  if Value = '' then begin
-    if FJSCommand <> '' then begin
-      I := LastDelimiter(JSDelim, FJSCommand);
-      if I = 0 then
-        FJSCommand := ''
-      else
-        system.delete(FJSCommand, I, length(FJSCommand));
-    end
-  end
-  else
-    FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value;
-end;
-
 {
 Converts an array of const to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
 @param A Array of anytype variables
@@ -1534,6 +1537,7 @@ begin
         vtObject: begin
           if VObject <> nil then begin
             Command := TExtObject(VObject).JSCommand;
+            TExtObject(VObject).JSCommand := '';
             if (Command <> '') and A[I+1].VBoolean then begin
               Result := Result + WriteFunction(Command);
               TExtThread(CurrentFCGIThread).RemoveJS(Command);

@@ -612,7 +612,7 @@ begin
     I := posex(UploadMark, Buffer, I);
     I := posex('filename="', Buffer, I);
     J := posex('"', Buffer, I+10);
-    FFileUploaded := copy(Buffer, I+10, J-I-10);
+    FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
   end;
   Result := FIsUpload
 end;
