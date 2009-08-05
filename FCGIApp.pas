@@ -549,37 +549,41 @@ var
   F : file;
   I, J, Tam : integer;
 begin
-  Assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
-  I := pos(UploadMark, Buffer);
-  case I of
-    0 : begin // middle blocks
+  if FileUploaded = '' then
+    Response := '{success:false,message:"File not informed"}'
+  else begin
+    Assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
+    I := pos(UploadMark, Buffer);
+    case I of
+      0 : begin // middle blocks
+        Reset(F, 1);
+        Seek(F, FileSize(F));
+        I := 1;
+        Tam := length(Buffer);
+      end;
+      1 : begin // begin block
+        Rewrite(F, 1);
+        I := pos(^M^J^M^J, Buffer) + 4;
+        J := posex(UploadMark, Buffer, I);
+        if J = 0 then begin
+          Tam := length(Buffer) - I + 1;
+          Response := '{success:false,file:"' + FileUploaded + '"}'
+        end
+        else begin
+          Tam := J - I - 2;
+          Response := '{success:false,file:"' + FileUploaded + '"}'
+        end;
+      end;
+    else // end block
       Reset(F, 1);
       Seek(F, FileSize(F));
+      Tam := I - 3;
       I := 1;
-      Tam := length(Buffer);
+      Response := '{success:true,file:"' + FileUploaded + '"}'
     end;
-    1 : begin // begin block
-      Rewrite(F, 1);
-      I := pos(^M^J^M^J, Buffer) + 4;
-      J := posex(UploadMark, Buffer, I);
-      if J = 0 then begin
-        Tam := length(Buffer) - I + 1;
-        Response := '{success:false,file:"' + FileUploaded + '"}'
-      end
-      else begin
-        Tam := J - I - 2;
-        Response := '{success:false,file:"' + FileUploaded + '"}'
-      end;
-    end;
-  else // end block
-    Reset(F, 1);
-    Seek(F, FileSize(F));
-    Tam := I - 3;
-    I := 1;
-    Response := '{success:true,file:"' + FileUploaded + '"}'
+    Blockwrite(F, Buffer[I], Tam);
+    Close(F);
   end;
-  Blockwrite(F, Buffer[I], Tam);
-  Close(F);
 end;
 
 // Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
