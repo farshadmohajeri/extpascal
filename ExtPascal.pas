@@ -128,6 +128,7 @@ type
     function  WriteFunction(Command : string): string;
     function  GetJSCommand : string;
     procedure SetJSCommand(const Value : string);
+    function  PopJSCommand : string;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -961,7 +962,7 @@ begin
   Result := false;
 end;
 
-// Pops last JSCommand emited by this object
+// Get last JSCommand emited by this object
 function TExtObject.GetJSCommand : string;
 var
   I : integer;
@@ -987,11 +988,30 @@ begin
       if I = 0 then
         FJSCommand := ''
       else
-        system.delete(FJSCommand, I, length(FJSCommand));
+        System.Delete(FJSCommand, I, length(FJSCommand));
     end
   end
   else
-    FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value;
+    if pos(IdentDelim, Value) = 0 then
+      FJSCommand := Value
+    else
+      FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value
+end;
+
+// Pops first JSCommand emited by this object
+function TExtObject.PopJSCommand : string;
+var
+  I : integer;
+begin
+  I := FirstDelimiter(JSDelim, FJSCommand);
+  if I = 0 then begin
+    Result := FJSCommand;
+    FJSCommand := '';
+  end
+  else begin
+    Result := copy(FJSCommand, 1, I-1);
+    System.Delete(FJSCommand, 1, I);
+  end;
 end;
 
 {
@@ -1500,10 +1520,9 @@ Extracts <link TExtObject.JSCommand, JSCommand> from Response and resets JSComma
 @see TExtThread.RemoveJS
 }
 function TExtObject.ExtractJSCommand : string; begin
-  Result := JSCommand;
+  Result := PopJSCommand;
   TExtThread(CurrentFCGIThread).RemoveJS(Result);
   SetLength(Result, length(Result)-1);
-  JSCommand := ''
 end;
 
 {
@@ -1536,8 +1555,7 @@ begin
       case VType of
         vtObject: begin
           if VObject <> nil then begin
-            Command := TExtObject(VObject).JSCommand;
-            TExtObject(VObject).JSCommand := '';
+            Command := TExtObject(VObject).PopJSCommand;
             if (Command <> '') and A[I+1].VBoolean then begin
               Result := Result + WriteFunction(Command);
               TExtThread(CurrentFCGIThread).RemoveJS(Command);
