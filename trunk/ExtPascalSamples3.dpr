@@ -739,10 +739,10 @@ begin
   with TExtWindow.Create do begin
     Modal := true;
     Title := 'File Upload Window';
-    F := TExtFormFormPanel.Create;
+    F     := TExtFormFormPanel.Create;
     with F.AddTo(Items) do begin
       FileUpload := true;
-      Frame := true;
+      Frame      := true;
       AutoHeight := true;
       LabelWidth := 20;
       with TExtFormTextField.AddTo(Items) do begin
@@ -753,16 +753,16 @@ begin
         Text := 'Upload';
         SubmitAction := TExtFormActionSubmit.Create;
         with SubmitAction do begin
-          Url := MethodURI(ProcessUpload);
-          WaitMsg := 'Uploading your file...';
+          Url       := MethodURI(ProcessUpload);
+          WaitMsg   := 'Uploading your file...';
           WaitTitle := 'Wait please';
-          Success := ExtMessageBox.Alert('Success', 'Processed file: %1.result.file on server');
-          Failure := ExtMessageBox.Alert('Upload Error', '%1.result.message')
+          Success   := ExtMessageBox.Alert('Success', 'File: %1.result.file uploaded on /uploads folder');
+          Failure   := ExtMessageBox.Alert('Upload Error', '%1.result.message')
         end;
         Handler := TExtFormBasicForm(GetForm).Submit(SubmitAction);
       end;
       with TExtButton.AddTo(Buttons) do begin
-        Text := 'Reset';
+        Text    := 'Reset';
         Handler := TExtFormBasicForm(GetForm).Reset;
       end;
       AddShowSourceButton(Buttons, 'FileUpload');

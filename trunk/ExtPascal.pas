@@ -992,7 +992,7 @@ begin
     end
   end
   else
-    if pos(IdentDelim, Value) = 0 then
+    if pos(IdentDelim + '.', Value) = 0 then
       FJSCommand := Value
     else
       FJSCommand := FJSCommand + IfThen(FJSCommand = '', '', JSDelim) + Value
