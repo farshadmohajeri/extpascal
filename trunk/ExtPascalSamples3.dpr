@@ -54,7 +54,54 @@ type
     procedure CheckLogin; // Ajax
     procedure ShowSource;
     procedure UML;
+    procedure FileUpload;
+    procedure ProcessUpload;
   end;
+
+procedure TSamples.Home;
+const
+  Examples : array[0..8] of record
+    Name, Proc, Gif, Desc : string
+  end = (
+    (Name: 'File Upload';    Proc: 'FileUpload';    Gif: 'form-file-upload'; Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
+    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
+    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
+    (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
+    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';         Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
+    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout';    Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
+    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';       Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
+    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';        Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
+    (Name: 'Simple Login';   Proc: 'Login';         Gif: '';                 Desc: 'A simple login form showing AJAX use with parameters.')
+  );
+var
+  I : integer;
+begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  // Theme := 'gray';
+  SetStyle('img:hover{border:1px solid blue}');
+  with TExtPanel.Create do begin
+    Title       := 'ExtPascal Samples';
+    RenderTo    := 'body';
+    Width       := 400;
+    Frame       := true;
+//    Floating    := true;
+    Collapsible := true;
+//    SetPosition(300, 0);
+    AddShowSourceButton(TbarArray, 'Home');
+    for I := 0 to high(Examples) do
+      with Examples[I], TExtPanel.AddTo(Items) do begin
+        Title := Name;
+        Frame := true;
+        Html  := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
+        if Gif <> '' then
+          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
+        else
+          Html := Html + Desc + '</a></td></table>';
+        Collapsible := true;
+      end;
+    Free;
+  end;
+end;
 
 procedure TSamples.AddShowSourceButton(Buttons : TExtObjectList; Proc : string); begin
   with TExtButton.AddTo(Buttons) do begin
@@ -69,7 +116,7 @@ var
   Line, Lines, Proc, FName : string;
 begin
   Proc := Query['Proc'];
-  FName := 'ExtPascalSamples.dpr';
+  FName := 'ExtPascalSamples3.dpr';
   if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName;
   assign(Source, FName);
   reset(Source);
@@ -135,50 +182,6 @@ begin
 //    SetBackgroundImage('grid_10.png', nil);
   end;
 //  P.Show;
-end;
-
-procedure TSamples.Home;
-const
-  Examples : array[0..7] of record
-    Name, Proc, Gif, Desc : string
-  end = (
-    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';        Desc: 'Simple Hello World window that contains a basic TabPanel.'),
-    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
-    (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
-    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
-    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
-    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
-    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
-    (Name: 'Simple Login';   Proc: 'Login';         Gif: '';              Desc: 'A simple login form showing AJAX use with parameters.')
-  );
-var
-  I : integer;
-begin
-  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
-  // Theme := 'gray';
-  SetStyle('img:hover{border:1px solid blue}');
-  with TExtPanel.Create do begin
-    Title       := 'ExtPascal Samples';
-    RenderTo    := 'body';
-    Width       := 400;
-    Frame       := true;
-//    Floating    := true;
-    Collapsible := true;
-//    SetPosition(300, 0);
-    AddShowSourceButton(TbarArray, 'Home');
-    for I := 0 to high(Examples) do
-      with Examples[I], TExtPanel.AddTo(Items) do begin
-        Title := Name;
-        Frame := true;
-        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=blank>';
-        if Gif <> '' then
-          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
-        else
-          Html := Html + Desc + '</a></td></table>';
-        Collapsible := true;
-      end;
-    Free;
-  end;
 end;
 
 procedure TSamples.Layout;
@@ -727,6 +730,47 @@ begin
   DataStore.Load(nil);
 end;
 
+procedure TSamples.FileUpload;
+var
+  F : TExtFormFormPanel;
+  SubmitAction : TExtFormActionSubmit;
+begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  with TExtWindow.Create do begin
+    Modal := true;
+    Title := 'File Upload Window';
+    F := TExtFormFormPanel.Create;
+    with F.AddTo(Items) do begin
+      FileUpload := true;
+      Frame := true;
+      AutoHeight := true;
+      LabelWidth := 20;
+      with TExtFormTextField.AddTo(Items) do begin
+        FieldLabel := 'File';
+        InputType  := itFile;
+      end;
+      with TExtButton.AddTo(Buttons) do begin
+        Text := 'Upload';
+        SubmitAction := TExtFormActionSubmit.Create;
+        with SubmitAction do begin
+          Url := MethodURI(ProcessUpload);
+          WaitMsg := 'Uploading your file...';
+          WaitTitle := 'Wait please';
+          Success := ExtMessageBox.Alert('Success', 'Processed file: %1.result.file on server');
+          Failure := ExtMessageBox.Alert('Upload Error', '%1.result.message')
+        end;
+        Handler := TExtFormBasicForm(GetForm).Submit(SubmitAction);
+      end;
+      with TExtButton.AddTo(Buttons) do begin
+        Text := 'Reset';
+        Handler := TExtFormBasicForm(GetForm).Reset;
+      end;
+      AddShowSourceButton(Buttons, 'FileUpload');
+    end;
+    Show;
+  end;
+end;
+
 procedure TSamples.ReadButtonAjax; begin
   ExtMessageBox.Alert('AJAX: Button clicked', 'You clicked the "' + Query['ButtonID'] + '" button')
 end;
@@ -839,6 +883,9 @@ begin
     AddShowSourceButton(Buttons, 'MessageBoxes');
     //Free;
   end;
+end;
+
+procedure TSamples.ProcessUpload; begin
 end;
 
 {$IFNDEF SERVICE}
