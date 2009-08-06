@@ -78,6 +78,7 @@ type
     procedure WriteUploadFile(Buffer : string);
   protected
     FRequest, FPathInfo : string;
+    FIsAjax,
     FIsUpload,
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
@@ -116,6 +117,7 @@ type
     property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
     property IsUpload : boolean read FIsUpload;
     property FileUploaded : string read FFileUploaded; // Last uploaded file
+    property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -129,6 +131,7 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TFCGIProcedure) : string; overload;
+    procedure DownloadFile(Name : string);
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
     procedure Logout; virtual;
@@ -329,6 +332,43 @@ destructor TFCGIThread.Destroy; begin
   {$IFDEF MSWINDOWS}inherited;{$ENDIF} // Collateral effect of Unix RTL FPC bug
 end;
 
+procedure TFCGIThread.DownloadFile(Name : string);
+var
+  F : file;
+begin
+  if FileExists(Name) then begin
+    Assign(F, Name);
+    Reset(F, 1);
+    case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.doc', '.xls', '.ppt', '.pps', '.zip', '.wmv',
+                                       '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
+                                       '.odt', '.odp', '.ods', '.odg', '.odb']) of
+      0 : ContentType := 'text/plain';
+      1 : ContentType := 'application/pdf';
+      2 : ContentType := 'text/csv';
+      3 : ContentType := 'application/msword';
+      4 : ContentType := 'application/vnd.ms-excel';
+      5, 6 : ContentType := 'application/vnd.ms-powerpoint';
+      7 : ContentType := 'application/zip';
+      8 : ContentType := 'video/x-ms-wmv';
+      9..14 : ContentType := 'video/mpeg';
+      15 : ContentType := 'video/mp4';
+      16, 17 : ContentType := 'video/quicktime';
+      18 : ContentType := 'application/vnd.oasis.opendocument.text';
+      19 : ContentType := 'application/vnd.oasis.opendocument.presentation';
+      20 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
+      21 : ContentType := 'application/vnd.oasis.opendocument.graphics';
+      22 : ContentType := 'application/vnd.oasis.opendocument.database';
+    else
+      ContentType := 'application/octet-stream';
+    end;
+    FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
+    SetLength(Response, FileSize(F));
+    BlockRead(F, Response[1], FileSize(F));
+    Close(F);
+    FIsAjax := true;
+  end;
+end;
+
 {
 Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse, SendResponse> method.
 @param Header Use '' to clean response header else Header parameter is appended to response header
@@ -385,6 +425,7 @@ begin
     if not BrowserCache then FResponseHeader := FResponseHeader + 'cache-control:no-cache'^M^J;
     S := FResponseHeader + ^M^J + S;
     FResponseHeader := '';
+    ContentType := 'text/html';
   end;
   fillchar(FCGIHeader, sizeof(FCGIHeader), 0);
   with FCGIHeader do begin
@@ -853,6 +894,7 @@ begin
                         CurrentFCGIThread.Response := Response;
                         Response := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
+                        ContentType := CurrentFCGIThread.ContentType;
                         FGarbage := CurrentFCGIThread.FGarbage;
                         if (Response <> '') or (RequestMethod in [rmGet, rmHead]) then SendResponse(Response);
                         SendEndRequest;

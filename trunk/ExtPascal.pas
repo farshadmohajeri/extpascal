@@ -76,8 +76,7 @@ type
     Style, Libraries, CustomJS, FLanguage : string;
     JSReturns : TStringList;
     Sequence  : cardinal;
-    RequiresReload,
-    FIsAjax   : boolean;
+    RequiresReload : boolean;
     FBrowser  : TBrowser;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
@@ -99,7 +98,6 @@ type
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     ExtBuild  : string; // Custom <extlink http://www.extjs.com/products/extjs/build/>ExtJS build</extlink>. Default is ext-all.
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
-    property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); override;
     procedure SetPaths; override;
@@ -129,6 +127,7 @@ type
     function  GetJSCommand : string;
     procedure SetJSCommand(const Value : string);
     function  PopJSCommand : string;
+    function  FormatParams(MethodName : string; Params: array of const): string;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -178,8 +177,10 @@ type
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function Ajax(Method : TExtProcedure; Params : string): TExtFunction; overload;
-    function Ajax(Method : TExtProcedure; Params : TExtFunction): TExtFunction; overload;
+    function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
+    function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
+    function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
+    function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -712,6 +713,7 @@ begin
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/><br/>"+response.responseText);}};' +
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
+      'Download=Ext.DomHelper.append(document.body,{tag:"iframe",cls:"x-hidden"});' +
       Response) + '});'^M^J +
       '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>'
   else
@@ -1012,6 +1014,19 @@ begin
     Result := copy(FJSCommand, 1, I-1);
     System.Delete(FJSCommand, 1, I);
   end;
+end;
+
+function TExtObject.RequestDownload(Method : TExtProcedure; Params: array of const): TExtFunction;
+var
+  P : string;
+begin
+  P := FormatParams(CurrentFCGIThread.MethodName(@Method), Params);
+  if P <> '' then P := '?' + P;
+  Result := JSFunction('Download.src="' + CurrentFCGIThread.MethodURI(Method) + P + '";')
+end;
+
+function TExtObject.RequestDownload(Method : TExtProcedure) : TExtFunction; begin
+  Result := RequestDownload(Method, [])
 end;
 
 {
@@ -1429,55 +1444,61 @@ begin
     Result := Param;
 end;
 
-// Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
-function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
+function TExtObject.FormatParams(MethodName : string; Params : array of const) : string;
 var
-  lParams : string;
   I : integer;
 begin
-  InJSFunction := false;
-  Result := TExtFunction(Self);
-  lParams := 'Ajax=1';
-  if IsEvent then begin
-    lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&Evt=' + MethodName;
-    MethodName := 'HandleEvent';
-  end;
+  Result := '';
   for I := 0 to high(Params) do
     with Params[I] do
       if Odd(I) then
         case VType of
-          vtAnsiString : lParams := lParams + SurroundAjaxParam(string(VAnsiString));
-          vtString     : lParams := lParams + SurroundAjaxParam(VString^);
-          vtWideString : lParams := lParams + SurroundAjaxParam(string(VWideString));
+          vtAnsiString : Result := Result + SurroundAjaxParam(string(VAnsiString));
+          vtString     : Result := Result + SurroundAjaxParam(VString^);
+          vtWideString : Result := Result + SurroundAjaxParam(string(VWideString));
           {$IFDEF UNICODE}
-          vtUnicodeString : lParams := lParams + SurroundAjaxParam(string(VUnicodeString));
+          vtUnicodeString : Result := Result + SurroundAjaxParam(string(VUnicodeString));
           {$ENDIF}
-          vtObject     : lParams := lParams + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
-          vtInteger    : lParams := lParams + IntToStr(VInteger);
-          vtBoolean    : lParams := lParams + IfThen(VBoolean, 'true', 'false');
-          vtExtended   : lParams := lParams + FloatToStr(VExtended^);
-          vtCurrency   : lParams := lParams + CurrToStr(VCurrency^);
-          vtInt64      : lParams := lParams + IntToStr(VInt64^);
-          vtVariant    : lParams := lParams + string(VVariant^);
-          vtChar       : lParams := lParams + VChar;
-          vtWideChar   : lParams := lParams + VWideChar;
+          vtObject     : Result := Result + '"+' + TExtObject(VObject).ExtractJSCommand + '+"';
+          vtInteger    : Result := Result + IntToStr(VInteger);
+          vtBoolean    : Result := Result + IfThen(VBoolean, 'true', 'false');
+          vtExtended   : Result := Result + FloatToStr(VExtended^);
+          vtCurrency   : Result := Result + CurrToStr(VCurrency^);
+          vtInt64      : Result := Result + IntToStr(VInt64^);
+          vtVariant    : Result := Result + string(VVariant^);
+          vtChar       : Result := Result + VChar;
+          vtWideChar   : Result := Result + VWideChar;
         end
       else
         case VType of
-          vtAnsiString : lParams := lParams + '&' + string(VAnsiString) + '=';
-          vtString     : lParams := lParams + '&' + VString^ + '=';
-          vtWideString : lParams := lParams + '&' + string(VWideString) + '=';
+          vtAnsiString : Result := Result + '&' + string(VAnsiString) + '=';
+          vtString     : Result := Result + '&' + VString^ + '=';
+          vtWideString : Result := Result + '&' + string(VWideString) + '=';
           {$IFDEF UNICODE}
-          vtUnicodeString : lParams := lParams + '&' + string(VUnicodeString) + '=';
+          vtUnicodeString : Result := Result + '&' + string(VUnicodeString) + '=';
           {$ENDIF}
-          vtChar       : lParams := lParams + '&' + VChar + '=';
-          vtWideChar   : lParams := lParams + '&' + VWideChar + '=';
+          vtChar       : Result := Result + '&' + VChar + '=';
+          vtWideChar   : Result := Result + '&' + VWideChar + '=';
         else
           JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MethodName +
             ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
           exit;
         end;
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams +
+end;
+
+// Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
+function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
+var
+  lParams : string;
+begin
+  InJSFunction := false;
+  Result  := TExtFunction(Self);
+  lParams := 'Ajax=1';
+  if IsEvent then begin
+    lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&Evt=' + MethodName;
+    MethodName := 'HandleEvent';
+  end;
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams + FormatParams(Methodname, Params) +
     {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
