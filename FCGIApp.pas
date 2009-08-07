@@ -80,6 +80,7 @@ type
     FRequest, FPathInfo : string;
     FIsAjax,
     FIsUpload,
+    FIsDownload,
     NewThread : boolean; // True if is the first request of a thread
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
@@ -115,9 +116,10 @@ type
     property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
     property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
-    property IsUpload : boolean read FIsUpload;
     property FileUploaded : string read FFileUploaded; // Last uploaded file
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
+    property IsUpload : boolean read FIsUpload;
+    property IsDownload : boolean read FIsDownload;
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -339,25 +341,28 @@ begin
   if FileExists(Name) then begin
     Assign(F, Name);
     Reset(F, 1);
-    case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.doc', '.xls', '.ppt', '.pps', '.zip', '.wmv',
-                                       '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
+    case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
+                                       '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
+                                       '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
                                        '.odt', '.odp', '.ods', '.odg', '.odb']) of
       0 : ContentType := 'text/plain';
       1 : ContentType := 'application/pdf';
       2 : ContentType := 'text/csv';
-      3 : ContentType := 'application/msword';
-      4 : ContentType := 'application/vnd.ms-excel';
-      5, 6 : ContentType := 'application/vnd.ms-powerpoint';
-      7 : ContentType := 'application/zip';
-      8 : ContentType := 'video/x-ms-wmv';
-      9..14 : ContentType := 'video/mpeg';
-      15 : ContentType := 'video/mp4';
-      16, 17 : ContentType := 'video/quicktime';
-      18 : ContentType := 'application/vnd.oasis.opendocument.text';
-      19 : ContentType := 'application/vnd.oasis.opendocument.presentation';
-      20 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
-      21 : ContentType := 'application/vnd.oasis.opendocument.graphics';
-      22 : ContentType := 'application/vnd.oasis.opendocument.database';
+      3 : ContentType := 'application/zip';
+      4 : ContentType := 'audio/x-wav';
+      5 : ContentType := 'audio/x-ms-wma';
+      6, 7 : ContentType := 'application/msword';
+      8, 9 : ContentType := 'application/vnd.ms-excel';
+      10..13 : ContentType := 'application/vnd.ms-powerpoint';
+      14 : ContentType := 'video/x-ms-wmv';
+      15..20 : ContentType := 'video/mpeg';
+      21 : ContentType := 'video/mp4';
+      22, 23 : ContentType := 'video/quicktime';
+      24 : ContentType := 'application/vnd.oasis.opendocument.text';
+      25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
+      26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
+      27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
+      28 : ContentType := 'application/vnd.oasis.opendocument.database';
     else
       ContentType := 'application/octet-stream';
     end;
@@ -365,7 +370,7 @@ begin
     SetLength(Response, FileSize(F));
     BlockRead(F, Response[1], FileSize(F));
     Close(F);
-    FIsAjax := true;
+    FIsDownload := true;
   end;
 end;
 
@@ -823,6 +828,8 @@ begin
     CurrentFCGIThread.FRequestHeader.Assign(Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText));
     CurrentFCGIThread.FCookie.Assign(Explode(FCookie.Delimiter, FCookie.DelimitedText));
     CurrentFCGIThread.NewThread := false;
+    CurrentFCGIThread.FResponseHeader := '';
+    CurrentFCGIThread.ContentType := 'text/html';
     Application.Threads.AddObject('0', Self);
   end;
   Application.AccessThreads.Leave;
@@ -977,6 +984,7 @@ begin
   else
     FRequest := pRequest;
   if not IsUpload then Response := '';
+  FIsDownload := false;
   if BeforeHandleRequest then
     try
       if PathInfo = '' then
@@ -994,8 +1002,12 @@ begin
     except
       on E : Exception do OnError(E.Message, PathInfo, pRequest)
     end;
-  AfterHandleRequest;
-  Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
+  if IsDownload then
+    Result := Response
+  else begin
+    AfterHandleRequest;
+    Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
+  end;
 end;
 
 {$IFDEF HAS_CONFIG}

@@ -127,7 +127,7 @@ type
     function  GetJSCommand : string;
     procedure SetJSCommand(const Value : string);
     function  PopJSCommand : string;
-    function  FormatParams(MethodName : string; Params: array of const): string;
+    function FormatParams(MethodName : string; Params: array of const): string;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
