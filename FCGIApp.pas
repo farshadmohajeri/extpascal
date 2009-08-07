@@ -198,7 +198,7 @@ threadvar
 implementation
 
 uses
-  StrUtils, ExtPascal;
+  StrUtils, Math, ExtPascal;
 
 type
   // FastCGI header
@@ -438,17 +438,11 @@ begin
   fillchar(FCGIHeader, sizeof(FCGIHeader), 0);
   with FCGIHeader do begin
     Version := 1;
-    if pRecType in [rtGetValuesResult, rtUnknown] then
-      ID := 0
-    else
-      ID := FRequestID;
+    ID := IfThen(pRecType in [rtGetValuesResult, rtUnknown], 0, FRequestID);
     RecType := pRecType;
     I := 1;
     repeat
-      if length(S) <= MAX_BUFFER then
-        Len := length(S)
-      else
-        Len := MAX_BUFFER;
+      Len := IfThen(length(S) <= MAX_BUFFER, length(S), MAX_BUFFER);
       PadLen := 7 - ((Len + 7) and 7);
       SetLength(Buffer, sizeof(TFCGIHeader) + Len + PadLen);
       MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
