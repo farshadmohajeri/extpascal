@@ -420,9 +420,12 @@ Sends a FastCGI response record to the Web Server. Puts the HTTP header in front
 @see TBlockSocket.SendString
 }
 procedure TFCGIThread.SendResponse(S : string; pRecType : TRecType = rtStdOut);
+const
+  MAX_BUFFER = 65536 - sizeof(TFCGIHeader);
 var
   FCGIHeader : TFCGIHeader;
   Buffer : string;
+  I : integer;
 begin
   if pRecType = rtStdOut then begin
     if FRequestMethod = rmHead then S := '';
@@ -440,13 +443,20 @@ begin
     else
       ID := FRequestID;
     RecType := pRecType;
-    Len := length(S);
-    PadLen := 7 - ((Len + 7) and 7);
-    SetLength(Buffer, sizeof(FCGIHeader) + Len + PadLen);
+    I := 1;
+    repeat
+      if length(S) <= MAX_BUFFER then
+        Len := length(S)
+      else
+        Len := MAX_BUFFER;
+      PadLen := 7 - ((Len + 7) and 7);
+      SetLength(Buffer, sizeof(TFCGIHeader) + Len + PadLen);
+      MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
+      move(S[I], Buffer[sizeof(TFCGIHeader) + 1], Len);
+      inc(I, Len);
+      FSocket.SendString(Buffer);
+    until I > length(S);
   end;
-  MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
-  if S <> '' then move(S[1], Buffer[sizeof(FCGIHeader) + 1], length(S));
-  FSocket.SendString(Buffer);
 end;
 
 {
