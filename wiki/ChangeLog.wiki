@@ -1,6 +1,17 @@
 #labels Featured
+===0.9.7, Draw2D support, in SVN===
+
+  * New Draw2D support
+  * New Upload file feature
+  * New Download file feature
+  * Fixes on Ajax multiple parameters
+  * ExtFixes for Chart support
+  * Other minor fixes
+  * More and enhanced error messages
+
 ===0.9.6, Ext JS 3.0.0 support, 13-jul-2009===
 
+  * New Ext JS 3.0.0 support
   * New specific ExtPascalSamples3.dpr file
   * New IsExt3 boolean constant
 
