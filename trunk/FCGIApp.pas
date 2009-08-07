@@ -442,7 +442,7 @@ begin
     RecType := pRecType;
     I := 1;
     repeat
-      Len := IfThen(length(S) <= MAX_BUFFER, length(S), MAX_BUFFER);
+      Len := IfThen((length(S)-I+1) <= MAX_BUFFER, length(S)-I+1, MAX_BUFFER);
       PadLen := 7 - ((Len + 7) and 7);
       SetLength(Buffer, sizeof(TFCGIHeader) + Len + PadLen);
       MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
