@@ -272,7 +272,7 @@ function ConvertFormToExtP(const CfgFileName      : string;
    documentation.}
 
 const
-  PortDef           = 2015; {Default port for generated apps}
+  PortDef           = 2014; {Default port for generated apps}
   MaxIdleMinutesDef = 5;    {Default number of idle minutes before apps quit}
 
   MaxNestedObjs     = 20;   {Maximum depth of nested controls on form}
@@ -526,10 +526,6 @@ begin
       end;  {while not Eof}
     CloseFile(FmFileVar);
 
-    WriteLn(PasFileVar, '    constructor Create;');
-    WriteLn(PasFileVar, '    procedure Show;');
-    WriteLn(PasFileVar, '  published');
-    
      {Scan form file for event handlers that can be mapped and
        add their declarations to TExtWindow descendent class}
     Reset(FmFileVar);
@@ -579,6 +575,9 @@ begin
       end;  {while not Eof}
     CloseFile(FmFileVar);
     
+    WriteLn(PasFileVar, '    constructor Create;');
+    WriteLn(PasFileVar, '    procedure Show;');
+//    WriteLn(PasFileVar, '  published');  
     WriteLn(PasFileVar, '  end;');
     WriteLn(PasFileVar);
     WriteLn(PasFileVar, 'var');
@@ -718,9 +717,9 @@ begin
                   (not SameText(FmClassName, 'TOvcTable'))) then
             begin  {Create dummy data store and column model objects}
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                'Store := TExtDataSimpleStore.Create;');
+                                'Store := TExtDataStore.Create;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                'with TExtDataSimpleStore(Store) do');
+                                'with TExtDataStore(Store) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),

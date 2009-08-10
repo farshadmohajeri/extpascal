@@ -26,7 +26,7 @@ uses
 
 const
   ConverterName     = 'FmToExtP';
-  ConverterVersion  = '0.0.8';
+  ConverterVersion  = '0.0.9';
   
 var
   CfgFileName     : string;
