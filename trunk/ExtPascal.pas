@@ -181,6 +181,7 @@ type
     function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
+    function MethodURI(AMethodName: TFCGIProcedure; Params: array of const): string;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -522,6 +523,10 @@ begin
   end
   else
     Result := PrevCommand;
+end;
+
+function TExtObject.MethodURI(AMethodName: TFCGIProcedure; Params: array of const): string; begin
+  Result := CurrentFCGIThread.MethodURI(AMethodName) + '?' + FormatParams(CurrentFCGIThread.MethodName(@AMethodName), Params)
 end;
 
 {
@@ -1469,21 +1474,23 @@ begin
           vtChar       : Result := Result + VChar;
           vtWideChar   : Result := Result + VWideChar;
         end
-      else
+      else begin
+        if Result <> '' then Result := Result + '&';
         case VType of
-          vtAnsiString : Result := Result + '&' + string(VAnsiString) + '=';
-          vtString     : Result := Result + '&' + VString^ + '=';
-          vtWideString : Result := Result + '&' + string(VWideString) + '=';
+          vtAnsiString : Result := Result + string(VAnsiString) + '=';
+          vtString     : Result := Result + VString^ + '=';
+          vtWideString : Result := Result + string(VWideString) + '=';
           {$IFDEF UNICODE}
-          vtUnicodeString : Result := Result + '&' + string(VUnicodeString) + '=';
+          vtUnicodeString : Result := Result + string(VUnicodeString) + '=';
           {$ENDIF}
-          vtChar       : Result := Result + '&' + VChar + '=';
-          vtWideChar   : Result := Result + '&' + VWideChar + '=';
+          vtChar       : Result := Result + VChar + '=';
+          vtWideChar   : Result := Result + VWideChar + '=';
         else
           JSCode('Ext.Msg.show({title:"Error",msg:"Ajax method: ' + MethodName +
             ' has an invalid parameter name in place #' + IntToStr(I+1) + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});');
           exit;
         end;
+      end;
 end;
 
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
@@ -1498,7 +1505,7 @@ begin
     lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&Evt=' + MethodName;
     MethodName := 'HandleEvent';
   end;
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams + FormatParams(Methodname, Params) +
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams + '&' + FormatParams(Methodname, Params) +
     {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
