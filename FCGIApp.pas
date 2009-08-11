@@ -76,6 +76,7 @@ type
     function GetQueryAsBoolean(Name: string): boolean;
     procedure GarbageCollector(FreeGarbage : boolean);
     procedure WriteUploadFile(Buffer : string);
+    procedure DownloadContentType(Name: string);
   protected
     FRequest, FPathInfo : string;
     FIsAjax,
@@ -134,6 +135,7 @@ type
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TFCGIProcedure) : string; overload;
     procedure DownloadFile(Name : string);
+    procedure DownloadBuffer(Name, Buffer: string);
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
     procedure Logout; virtual;
@@ -334,6 +336,34 @@ destructor TFCGIThread.Destroy; begin
   {$IFDEF MSWINDOWS}inherited;{$ENDIF} // Collateral effect of Unix RTL FPC bug
 end;
 
+procedure TFCGIThread.DownloadContentType(Name : string); begin
+  case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
+                                     '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
+                                     '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
+                                     '.odt', '.odp', '.ods', '.odg', '.odb']) of
+    0 : ContentType := 'text/plain';
+    1 : ContentType := 'application/pdf';
+    2 : ContentType := 'text/csv';
+    3 : ContentType := 'application/zip';
+    4 : ContentType := 'audio/x-wav';
+    5 : ContentType := 'audio/x-ms-wma';
+    6, 7 : ContentType := 'application/msword';
+    8, 9 : ContentType := 'application/vnd.ms-excel';
+    10..13 : ContentType := 'application/vnd.ms-powerpoint';
+    14 : ContentType := 'video/x-ms-wmv';
+    15..20 : ContentType := 'video/mpeg';
+    21 : ContentType := 'video/mp4';
+    22, 23 : ContentType := 'video/quicktime';
+    24 : ContentType := 'application/vnd.oasis.opendocument.text';
+    25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
+    26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
+    27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
+    28 : ContentType := 'application/vnd.oasis.opendocument.database';
+  else
+    ContentType := 'application/octet-stream';
+  end;
+end;
+
 procedure TFCGIThread.DownloadFile(Name : string);
 var
   F : file;
@@ -341,37 +371,20 @@ begin
   if FileExists(Name) then begin
     Assign(F, Name);
     Reset(F, 1);
-    case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
-                                       '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
-                                       '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
-                                       '.odt', '.odp', '.ods', '.odg', '.odb']) of
-      0 : ContentType := 'text/plain';
-      1 : ContentType := 'application/pdf';
-      2 : ContentType := 'text/csv';
-      3 : ContentType := 'application/zip';
-      4 : ContentType := 'audio/x-wav';
-      5 : ContentType := 'audio/x-ms-wma';
-      6, 7 : ContentType := 'application/msword';
-      8, 9 : ContentType := 'application/vnd.ms-excel';
-      10..13 : ContentType := 'application/vnd.ms-powerpoint';
-      14 : ContentType := 'video/x-ms-wmv';
-      15..20 : ContentType := 'video/mpeg';
-      21 : ContentType := 'video/mp4';
-      22, 23 : ContentType := 'video/quicktime';
-      24 : ContentType := 'application/vnd.oasis.opendocument.text';
-      25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
-      26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
-      27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
-      28 : ContentType := 'application/vnd.oasis.opendocument.database';
-    else
-      ContentType := 'application/octet-stream';
-    end;
+    DownloadContentType(Name);
     FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
     SetLength(Response, FileSize(F));
     BlockRead(F, Response[1], FileSize(F));
     Close(F);
     FIsDownload := true;
   end;
+end;
+
+procedure TFCGIThread.DownloadBuffer(Name, Buffer : string); begin
+  DownloadContentType(Name);
+  FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
+  Response := Buffer;
+  FIsDownload := true;
 end;
 
 {

@@ -61,17 +61,17 @@ type
 procedure TSamples.Home;
 const
   Examples : array[0..8] of record
-    Name, Proc, Gif, Desc : string
+    Name, Proc, Image, Desc : string
   end = (
-    (Name: 'File Upload';    Proc: 'FileUpload';    Gif: 'form-file-upload'; Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
-    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
-    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
-    (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
-    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';         Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
-    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout';    Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
-    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';       Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
-    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';        Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
-    (Name: 'Simple Login';   Proc: 'Login';         Gif: '';                 Desc: 'A simple login form showing AJAX use with parameters.')
+    (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
+    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Image: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
+    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Image: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
+    (Name: 'Layout Window';  Proc: 'Layout';        Image: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
+    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Image: 'tabs-adv';         Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
+    (Name: 'Border Layout';  Proc: 'BorderLayout';  Image: 'border-layout';    Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
+    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Image: 'grid-array';       Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
+    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Image: 'grid-edit';        Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
+    (Name: 'Simple Login';   Proc: 'Login';         Image: 'login.png';        Desc: 'A simple login form showing AJAX use with parameters.')
   );
 var
   I : integer;
@@ -93,10 +93,10 @@ begin
         Title := Name;
         Frame := true;
         Html  := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
-        if Gif <> '' then
-          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
+        if pos('.png', Image) = 0 then
+          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
         else
-          Html := Html + Desc + '</a></td></table>';
+          Html := Html + '<img src=' + ImagePath + '/' + Image + ' /></a></td><td>' + Desc + '</td></table>';
         Collapsible := true;
       end;
     Free;
@@ -264,8 +264,8 @@ begin
   FormLogin := TExtWindow.Create;
   with FormLogin do begin
     Title    := 'Login';
-    Width    := 380;
-    Height   := 140;
+    Width    := 366;
+    Height   := 137;
     Plain    := true;
     Layout   := lyFit;
     Closable := false;
@@ -274,10 +274,11 @@ begin
       Border      := false;
       XType       := xtForm;
       ButtonAlign := baRight;
-      BodyStyle   := SetPaddings(10, 15);
+      BodyStyle   := SetPaddings(5, 5);
       DefaultType := xtTextField;
       Defaults    := JSObject('width: 250');
       UserName    := TExtFormTextField.Create;
+      Frame       := true;
       with UserName.AddTo(Items) do begin
         Name       := 'user';
         FieldLabel := 'Username';
