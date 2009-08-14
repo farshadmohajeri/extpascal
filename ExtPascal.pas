@@ -91,6 +91,7 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
+    procedure Alert(Msg : string); override;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme     : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -419,6 +420,10 @@ procedure TExtThread.OnError(Msg, Method, Params : string); begin
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
   ErrorMessage(Msg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params: ' + Params));
+end;
+
+procedure TExtThread.Alert(Msg : string); begin
+  ErrorMessage(Msg)
 end;
 
 {
