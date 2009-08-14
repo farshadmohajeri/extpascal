@@ -59,6 +59,7 @@ type
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FGarbage,
     FKeepConn : boolean; // Not used
+    FScriptName,
     UploadMark,
     FFileUploaded,
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
@@ -121,6 +122,7 @@ type
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property IsUpload : boolean read FIsUpload;
     property IsDownload : boolean read FIsDownload;
+    property ScriptName : string read FScriptName;
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -657,7 +659,10 @@ var
 begin
   FLastAccess := Now;
   FPathInfo := FRequestHeader.Values['PATH_INFO'];
-  if FPathInfo <> '' then FPathInfo := copy(FPathInfo, 2, 100);
+  if FPathInfo = '' then  // W2003 bug
+    FPathInfo := copy(FRequestHeader.Values['SCRIPT_NAME'], length(ScriptName) + 1, 100)
+  else
+    FPathInfo := copy(FPathInfo, 2, 100);
   ReqMet := FRequestHeader.Values['REQUEST_METHOD'];
   case ReqMet[1] of
     'G' : FRequestMethod := rmGet;
@@ -792,8 +797,7 @@ Returns the URI address of a Method. Doesn't test if Method name is invalid.
 @param AMethodName Method name.
 }
 function TFCGIThread.MethodURI(AMethodName : string) : string; begin
-  if AMethodName[1] <> '/' then AMethodName := '/' + AMethodName;
-  Result := FRequestHeader.Values['SCRIPT_NAME'] + AMethodName;
+  Result := ScriptName + AMethodName;  
 end;
 
 {
@@ -838,7 +842,9 @@ begin
       SetCookie('FCGIThread', Thread);
       Application.Threads.AddObject(Thread, Self);
       AfterThreadConstruction;
-    end
+    end;
+    FScriptName := FRequestHeader.Values['SCRIPT_NAME'];
+    if FScriptName[length(FScriptName)] <> '/' then FScriptName := FScriptName + '/';
   end
   else begin
     CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
