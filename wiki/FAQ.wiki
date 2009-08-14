@@ -26,7 +26,7 @@ For example:
 
 ===How to shutdown an ExtPascal application===
 
-ExtPascal has a specific method to do this, Shutdown method. This method requires a password: "extpascal", that is hardcoded in ExtPascal source. To shutdown ExtPascalSamples3 by example use:
+ExtPascal has a specific method to do this, *Shutdown* method. This method requires a password: *extpascal*, that is hardcoded in ExtPascal source. To shutdown ExtPascalSamples3 by example use:
 {{{
 http://localhost/cgi-bin/ExtPascalSamples3/shutdown?password=extpascal
 }}}
