@@ -39,7 +39,7 @@ type
   // FastCGI roles, only Responder role is supported in this FCGIApp version
   TRole = (rResponder = 1, rAuthorizer, rFilter);
   // FastCGI level status code
-  TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole);
+  TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole, psBusy);
   // HTTP request methods
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
   // FastCGI remote method
@@ -133,11 +133,13 @@ type
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
     procedure SetResponseHeader(Header : string);
+    procedure Alert(Msg : string); virtual;
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TFCGIProcedure) : string; overload;
     procedure DownloadFile(Name : string);
     procedure DownloadBuffer(Name, Buffer: string);
+    procedure Terminate; reintroduce;
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
     procedure Logout; virtual;
@@ -409,6 +411,11 @@ procedure TFCGIThread.Shutdown; begin
   end;
 end;
 
+procedure TFCGIThread.Terminate; begin
+  inherited;
+  CurrentFCGIThread.ReturnValue := 1; // Current thread is sleeping
+end;
+
 {
 Sets a cookie in HTTP response header
 @param Name Cookie name
@@ -475,9 +482,10 @@ Sends an end request record to the Web Server and ends this thread.
 procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplete); begin
   if Status <> psRequestComplete then begin
     case Status of
-      psCantMPXConn : Response := 'Multiplexing is not allowed.';
-      psOverloaded  : Response := 'Maximum connection limit is ' + IntToStr(Application.MaxConns) + ' and was reached.';
-      psUnknownRole : Response := 'Unknown FastCGI Role received.';
+      psCantMPXConn : Alert('Multiplexing is not allowed.');
+      psOverloaded  : Alert('Maximum connection limit is ' + IntToStr(Application.MaxConns) + ' and was reached.');
+      psUnknownRole : Alert('Unknown FastCGI Role received.');
+      psBusy        : Alert('Session is busy, try later.');
     end;
     SendResponse(Response);
   end;
@@ -599,6 +607,10 @@ procedure TFCGIThread.AfterHandleRequest; begin end;
 // Override this method to takes some action after the FastCGI thread is created
 procedure TFCGIThread.AfterThreadConstruction; begin end;
 
+procedure TFCGIThread.Alert(Msg : string); begin
+  Response := 'alert("' + Msg + '");'
+end;
+
 // Override this method to takes some action before the FastCGI thread is destroyed
 procedure TFCGIThread.BeforeThreadDestruction; begin end;
 
@@ -659,7 +671,7 @@ var
 begin
   FLastAccess := Now;
   FPathInfo := FRequestHeader.Values['PATH_INFO'];
-  if FPathInfo = '' then  // W2003 bug
+  if FPathInfo = '' then  // Windows 2003 Server bug
     FPathInfo := copy(FRequestHeader.Values['SCRIPT_NAME'], length(ScriptName) + 1, 100)
   else
     FPathInfo := copy(FPathInfo, 2, 100);
@@ -778,12 +790,12 @@ Handles "method not found" error. Occurs when PathInfo not matches a published m
 @see HandleRequest
 }
 procedure TFCGIThread.OnNotFoundError; begin
-  Response := 'alert("Method: ''' + PathInfo + ''' is not found");';
+  Alert('Method: ''' + PathInfo + ''' is not found');
 end;
 
 // Handles errors raised in the method called by PathInfo in <link TFCGIThread.HandleRequest, HandleRequest> method. Occurs when PathInfo not matches a published method declared in this thread. Can be overrided in descendent thread class
 procedure TFCGIThread.OnError(Msg, Method, Params : string); begin
-  Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
+  Alert(Msg + '\non Method: ' + Method + '\nParams: ' + Params);
 end;
 
 // Ends current Browser session and triggers the Garbage Collector
@@ -797,7 +809,7 @@ Returns the URI address of a Method. Doesn't test if Method name is invalid.
 @param AMethodName Method name.
 }
 function TFCGIThread.MethodURI(AMethodName : string) : string; begin
-  Result := ScriptName + AMethodName;  
+  Result := ScriptName + AMethodName;
 end;
 
 {
@@ -848,12 +860,19 @@ begin
   end
   else begin
     CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
-    CurrentFCGIThread.FRequestHeader.Assign(Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText));
-    CurrentFCGIThread.FCookie.Assign(Explode(FCookie.Delimiter, FCookie.DelimitedText));
-    CurrentFCGIThread.NewThread := false;
-    CurrentFCGIThread.FResponseHeader := '';
-    CurrentFCGIThread.ContentType := 'text/html';
-    Application.Threads.AddObject('0', Self);
+    if CurrentFCGIThread.ReturnValue = 1 then begin // Current thread is sleeping
+      CurrentFCGIThread.ReturnValue := 0; // Wakeup it
+      CurrentFCGIThread.FRequestHeader.Assign(Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText));
+      CurrentFCGIThread.FCookie.Assign(Explode(FCookie.Delimiter, FCookie.DelimitedText));
+      CurrentFCGIThread.NewThread := false;
+      CurrentFCGIThread.FResponseHeader := '';
+      CurrentFCGIThread.ContentType := 'text/html';
+      Application.Threads.AddObject('0', Self);
+    end
+    else begin // Current thread is busy
+      Result := false;
+      SendEndRequest(psBusy);
+    end;
   end;
   Application.AccessThreads.Leave;
 end;
@@ -961,11 +980,9 @@ begin
     end;
   end;
   FSocket.Free;
-  if (not NewThread) or FGarbage then begin
-    if FGarbage then
-      CurrentFCGIThread.FLastAccess := 0
-    else
-      FLastAccess := 0;
+  if FGarbage then begin
+    CurrentFCGIThread.FLastAccess := 0;
+    FLastAccess := 0;
     Application.GarbageNow := true;
   end;
   {$IFNDEF MSWINDOWS}EndThread(0){$ENDIF} // Unix RTL FPC bug
