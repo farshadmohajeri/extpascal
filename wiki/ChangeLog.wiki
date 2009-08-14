@@ -6,6 +6,9 @@
   * New Download file feature
   * Fixes on Ajax multiple parameters
   * ExtFixes for Chart support
+  * New TExtObject.AjaxSelection method
+  * New TExtObject.MethodURI method
+  * Fixes for Windows 2003 server
   * Other minor fixes
   * More and enhanced error messages
 
