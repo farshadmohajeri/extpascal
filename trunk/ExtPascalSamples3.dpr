@@ -34,7 +34,7 @@ type
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
-    procedure AddShowSourceButton(Buttons : TExtObjectList; Proc : string);
+    procedure AddShowSourceButton(Buttons: TExtObjectList; Proc : string);
   published
     procedure Home; override;
     procedure BasicTabPanel;

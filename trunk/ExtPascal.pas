@@ -179,9 +179,13 @@ type
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
+    function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function MethodURI(AMethodName: TFCGIProcedure; Params: array of const): string;
+    function MethodURI(AMethodName : TFCGIProcedure; Params: array of const): string; overload;
+    function MethodURI(AMethodName : TFCGIProcedure) : string; overload;
+    function MethodURI(AMethodName : string; Params : array of const) : string; overload;
+    function MethodURI(AMethodName : string): string; overload;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -266,7 +270,7 @@ const
 implementation
 
 uses
-  SysUtils, StrUtils, Math, ExtPascalUtils, Ext, ExtUtil;
+  SysUtils, StrUtils, Math, ExtPascalUtils, Ext, ExtUtil, ExtGrid;
 
 threadvar
   InJSFunction : boolean;
@@ -445,7 +449,7 @@ begin
   if JS[length(JS)] = ';' then begin // Command
     I := pos('.', JS);
     J := pos(IdentDelim, JS);
-    if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not ExistsReference(copy(JS, 1, I-1)) then
+    if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not ExistsReference(copy(JS, J-1, I-J+1)) then
       raise Exception.Create('Public property or Method: ''' + JSClassName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
     I := length(Response) + 1
   end
@@ -525,8 +529,20 @@ begin
     Result := PrevCommand;
 end;
 
-function TExtObject.MethodURI(AMethodName: TFCGIProcedure; Params: array of const): string; begin
-  Result := CurrentFCGIThread.MethodURI(AMethodName) + '?' + FormatParams(CurrentFCGIThread.MethodName(@AMethodName), Params)
+function TExtObject.MethodURI(AMethodName : TFCGIProcedure; Params: array of const) : string; begin
+  Result := CurrentFCGIThread.MethodURI(AMethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(CurrentFCGIThread.MethodName(@AMethodName), Params))
+end;
+
+function TExtObject.MethodURI(AMethodName : TFCGIProcedure) : string; begin
+  Result := CurrentFCGIThread.MethodURI(AMethodName)
+end;
+
+function TExtObject.MethodURI(AMethodName : string; Params : array of const) : string; begin
+  Result := CurrentFCGIThread.MethodURI(AMethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(AMethodName, Params))
+end;
+
+function TExtObject.MethodURI(AMethodName : string): string; begin
+  Result := CurrentFCGIThread.MethodURI(AMethodName)
 end;
 
 {
@@ -987,12 +1003,13 @@ Pushes a JSCommand to this object
 }
 procedure TExtObject.SetJSCommand(const Value : string);
 var
-  I : integer;
+  I, J : integer;
 begin
   if Value = '' then begin
     if FJSCommand <> '' then begin
       I := LastDelimiter(JSDelim, FJSCommand);
-      if I = 0 then
+      J := pos(IdentDelim + '.get', FJSCommand);
+      if (I = 0) or (J = 0) or (J > I) then
         FJSCommand := ''
       else
         System.Delete(FJSCommand, I, length(FJSCommand));
@@ -1438,13 +1455,38 @@ function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFu
   Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
 end;
 
+function TExtObject.AjaxSelection(Method: TExtProcedure; SelectionModel: TExtObject; Attribute, TargetQuery: string): TExtFunction;
+var
+  CurrentResponse : string;
+begin
+  InJSFunction := true;
+  Result := TExtFunction(Self);
+  with TExtThread(CurrentFCGIThread) do begin
+    CurrentResponse := Response;
+    Response := '';
+    with TExtGridRowSelectionModel(SelectionModel) do begin
+      JSCode('var Sel=[];');
+      Each(JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'));
+      Ajax(Method, [TargetQuery, '%Sel.toString()']);
+    end;
+    JSCommand := '';
+    JSCommand := Response;
+    Response  := CurrentResponse;
+    JSCode(JSCommand);
+  end;
+  InJSFunction := false;
+end;
+
 function SurroundAjaxParam(Param : string) : string;
 var
   I : integer;
 begin
   I := pos('%', Param);
-  if (I <> 0) and (I <> length(Param)) and (Param[I+1] in ['0'..'9']) then
-    Result := '"+' + Param + '+"'
+  if (I <> 0) and (I <> length(Param))  then
+    if Param[I+1] in ['0'..'9'] then
+      Result := '"+' + Param + '+"'
+    else
+      Result := '"+' + copy(Param, I+1, length(Param)) + '+"'
   else
     Result := Param;
 end;
