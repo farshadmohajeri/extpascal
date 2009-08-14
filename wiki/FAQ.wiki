@@ -1,7 +1,7 @@
 #labels Featured,New
 ===How to debugging an ExtPascal application?===
 If you want to debug your ExtPascal application using Delphi/Lazarus/MSEide, it's very
-simple. Put a break point somewhere in the code, in Home method by example. Then run your ExtPascal application from within IDE. Open the browser and hit the URL address. If everything works fine, then the IDE will hold on the breakpoint. From there you could do whatever you need, run step by step, watching values, etc. During debugging, you
+simple. Put a break point somewhere in the code, in Home method by example. Then run your ExtPascal application from within IDE using debug mode. Open the browser and hit the URL address. If everything works fine, then the IDE will hold on the breakpoint. From there you could do whatever you need, run step by step, watching values, etc. During debugging, you
 may forget the browser output because it should be off due the
 response time out. But, your ExtPascal application is still running.
 
@@ -22,4 +22,11 @@ For example:
     RenderTo := 'body';
     Html     := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/Proc target=blank><img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>blabla</a></td></table>';
   end;
+}}}
+
+===How to shutdown an ExtPascal application===
+
+ExtPascal has a specific method to do this, Shutdown method. This method requires a password: "extpascal", that is hardcoded in ExtPascal source. To shutdown ExtPascalSamples3 by example use:
+{{{
+http://localhost/cgi-bin/ExtPascalSamples3/shutdown?password=extpascal
 }}}
