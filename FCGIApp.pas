@@ -62,6 +62,7 @@ type
     FScriptName,
     UploadMark,
     FFileUploaded,
+    FFileUploadedFullName,
     FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
     FQuery,
@@ -119,6 +120,7 @@ type
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
     property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
     property FileUploaded : string read FFileUploaded; // Last uploaded file
+    property FileUploadedFullName : string read FFileUploadedFullName; // Last uploaded file
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property IsUpload : boolean read FIsUpload;
     property IsDownload : boolean read FIsDownload;
@@ -626,10 +628,8 @@ var
   F : file;
   I, J, Tam : integer;
 begin
-  if FileUploaded = '' then
-    Response := '{success:false,message:"File not informed"}'
-  else begin
-    Assign(F, RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FileUploaded);
+  if FileUploaded <> '' then begin
+    Assign(F, FileUploadedFullName);
     I := pos(UploadMark, Buffer);
     case I of
       0 : begin // middle blocks
@@ -646,9 +646,9 @@ begin
           Tam := length(Buffer) - I + 1;
           Response := '{success:false,file:"' + FileUploaded + '"}'
         end
-        else begin
+        else begin // unique block
           Tam := J - I - 2;
-          Response := '{success:false,file:"' + FileUploaded + '"}'
+          Response := '{success:true,file:"' + FileUploaded + '"}'
         end;
       end;
     else // end block
@@ -697,6 +697,10 @@ begin
     I := posex('filename="', Buffer, I);
     J := posex('"', Buffer, I+10);
     FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
+    if FFileUploaded <> '' then
+      FFileUploadedFullName := RequestHeader['DOCUMENT_ROOT'] + UploadPath + '/' + FFileUploaded
+    else
+      Response := '{success:false,message:"File not informed"}'
   end;
   Result := FIsUpload
 end;
@@ -931,6 +935,8 @@ begin
                           FIsUpload := CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I);
                           if FIsUpload then begin
                             FFileUploaded := CurrentFCGIThread.FFileUploaded;
+                            FFileUploadedFullName := CurrentFCGIThread.FFileUploadedFullName;
+                            Response := CurrentFCGIThread.Response;
                             UploadMark := CurrentFCGIThread.UploadMark;
                           end;
                         end
@@ -1029,16 +1035,17 @@ begin
     try
       if PathInfo = '' then
         Home
-      else begin
-        MethodCode := MethodAddress(PathInfo);
-        if MethodCode <> nil then begin
-          PageMethod.Code := MethodCode;
-          PageMethod.Data := Self;
-          MethodCall(PageMethod); // Call published method
-        end
-        else
-          OnNotFoundError;
-      end;
+      else
+        if not IsUpload or (pos('success:true', Response) <> 0) then begin
+          MethodCode := MethodAddress(PathInfo);
+          if MethodCode <> nil then begin
+            PageMethod.Code := MethodCode;
+            PageMethod.Data := Self;
+            MethodCall(PageMethod); // Call published method
+          end
+          else
+            OnNotFoundError;
+        end;
     except
       on E : Exception do OnError(E.Message, PathInfo, pRequest)
     end;
