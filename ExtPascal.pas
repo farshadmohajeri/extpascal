@@ -1075,6 +1075,7 @@ begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSC, JS);
         exit;
       end;
+      if pos('Ext.', JS) = 1 then FJSCommand := '';
       JSCommand := JS;
     end
     else
