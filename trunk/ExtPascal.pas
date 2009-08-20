@@ -91,7 +91,6 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
-    procedure Alert(Msg : string); override;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme     : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -109,6 +108,7 @@ type
     procedure SetCustomJS(JS : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
+    procedure Alert(Msg : string); override;
   published
     {$IFDEF HAS_CONFIG}
     procedure Reconfig; override;
