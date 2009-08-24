@@ -1075,7 +1075,7 @@ begin
         JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSC, JS);
         exit;
       end;
-      if pos('Ext.', JS) = 1 then FJSCommand := '';
+      if not(pos(IdentDelim + '.get', FJSCommand) in [4..9]) then FJSCommand := '';
       JSCommand := JS;
     end
     else
