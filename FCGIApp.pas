@@ -373,23 +373,22 @@ end;
 procedure TFCGIThread.DownloadFile(Name : string);
 var
   F : file;
+  Buffer : string;
 begin
   if FileExists(Name) then begin
     Assign(F, Name);
     Reset(F, 1);
-    DownloadContentType(Name);
-    FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
-    SetLength(Response, FileSize(F));
-    BlockRead(F, Response[1], FileSize(F));
+    SetLength(Buffer, FileSize(F));
+    BlockRead(F, Buffer[1], FileSize(F));
     Close(F);
-    FIsDownload := true;
+    DownloadBuffer(Name, Buffer);
   end;
 end;
 
 procedure TFCGIThread.DownloadBuffer(Name, Buffer : string); begin
   DownloadContentType(Name);
   FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
-  Response := Buffer;
+  Response    := Buffer;
   FIsDownload := true;
 end;
 
@@ -454,7 +453,7 @@ begin
   if pRecType = rtStdOut then begin
     if FRequestMethod = rmHead then S := '';
     FResponseHeader := FResponseHeader + 'content-type:' + ContentType + ^M^J;
-    if not BrowserCache then FResponseHeader := FResponseHeader + 'cache-control:no-cache'^M^J;
+    if not BrowserCache and not IsDownload then FResponseHeader := FResponseHeader + 'cache-control:no-cache'^M^J;
     S := FResponseHeader + ^M^J + S;
     FResponseHeader := '';
     ContentType := 'text/html';
@@ -934,10 +933,10 @@ begin
                         if SetCurrentFCGIThread then begin
                           FIsUpload := CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I);
                           if FIsUpload then begin
-                            FFileUploaded := CurrentFCGIThread.FFileUploaded;
+                            FFileUploaded         := CurrentFCGIThread.FFileUploaded;
                             FFileUploadedFullName := CurrentFCGIThread.FFileUploadedFullName;
-                            Response := CurrentFCGIThread.Response;
-                            UploadMark := CurrentFCGIThread.UploadMark;
+                            Response              := CurrentFCGIThread.Response;
+                            UploadMark            := CurrentFCGIThread.UploadMark;
                           end;
                         end
                         else
@@ -946,11 +945,12 @@ begin
                       else begin
                         if pos(IISDelim, FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
                         CurrentFCGIThread.FIsUpload := FIsUpload;
-                        CurrentFCGIThread.Response := Response;
-                        Response := CurrentFCGIThread.HandleRequest(FRequest);
+                        CurrentFCGIThread.Response  := Response;
+                        Response        := CurrentFCGIThread.HandleRequest(FRequest);
                         FResponseHeader := CurrentFCGIThread.FResponseHeader;
-                        ContentType := CurrentFCGIThread.ContentType;
-                        FGarbage := CurrentFCGIThread.FGarbage;
+                        ContentType     := CurrentFCGIThread.ContentType;
+                        FGarbage        := CurrentFCGIThread.FGarbage;
+                        FIsDownload     := CurrentFCGIThread.FIsDownload;
                         if (Response <> '') or (RequestMethod in [rmGet, rmHead]) then SendResponse(Response);
                         SendEndRequest;
                       end;
