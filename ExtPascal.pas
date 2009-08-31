@@ -64,7 +64,6 @@ type
   TExtObjectList  = class;
   TExtFunction    = class;
   TExtProcedure   = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
-  TBrowser        = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
 
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
@@ -77,7 +76,6 @@ type
     JSReturns : TStringList;
     Sequence  : cardinal;
     RequiresReload : boolean;
-    FBrowser  : TBrowser;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
@@ -98,7 +96,6 @@ type
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     ExtBuild  : string; // Custom <extlink http://www.extjs.com/products/extjs/build/>ExtJS build</extlink>. Default is ext-all.
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
-    property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); override;
     procedure SetPaths; override;
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
@@ -574,8 +571,6 @@ begin
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
-  if Browser = brUnknown then
-    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   FIsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or FIsUpload;
   if IsAjax then begin
     if Cookie['FCGIThread'] = '' then begin
