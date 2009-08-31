@@ -42,6 +42,7 @@ type
   TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole, psBusy);
   // HTTP request methods
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
+  TBrowser = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
   // FastCGI remote method
   TFCGIProcedure = procedure of object;
   {$M+}
@@ -68,6 +69,7 @@ type
     FQuery,
     FCookie : TStringList;
     FLastAccess : TDateTime;
+    FBrowser : TBrowser;
     function GetRequestHeader(Name: string): string;
     function CompleteRequestHeaderInfo(Buffer : string; I : integer) : boolean;
     function GetCookie(Name: string): string;
@@ -125,6 +127,7 @@ type
     property IsUpload : boolean read FIsUpload;
     property IsDownload : boolean read FIsDownload;
     property ScriptName : string read FScriptName;
+    property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -1031,6 +1034,8 @@ begin
     FRequest := pRequest;
   if not IsUpload then Response := '';
   FIsDownload := false;
+  if Browser = brUnknown then
+    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   if BeforeHandleRequest then
     try
       if PathInfo = '' then
@@ -1053,7 +1058,10 @@ begin
     Result := Response
   else begin
     AfterHandleRequest;
-    Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
+    if IsUpload and (Browser = brIE) then
+      Result := Response
+    else
+      Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
   end;
 end;
 
