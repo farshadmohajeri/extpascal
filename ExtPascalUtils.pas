@@ -396,7 +396,7 @@ end;
 function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
 var
   pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
-  pFunction, pString, pOpPlus, pOpMinus, pOpTime, pOpDivide, pOpEqual : integer;
+  pFunction, pString, pOpPlus, pOpMinus, pOpTime, pOpDivide, pOpEqual, pRegex : integer;
   P, Lvl : integer;
   Res : string;
 
@@ -463,9 +463,10 @@ begin
     pSqrBegin   := PosEx('[', Res, P);
     pSqrEnd     := PosEx(']', Res, P);
     pFunction   := PosEx('function', Res, P);
+    pRegex      := PosEx('regex', Res, P);
     // process what is found first
     P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
-                     pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, pOpDivide, pFunction]);
+                     pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, pOpDivide, pFunction, pRegex]);
     // keep Ext's onReady function at the first line
     if (not onReady) and (res[p] = 'f') then
       if Copy(Res, P-9, 9) = '.onReady(' then begin
@@ -605,6 +606,10 @@ begin
           if inProp then Continue; // skip function if within property
           if copy(Res, P, 8) = 'function' then // add new line for independent function
             inc(P, AddNewLine(P, SpaceIdents(Lvl)) + 7);
+        end;
+        'r' : begin
+          P := PosEx('/', Res, P);
+          P := PosEx('/', Res, P+1);
         end;
       end;
     end;

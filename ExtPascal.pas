@@ -100,7 +100,7 @@ type
     procedure SetPaths; override;
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
-    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
+    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
     procedure SetIconCls(Cls : array of string);
     procedure SetCustomJS(JS : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
@@ -300,7 +300,7 @@ If pLibrary is '' then all user JS libraries to this session will be removed fro
 @example <code>SetLibrary('');</code>
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
-procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = true);
+procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
 var
   Root : string;
 begin
