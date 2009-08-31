@@ -390,7 +390,7 @@ Shows an error message in browser session using Ext JS style.
 @example <code>ErrorMessage('Context not found.<br/>This Window will be reloaded to fix this issue.', 'window.location.reload()');</code>
 }
 procedure TExtThread.ErrorMessage(Msg : string; Action : string = ''); begin
-  Msg := AnsiReplaceStr(AnsiReplaceStr(Msg, ^J, ' '), '"', '''');
+  Msg := AnsiReplaceStr(AnsiReplaceStr(Msg, ^J, '<br/>'), '"', '''');
   JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
     IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
 end;
@@ -417,7 +417,7 @@ procedure TExtThread.OnError(Msg, Method, Params : string); begin
   Response := '';
   if IsAjax and (pos('Access violation', Msg) <> 0) then
     Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  ErrorMessage(Msg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params: ' + Params));
+  ErrorMessage(Msg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params:<br/>' + AnsiReplaceStr(Params, '&', '<br/>')));
 end;
 
 procedure TExtThread.Alert(Msg : string); begin
