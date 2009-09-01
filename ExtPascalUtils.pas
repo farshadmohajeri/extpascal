@@ -14,7 +14,7 @@ uses
   Classes, TypInfo;
 
 const
-  ExtPascalVersion = '0.9.7';
+  ExtPascalVersion = '0.9.8';
   IISDelim = '`'; // For CGI IIS bug
 
 {$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
@@ -66,11 +66,12 @@ function FirstDelimiter(const Delimiters, S : string; Offset : integer = 1) : in
 function RPosEx(const Substr, Str : string; Offset : integer = 1) : integer;
 
 {
-Returns the number of occurrences of Substr in Str
+Returns the number of occurrences of Substr in Str until UntilStr occurs
 @param Substr String to count in Str
 @param Str String where the counting will be done
+@param UntilStr Optional String, stop counting if this string occurs
 }
-function CountStr(const Substr, Str : string) : integer;
+function CountStr(const Substr, Str : string; UntilStr : string = '') : integer;
 
 // Replaces " to ' and ^M^J to <br/>, surrounds the string with " and insert %0..%9 JS place holders
 function StrToJS(const S : string) : string;
@@ -273,14 +274,16 @@ begin
   end;
 end;
 
-function CountStr(const Substr, Str : string) : integer;
+function CountStr(const Substr, Str : string; UntilStr : string = '') : integer;
 var
-  I : integer;
+  I, J : integer;
 begin
   I := 0;
   Result := 0;
+  J := Pos(UntilStr, Str);
   repeat
     I := PosEx(Substr, Str, I+1);
+    if (J <> 0) and (J < I) then exit;
     if I <> 0 then inc(Result);
   until I = 0;
 end;

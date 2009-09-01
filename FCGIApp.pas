@@ -489,7 +489,7 @@ procedure TFCGIThread.SendEndRequest(Status : TProtocolStatus = psRequestComplet
       psCantMPXConn : Alert('Multiplexing is not allowed.');
       psOverloaded  : Alert('Maximum connection limit is ' + IntToStr(Application.MaxConns) + ' and was reached.');
       psUnknownRole : Alert('Unknown FastCGI Role received.');
-      psBusy        : Alert('Session is busy, try later.');
+      psBusy        : ;//Alert('Session is busy, try later.');
     end;
     SendResponse(Response);
   end;

@@ -75,6 +75,7 @@ const
   );
 var
   I : integer;
+  HTM : string;
 begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Theme := 'gray';
@@ -92,11 +93,11 @@ begin
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
-        Html  := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
+        HTM   := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
         if pos('.png', Image) = 0 then
-          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
+          Html := HTM + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
         else
-          Html := Html + '<img src=' + ImagePath + '/' + Image + ' /></a></td><td>' + Desc + '</td></table>';
+          Html := HTM + '<img src=' + ImagePath + '/' + Image + ' /></a></td><td>' + Desc + '</td></table>';
         Collapsible := true;
       end;
     Free;
