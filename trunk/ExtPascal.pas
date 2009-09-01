@@ -295,7 +295,7 @@ If the WebServer is Apache tests if the library exists.
 Repeated libraries are ignored.
 @param pLibrary JS library without extension (.js), but with Path based on Web server document root.
 @param CSS pLibrary has a companion stylesheet (.css) with same path and name.
-@param HasDebug Library has a debug, non minified, version. Default is true.
+@param HasDebug Library has a debug, non minified, version. Default is false.
 If pLibrary is '' then all user JS libraries to this session will be removed from response.
 @example <code>SetLibrary('');</code>
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
@@ -708,7 +708,7 @@ begin
   end;
   HandleJSReturns;
   Response := AnsiReplaceStr(AnsiReplaceStr(Response, CommandDelim, ''), IdentDelim, ''); // Extracts aux delimiters
-  if not IsAjax then
+  if not IsAjax then begin
     Response := IfThen(HTMLQuirksMode, '<!docttype html public><html>',
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN">'^M^J'<html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
       '<head>'^M^J +
@@ -722,6 +722,7 @@ begin
       '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
       '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
       '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DEBUGJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
+      {$IFDEF DEBUGJS}'<script src="' + ExtPath + '/codepress/Ext.ux.CodePress.js"></script>'^M^J +{$ENDIF}
       {$ENDIF}
       IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
       IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
@@ -733,15 +734,26 @@ begin
       'Ext.onReady(function(){' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
       'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
-      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/><br/>"+response.responseText);}};' +
+      {$IFDEF DEBUGJS}
+      'function AjaxSource(t,l,s){var w=new Ext.Window({title:"Ajax error: "+t+", Line: "+' + IfThen(Browser=brFirefox, '(l-%%)', '"Use Firefox to debug"') +
+      ',width:600,height:400,modal:true,items:[new Ext.ux.CodePress({language:"javascript",readOnly:true,code:s})]});w.show();' +
+      'w.on("resize",function(){w.items.get(0).resize();});};' +
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxSource(err.message,err.lineNumber,response.responseText);}};' +
+      {$ELSE}
+      'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/>Use DebugJS define to enhance debugging<br/>"+response.responseText);}};' +
+      {$ENDIF}
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
       'Download=Ext.DomHelper.append(document.body,{tag:"iframe",cls:"x-hidden"});' +
       Response) + '});'^M^J +
-      '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>'
-  else
+      '</script>'^M^J'<body><div id=body></div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J'</html>';
     {$IFDEF DEBUGJS}
-    Response := BeautifyJS(Response)
+    Response := AnsiReplaceStr(Response, '%%', IntToStr(CountStr(^M^J, Response, 'eval('))); // eval() line number
     {$ENDIF}
+  end
+  {$IFDEF DEBUGJS}
+  else
+    Response := BeautifyJS(Response);
+  {$ENDIF}
 end;
 
 {
