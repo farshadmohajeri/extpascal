@@ -47,7 +47,7 @@ unit ExtPascal;
 {.$DEFINE WebServer}
 {$ENDIF}
 
-// Uses ext-all-debug.js and format all JS/CSS source code to facilitate debugging on browser
+// Uses ext-all-debug.js, format all JS/CSS source code to facilitate debugging on browser and locates line error if using Firefox on AJAX responses
 {.$DEFINE DEBUGJS}
 
 // Uses CacheFly for performance boost see: http://extjs.com/blog/2008/11/18/ext-cdn-custom-builds-compression-and-fast-performance/
@@ -674,16 +674,21 @@ Does tasks after Request processing.
 1. Extracts Comments, auxiliary delimiters, and sets:
 2. HTML body,
 3. Title,
-4. Charset,
-5. ExtJS CSS,
-6. ExtJS libraries,
-7. ExtJS theme,
-8. ExtJS language,
-9. Additional user styles,
-10. Additional user libraries,
-11. Additional user JavaScript,
-12. ExtJS invoke and
-13. Handlers for AJAX response
+4. Application icon,
+5. Charset,
+6. ExtJS CSS,
+7. ExtJS libraries,
+8. ExtJS theme,
+9. ExtJS language,
+10. Additional user styles,
+11. Additional user libraries,
+12. Additional user JavaScript,
+13. ExtJS invoke,
+14. Handlers for AJAX response and
+15. If DEBUGJS conditional-define is active:
+  15.1. Uses CodePress library with syntax highlight,
+  15.2. Generates JS code to enhance AJAX debugging, using Firefox, and
+  15.3. Formats AJAX response code for easy debugging.
 }
 procedure TExtThread.AfterHandleRequest;
 

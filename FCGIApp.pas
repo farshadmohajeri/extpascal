@@ -819,7 +819,7 @@ function TFCGIThread.MethodURI(AMethodName : string) : string; begin
 end;
 
 {
-Returns the URI address of a Method. If method is invalid returns ''
+Returns the URI address of a Method. If method is not published raises an exception
 @param AMethodName Method reference
 }
 function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
@@ -827,7 +827,7 @@ function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
   if Result <> '' then
     Result := MethodURI(Result)
   else
-    raise Exception.Create('MethoURI: method not published');
+    raise Exception.Create('MethodURI: Method is not published');
 end;
 
 {
