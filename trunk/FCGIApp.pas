@@ -824,7 +824,10 @@ Returns the URI address of a Method. If method is invalid returns ''
 }
 function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
   Result := CurrentFCGIThread.MethodName(@AMethodName);
-  if Result <> '' then Result := MethodURI(Result);
+  if Result <> '' then
+    Result := MethodURI(Result)
+  else
+    raise Exception.Create('MethoURI: method not published');
 end;
 
 {
