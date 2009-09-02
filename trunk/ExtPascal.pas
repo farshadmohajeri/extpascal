@@ -126,6 +126,7 @@ type
     procedure SetJSCommand(const Value : string);
     function  PopJSCommand : string;
     function FormatParams(MethodName : string; Params: array of const): string;
+    procedure AjaxCode(MethodName, RawParams : string; Params : array of const);
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -177,7 +178,7 @@ type
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
-    function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string) : TExtFunction;
+    function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function MethodURI(AMethodName : TFCGIProcedure; Params: array of const): string; overload;
@@ -1474,9 +1475,10 @@ function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFu
   Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
 end;
 
-function TExtObject.AjaxSelection(Method: TExtProcedure; SelectionModel: TExtObject; Attribute, TargetQuery: string): TExtFunction;
+function TExtObject.AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const): TExtFunction;
 var
   CurrentResponse : string;
+  MetName : string;
 begin
   InJSFunction := true;
   Result := TExtFunction(Self);
@@ -1486,7 +1488,8 @@ begin
     with TExtGridRowSelectionModel(SelectionModel) do begin
       JSCode('var Sel=[];');
       Each(JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'));
-      Ajax(Method, [TargetQuery, '%Sel.toString()']);
+      MetName := CurrentFCGIThread.MethodName(@Method);
+      AjaxCode(MetName, FormatParams(MetName, [TargetQuery, '%Sel.toString()']), Params);
     end;
     JSCommand := '';
     JSCommand := Response;
@@ -1554,6 +1557,12 @@ begin
       end;
 end;
 
+procedure TExtObject.AjaxCode(MethodName : string; RawParams : string; Params : array of const); begin
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"Ajax=1&' + IfThen(RawParams='', '', RawParams + '&') + FormatParams(Methodname, Params) +
+    {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
+    '",success:AjaxSuccess,failure:AjaxFailure});');
+end;
+
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
 function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
 var
@@ -1561,14 +1570,12 @@ var
 begin
   InJSFunction := false;
   Result  := TExtFunction(Self);
-  lParams := 'Ajax=1';
+  lParams := '';
   if IsEvent then begin
     lParams := lParams + '&IsEvent=1&Obj=' + JSName + '&Evt=' + MethodName;
     MethodName := 'HandleEvent';
   end;
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"' + lParams + '&' + FormatParams(Methodname, Params) +
-    {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
-    '",success:AjaxSuccess,failure:AjaxFailure});');
+  AjaxCode(MethodName, lParams, Params);
 end;
 
 {
