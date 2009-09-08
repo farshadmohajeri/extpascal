@@ -148,7 +148,6 @@ type
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
     procedure InitDefaults; virtual;
-    function Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction; overload;
     procedure HandleEvent(const AEvtName: string); virtual;
     property JSCommand : string read GetJSCommand write SetJSCommand; // Last commands written in Response
   public
@@ -174,6 +173,7 @@ type
     function JSExpression(Method : TExtFunction) : integer; overload;
     function JSMethod(Method : TExtFunction) : string;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
+    function Ajax(MethodName : string; Params : array of const; IsEvent : boolean = false) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
@@ -1564,7 +1564,7 @@ procedure TExtObject.AjaxCode(MethodName : string; RawParams : string; Params : 
 end;
 
 // Internal Ajax generation handler treating IsEvent, when is true HandleEvent will be invoked instead published methods
-function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean) : TExtFunction;
+function TExtObject.Ajax(MethodName : string; Params : array of const; IsEvent : boolean = false) : TExtFunction;
 var
   lParams : string;
 begin
