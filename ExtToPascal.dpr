@@ -55,11 +55,11 @@ var
   I : integer;
 begin
   if Ident <> '' then
-    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int']) of
+    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int', 'bool']) of
       0, 6     : Result := 'string';
       1, 2, 11 : Result := 'Integer';
       3        : Result := 'TExtObject';
-      4        : Result := 'Boolean';
+      4, 12    : Result := 'Boolean';
       5        : Result := 'TExtFunction';
       7, 8     : Result := 'TExtObjectList';
       9        : Result := 'TDateTime';
@@ -480,7 +480,7 @@ begin
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
-          PropName := Unique(PropName, CurClass.Properties);
+          PropName := Unique(FixIdent(PropName), CurClass.Properties);
           if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
             State := InMethods;
             continue; // Discard duplicates
