@@ -25,7 +25,7 @@
     </CompilerOptions>
     <Description Value="ExtPascal Basic Design Controls for Lazarus"/>
     <License Value="Modified LGPL"/>
-    <Version Release="8"/>
+    <Version Release="9"/>
     <Files Count="1">
       <Item1>
         <Filename Value="extp_design_ctrls.pas"/>

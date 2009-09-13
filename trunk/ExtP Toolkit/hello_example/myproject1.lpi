@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <CONFIG>
   <ProjectOptions>
-    <PathDelim Value="/"/>
     <Version Value="7"/>
     <General>
       <Flags>
@@ -50,11 +49,11 @@
       </Unit0>
       <Unit1>
         <Filename Value="mainunit.pas"/>
-        <ComponentName Value="MainWindow"/>
         <IsPartOfProject Value="True"/>
+        <ComponentName Value="MainWindow"/>
         <UnitName Value="mainunit"/>
         <CursorPos X="14" Y="47"/>
-        <TopLine Value="32"/>
+        <TopLine Value="30"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
@@ -62,11 +61,11 @@
       </Unit1>
       <Unit2>
         <Filename Value="aboutunit.pas"/>
-        <ComponentName Value="AboutWindow"/>
         <IsPartOfProject Value="True"/>
+        <ComponentName Value="AboutWindow"/>
         <UnitName Value="aboutunit"/>
         <CursorPos X="15" Y="45"/>
-        <TopLine Value="30"/>
+        <TopLine Value="25"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>

@@ -275,7 +275,7 @@ begin
             '  TExtFormNumberField_Grid = TExtFormNumberField;' + LineEnding +
             '  TExtFormDateField_Grid = TExtFormDateField;' + LineEnding +
             '  TExtFormTimeField_Grid = TExtFormTimeField;' + LineEnding +
-            '  TExtFormCheckBox_Grid = TExtFormCheckBox;' + LineEnding +
+            '  TExtFormCheckbox_Grid = TExtFormCheckbox;' + LineEnding +
             '  TExtFormComboBox_Grid = TExtFormComboBox;' + LineEnding +
             '  {$M-}' + LineEnding +
             LineEnding +
@@ -297,11 +297,11 @@ begin
             '    constructor Create;' + LineEnding +
             '    procedure Show;' + LineEnding +
             '  end;' + LineEnding +
-            LineEnding +
+//            LineEnding +
             //'{$M-}' + LineEnding +
             //LineEnding + 
-            'var' + LineEnding +
-            '  ' + ResourceName + ': T' + ResourceName + ';' + LineEnding +
+//            'var' + LineEnding +  //Declared in thread class now, not global.
+//            '  ' + ResourceName + ': T' + ResourceName + ';' + LineEnding +
             LineEnding;
 end;
 

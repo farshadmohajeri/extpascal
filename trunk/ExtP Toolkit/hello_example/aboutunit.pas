@@ -13,9 +13,6 @@ uses
 {$ENDIF}; 
 
 type
-
-  { TAboutWindow }
-
   TAboutWindow = class(TExtWindow)
     ExtButton1: TExtButton;
     procedure ExtButton1Click;
@@ -24,9 +21,6 @@ type
     constructor Create; 
     procedure Show; 
   end; 
-
-var
-  AboutWindow: TAboutWindow;
 
 implementation
 

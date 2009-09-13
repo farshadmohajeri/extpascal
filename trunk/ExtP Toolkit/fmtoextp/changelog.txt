@@ -1,0 +1,12 @@
+Version 0.0.9 (12-Sep-2009):
+
+- Added TExtFormNumberField, TExtFormDateField, TExtFormTimeField design
+controls to ExtP_Ctrls package.
+- Converter now declares form variables in the app's thread class instead of
+as global variables in the form units.
+- Support for ReadOnly property where appropriate (TExtFormTextField, etc.).
+- Fixed bugs related to conversion and/or defaults for Disabled, Hidden,
+Border and Plain properties.
+- Additional preparation for future grid design controls (not yet distributed).
+- Revised and expanded ExtPToolkitStatus.html documentation.
+

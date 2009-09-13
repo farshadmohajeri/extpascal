@@ -21,7 +21,7 @@
     </CompilerOptions>
     <Description Value="Adds ExtPascal Application and Form to File | New"/>
     <License Value="Modified LGPL"/>
-    <Version Release="8"/>
+    <Version Release="9"/>
     <Files Count="1">
       <Item1>
         <Filename Value="extp_proj_intf.pas"/>

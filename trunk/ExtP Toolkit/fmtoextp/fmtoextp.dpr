@@ -178,7 +178,10 @@ begin
                   SetLength(FmFileNames, High(FmFileNames)+2);
                   FmFileNames[High(FmFileNames)] :=
                    ChangeFileExt(InStr, LazFormFileExt);
-                  end;
+                  end
+                else if SameText(ExtractFileExt(InStr), DelProjSrcFileExt) or
+                        SameText(ExtractFileExt(InStr), LazProjSrcFileExt) then
+                  ProjSrcFileName := InStr;  {Project source code file}
                 end;
               end;
             end;
@@ -196,7 +199,8 @@ begin
     end;
     
    {Base project source code file name on main form file name or Lazarus
-     project info file name if not specified on command line}
+     project info file name if not specified on command line or encountered
+     in Lazarus project info file.}
   if ProjSrcFileName = '' then
     begin
     if ProjInfFileName = '' then

@@ -60,6 +60,7 @@ implementation
 
 
 function ConvertValue(const ValStr       : string;
+                      const FmPropName   : string;
                       const ExtClassName : string;
                       const ExtPropName  : string) : string;
  {Convert form property value to ExtPascal property value.}
@@ -116,7 +117,8 @@ begin
   else if SameText(ValStr, 'csSimple') then
     Result := 'True'  {Editable}
 
-  else if SameText(ExtPropName, 'Disabled') then
+  else if SameText(FmPropName, 'Enabled') and 
+          SameText(ExtPropName, 'Disabled') then
     begin  {Convert Enabled to Disabled}
     if SameText(ValStr, 'True') then
       Result := 'False'
@@ -295,6 +297,8 @@ var
   ThrdFileExists    : Boolean;
   ThrdIsOkay        : Boolean;
   FormNum           : Integer;
+  UsesNum           : Integer;
+  UsesName          : string;
   InStr             : string;
   ObjLevel          : Integer;
   ObjName           : string;
@@ -314,8 +318,6 @@ var
   IsDfm             : Boolean;
   FormHeight        : Integer;
   FormWidth         : Integer;
-  UsesNum           : Integer;
-  UsesName          : string;
   IgnoreObj         : array [1..MaxNestedObjs] of Boolean;
   BtnLevel          : Integer;
   BtnPropNum        : Integer;
@@ -411,10 +413,35 @@ begin
   WriteLn(ThrdFileVar, 'interface');
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'uses');
-  WriteLn(ThrdFileVar, '  ExtPascal;');
+  WriteLn(ThrdFileVar, '  ExtPascal,');
+  for UsesNum := 0 to High(FmFileNames) do
+    begin
+    UsesName := ExtractFileName(FmFileNames[UsesNum]);
+    UsesName := Copy(UsesName, 1,
+                     Length(UsesName) - Length(ExtractFileExt(UsesName))); 
+    if opFmToExtP_AddExtToName in Options then
+      UsesName := UsesName + NameSuffixExt;
+    Write(ThrdFileVar, '  ', UsesName);
+    if UsesNum < High(FmFileNames) then
+      WriteLn(ThrdFileVar, ',')
+    else
+      WriteLn(ThrdFileVar, ';'); 
+    end;
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'type');
   WriteLn(ThrdFileVar, '  ', ThreadClassName, ' = class(TExtThread)');
+  WriteLn(ThrdFileVar, '  public');
+  for UsesNum := 0 to High(FmFileNames) do
+    begin
+    AssignFile(FmFileVar, FmFileNames[UsesNum]);
+    Reset(FmFileVar);
+    ReadLn(FmFileVar, InStr);
+    InStr := Trim(InStr);
+    FormObjName := Copy(InStr, 8, Pos(':', InStr)-8);
+    FormClassName := Trim(Copy(InStr, Pos(':', InStr)+2, MaxInt));
+    WriteLn(ThrdFileVar, '    ', FormObjName, ' : ', FormClassName, ';');
+    CloseFile(FmFileVar);
+    end;
   WriteLn(ThrdFileVar, '  published');
   WriteLn(ThrdFileVar, '    procedure Home; override;');
 
@@ -575,13 +602,15 @@ begin
       end;  {while not Eof}
     CloseFile(FmFileVar);
     
+    WriteLn(PasFileVar, '  private');
+    WriteLn(PasFileVar, '  public');
     WriteLn(PasFileVar, '    constructor Create;');
     WriteLn(PasFileVar, '    procedure Show;');
 //    WriteLn(PasFileVar, '  published');  
     WriteLn(PasFileVar, '  end;');
     WriteLn(PasFileVar);
-    WriteLn(PasFileVar, 'var');
-    WriteLn(PasFileVar, '  ', FormObjName, ' : ', FormClassName, ';');
+//    WriteLn(PasFileVar, 'var');  //Declared in thread class now, not global.
+//    WriteLn(PasFileVar, '  ', FormObjName, ' : ', FormClassName, ';');
     WriteLn(PasFileVar);
     WriteLn(PasFileVar, 'implementation');
     WriteLn(PasFileVar);
@@ -718,20 +747,23 @@ begin
             begin  {Create dummy data store and column model objects}
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'Store := TExtDataStore.Create;');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                'with TExtDataStore(Store) do');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-                                'begin');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-                                'TExtDataField.AddTo(Fields).Name := ''column1'';');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-                                'end;');
+//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+//                                'with TExtDataStore(Store) do');
+//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+//                                'begin');
+//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+//                                'TExtDataField.AddTo(Fields).Name := ''column1'';');
+//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+//                                'end;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'with TExtGridColumn.AddTo(Columns) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-                                'Id := ''column1'';');
+//                                'Id := ''column1'';');
+                                'Id := ''', ObjName, '_Col1'';');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                'Editor := TExtFormTextField.Create;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'Header := ''', ObjName, ''';');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
@@ -857,7 +889,7 @@ begin
                 end;
               if InStr <> '' then  {Lazarus puts ) on its own line}
                 begin
-                InStr := ConvertValue(InStr, '', '');
+                InStr := ConvertValue(InStr, '', '', '');
                 if SameText(ExtClassName, 'TExtFormComboBox') then
                   begin
                   if ItemStrCnt > 0 then
@@ -884,7 +916,8 @@ begin
             begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                                 ExtPropName, ' := ', 
-                                ConvertValue(FmPropVal, ExtClassName, ExtPropName), 
+                                ConvertValue(FmPropVal, FmPropName,
+                                             ExtClassName, ExtPropName), 
                                 ';');
             end;
           end  {Property is mapped}
@@ -1000,28 +1033,17 @@ begin
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'function CurrentThread : ', ThreadClassName, ';');
   WriteLn(ThrdFileVar);
+  WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'implementation');
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'uses');
-  WriteLn(ThrdFileVar, '  FCGIApp,');
-  for UsesNum := 0 to High(FmFileNames) do
-    begin
-    UsesName := ExtractFileName(FmFileNames[UsesNum]);
-    UsesName := Copy(UsesName, 1,
-                     Length(UsesName) - Length(ExtractFileExt(UsesName))); 
-    if opFmToExtP_AddExtToName in Options then
-      UsesName := UsesName + NameSuffixExt;
-    Write(ThrdFileVar, '  ', UsesName);
-    if UsesNum < High(FmFileNames) then
-      WriteLn(ThrdFileVar, ',')
-    else
-      WriteLn(ThrdFileVar, ';'); 
-    end;
+  WriteLn(ThrdFileVar, '  FCGIApp;');
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'function CurrentThread : ', ThreadClassName, ';');
   WriteLn(ThrdFileVar, 'begin');
   WriteLn(ThrdFileVar, '  Result := ', ThreadClassName, '(CurrentFCGIThread);');
   WriteLn(ThrdFileVar, 'end;');
+  WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar);
 
    {Now generate thread handlers that call form handlers} 
@@ -1048,10 +1070,11 @@ begin
             begin
             WriteLn(ThrdFileVar, 'procedure ', ThreadClassName, '.Home;');
             WriteLn(ThrdFileVar, 'begin');
-            WriteLn(ThrdFileVar, '  if ', FormObjName, ' = nil then');
-            WriteLn(ThrdFileVar, '    ', FormObjName, ' := ', FormClassName, '.Create;');
+//            WriteLn(ThrdFileVar, '  if ', FormObjName, ' = nil then');  //Wrong.
+            WriteLn(ThrdFileVar, '  ', FormObjName, ' := ', FormClassName, '.Create;');
             WriteLn(ThrdFileVar, '  ', FormObjName, '.Show;');
             WriteLn(ThrdFileVar, 'end;');
+            WriteLn(ThrdFileVar);
             WriteLn(ThrdFileVar);
             end;
           end

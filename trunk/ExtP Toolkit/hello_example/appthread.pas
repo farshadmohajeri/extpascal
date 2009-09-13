@@ -3,10 +3,15 @@ unit AppThread;
 interface
 
 uses
-  ExtPascal;
+  ExtPascal,
+  mainunit,
+  aboutunit;
 
 type
   TAppThread = class(TExtThread)
+  public
+    MainWindow : TMainWindow;
+    AboutWindow : TAboutWindow;
   published
     procedure Home; override;
     procedure MainWindow_ExtButton1Click;
@@ -15,24 +20,24 @@ type
 
 function CurrentThread : TAppThread;
 
+
 implementation
 
 uses
-  FCGIApp,
-  mainunit,
-  aboutunit;
+  FCGIApp;
 
 function CurrentThread : TAppThread;
 begin
   Result := TAppThread(CurrentFCGIThread);
 end;
 
+
 procedure TAppThread.Home;
 begin
-  if MainWindow = nil then
-    MainWindow := TMainWindow.Create;
+  MainWindow := TMainWindow.Create;
   MainWindow.Show;
 end;
+
 
 procedure TAppThread.MainWindow_ExtButton1Click;
 begin
