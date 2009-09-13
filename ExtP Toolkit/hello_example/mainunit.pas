@@ -13,9 +13,6 @@ uses
 {$ENDIF}; 
 
 type
-
-  { TMainWindow }
-
   TMainWindow = class(TExtWindow)
     ExtButton1: TExtButton;
     procedure ExtButton1Click;
@@ -25,9 +22,6 @@ type
     procedure Show; 
   end; 
 
-var
-  MainWindow: TMainWindow;
-
 implementation
 
 uses
@@ -35,9 +29,12 @@ uses
 
 procedure TMainWindow.ExtButton1Click;
 begin
-  AboutWindow.Free;
-  AboutWindow := TAboutWindow.Create;
-  AboutWindow.Show;
+  with CurrentThread do
+    begin
+    AboutWindow.Free;
+    AboutWindow := TAboutWindow.Create;
+    AboutWindow.Show;
+    end;
 end;
 
 constructor TMainWindow.Create;
