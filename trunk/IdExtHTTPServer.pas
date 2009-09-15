@@ -22,6 +22,7 @@ type
     function GetCookie(const CookieName: string): string;
   protected
     // Methods to be implemented in your app
+    FIsAjax, FIsUpload, FIsDownload : boolean;
     function BeforeHandleRequest : boolean; virtual;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
@@ -45,6 +46,8 @@ type
     property RequestHeader[HeaderName: string]: string read GetRequestHeader;
     property Cookie[const CookieName: string]: string read GetCookie;
     property NewThread : boolean read FNewThread write FNewThread;
+    property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
+    procedure Alert(Msg : string); virtual;
   published
     procedure Home; virtual; abstract;
     procedure Logout; virtual;
@@ -525,6 +528,10 @@ end;
 
 procedure TIdExtSession.OnNotFoundError; begin
   Response := 'alert("Method: ''' + PathInfo + ''' not found");';
+end;
+
+procedure TIdExtSession.Alert(Msg: string); begin
+  Response := 'alert("' + Msg + '");'
 end;
 
 { TIdExtApplication }
