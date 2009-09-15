@@ -31,7 +31,9 @@ type
 {$IFEND}
 
 type
-  TCSSUnit = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
+  TBrowser      = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
+  TCSSUnit      = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
+  TExtProcedure = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
 
 {
 Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter

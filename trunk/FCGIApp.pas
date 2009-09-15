@@ -42,9 +42,7 @@ type
   TProtocolStatus = (psRequestComplete, psCantMPXConn, psOverloaded, psUnknownRole, psBusy);
   // HTTP request methods
   TRequestMethod = (rmGet, rmPost, rmHead, rmPut, rmDelete);
-  TBrowser = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
-  // FastCGI remote method
-  TFCGIProcedure = procedure of object;
+
   {$M+}
   {
   Each browser session generates a TFCGIThread. On first request it is <link TFCGIThread.Create, created> and a Cookie is associated with it.
@@ -141,7 +139,7 @@ type
     procedure Alert(Msg : string); virtual;
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
-    function  MethodURI(AMethodName : TFCGIProcedure) : string; overload;
+    function  MethodURI(AMethodName : TExtProcedure) : string; overload;
     procedure DownloadFile(Name : string);
     procedure DownloadBuffer(Name, Buffer: string);
     procedure Terminate; reintroduce;
@@ -822,7 +820,7 @@ end;
 Returns the URI address of a Method. If method is not published raises an exception
 @param AMethodName Method reference
 }
-function TFCGIThread.MethodURI(AMethodName : TFCGIProcedure) : string; begin
+function TFCGIThread.MethodURI(AMethodName : TExtProcedure) : string; begin
   Result := CurrentFCGIThread.MethodName(@AMethodName);
   if Result <> '' then
     Result := MethodURI(Result)

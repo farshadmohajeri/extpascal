@@ -6,7 +6,6 @@ uses
   Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils{$IFNDEF MSWINDOWS}, InterfaceBase{$ENDIF};
 
 type
-  TIdProcedure = procedure of object;
   TIdExtHTTPServer = class;
   {$M+}
   TIdExtSession = class(TIdHTTPSession)
@@ -16,6 +15,7 @@ type
     FNewThread        : boolean;
     FParams,
     FGarbageCollector : TStringList;
+    FBrowser          : TBrowser; 
     function GetPathInfo: string;
     function GetRequestHeader(HeaderName: string): string;
     function GetQuery(const ParamName: string): string;
@@ -40,14 +40,15 @@ type
     function FindObject(Name: string): TObject;
     function ExistsReference(Name: string): boolean;
     function MethodURI(AMethodName: string): string; overload;
-    function MethodURI(AMethodName : TIdProcedure) : string; overload;
+    function MethodURI(AMethodName : TExtProcedure) : string; overload;
+    procedure Alert(Msg : string); virtual;
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
     property RequestHeader[HeaderName: string]: string read GetRequestHeader;
     property Cookie[const CookieName: string]: string read GetCookie;
     property NewThread : boolean read FNewThread write FNewThread;
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
-    procedure Alert(Msg : string); virtual;
+    property Browser : TBrowser read FBrowser;
   published
     procedure Home; virtual; abstract;
     procedure Logout; virtual;
@@ -91,7 +92,7 @@ type
   end;
 
 const
-  MIMEExtensions: array[1..175] of TMimeExtension = (
+  MIMEExtensions: array[1..176] of TMimeExtension = (
     (Ext: '.gif'; MimeType: 'image/gif'),
     (Ext: '.jpg'; MimeType: 'image/jpeg'),
     (Ext: '.jpeg'; MimeType: 'image/jpeg'),
@@ -266,6 +267,7 @@ const
     (Ext: '.tardist'; MimeType: 'application/x-tardist'),
     (Ext: '.ztardist'; MimeType: 'application/x-ztardist'),
     (Ext: '.wkz'; MimeType: 'application/x-wingz'),
+    (Ext: '.xml'; MimeType: 'application/xml'),
     (Ext: '.iv'; MimeType: 'graphics/x-inventor'));
 
 function FileType2MimeType(const AFileName: string): string;
@@ -485,6 +487,8 @@ begin
   AResponse.ContentType := 'text/html';
   Response := '';
   FParams.DelimitedText := FCurrentRequest.UnParsedParams;
+  if Browser = brUnknown then
+    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   if BeforeHandleRequest then
     if PathInfo = '' then
       Home
@@ -517,7 +521,7 @@ function TIdExtSession.MethodURI(AMethodName : string) : string; begin
   Result := Query['SCRIPT_NAME'] + AMethodName;
 end;
 
-function TIdExtSession.MethodURI(AMethodName : TIdProcedure) : string; begin
+function TIdExtSession.MethodURI(AMethodName : TExtProcedure) : string; begin
   Result := CurrentFCGIThread.MethodName(@AMethodName);
   if Result <> '' then Result := MethodURI(Result);
 end;

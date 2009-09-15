@@ -56,14 +56,13 @@ unit ExtPascal;
 interface
 
 uses
-  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes;
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes, ExtPascalUtils;
 
 type
   TArrayOfString  = array of string;
   TArrayOfInteger = array of Integer;
   TExtObjectList  = class;
   TExtFunction    = class;
-  TExtProcedure   = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
 
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
@@ -181,10 +180,8 @@ type
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    {$IFNDEF WebServer}
-    function MethodURI(AMethodName : TFCGIProcedure; Params: array of const): string; overload;
-    function MethodURI(AMethodName : TFCGIProcedure) : string; overload;
-    {$ENDIF}
+    function MethodURI(AMethodName : TExtProcedure; Params: array of const): string; overload;
+    function MethodURI(AMethodName : TExtProcedure) : string; overload;
     function MethodURI(AMethodName : string; Params : array of const) : string; overload;
     function MethodURI(AMethodName : string): string; overload;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
@@ -271,7 +268,7 @@ const
 implementation
 
 uses
-  SysUtils, StrUtils, Math, ExtPascalUtils, Ext, ExtUtil, ExtGrid;
+  SysUtils, StrUtils, Math, Ext, ExtUtil, ExtGrid;
 
 threadvar
   InJSFunction : boolean;
@@ -535,11 +532,11 @@ begin
     Result := PrevCommand;
 end;
 
-function TExtObject.MethodURI(AMethodName : TFCGIProcedure; Params: array of const) : string; begin
+function TExtObject.MethodURI(AMethodName : TExtProcedure; Params: array of const) : string; begin
   Result := CurrentFCGIThread.MethodURI(AMethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(CurrentFCGIThread.MethodName(@AMethodName), Params))
 end;
 
-function TExtObject.MethodURI(AMethodName : TFCGIProcedure) : string; begin
+function TExtObject.MethodURI(AMethodName : TExtProcedure) : string; begin
   Result := CurrentFCGIThread.MethodURI(AMethodName)
 end;
 
