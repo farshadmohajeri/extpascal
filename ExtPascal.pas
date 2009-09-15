@@ -181,8 +181,10 @@ type
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
+    {$IFNDEF WebServer}
     function MethodURI(AMethodName : TFCGIProcedure; Params: array of const): string; overload;
     function MethodURI(AMethodName : TFCGIProcedure) : string; overload;
+    {$ENDIF}
     function MethodURI(AMethodName : string; Params : array of const) : string; overload;
     function MethodURI(AMethodName : string): string; overload;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
