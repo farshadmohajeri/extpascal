@@ -126,6 +126,7 @@ type
     function  PopJSCommand : string;
     function FormatParams(MethodName : string; Params: array of const): string;
     procedure AjaxCode(MethodName, RawParams : string; Params : array of const);
+    function AddJSReturn(Expression : string; MethodsValues : array of const): string;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -1168,54 +1169,7 @@ function TExtObject.JSObject(JSON : string; ObjectConstructor : string = ''; Cur
     Result.FJSName := 'new ' + ObjectConstructor + '(' + Result.FJSName + ')'
 end;
 
-{
-Lets use a JS expression to set a ExtJS property or parameter on browser side. <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
-The expression will be called in the browser side and should returns an integer.
-@param Expression JS Expression using or not Delphi Format specifiers: (%s, %d and etc), use %s for ExtPascal methods' results and %d for integers
-@param MethodsValues Array of Methods or Integer values to use in Expression
-@return Integer Internal value to return used by ExtPascal to generate the corresponding Javascript code
-@example <code>
-Grid := TExtGridEditorGridPanel.Create;
-with Grid do begin
-  Width  := JSExpression(Panel.GetInnerWidth);
-  Height := JSExpression(Panel.GetInnerHeight);
-end;
-FormWidth := 40;
-with TExtWindow.Create do
-  Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]);
-  // or Width := JSExpression('Ext.util.TextMetrics.getWidth("g") * ' + IntToStr(FormWidth), []);
-</code>
-}
-function TExtObject.JSExpression(Expression : string; MethodsValues : array of const) : integer;
-var
-  Mark, Command : string;
-  I : integer;
-begin
-  with TExtThread(CurrentFCGIThread) do begin
-    Result := StrToInt('-$7' + GetSequence + '7');
-    Mark   := IntToStr(Result);
-    for I := 0 to high(MethodsValues) do
-      with MethodsValues[I] do
-        if VType = vtObject then begin
-          Command := TExtFunction(VObject).ExtractJSCommand; // FPC idiosincrasy
-          {$IFNDEF UNICODE}
-          VAnsiString := pointer(Command);
-          VType       := vtAnsiString;
-          {$ELSE}
-          VUnicodeString := pointer(Command);
-          VType          := vtUnicodeString;
-          {$ENDIF}
-        end;
-    JSReturns.Values[Mark] := Format(Expression, MethodsValues);
-  end;
-end;
-
-// Shortcut version of JSExpression method
-function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
-  Result := JSExpression('%s', [Method]);
-end;
-
-function TExtObject.JSString(Expression : string; MethodsValues : array of const) : string;
+function TExtObject.AddJSReturn(Expression : string; MethodsValues : array of const) : string;
 var
   Command : string;
   I : integer;
@@ -1234,8 +1188,39 @@ begin
           VType          := vtUnicodeString;
           {$ENDIF}
         end;
-    JSReturns.Values[Result] := Format('"' + Expression + '"', MethodsValues);
+    JSReturns.Values[Result] := Format(Expression, MethodsValues);
   end;
+end;
+
+{
+Lets use a JS expression to set a ExtJS property or parameter on browser side. <link TExtFunction, ExtJS function> in ExtJS properties and parameters.
+The expression will be called in the browser side and should returns an integer.
+@param Expression JS Expression using or not Delphi Format specifiers: (%s, %d and etc), use %s for ExtPascal methods' results and %d for integers
+@param MethodsValues Array of Methods or Integer values to use in Expression
+@return Integer Internal value to return used by ExtPascal to generate the corresponding Javascript code
+@example <code>
+Grid := TExtGridEditorGridPanel.Create;
+with Grid do begin
+  Width  := JSExpression(Panel.GetInnerWidth);
+  Height := JSExpression(Panel.GetInnerHeight);
+end;
+FormWidth := 40;
+with TExtWindow.Create do
+  Width := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), FormWidth]);
+  // or Width := JSExpression('Ext.util.TextMetrics.getWidth("g") * ' + IntToStr(FormWidth), []);
+</code>
+}
+function TExtObject.JSExpression(Expression : string; MethodsValues : array of const) : integer; begin
+  Result := StrToInt(AddJSReturn(Expression, MethodsValues))
+end;
+
+// Shortcut version of JSExpression method
+function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
+  Result := JSExpression('%s', [Method]);
+end;
+
+function TExtObject.JSString(Expression : string; MethodsValues : array of const) : string; begin
+  Result := AddJSReturn('"' + Expression + '"', MethodsValues);
 end;
 
 function TExtObject.JSString(Method : TExtFunction) : string; begin

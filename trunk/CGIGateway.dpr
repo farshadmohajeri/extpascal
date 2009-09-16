@@ -50,17 +50,17 @@ program CGIGateway;
 {$IFDEF CONFIG_MUST_EXIST}{$DEFINE HAS_CONFIG}{$ENDIF}
 
 uses
-  SysUtils, BlockSocket,
+  SysUtils, BlockSocket
   {$IFDEF HAS_CONFIG} // Configuration file
-    StrUtils, IniFiles,
+    , StrUtils, IniFiles,
   {$ENDIF}
   {$IFNDEF MSWINDOWS} // Posix systems
-    Unix, BaseUnix;
+    ,  Unix, BaseUnix;
   {$ELSE}
     {$IFNDEF FPC} // Delphi
-      ShellAPI;
+      , ShellAPI;
     {$ELSE}
-      // FPC Windows optimization, ShellAPI generate a greater .exe
+      ; // FPC Windows optimization, ShellAPI generate a greater .exe
       function ShellExecute(hWnd: integer; Operation, FileName, Parameters,
         Directory: PChar; ShowCmd: Integer): integer; stdcall; external 'shell32.dll' name 'ShellExecuteA';
     {$ENDIF}
