@@ -8,8 +8,9 @@ program ExtPascalSamples3; // for Ext JS 3 and later
 {$ENDIF}
 
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, Draw2D;
+  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
+  Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtAppUser, ExtChart,
+  ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;//, Draw2D;
 
 {$IFDEF FPC}
   // workaround for FPC idiosyncrazy of $IF feature!!! :P
@@ -53,7 +54,7 @@ type
     procedure Login;
     procedure CheckLogin; // Ajax
     procedure ShowSource;
-    procedure UML;
+//    procedure UML;
     procedure FileUpload;
     procedure ProcessUpload;
   end;
@@ -147,6 +148,7 @@ begin
   end;
 end;
 
+(*
 procedure TSamples.UML;
 var
   Note : TAnnotation;
@@ -184,7 +186,7 @@ begin
   end;
 //  P.Show;
 end;
-
+*)
 procedure TSamples.Layout;
 var
   Tabs : TExtTabPanel;
