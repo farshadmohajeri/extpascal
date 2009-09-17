@@ -32,6 +32,7 @@ Below are the supported options:
 * ExtBuild: string     - Ext's build file name
 * Password: string     - password required to shutdown and reconfigure application
 * InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
+* Timeout: integer     - milliseconds before timeout in TalkFCGI
 
 Below are the conditional compiler directive available:
 
@@ -52,7 +53,7 @@ program CGIGateway;
 uses
   SysUtils, BlockSocket
   {$IFDEF HAS_CONFIG} // Configuration file
-    , StrUtils, IniFiles,
+    , StrUtils, IniFiles
   {$ENDIF}
   {$IFNDEF MSWINDOWS} // Posix systems
     ,  Unix, BaseUnix;
@@ -196,7 +197,12 @@ begin
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
                EnvVars + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
-    Request := RecvString(3000);
+{$IFDEF HAS_CONFIG}
+    if ConfigFile <> '' then
+      Request := RecvString(Config.ReadInteger(ConfigSection, 'Timeout', 10000))
+    else
+{$ENDIF}    
+    Request := RecvString(10000);  {timeout after 10 seconds}
     if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
   end;
@@ -320,9 +326,11 @@ end;
 var
   I : integer;
 begin
-  FCGIApp := ChangeFileExt(ExtractFileName(paramstr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
+  FCGIApp := ChangeFileExt(ExtractFileName(ParamStr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
   {$IFDEF HAS_CONFIG}
-  ConfigFile := ChangeFileExt(FCGIApp, {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
+  ConfigFile := ChangeFileExt(ParamStr(0), {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
+   {Note Delphi TIniFile.Create requires full path to file, so base on
+     location of CGIGateway executable file.}
   if not ReadConfig(ConfigFile) then begin
     ConfigFile := ''; // indicates no config found
     {$IFDEF CONFIG_MUST_EXIST}
