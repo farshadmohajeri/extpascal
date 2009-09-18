@@ -20,4 +20,4 @@ This mode works on Windows and Posix platforms (since release 0.9.5) you will ne
 
 7. Start ExtPascalSamples.
 
-8. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine.
+8. In your browser call Samples using: `http://localhost` Port 80 is default but can to be changed. Other Web Servers must be disabled on your machine if you maintain port 80.
