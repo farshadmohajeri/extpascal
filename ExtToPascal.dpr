@@ -6,8 +6,9 @@ License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</ext
 }
 program ExtToPascal;
 
-{$IFDEF FPC}{$MACRO ON}{$ENDIF}
+{$IFDEF FPC}{$MACRO ON}{$MODE DELPHI}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
+{$J+}
 
 uses
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
@@ -481,7 +482,7 @@ begin
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(FixIdent(PropName), CurClass.Properties);
-          PropName[1] := LowerCase(PropName[1])[1];
+          PropName[1] := LowerCase(PropName)[1];
           if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
             State := InMethods;
             continue; // Discard duplicates
