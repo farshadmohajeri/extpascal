@@ -18,7 +18,7 @@ Here are the steps for compiling the example app with an embedded Web server:
 
 Note that Delphi 2006 and later already includes Indy 10.
 
-3. Open *ExtPascalSamples3.dpr* with Delphi or open *ExtPascalSamples3_embedded.lpi* with Lazarus.
+3. Open *!ExtPascalSamples3.dpr* with Delphi or open *!ExtPascalSamples3_embedded.lpi* with Lazarus.
 
   * With Delphi, choose Project | Options.
     # On the Compiler tab, check "Assignable typed constants".
