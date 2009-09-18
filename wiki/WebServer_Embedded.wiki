@@ -29,9 +29,9 @@ Note that Delphi 2006 and later already includes Indy 10.
 
 4. With Delphi, choose Project | Compile. With Lazarus, choose Run | Build.
 
-5. Copy the ExtJS folder below the folder where the ExtPascalSamples3 executable file is located. Make sure the ExtJS folder is named *ext* for this example.
+5. Copy the ExtJS folder below the folder where the !ExtPascalSamples3 executable file is located. Make sure the ExtJS folder is named *ext* for this example.
 
-6. Start ExtPascalSamples3.
+6. Start !ExtPascalSamples3.
 
 7. Start a Web browser and enter `http://localhost/Home`
 
