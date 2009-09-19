@@ -31,8 +31,10 @@ Note that Delphi 2006 and later already includes Indy 10.
 
 5. Copy the ExtJS folder below the folder where the !ExtPascalSamples3 executable file is located. Make sure the ExtJS folder is named *ext* for this example.
 
-6. Start !ExtPascalSamples3.
+6. Start !ExtPascalSamples3 from the command line or by double-clicking it. Note that the embedded server example does not appear to work when run within the Delphi or Lazarus IDE.
 
 7. Start a Web browser and enter `http://localhost/Home`
 
-Port 80 is used in this example. Other Web servers must be disabled on your machine if they're using port 80.
+Port 80 is used in this example. Other Web servers must be disabled on your machine if they're using port 80. You can also change the port used in the call to TIdExtApplication.Create. For example, if you change the port from 80 to 8080 you would enter `http://localhost:8080/Home` in the browser.
+
+8. You can shut down the app with Task Manager (Windows) or Activity Monitor (OS X).
