@@ -8,7 +8,10 @@ program ExtPascalSamples3; // for Ext JS 3 and later
 {$ENDIF}
 
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
+  {$IFDEF WebServer}{$IFNDEF MSWINDOWS}cthreads, {$ENDIF}{$ENDIF}
+  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, 
+  {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF}, 
+  {$IFDEF SERVICE} Services, {$ENDIF}
   Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtAppUser, ExtChart,
   ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;//, Draw2D;
 

@@ -3,7 +3,7 @@ unit IdExtHTTPServer;
 interface
 
 uses
-  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils{$IFNDEF MSWINDOWS}, InterfaceBase{$ENDIF};
+  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils;
 
 type
   TIdExtHTTPServer = class;
@@ -281,7 +281,7 @@ threadvar
 implementation
 
 uses
-  {$IFDEF MSWINDOWS}Windows, Messages,{$ENDIF} StrUtils, SysUtils, IdGlobalProtocols, ExtPascal;
+  {$IFDEF MSWINDOWS}Windows, Messages,{$ENDIF} StrUtils, SysUtils, IdGlobal, IdGlobalProtocols, ExtPascal;
 
 function FileType2MimeType(const AFileName: string): string;
 var
