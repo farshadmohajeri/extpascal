@@ -389,7 +389,13 @@ cgigateway.exe) and copy it to where your Web server can find it. Now shut down
 Lazarus and reload your app's browser page. You can also name the .cgi and
 .fcgi/.exe files to something more meaningful.<P>
 <LI>To shut down an app that is not running in the IDE, use Task Manager
-(Windows) or Activity Monitor (OS X).
+(Windows) or Activity Monitor (OS X).<P>
+<LI>You can also compile the app with an embedded Web server that can be
+run "standalone" without the need for Apache or IIS. Choose Project |
+Compiler Options and enter the path to the Indy source files in Other Units Files
+and enter -dWebServer on the Other tab in Custom options, then choose Run | Build.
+Now start the app from the command line and enter http://localhost/Home in your 
+browser. For more information, see the ExtPascal Web site.
 </UL>
 
 </OL>
@@ -686,7 +692,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: Sept. 12, 2009
+Last updated: Sept. 20, 2009
 <P>
 
 </BODY>

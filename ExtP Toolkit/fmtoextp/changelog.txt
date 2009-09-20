@@ -1,3 +1,8 @@
+Version 0.1.0 (20-Sep-2009):
+
+- Added support for conditional compiling with embedded Web server.
+
+
 Version 0.0.9 (12-Sep-2009):
 
 - Added TExtFormNumberField, TExtFormDateField, TExtFormTimeField design
