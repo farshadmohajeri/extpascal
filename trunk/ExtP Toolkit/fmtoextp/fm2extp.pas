@@ -374,10 +374,20 @@ begin
   WriteLn(PasFileVar, 'program ', ProgName, ';');
   WriteLn(PasFileVar);
   WriteLn(PasFileVar, 'uses');
-  WriteLn(PasFileVar, '  FCGIApp, ', Copy(ThreadClassName, 2, MaxInt), ';');
+  WriteLn(PasFileVar, '{$IFNDEF WebServer}');
+  WriteLn(PasFileVar, '  FCGIApp,');
+  WriteLn(PasFileVar, '{$ELSE}');
+  WriteLn(PasFileVar, ' {$IFNDEF MSWINDOWS}');
+  WriteLn(PasFileVar, '  CThreads,');
+  WriteLn(PasFileVar, ' {$ENDIF}');
+  WriteLn(PasFileVar, '  IdExtHTTPServer,');
+  WriteLn(PasFileVar, '{$ENDIF}');
+  WriteLn(PasFileVar, '  ', Copy(ThreadClassName, 2, MaxInt), ';');
   WriteLn(PasFileVar);
   WriteLn(PasFileVar, '{$IFNDEF FPC}');
-  WriteLn(PasFileVar, ' {$APPTYPE CONSOLE}');
+  WriteLn(PasFileVar, ' {$IFNDEF WebServer}');
+  WriteLn(PasFileVar, '  {$APPTYPE CONSOLE}');
+  WriteLn(PasFileVar, ' {$ENDIF}');
   WriteLn(PasFileVar, '{$ENDIF}');
   WriteLn(PasFileVar);
   WriteLn(PasFileVar, 'const');
@@ -385,9 +395,15 @@ begin
   WriteLn(PasFileVar, '  MaxIdleMinutes = ', MaxIdleMinutesDef, ';');
   WriteLn(PasFileVar);
   WriteLn(PasFileVar, 'begin');
+  WriteLn(PasFileVar, '{$IFNDEF WebServer}');
   WriteLn(PasFileVar, '  Application := TFCGIApplication.Create(''',
                       ProgName, ''', ', ThreadClassName, 
                       ', Port, MaxIdleMinutes);');
+  WriteLn(PasFileVar, '{$ELSE}');
+  WriteLn(PasFileVar, '  Application := TIdExtApplication.Create(''',
+                      ProgName, ''', ', ThreadClassName, 
+                      ', 80, MaxIdleMinutes);');
+  WriteLn(PasFileVar, '{$ENDIF}');
   WriteLn(PasFileVar, '  Application.Run;');
   WriteLn(PasFileVar, 'end.');
   CloseFile(PasFileVar);
@@ -1037,7 +1053,11 @@ begin
   WriteLn(ThrdFileVar, 'implementation');
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'uses');
+  WriteLn(ThrdFileVar, '{$IFNDEF WebServer}');
   WriteLn(ThrdFileVar, '  FCGIApp;');
+  WriteLn(ThrdFileVar, '{$ELSE}');
+  WriteLn(ThrdFileVar, '  IdExtHTTPServer;');
+  WriteLn(ThrdFileVar, '{$ENDIF}');
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar, 'function CurrentThread : ', ThreadClassName, ';');
   WriteLn(ThrdFileVar, 'begin');

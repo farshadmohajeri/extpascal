@@ -123,10 +123,20 @@ begin
   NewSource := 'program Project1;' + LineEnding +
                LineEnding +
                'uses' + LineEnding +
-               '  FCGIApp, AppThread;' + LineEnding +
+               '{$IFNDEF WebServer}' + LineEnding +
+               '  FCGIApp,' + LineEnding +
+               '{$ELSE}' + LineEnding +
+               ' {$IFNDEF MSWINDOWS}' + LineEnding +
+               '  CThreads,' + LineEnding +
+               ' {$ENDIF}' + LineEnding +
+               '  IdExtHTTPServer,' + LineEnding +
+               '{$ENDIF}' + LineEnding +
+               '  AppThread;' + LineEnding +
                LineEnding +
                '{$IFNDEF FPC}' + LineEnding +
-               ' {$APPTYPE CONSOLE}' + LineEnding +
+               ' {$IFNDEF WebServer}' + LineEnding +
+               '  {$APPTYPE CONSOLE}' + LineEnding +
+               ' {$ENDIF}' + LineEnding +
                '{$ENDIF}' + LineEnding +
                LineEnding +
                'const' + LineEnding +
@@ -134,10 +144,15 @@ begin
                '  MaxIdleMinutes = 5;' + LineEnding +
                LineEnding + LineEnding +
                'begin' + LineEnding +
+               '{$IFNDEF WebServer}' + LineEnding + 
                '  Application := TFCGIApplication.Create(''MyApp'', ' +
-                'TAppThread, Port, MaxIdleMinutes);' + LineEnding +
+                  'TAppThread, Port, MaxIdleMinutes);' + LineEnding +
+               '{$ELSE}' + LineEnding + 
+               '  Application := TIdExtApplication.Create(''MyApp'', ' +
+                  'TAppThread, 80, MaxIdleMinutes);' + LineEnding +
+               '{$ENDIF}' + LineEnding +
                '  Application.Run;' + LineEnding +
-               'end.' + LineEnding + 
+               'end.' + LineEnding +
                LineEnding;
    {Note using placeholder "MyApp" for application title rather than something 
      like "project1" since user will likely save with different file/program 

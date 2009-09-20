@@ -1,10 +1,20 @@
 program myproject1;
 
 uses
-  FCGIApp, AppThread, mainunit, aboutunit;
+{$IFNDEF WebServer}
+  FCGIApp,
+{$ELSE}
+ {$IFNDEF MSWINDOWS}
+  CThreads,
+ {$ENDIF}
+  IdExtHTTPServer,
+{$ENDIF}
+  AppThread, mainunit, aboutunit;
 
 {$IFNDEF FPC}
- {$APPTYPE CONSOLE}
+ {$IFNDEF WebServer}
+  {$APPTYPE CONSOLE}
+ {$ENDIF}
 {$ENDIF}
 
 const
@@ -13,7 +23,11 @@ const
 
 
 begin
+{$IFNDEF WebServer}
   Application := TFCGIApplication.Create('MyApp', TAppThread, Port, MaxIdleMinutes);
+{$ELSE}
+  Application := TIdExtApplication.Create('MyApp', TAppThread, 80, MaxIdleMinutes);
+{$ENDIF}
   Application.Run;
 end.
 

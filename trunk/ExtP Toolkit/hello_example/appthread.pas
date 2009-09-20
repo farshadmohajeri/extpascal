@@ -24,7 +24,11 @@ function CurrentThread : TAppThread;
 implementation
 
 uses
+{$IFNDEF WebServer}
   FCGIApp;
+{$ELSE}
+  IdExtHTTPServer;
+{$ENDIF}
 
 function CurrentThread : TAppThread;
 begin
