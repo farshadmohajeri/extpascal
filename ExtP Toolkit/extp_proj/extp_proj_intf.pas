@@ -169,13 +169,13 @@ begin
 
   AProject.AddPackageDependency('ExtP_Ctrls');
 
-  Exclude(AProject.Flags, pfMainUnitHasCreateFormStatements);
-  Exclude(AProject.Flags, pfMainUnitHasTitleStatement);
-  Exclude(AProject.Flags, pfLRSFilesInOutputDirectory);
+  AProject.Flags := AProject.Flags - [pfMainUnitHasCreateFormStatements,
+                                      pfMainUnitHasTitleStatement,
+                                      pfLRSFilesInOutputDirectory];
 //   Leave next box checked since Laz ignores it anyway and if it's not
 //    checked Laz doesn't rename unit in project uses when save unit
 //    file with a different name.
-//  Exclude(AProject.Flags, pfMainUnitHasUsesSectionForAllUnits);
+//  AProject.Flags := AProject.Flags - [pfMainUnitHasUsesSectionForAllUnits];
 
    {Note that in order to reference TProject, need Project unit in uses.
      This requires path to IDE, CodeTools and SynEdit units in package file.}
