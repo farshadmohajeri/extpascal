@@ -482,7 +482,7 @@ begin
           if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(FixIdent(PropName), CurClass.Properties);
-          PropName[1] := LowerCase(PropName)[1];
+          if not Static then PropName[1] := LowerCase(PropName)[1];
           if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
             State := InMethods;
             continue; // Discard duplicates
