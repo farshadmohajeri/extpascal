@@ -13,7 +13,7 @@ uses
   {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF}, 
   {$IFDEF SERVICE} Services, {$ENDIF}
   Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtAppUser, ExtChart,
-  ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;//, Draw2D;
+  ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;// Draw2D;
 
 {$IFDEF FPC}
   // workaround for FPC idiosyncrazy of $IF feature!!! :P
