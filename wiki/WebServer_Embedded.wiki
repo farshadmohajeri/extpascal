@@ -1,6 +1,5 @@
 #labels Featured
 ExtPascal also supports an embedded (or internal) Web server mode. When an ExtPascal application is compiled with an embedded Web server, you don't have to install and configure a Web server such as Apache or IIS to run the app, although you lose the flexibility and facilities that an Apache or IIS server can offer via its modules.
-*CAUTION: The embedded Web server mode is experimental and is not actively tested or supported. Bugs and instabilities may be present...*
 
 = Steps =
 
