@@ -708,10 +708,9 @@ begin
       Header    := 'Available';
       Width     := 95;
       DataIndex := 'availDate';
-      RendererExtFunction := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
       Editor    := TExtFormDateField.Create;
       with TExtFormDateField(Editor) do begin
-        Format := 'm/d/y';
+        Format           := 'm/d/y';
         MinValueString   := '01/01/06';
         DisabledDays     := JSArray('0, 6');
         DisabledDaysText := 'Plants are not available on the weekends'
