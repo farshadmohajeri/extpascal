@@ -30,6 +30,7 @@ Below are the supported options:
 * ImagePath: string    - path to image collection
 * ExtTheme: string     - Ext's theme selection
 * ExtBuild: string     - Ext's build file name
+* Charset: string      - HTML content type charset, default is utf-8
 * Password: string     - password required to shutdown and reconfigure application
 * InServers: strings   - list of allowed incoming remote hosts (comma delimited strings)
 * Timeout: integer     - milliseconds before timeout in TalkFCGI
@@ -269,19 +270,19 @@ Reads FCGIApp name, Host and Port from configuration file
 @param AFileName Configuration file name
 @return True if AFileName exists
 }
-function ReadConfig(AFileName : string) : boolean; 
+function ReadConfig(AFileName : string) : boolean;
 var
-  s: string;
+  S : string;
 begin
   Result := false;
   if FileExists(AFileName) then begin
     Config  := TINIFile.Create(AFileName);
-    s := Config.ReadString(ConfigSection, 'Name', '');
-    FCGIApp := IfThen(s = '', FCGIApp, s);
-    s := Config.ReadString(ConfigSection, 'Host', '');
-    Host    := IfThen(s = '', Host, s);
-    Port    := Config.ReadInteger(ConfigSection, 'Port', Port);
-    Result  := true;
+    S := Config.ReadString(ConfigSection, 'Name', '');
+    FCGIApp := IfThen(S = '', FCGIApp, S);
+    S := Config.ReadString(ConfigSection, 'Host', '');
+    Host   := IfThen(S = '', Host, S);
+    Port   := Config.ReadInteger(ConfigSection, 'Port', Port);
+    Result := true;
   end;
 end;
 
@@ -289,16 +290,15 @@ end;
 Forces shutdown any running FCGI instances through request
 @return True if sent request
 }
-function ShutdownFCGI : boolean; 
+function ShutdownFCGI : boolean;
 var
-  s: string;
+  S : string;
 begin
   Result := false;
-  if (ConfigFile <> '') and not Config.ReadBool(ConfigSection, 'Enabled', true) then 
-  begin
-    s := Config.ReadString(ConfigSection, 'Password', ''); 
-    s := IfThen(s = '', 'extpascal'); // default password
-    TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + s));
+  if (ConfigFile <> '') and not Config.ReadBool(ConfigSection, 'Enabled', true) then begin
+    S := Config.ReadString(ConfigSection, 'Password', '');
+    S := IfThen(S = '', 'extpascal'); // default password
+    TalkFCGI(EnvVariables('QUERY_STRING', 'password=' + S));
     Result := true;
   end;
 end;
@@ -329,8 +329,7 @@ begin
   FCGIApp := ChangeFileExt(ExtractFileName(ParamStr(0)), {$IFDEF MSWINDOWS}'.exe'{$ELSE}'.fcgi'{$ENDIF});
   {$IFDEF HAS_CONFIG}
   ConfigFile := ChangeFileExt(ParamStr(0), {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
-   {Note Delphi TIniFile.Create requires full path to file, so base on
-     location of CGIGateway executable file.}
+  // Delphi TIniFile.Create requires full path to file, so base on location of CGIGateway executable file
   if not ReadConfig(ConfigFile) then begin
     ConfigFile := ''; // indicates no config found
     {$IFDEF CONFIG_MUST_EXIST}
@@ -371,7 +370,7 @@ begin
     else
       Log('CGI GATEWAY ERROR: '+ FCGIApp +' is not found or has no execute permission.');
   end;
-  try 
+  try
     {$IFDEF HAS_CONFIG}Config.Free;{$ENDIF}
     Socket.Close;
     Socket.Free;

@@ -66,7 +66,7 @@ type
 
   {
   Defines an user session opened in a browser. Each session is a FastCGI thread that owns additional JavaScript and Ext JS resources
-  as: theme, language, Ajax, error messages using Ext look, JS libraries and CSS.
+  as: theme, charset, language, Ajax, error messages using Ext look, JS libraries and CSS.
   The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
   TExtThread = class({$IFNDEF WebServer}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
@@ -94,6 +94,7 @@ type
     ExtPath   : string; // Installation path of Ext JS framework, below the your Web server document root. Default value is '/ext'
     ImagePath : string; // Image path below ExtPath, used by <link TExtThread.SetIconCls, SetIconCls> method. Default value is '/images'
     ExtBuild  : string; // Custom <extlink http://www.extjs.com/products/extjs/build/>ExtJS build</extlink>. Default is ext-all.
+    Charset   : string; // Charset for html contenttype default utf-8, another option iso-8859-1
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
     constructor Create(NewSocket : integer); override;
     procedure SetPaths; override;
@@ -591,12 +592,13 @@ begin
   JSReturns := TStringList.Create;
 end;
 
-// Override this method to change ExtPath, ImagePath and ExtBuild default values
+// Override this method to change ExtPath, ImagePath, ExtBuild and Charset default values
 procedure TExtThread.SetPaths; begin
   inherited;
   ExtPath   := '/ext';
   ImagePath := '/images';
   ExtBuild  := 'ext-all';
+  Charset   := 'utf-8'; // 'iso-8859-1'
 end;
 
 {
@@ -617,7 +619,8 @@ procedure TExtThread.ReadConfig; begin
       if pos('/', ExtPath) <> 1 then ExtPath := '/' + ExtPath;
       ImagePath := Config.ReadString('FCGI', 'ImagePath', ImagePath);
       if pos('/', ImagePath) <> 1 then ImagePath := '/' + ImagePath;
-      Theme := Config.ReadString('FCGI', 'ExtTheme', Theme);
+      Theme   := Config.ReadString('FCGI', 'ExtTheme', Theme);
+      Charset := Config.ReadString('FCGI', 'Charset', Charset);
     end;
 end;
 
@@ -720,7 +723,7 @@ begin
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
-      '<meta http-equiv="content-type" content="charset=utf-8">'^M^J +
+      '<meta http-equiv="content-type" content="charset=' + Charset + '">'^M^J +
       {$IFDEF CacheFly} // Ext JS Remote
       '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
       '<link rel=stylesheet href="http://extjs.cachefly.net/ext-2.2.1/resources/css/ext-all.css" />'^M^J +

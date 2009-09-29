@@ -1393,7 +1393,7 @@ begin
     if not ForceDirectories(OutputDir) then begin
       Writeln('Failed to create output directory "', OutputDir, '"');
       Halt(1);
-    end;   
+    end;
   end;
   ScanDir(AnsiReplaceStr(ParamStr(1), '\', '/'));
 end.
