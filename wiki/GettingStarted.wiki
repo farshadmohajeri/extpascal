@@ -41,7 +41,7 @@ ON Assignable typed constants
 
 03. For Lazarus set these Parsing options (menu \Project\Compiler Options\Parsing):
 {{{
-Syntax mode: *Delphi*
+Syntax mode: 'Delphi'
 ON Allow LABEL and GOTO
 ON C++ Styled INLINE
 ON C Style macros
