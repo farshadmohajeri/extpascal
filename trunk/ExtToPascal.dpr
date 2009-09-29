@@ -15,6 +15,9 @@ uses
 
 {.$DEFINE USES_PUBLISHED}
 
+var 
+  OutputDir : string;
+
 function FixReserved(S : string) : string;
 const
   Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
@@ -98,6 +101,7 @@ type
     Name, UsesList : string;
     Classes : TStringList;
     constructor Create(pName : string);
+    destructor Destroy; override;
     function InitUsesList : string;
     procedure ReviewTypes;
   end;
@@ -109,6 +113,7 @@ type
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     function InheritLevel : integer;
     procedure AddCreate;
+    destructor Destroy; override;
   end;
 
   TProp = class
@@ -124,13 +129,23 @@ type
 	  constructor Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
 	  constructor Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean); overload;
     function CreateOverloadParams(P : integer; NewType : string) : TStringList;
+    destructor Destroy; override;
   end;
 
   TParam = class
 	  Name, Typ : string;
 	  Optional  : boolean;
     constructor Create(pName, pType : string; pOptional : boolean);
+    destructor Destroy; override;
   end;
+
+procedure FreeStringList(var L : TStringList);
+var
+  I : Integer;
+begin
+  for I := 0 to L.Count-1 do L.Objects[I].Free;
+  L.Free;
+end;
 
 var
   AllClasses, Units : TStringList;
@@ -139,6 +154,11 @@ var
 constructor TUnit.Create(pName : string); begin
   Name    := FixIdent(pName);
   Classes := TStringList.Create;
+end;
+
+destructor TUnit.Destroy; begin
+  FreeAndNil(Classes); // AllClasses frees class instances.
+  inherited;
 end;
 
 function TUnit.InitUsesList: string;
@@ -200,7 +220,7 @@ procedure TUnit.ReviewTypes;
 var
   I, J, K : integer;
 begin
-  writeln('  > ', Name, '.pas');
+  writeln('  > ', OutputDir, Name, '.pas');
   UsesList := InitUsesList;
   for I := 0 to Classes.Count-1 do
     with TClass(Classes.Objects[I]) do begin
@@ -215,7 +235,12 @@ begin
     end;
 end;
 
+var
+  FClasses, TClasses : Integer;
+
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
+  Inc(FClasses);
+  Inc(TClasses);
   Name       := FixIdent(pName, true);
   SimpleName := Copy(pName, LastDelimiter('.', pName) + 1, MaxInt);
   JSName     := FixJSName(pName);
@@ -225,6 +250,14 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
   if pos('Ext.form.Action', JSName) <> 0 then JSName := ''; // Anonymous classes
+end;
+
+destructor TClass.Destroy; begin
+  Dec(FClasses);
+  FreeStringList(Properties);
+  FreeStringList(Methods);
+  FreeStringList(Events);
+  inherited;
 end;
 
 procedure TClass.AddCreate; begin
@@ -281,10 +314,20 @@ constructor TProp.Create(pName, pJSName, pType : string; pStatic, pConfig : bool
   Default := pDefault;
 end;
 
+var
+  FCParams, TCParams : Integer;
+
 constructor TParam.Create(pName, pType : string; pOptional : boolean); begin
+  Inc(FCParams);
+  Inc(TCParams);
   Name     := FixIdent(IfThen(pName = '', 'Param', pName));
   Typ      := pType;
   Optional := pOptional;
+end;
+
+destructor TParam.Destroy; begin
+  Dec(FCParams);
+  inherited;
 end;
 
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
@@ -308,6 +351,11 @@ begin
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
   Static := I <> 0;
+end;
+
+destructor TMethod.Destroy; begin
+  FreeStringList(Params);
+  inherited;
 end;
 
 function TMethod.CreateOverloadParams(P : integer; NewType : string): TStringList;
@@ -414,7 +462,7 @@ var
   Matches, Args, EventsOrMethods : TStringList;
   Static  : boolean;
   Package : TUnit;
-  I : integer;
+  I, J    : integer;
 begin
   State := Initial;
   Matches := TStringList.Create;
@@ -511,8 +559,11 @@ begin
           if (PropTypes <> nil) and (PropName <> 'config') and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
             if Matches[0][1] = '<' then
               with CurClass.Properties do
-                for I := 0 to PropTypes.Count-1 do
-                  Delete(IndexOf(FixIdent(PropName + IfThen(I = 0, '', PropTypes[I])))); // delete inherited properties
+                for I := 0 to PropTypes.Count-1 do begin
+                  J := IndexOf(FixIdent(PropName + IfThen(I = 0, '', PropTypes[I])));  
+                  Objects[j].Free;
+                  Delete(J); // delete inherited properties
+                end;
             FreeAndNil(PropTypes);
           end;
           if Before('<h2>Public Properties</h2>', '<div class="mdesc">', Line) then Config := false;
@@ -566,6 +617,7 @@ begin
                 Arg := Args[0];
                 Arg[length(Arg)] := 's';
                 Matches[1] := Arg;
+                for J := 0 to Args.Count-1 do Args.Objects[J].Free;
                 Args.Clear;
               end
               else
@@ -596,6 +648,7 @@ begin
               with EventsOrMethods do begin
                 I := IndexOf(MetName);
                 while I <> -1 do begin
+                  Objects[i].Free; 
                   Delete(I);
                   I := IndexOf(MetName); // delete method inherited and overloads
                 end;
@@ -666,96 +719,101 @@ begin
       readln(Fixes, Fix);
       if (Fix <> '') and (Fix[1] in ['A'..'Z', 'a'..'z', '_']) then begin // else comments
         Fields := Explode(',', Fix);
-        I := AllClasses.IndexOf('T' + Fields[0]);
-        if I <> -1 then
-          with TClass(AllClasses.Objects[I]) do
-            if pos('(', Fields[2]) = 1 then begin // Enums
-              J := Properties.IndexOf(Fields[1]);
-              if J <> -1 then
-                with TProp(Properties.Objects[J]) do begin
-                  Enum := true;
-                  if pos(')', Fields[2]) = 0 then begin
-                    Typ  := '';
-                    for K := 2 to Fields.Count-1 do begin
-                      Typ := Typ + Fields[K];
-                      if K <> Fields.Count-1 then
-                        Typ := Typ + ', '
+        try
+          I := AllClasses.IndexOf('T' + Fields[0]);
+          if I <> -1 then
+            with TClass(AllClasses.Objects[I]) do
+              if pos('(', Fields[2]) = 1 then begin // Enums
+                J := Properties.IndexOf(Fields[1]);
+                if J <> -1 then
+                  with TProp(Properties.Objects[J]) do begin
+                    Enum := true;
+                    if pos(')', Fields[2]) = 0 then begin
+                      Typ  := '';
+                      for K := 2 to Fields.Count-1 do begin
+                        Typ := Typ + Fields[K];
+                        if K <> Fields.Count-1 then
+                          Typ := Typ + ', '
+                      end
                     end
+                    else
+                      Typ := FixIdent(Fields[2], true);
+                  end;
+              end
+              else
+                if Fields.Count = 6 then // props
+                  if lowercase(Fields[5]) = 'forceadd' then
+                    Properties.AddObject(Fields[1] + Fields[2],
+                      TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', ''))
+                  else begin
+                    J := Properties.IndexOf(Fields[1]);
+                    if J = -1 then // Add
+                      Properties.AddObject(Fields[1],
+                        TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
+                    else // Update
+                      with TProp(Properties.Objects[J]) do begin
+                        Typ     := FixType(Fields[2]);
+                        Static  := lowercase(Fields[3]) = 'true';
+                        Config  := lowercase(Fields[4]) = 'true';
+                        Default := Fields[5]
+                      end
                   end
-                  else
-                    Typ := FixIdent(Fields[2], true);
-                end;
-            end
-            else
-              if Fields.Count = 6 then // props
-                if lowercase(Fields[5]) = 'forceadd' then
-                  Properties.AddObject(Fields[1] + Fields[2],
-                    TProp.Create(Fields[1] + Fields[2], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', ''))
-                else begin
-                  J := Properties.IndexOf(Fields[1]);
-                  if J = -1 then // Add
-                    Properties.AddObject(Fields[1],
-                      TProp.Create(Fields[1], Fields[1], Fields[2], lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true', Fields[5]))
-                  else // Update
-                    with TProp(Properties.Objects[J]) do begin
-                      Typ     := FixType(Fields[2]);
-                      Static  := lowercase(Fields[3]) = 'true';
-                      Config  := lowercase(Fields[4]) = 'true';
-                      Default := Fields[5]
-                    end
-                end
-              else begin // Methods or Events
-                if SameText(Fields[2], 'Event') then begin // Events
-                  J := Events.IndexOf('On' + Fields[1]);
-                  if J = -1 then begin // Add
-                    Params := TStringList.Create;
-                    Events.AddObject('On' + Fields[1], TMethod.Create('On' + Fields[1], '', Params, false, false));
-                    for K := 0 to ((Fields.Count-2) div 2)-1 do
-                      Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
-                  end
-                  else // Update
-                    with TMethod(Events.Objects[J]) do begin
-                      Params.Clear;
+                else begin // Methods or Events
+                  if SameText(Fields[2], 'Event') then begin // Events
+                    J := Events.IndexOf('On' + Fields[1]);
+                    if J = -1 then begin // Add
+                      Params := TStringList.Create;
+                      Events.AddObject('On' + Fields[1], TMethod.Create('On' + Fields[1], '', Params, false, false));
                       for K := 0 to ((Fields.Count-2) div 2)-1 do
                         Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
-                    end;
-                end
-                else begin
-                  if Fields.Count < 5 then begin
-                    writeln(^M^J'*** WARNING: Class ', Fields[0], ' already exists. ***'^M^J);
-                    Fields.Free;
-                    continue;
-                  end;
-                  J := Methods.IndexOf(Fields[1]);
-                  if J = -1 then begin // Add
-                    Params := TStringList.Create;
-                    Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
-                    for K := 0 to ((Fields.Count-4) div 3)-1 do
-                      Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+                    end
+                    else // Update
+                      with TMethod(Events.Objects[J]) do begin
+                        For k:=0 to Params.Count-1 do
+                          Params.Objects[k].Free; 
+                        Params.Clear;
+                        for K := 0 to ((Fields.Count-2) div 2)-1 do
+                          Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
+                      end;
                   end
-                  else // Update
-                    with TMethod(Methods.Objects[J]) do begin
-                      Return   := FixType(Fields[2]);
-                      Static   := lowercase(Fields[3]) = 'true';
-                      Overload := lowercase(Fields[4]) = 'true';
-                      Params.Clear;
+                  else begin
+                    if Fields.Count < 5 then begin
+                      writeln(^M^J'*** WARNING: Class ', Fields[0], ' already exists. ***'^M^J);
+                      Fields.Free;
+                      continue;
+                    end;
+                    J := Methods.IndexOf(Fields[1]);
+                    if J = -1 then begin // Add
+                      Params := TStringList.Create;
+                      Methods.AddObject(Fields[1], TMethod.Create(Fields[1], FixType(Fields[2]), Params, lowercase(Fields[3]) = 'true', lowercase(Fields[4]) = 'true'));
                       for K := 0 to ((Fields.Count-4) div 3)-1 do
                         Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
-                    end;
-                end;
-              end
-        else begin // Create new Class
-          I := Units.IndexOf(Fields[2]);
-          if I <> -1 then begin
-            NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-            NewClass.JSName := Fields[3];
-            AllClasses.AddObject(NewClass.Name, NewClass);
-            TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
-          end
-          else
-            writeln('Unit: ', Fields[2], ' not found. Fix record: ', Fix);
+                    end
+                    else // Update
+                      with TMethod(Methods.Objects[J]) do begin
+                        Return   := FixType(Fields[2]);
+                        Static   := lowercase(Fields[3]) = 'true';
+                        Overload := lowercase(Fields[4]) = 'true';
+                        Params.Clear;
+                        for K := 0 to ((Fields.Count-4) div 3)-1 do
+                          Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
+                      end;
+                  end;
+                end
+          else begin // Create new Class
+            I := Units.IndexOf(Fields[2]);
+            if I <> -1 then begin
+              NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+              NewClass.JSName := Fields[3];
+              AllClasses.AddObject(NewClass.Name, NewClass);
+              TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
+            end
+            else
+              writeln('Unit: ', Fields[2], ' not found. Fix record: ', Fix);
+          end;
+        finally
+          Fields.Free;
         end;
-        Fields.Free;
       end;
     until SeekEOF(Fixes);
     close(Fixes);
@@ -1078,7 +1136,7 @@ begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
       ReviewTypes;
-      assign(Pas, Name + '.pas');
+      assign(Pas, OutputDir + Name + '.pas');
       rewrite(Pas);
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
@@ -1267,44 +1325,77 @@ begin
     end;
 end;
 
+procedure ScanDir(const ADir : String);
 var
   F : TSearchrec;
-  T : tdatetime;
-  P : string;
+  T : TDateTime;
   I : integer;
 begin
-  P := AnsiReplaceStr(paramstr(1), '\', '/');
-  if FindFirst(P + '/*.html', faAnyFile, F) = 0 then begin
+  if FindFirst(ADir + '/*.html', faAnyFile, F) = 0 then begin
     T := now;
     AllClasses := TStringList.Create;
-    Units := TStringList.Create;
-    writeln('ExtToPascal - ExtJS docs to Pascal units wrapper, version ', ExtPascalVersion);
-    writeln('(c) 2008-2009 by Wanderlan Santos dos Anjos, BSD license');
-    writeln('http://extpascal.googlecode.com/'^M^J);
-    writeln('Reading ExtJS HTML files...');
-    I := 0;
-    repeat
-      write('  > ');
-      ReadHtml(P + '/' + F.Name);
-      Inc(I);
-    until FindNext(F) <> 0;
-    FindClose(F);
-    writeln(I, ' HTML files found.');
-    writeln('ExtJS version ', IfThen(IsExtJS3, '3.x', '2.x'), ' detected.');
-    writeln('Fixing event prototypes...');
-    FixEvents;
-    LoadFixes;
-    writeln('Writing unit files...');
-    WriteUnits;
-    writeln(AllClasses.Count, ' ExtJS classes wrapped.');
-    writeln(Units.Count, ' unit files generated.');
-    writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
-    writeln('Done! Press Enter.');
-  end
-  else
-  begin
-    writeln('ExtJS HTML files not found at ' + P + '/*.html');
+    try
+      AllClasses.Sorted:=True;
+      Units := TStringList.Create;
+      try
+        Units.Sorted:=True;
+        writeln('ExtToPascal - ExtJS docs to Pascal units wrapper, version ', ExtPascalVersion);
+        writeln('(c) 2008-2009 by Wanderlan Santos dos Anjos, BSD license');
+        writeln('http://extpascal.googlecode.com/'^M^J);
+        writeln('Reading ExtJS HTML files...');
+        I := 0;
+        repeat
+          write('  > ');
+          ReadHtml(ADir + '/' + F.Name);
+          Inc(I);
+        until FindNext(F) <> 0;
+        FindClose(F);
+        writeln(I, ' HTML files found.');
+        writeln('ExtJS version ', IfThen(IsExtJS3, '3.x', '2.x'), ' detected.');
+        writeln('Fixing event prototypes...');
+        FixEvents;
+        LoadFixes;
+        writeln('Writing unit files...');
+        WriteUnits;
+        writeln(AllClasses.Count, ' ExtJS classes wrapped.');
+        writeln(Units.Count, ' unit files generated.');
+        writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
+        writeln('Done! Press Enter.');
+      finally
+        FreeStringList(Units);
+      end;
+    finally
+      FreeStringList(AllClasses);
+      Writeln('Unfreed classes count: ', FClasses, '/', TClasses);
+      Writeln('Unfreed params count: ', FCParams, '/', TCParams);
+      Flush(Output);
+    end
+    end
+  else begin
+    writeln('ExtJS HTML files not found at ' + ADir + '/*.html');
     writeln('Aborted! Press Enter.');
   end;
   readln;
+end;
+
+procedure Usage; begin
+  Writeln('Usage: ', ChangeFileExt(ExtractFileName(ParamStr(0)),''), ' inputdir [outputdir]');
+  Writeln('where');
+  Writeln('  inputdir    directory with extjs documentation output');
+  Writeln('  outputdir   directory to write ExtPascal classes (optional, default current)');
+  Halt(1);
+end;
+
+begin
+  if (ParamCount=0) or (ParamCount>2) or (ParamStr(1)='-h') or (ParamStr(1)='/?') then
+    Usage;
+  if ParamCount=2 then begin
+    OutputDir := IncludeTrailingPathDelimiter(ParamStr(2));
+    OutputDir := AnsiReplaceStr(OutputDir, '\', '/');
+    if not ForceDirectories(OutputDir) then begin
+      Writeln('Failed to create output directory "', OutputDir, '"');
+      Halt(1);
+    end;   
+  end;
+  ScanDir(AnsiReplaceStr(ParamStr(1), '\', '/'));
 end.
