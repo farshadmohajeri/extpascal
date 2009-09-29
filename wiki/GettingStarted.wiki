@@ -39,16 +39,27 @@ ON Huge strings/Long strings by default
 ON Assignable typed constants
 }}}
 
-03. For FreePascal, Lazarus or MSEide use _*`-Smdcghie50 -venwi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
+03. For Lazarus set these Parsing options (menu \Project\Compiler Options\Parsing):
+{{{
+ON Allow LABEL and GOTO
+ON C++ Styled INLINE
+ON C Style macros
+OFF Constructor name must be 'init'
+OFF Static Keyword in Objects
+ON Use Ansi Strings
+}}}
 
-04. Compile and run it informing the path of the ExtJS documentation, the HTML files, as parameter. Use quotes if path contain whitespaces. For example:
+04. For FreePascal or MSEide use _*`-Smdghie50 -venwhi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
+
+05. Compile and run it informing the path of the ExtJS documentation, the HTML files, as parameter. Use quotes if path contain whitespaces. For example:
 {{{
 ExtToPascal C:\Ext\docs\output 
 ExtToPascal "C:\Documents and Settings\My Documents\RAD Studio\Projects\ExtPascal\ExtJS\ext-3\docs\output"
 }}}
-05. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 14 units in version 2.2.1 of ExtJS.
 
-06. Compile ExtPascalSamples as example. *Use ExtPascalSamples3 if you is using ExtJS 3.0*.
+06. ExtToPascal will generate a Pascal Unit for each JavaScript Package. A total of 14 units in version 2.2.1 of ExtJS.
+
+07. Compile ExtPascalSamples as example. *Use ExtPascalSamples3 if you is using ExtJS 3.0*.
 
 = Setting up for FastCGI thru CGI gateway (any Apache version and similar procedure on IIS) =
 01. Open CGIGateway.dpr.
