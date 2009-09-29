@@ -8,6 +8,7 @@
   * New TExtObject.JSString method
   * New TExtObject.AjaxSelection method
   * New TExtObject.MethodURI method
+  * New TExtThread.Charset property
   * Updated ExtP Toolkit
   * Fixes on Ajax multiple parameters
   * ExtFixes for Chart support
