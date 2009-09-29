@@ -1,14 +1,20 @@
 #labels Featured
 ===0.9.7, Draw2D support, in SVN===
 
+  * New Delphi 2010 support
   * New Draw2D support
   * New Upload file feature
   * New Download file feature
-  * Fixes on Ajax multiple parameters
-  * ExtFixes for Chart support
+  * New TExtObject.JSString method
   * New TExtObject.AjaxSelection method
   * New TExtObject.MethodURI method
+  * Updated ExtP Toolkit
+  * Fixes on Ajax multiple parameters
+  * ExtFixes for Chart support
   * Fixes for Windows 2003 server
+  * Enhanced DebugJS define for Firefox
+  * Fixes on Self-Translation
+  * Fixes for Embedded WebServer
   * Other minor fixes
   * More and enhanced error messages
 
