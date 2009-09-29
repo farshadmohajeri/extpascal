@@ -136,8 +136,6 @@ type
     function IsParent(CName : string): boolean;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
-    function VarToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString {$ELSE}array of string {$IFEND}) : string; overload;
-    function VarToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string; overload;
     function ParamAsInteger(ParamName : string) : integer;
     function ParamAsDouble(ParamName : string) : double;
     function ParamAsBoolean(ParamName : string) : boolean;
@@ -1719,40 +1717,6 @@ function TExtObject.VarToJSON(Exts : TExtObjectList) : string; begin
     Result := Exts.JSName
   else
     Result := TExtObject(Exts).JSName
-end;
-
-{
-Converts an <link TArrayOfString, array of strings> to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
-@param Strs An <link TArrayOfString, array of strings> to convert
-@return JSON representation of Strs
-}
-function TExtObject.VarToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString{$ELSE}array of string{$IFEND}) : string;
-var
-  I : integer;
-begin
-  Result := '[';
-  for I := 0 to high(Strs) do begin
-    Result := Result + StrToJS(Strs[I]);
-    if I < high(Strs) then Result := Result + ',';
-  end;
-  Result := Result + ']'
-end;
-
-{
-Converts an <link TArrayOfInteger, array of integers> to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
-@param Ints An <link TArrayOfInteger, array of integers> to convert
-@return JSON representation of Ints
-}
-function TExtObject.VarToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string;
-var
-  I : integer;
-begin
-  Result := '[';
-  for I := 0 to high(Ints) do begin
-    Result := Result + IntToStr(Ints[I]);
-    if I < high(Ints) then Result := Result + ',';
-  end;
-  Result := Result + ']'
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
