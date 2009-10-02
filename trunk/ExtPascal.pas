@@ -137,6 +137,8 @@ type
     function IsParent(CName : string): boolean;
     function VarToJSON(A : array of const)     : string; overload;
     function VarToJSON(Exts : TExtObjectList)  : string; overload;
+    function ArrayToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString{$ELSE}array of string{$IFEND}) : string; overload;
+    function ArrayToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string; overload;
     function ParamAsInteger(ParamName : string) : integer;
     function ParamAsDouble(ParamName : string) : double;
     function ParamAsBoolean(ParamName : string) : boolean;
@@ -1144,7 +1146,10 @@ Generates JS code to declare an inline JS Array.
 }
 function TExtObject.JSArray(JSON : string; SquareBracket : boolean = true) : TExtObjectList; begin
   Result := TExtObjectList(TExtObject.Create(Self));
-  TExtObject(Result).FJSName := IfThen(SquareBracket, '[' + JSON + ']', JSON);
+  If SquareBracket then // FPC dont support IfThen with ansistrings by default
+    TExtObject(Result).FJSName := '[' + JSON + ']'
+  else
+    TExtObject(Result).FJSName := JSON;
 end;
 
 (*
@@ -1165,7 +1170,10 @@ It is necessary in 3 cases:
 *)
 function TExtObject.JSObject(JSON : string; ObjectConstructor : string = ''; CurlyBracket : boolean = true) : TExtObject; begin
   Result := TExtObject.Create(Self);
-  Result.FJSName := IfThen(CurlyBracket, '{' + JSON + '}', JSON);
+  if CurlyBracket then // FPC dont support IfThen with ansistrings by default
+    Result.FJSName := '{' + JSON + '}'
+  else
+    Result.FJSName := JSON;
   if ObjectConstructor <> '' then
     Result.FJSName := 'new ' + ObjectConstructor + '(' + Result.FJSName + ')'
 end;
@@ -1720,6 +1728,40 @@ function TExtObject.VarToJSON(Exts : TExtObjectList) : string; begin
     Result := Exts.JSName
   else
     Result := TExtObject(Exts).JSName
+end;
+
+{
+Converts an <link TArrayOfString, array of strings> to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
+@param Strs An <link TArrayOfString, array of strings> to convert
+@return JSON representation of Strs
+}
+function TExtObject.ArrayToJSON(Strs : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfString{$ELSE}array of string{$IFEND}) : string;
+var
+  I : integer;
+begin
+  Result := '[';
+  for I := 0 to high(Strs) do begin
+    Result := Result + StrToJS(Strs[I]);
+    if I < high(Strs) then Result := Result + ',';
+  end;
+  Result := Result + ']'
+end;
+
+{
+Converts an <link TArrayOfInteger, array of integers> to JSON (JavaScript Object Notation) to be used in constructors, JS Arrays or JS Objects
+@param Ints An <link TArrayOfInteger, array of integers> to convert
+@return JSON representation of Ints
+}
+function TExtObject.ArrayToJSON(Ints : {$IF Defined(FPC) or (RTLVersion < 20)}TArrayOfInteger{$ELSE}array of integer{$IFEND}) : string;
+var
+  I : integer;
+begin
+  Result := '[';
+  for I := 0 to high(Ints) do begin
+    Result := Result + IntToStr(Ints[I]);
+    if I < high(Ints) then Result := Result + ',';
+  end;
+  Result := Result + ']'
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method

@@ -1203,13 +1203,15 @@ begin
                     write(Pas, Tab);
                   end;
                   if not Enum then
-                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + VarToJSON(', '[' + RegExParam + 'Value' + BoolParam + ']));')
+                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + ',
+                      IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), '));')
                   else
                     writeln(Pas, Tab, 'JSCode(''', JSName, ':"'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''"'');');
                 end
                 else
                   if not Enum then
-                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + VarToJSON(', '[' + RegExParam + 'Value' + BoolParam + ']));')
+                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + ',
+                      IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), ') + '';'');')
                   else
                     writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '="'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''";'');');
                 writeln(Pas, 'end;'^M^J);
