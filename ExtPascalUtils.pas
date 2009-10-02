@@ -14,10 +14,10 @@ uses
   Classes, TypInfo;
 
 const
-  ExtPascalVersion = '0.9.8';
+  ExtPascalVersion = '0.9.7';
   IISDelim = '`'; // For CGI IIS bug
 
-{$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
+{$IF not Defined(FPC) and (RTLVersion <= 17)}
 type
   // Implements StrictDelimiter property for FPC 2.2.2, Delphi 7 and older versions
   TStringList = class(Classes.TStringList)
@@ -25,8 +25,8 @@ type
     function GetDelimitedText : string;
     procedure SetDelimitedText(const AValue : string);
   public
-    StrictDelimiter : boolean; // Missing property in FPC, Delphi 7 an older versions
-    property DelimitedText : string read GetDelimitedText write SetDelimitedText; // Property override for FPC, Delphi 7 an older versions
+    StrictDelimiter : boolean; // Missing property in FPC 2.2.2, Delphi 7 an older versions
+    property DelimitedText : string read GetDelimitedText write SetDelimitedText; // Property override for FPC 2.2.2, Delphi 7 an older versions
   end;
 {$IFEND}
 
@@ -135,22 +135,21 @@ implementation
 uses
   StrUtils, SysUtils, Math;
 
-{$IF (Defined(FPC) and not(Defined(FPC2_2_4) or Defined(FPC2_3_1))) or (RTLVersion <= 17)}
+{$IF not Defined(FPC) and (RTLVersion <= 17)}
 function TStringList.GetDelimitedText: string;
 var
   I : integer;
   P : pchar;
 begin
-  {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
   Result := '';
   for I := 0 to Count-1 do begin
     P := pchar(Strings[I]);
     if not StrictDelimiter then
       while not(P^ in [#0..' ', QuoteChar, Delimiter]) do inc(P)
     else
-      while not(P^ in [QuoteChar, Delimiter]) do inc(P);
+      while not(P^ in [#0, Delimiter]) do inc(P);
     // strings in list may to contain #0
-    if P <> (pchar(Strings[I]) + length(Strings[I])) then
+    if (P <> pchar(Strings[I]) + length(Strings[I])) and not StrictDelimiter then
       Result := Result + QuoteChar + Strings[I] + QuoteChar
     else
       Result := Result + Strings[I];
@@ -164,7 +163,6 @@ var
   I, J : integer;
   aNotFirst : boolean;
 begin
-  {$IFDEF FPC}CheckSpecialChars;{$ENDIF}
   BeginUpdate;
   I := 1;
   aNotFirst := false;
@@ -314,7 +312,10 @@ begin
       end;
     end
     else
-      Result := '"' + Result + '"'
+      if (I = 1) and (Result[2] in ['a'..'z', 'A'..'Z']) then
+        Result := copy(Result, 2, length(Result))
+      else
+        Result := '"' + Result + '"'
   end;
 end;
 
@@ -458,7 +459,7 @@ begin
     pOpPlus     := PosEx('+', Res, P);
     pOpMinus    := PosEx('-', Res, P);
     pOpTime     := PosEx('*', Res, P);
-    pOpDivide   := PosEx('/', Res, P);
+    //pOpDivide   := PosEx('/', Res, P);
     pBlockBegin := PosEx('{', Res, P);
     pBlockEnd   := PosEx('}', Res, P);
     pPropBegin  := PosEx(':', Res, P);

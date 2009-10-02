@@ -1824,9 +1824,15 @@ var
         Result := Result + 'NOTNULL';
   end;
 
-  function MontaAjuda(Ajuda : TAjuda) : string; begin
-    if Ajuda <> nil then
-      Result := SplitLine(Ajuda.Dica + IfThen(Ajuda.Texto = '', '', '|' + Ajuda.Texto))
+  function MontaAjuda(Ajuda : TAjuda) : string;
+  var
+    S : string;
+  begin
+    if Ajuda <> nil then begin
+      S := Ajuda.Dica;
+      if Ajuda.Texto <> '' then S := S + '|' + Ajuda.Texto;
+      Result := SplitLine(S)
+    end
     else
       Result := '';
   end;
