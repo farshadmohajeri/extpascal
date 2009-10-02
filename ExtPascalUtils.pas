@@ -472,7 +472,7 @@ begin
     pRegex      := PosEx('regex', Res, P);
     // process what is found first
     P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
-                     pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, pOpDivide, pFunction, pRegex]);
+                     pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, {pOpDivide,} pFunction, pRegex]);
     // keep Ext's onReady function at the first line
     if (not onReady) and (res[p] = 'f') then
       if Copy(Res, P-9, 9) = '.onReady(' then begin
