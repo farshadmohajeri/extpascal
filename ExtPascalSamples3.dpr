@@ -365,37 +365,37 @@ begin
     with TExtDataField.AddTo(Fields) do begin Name := 'price';     TypeJS := 'float' end;
     with TExtDataField.AddTo(Fields) do begin Name := 'change';    TypeJS := 'float' end;
     with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; TypeJS := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';TypeJS := 'date'; DateFormat := 'n/j h:ia' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';TypeJS := 'date'; DateFormat := 'Y/m/d' end;
     Data := JSArray(
-      '["3m Co",71.72,0.02,0.03,"9/1 12:00am"],' +
-      '["Alcoa Inc",29.01,0.42,1.47,"9/1 12:00am"],' +
-      '["Altria Group Inc",83.81,0.28,0.34,"9/1 12:00am"],' +
-      '["American Express Company",52.55,0.01,0.02,"9/1 12:00am"],' +
-      '["American International Group, Inc.",64.13,0.31,0.49,"9/1 12:00am"],' +
-      '["AT&T Inc.",31.61,-0.48,-1.54,"9/1 12:00am"],' +
-      '["Boeing Co.",75.43,0.53,0.71,"9/1 12:00am"],' +
-      '["Caterpillar Inc.",67.27,0.92,1.39,"9/1 12:00am"],' +
-      '["Citigroup, Inc.",49.37,0.02,0.04,"9/1 12:00am"],' +
-      '["E.I. du Pont de Nemours and Company",40.48,0.51,1.28,"9/1 12:00am"],' +
-      '["Exxon Mobil Corp",68.1,-0.43,-0.64,"9/1 12:00am"],' +
-      '["General Electric Company",34.14,-0.08,-0.23,"9/1 12:00am"],' +
-      '["General Motors Corporation",30.27,1.09,3.74,"9/1 12:00am"],' +
-      '["Hewlett-Packard Co.",36.53,-0.03,-0.08,"9/1 12:00am"],' +
-      '["Honeywell Intl Inc",38.77,0.05,0.13,"9/1 12:00am"],' +
-      '["Intel Corporation",19.88,0.31,1.58,"9/1 12:00am"],' +
-      '["International Business Machines",81.41,0.44,0.54,"9/1 12:00am"],' +
-      '["Johnson & Johnson",64.72,0.06,0.09,"9/1 12:00am"],' +
-      '["JP Morgan & Chase & Co",45.73,0.07,0.15,"9/1 12:00am"],' +
-      '["McDonald\"s Corporation",36.76,0.86,2.40,"9/1 12:00am"],' +
-      '["Merck & Co., Inc.",40.96,0.41,1.01,"9/1 12:00am"],' +
-      '["Microsoft Corporation",25.84,0.14,0.54,"9/1 12:00am"],' +
-      '["Pfizer Inc",27.96,0.4,1.45,"9/1 12:00am"],' +
-      '["The Coca-Cola Company",45.07,0.26,0.58,"9/1 12:00am"],' +
-      '["The Home Depot, Inc.",34.64,0.35,1.02,"9/1 12:00am"],' +
-      '["The Procter & Gamble Company",61.91,0.01,0.02,"9/1 12:00am"],' +
-      '["United Technologies Corporation",63.26,0.55,0.88,"9/1 12:00am"],' +
-      '["Verizon Communications",35.57,0.39,1.11,"9/1 12:00am"],' +
-      '["Wal-Mart Stores, Inc.",45.45,0.73,1.63,"9/1 12:00am"]');
+      '["3m Co",71.72,0.02,0.03,"2009/01/02"],' +
+      '["Alcoa Inc",29.01,0.42,1.47,"2009/01/02"],' +
+      '["Altria Group Inc",83.81,0.28,0.34,"2009/01/02"],' +
+      '["American Express Company",52.55,0.01,0.02,"2009/01/02"],' +
+      '["American International Group, Inc.",64.13,0.31,0.49,"2009/01/02"],' +
+      '["AT&T Inc.",31.61,-0.48,-1.54,"2009/01/02"],' +
+      '["Boeing Co.",75.43,0.53,0.71,"2009/01/02"],' +
+      '["Caterpillar Inc.",67.27,0.92,1.39,"2009/01/02"],' +
+      '["Citigroup, Inc.",49.37,0.02,0.04,"2009/01/02"],' +
+      '["E.I. du Pont de Nemours and Company",40.48,0.51,1.28,"2009/01/02"],' +
+      '["Exxon Mobil Corp",68.1,-0.43,-0.64,"2009/01/02"],' +
+      '["General Electric Company",34.14,-0.08,-0.23,"2009/01/02"],' +
+      '["General Motors Corporation",30.27,1.09,3.74,"2009/01/02"],' +
+      '["Hewlett-Packard Co.",36.53,-0.03,-0.08,"2009/01/02"],' +
+      '["Honeywell Intl Inc",38.77,0.05,0.13,"2009/01/02"],' +
+      '["Intel Corporation",19.88,0.31,1.58,"2009/01/02"],' +
+      '["International Business Machines",81.41,0.44,0.54,"2009/01/02"],' +
+      '["Johnson & Johnson",64.72,0.06,0.09,"2009/01/02"],' +
+      '["JP Morgan & Chase & Co",45.73,0.07,0.15,"2009/01/02"],' +
+      '["McDonald\"s Corporation",36.76,0.86,2.40,"2009/01/02"],' +
+      '["Merck & Co., Inc.",40.96,0.41,1.01,"2009/01/02"],' +
+      '["Microsoft Corporation",25.84,0.14,0.54,"2009/01/02"],' +
+      '["Pfizer Inc",27.96,0.4,1.45,"2009/01/02"],' +
+      '["The Coca-Cola Company",45.07,0.26,0.58,"2009/01/02"],' +
+      '["The Home Depot, Inc.",34.64,0.35,1.02,"2009/01/02"],' +
+      '["The Procter & Gamble Company",61.91,0.01,0.02,"2009/01/02"],' +
+      '["United Technologies Corporation",63.26,0.55,0.88,"2009/01/02"],' +
+      '["Verizon Communications",35.57,0.39,1.11,"2009/01/02"],' +
+      '["Wal-Mart Stores, Inc.",45.45,0.73,1.63,"2009/01/02"]');
   end;
   with TExtGridGridPanel.Create do begin
     Store := DataStore;
@@ -708,10 +708,11 @@ begin
       Header    := 'Available';
       Width     := 95;
       DataIndex := 'availDate';
+      RendererExtFunction := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
       Editor    := TExtFormDateField.Create;
       with TExtFormDateField(Editor) do begin
-        Format           := 'm/d/y';
-        MinValueString   := '01/01/06';
+        Format           := 'm/d/Y';
+        MinValueString   := '01/01/2006';
         DisabledDays     := JSArray('0, 6');
         DisabledDaysText := 'Plants are not available on the weekends'
       end;
