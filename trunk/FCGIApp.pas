@@ -1157,10 +1157,7 @@ begin
   MaxIdleTime := EncodeTime(0, pMaxIdleMinutes, 0, 0);
   Shutdown := pShutdownAfterLastThreadDown;
   MaxConns := pMaxConns;
-  if ParamCount = 1 then
-    WServers := ParamStr(1)
-  else
-    WServers := GetEnvironmentVariable('FCGI_WEB_SERVER_ADDRS');
+  WServers := GetEnvironmentVariable('FCGI_WEB_SERVER_ADDRS');
   if WServers <> '' then begin
     WebServers := TStringList.Create;
     WebServers.DelimitedText := WServers;
