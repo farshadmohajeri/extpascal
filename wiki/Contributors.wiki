@@ -1,6 +1,6 @@
 #labels Featured
  * *Eneas*
-  * Advanced Configuration docs
+  * [http://extpascal.googlecode.com/files/ExtPascal-Advanced-Configuration-eng-v6.pdf Advanced Configuration docs]
   * PerformanceNotes upon Linux and Windows
   * Linux fixes
 
@@ -28,3 +28,4 @@
  * *Phil Hess*
   * PowerPC fixes
   * [http://extpascal.call.inf.br/ExtPToolkitStatus.html ExtP Toolkit (Delphi/Lazarus forms converter to ExtPascal)]
+  * Revised Embedded Web Server support 
