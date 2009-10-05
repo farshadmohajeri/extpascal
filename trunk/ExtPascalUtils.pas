@@ -402,7 +402,7 @@ end;
 function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; SplitHTMLNewLine : boolean = true) : string;
 var
   pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
-  pFunction, pString, pOpPlus, pOpMinus, pOpTime, pOpDivide, pOpEqual, pRegex : integer;
+  pFunction, pString, pOpPlus, pOpMinus, pOpTime, {pOpDivide,} pOpEqual, pRegex : integer;
   P, Lvl : integer;
   Res : string;
 
