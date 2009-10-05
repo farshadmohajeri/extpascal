@@ -133,8 +133,8 @@ function GetFCGIThreadID : integer;
 
 implementation
 
-uses //Windows, 
-   StrUtils, DateUtils, Math, Process, epCommon, FCGIApp;
+uses //Windows,
+   StrUtils, DateUtils, Math, {$IFDEF FPC}Process{$ELSE}ProcessDelphi{$ENDIF}, epCommon, FCGIApp;
 {
 function NetApiBufferFree(Buffer: Pointer): Integer; stdcall; external NETAPI32 name 'NetApiBufferFree';
 function NetUserGetGroups(servername, username: PWideChar; level: Cardinal; var bufptr: Pointer; prefmaxlen: Cardinal; var entriesread, totalentries: Cardinal): Integer; stdcall; external NETAPI32 name 'NetUserGetGroups';
