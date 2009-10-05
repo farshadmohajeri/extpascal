@@ -3,7 +3,7 @@ unit epGDB;
 interface
 
 uses
-  Process, Classes;
+  {$IFDEF FPC}Process{$ELSE}ProcessDelphi{$ENDIF}, Classes;
 
 type
   TGDBFormat = (gfDefault, gfTexto, gfDecimal, gfHexadecimal, gfPonteiro, gfCaractere, gfBinario, gfTipo, gfDumpTexto, gfDumpDecimal, gfDumpHexa);
