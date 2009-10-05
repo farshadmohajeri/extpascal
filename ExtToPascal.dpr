@@ -1083,10 +1083,29 @@ begin
       with TClass(Classes.Objects[I]) do
         if Singleton then begin
           if not HasSingleton then begin
-            writeln(Pas, 'begin');
+            writeln(Pas, 'initialization');
             HasSingleton := true
           end;
           writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' := ', Name, '.CreateSingleton;');
+        end;
+end;
+
+procedure FreeSingletons(pUnit : TUnit);
+var
+  I : integer;
+  HasSingleton : boolean;
+begin
+  HasSingleton := false;
+  with pUnit do
+    for I := Classes.Count-1 downto 0 do
+      with TClass(Classes.Objects[I]) do
+        if Singleton then begin
+          if not HasSingleton then begin
+            writeln(Pas);
+            writeln(Pas, 'finalization');
+            HasSingleton := true
+          end;
+          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), '.Destroy;');
         end;
 end;
 
@@ -1325,6 +1344,7 @@ begin
           end;
         end;
       CreateSingletons(TUnit(Units.Objects[I]));
+      FreeSingletons(TUnit(Units.Objects[I]));
       write(Pas, 'end.');
       close(Pas);
     end;
