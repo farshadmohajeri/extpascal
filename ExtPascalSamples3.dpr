@@ -16,7 +16,7 @@ uses
   ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;// Draw2D;
 
 {$IFDEF FPC}
-  // workaround for FPC idiosyncrazy of $IF feature!!! :P
+  // workaround for FPC bug in $IF feature!!! :P
   const IsExtJS2 = not IsExtJS3;
   {$IF IsExtJS2}
     {$FATAL Don't use this program for ExtJS 2 compiling, use ExtPascalSamples instead!}

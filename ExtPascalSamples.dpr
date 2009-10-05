@@ -12,7 +12,7 @@ uses
   Classes, Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
 
 {$IFDEF FPC}
-  // workaround for FPC idiosyncrazy of $IF feature!!! :P
+  // workaround for FPC bug in $IF feature!!! :P
   const IsExtJS2 = not IsExtJS3;
   {$IF not IsExtJS2}
     {$FATAL Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!}
