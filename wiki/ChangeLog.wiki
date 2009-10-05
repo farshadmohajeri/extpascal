@@ -3,21 +3,22 @@
 
   * New Delphi 2010 support
   * New Draw2D support
+  * New ExtJS 2.3.0 support 
+  * New Windows 2003 server support
   * New Upload file feature
   * New Download file feature
   * New TExtObject.JSString method
   * New TExtObject.AjaxSelection method
   * New TExtObject.MethodURI method
   * New TExtThread.Charset property
+  * New ExtFixes for ExtChart support
   * Updated ExtP Toolkit
-  * Fixes on Ajax multiple parameters
-  * ExtFixes for Chart support
-  * Fixes for Windows 2003 server
   * Enhanced DebugJS define for Firefox
+  * Fixes on Ajax multiple parameters
   * Fixes on Self-Translation
   * Fixes for Embedded WebServer
-  * Other minor fixes
   * More and enhanced error messages
+  * Other minor fixes
 
 ===0.9.6, Ext JS 3.0.0 support, 13-jul-2009===
 
