@@ -209,8 +209,8 @@ procedure TUnit.ReviewTypes;
           else
             Typ := 'T' + Units[I] + T;
           if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
-          if IsExtJS3 and (Name = 'Ext')       and (Units[I] = 'ExtData') then exit; // remove circular reference
-          if (Name = 'Ext')       and (Units[I] = 'ExtMenu') then exit; // remove circular reference
+          if IsExtJS3 and (Name = 'Ext') and (Units[I] = 'ExtData') then exit; // remove circular reference
+          if (Name = 'Ext') and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
         end;
@@ -500,10 +500,12 @@ begin
             CurClass.Name      := CurClass.Name + 'Singleton';
           end;
           Config := pos('<h2>Config Options</h2>', Line) <> 0;
-          Line := copy(Line, pos('<h2>', Line), length(Line));
-          if Config then
+          if Config then begin
+            Line := copy(Line, pos('<h2>Config Options</h2>', Line), length(Line));
             State := InProperties
-          else
+          end
+          else begin
+            Line := copy(Line, pos('<h2>', Line), length(Line));
             if pos('This class has no public properties', Line) <> 0 then
               if pos('This class has no public methods', Line) <> 0 then
                 if pos('This class has no public events', Line) <> 0 then
@@ -512,8 +514,9 @@ begin
                   State := InEvents
               else
                 State := InMethods
-          else
-            State := InProperties;
+            else
+              State := InProperties;
+          end;
           continue;
         end;
       InProperties :
@@ -1164,7 +1167,9 @@ begin
         if IsExtJS3 then
           writeln(Pas, Tab, 'TExtMenuMenu = TExtContainer;'^M^J, Tab, 'TExtDirectProvider = TExtUtilObservable;'^M^J,
                        Tab, 'TExtDataStore = TExtUtilObservable;'^M^J, Tab, 'TExtDataConnection = TExtUtilObservable;'^M^J,
-                       Tab, 'TExtDataRecord = TExtObject;');
+                       Tab, 'TExtDataRecord = TExtObject;')
+        else
+          writeln(Pas, Tab, 'TExtMenuMenu = TExtUtilObservable;');
       end;
       writeln(Pas);
       for J := 0 to Classes.Count-1 do
@@ -1331,7 +1336,7 @@ var
   T : TDateTime;
   I : integer;
 begin
-  if FindFirst(ADir + '/*.html', faAnyFile, F) = 0 then begin
+  if FindFirst(ADir + '/Ext.*.html', faAnyFile, F) = 0 then begin
     T := now;
     AllClasses := TStringList.Create;
     try
