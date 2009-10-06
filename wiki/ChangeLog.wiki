@@ -17,6 +17,7 @@
   * Fixes on Ajax multiple parameters
   * Fixes on Self-Translation
   * Fixes for Embedded WebServer
+  * Fixes for Windows Service mode with FPC
   * More and enhanced error messages
   * Other minor fixes
 
