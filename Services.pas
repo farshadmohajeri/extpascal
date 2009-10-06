@@ -9,7 +9,7 @@ unit Services;
 interface
 
 uses
-  WinSvc, Classes;
+  {$IFDEF FPC}Windows{$ELSE}WinSvc{$ENDIF}, Classes;
 
 {$R *.res}
 
@@ -72,7 +72,7 @@ var
 implementation
 
 uses
-	Windows, SysUtils, Registry;
+	{$IFNDEF FPC}Windows,{$ENDIF} SysUtils, Registry;
 
 function TService.GetName : string; begin
   Result := string(FName);
@@ -176,7 +176,7 @@ Stops the service
 function TService.Stop : integer; begin
 	Result := 0;
   if Exists then begin
-		if not WinSvc.ControlService(FService, SERVICE_CONTROL_STOP, FStatus) then Result := GetLastError;
+		if not ControlService(FService, SERVICE_CONTROL_STOP, FStatus) then Result := GetLastError;
 	end
 	else
 		Result := GetServiceError;
@@ -200,7 +200,7 @@ begin
 end;
 
 function TService.GetState : cardinal; begin
-  if WinSvc.QueryServiceStatus(FService, FStatus) then
+  if QueryServiceStatus(FService, FStatus) then
     Result := FStatus.dwCurrentState
   else
     Result := 77;
@@ -246,7 +246,7 @@ function TService.ReportServiceStatus(CurrentState, Win32ExitCode, CheckPoint, W
 			dwServiceSpecificExitCode := ExitCode;
 		end;
 		// Manda o status do service para o service manager.
-		Result := WinSvc.SetServiceStatus(FStatusHandle, FStatus);
+		Result := SetServiceStatus(FStatusHandle, FStatus);
 		if not Result then StopNow;
 	end;
 end;
@@ -377,7 +377,7 @@ When the API returns, the service was stopped, then halt.
 }
 function TService.Run(ServThreads : array of TThread; ServBegin  : TFuncBool = nil; ServEnd : TFuncBool = nil) : boolean;
 var
-	ServTable : array[0..1] of WinSvc.TServiceTableEntry;
+	ServTable : array[0..1] of TServiceTableEntry;
 	I : integer;
 begin
 	FServiceBegin := ServBegin;
@@ -391,7 +391,7 @@ begin
 		lpServiceProc := @ServiceMain
 	end;
   SetLastError(0);
-	Result := WinSvc.StartServiceCtrlDispatcher(ServTable[0]);
+	Result := StartServiceCtrlDispatcher({$IFDEF FPC}@{$ENDIF}ServTable[0])
 end;
 
 {
