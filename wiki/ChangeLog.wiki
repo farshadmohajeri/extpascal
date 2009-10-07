@@ -1,5 +1,5 @@
 #labels Featured
-===0.9.7, Draw2D support, in SVN===
+===0.9.7, Draw2D initial support, 07-out-2009===
 
   * New Delphi 2010 support
   * New Draw2D support
