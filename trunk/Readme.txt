@@ -1,6 +1,6 @@
 Ext JS wrapper for Object Pascal
 
-version: 0.9.6, Ext JS 3.0.0 support
+version: 0.9.7, Draw2D initial support, 07-out-2009
 
 ExtPascal is an Ext JS wrapper. 
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
@@ -10,9 +10,31 @@ Author: Wanderlan Santos dos Anjos. wanderlan.anjos@gmail.com
 
 Home: http://extpascal.googlecode.com
 Getting Started: http://code.google.com/p/extpascal/wiki/GettingStarted
-Live demos: http://pitinnu.fazenda.df.gov.br/ExtPascal/SrvExtPascal
+Live demos: http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi
 Forum: http://groups.google.com/group/extpascal
 License: BSD, http://www.opensource.org/licenses/bsd-license.php
+
+0.9.7, Draw2D initial support, 07-out-2009
+
+- New Delphi 2010 support
+- New Draw2D support
+- New ExtJS 2.3.0 support
+- New Windows 2003 server support
+- New Upload file feature
+- New Download file feature
+- New TExtObject.JSString method
+- New TExtObject.AjaxSelection? method
+- New TExtObject.MethodURI method
+- New TExtThread.Charset property
+- New ExtFixes? for ExtChart? support
+- Updated ExtP Toolkit
+- Enhanced DebugJS define for Firefox
+- Fixes on Ajax multiple parameters
+- Fixes on Self-Translation
+- Fixes for Embedded WebServer?
+- Fixes for Windows Service mode with FPC
+- More and enhanced error messages
+- Other minor fixes
 
 0.9.6, Ext JS 3.0.0 support, 13-jul-2009
 
