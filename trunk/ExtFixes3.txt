@@ -154,7 +154,7 @@ ExtBorder, , Ext, Object
 ExtBorder, color, string, false, true,
 ExtBorder, size, integer, false, true,
 ExtBackground, , Ext, Object
-ExtBackground, color, integer, false, true,
+ExtBackground, color, string, false, true,
 ExtBackground, alpha, float, false, true,
 ExtDataTip, ,Ext, Object
 ExtDataTip, padding, integer, false, true,
@@ -165,7 +165,7 @@ ExtChartStyle, , ExtChart, Object
 ExtChartStyle, padding, integer, false, true,
 ExtChartStyle, animationEnabled, boolean, false, true,
 ExtChartStyle, font, ExtFont, false, true,
-ExtChartStyle, dataTip, ExtDataTip, true, true,
+ExtChartStyle, dataTip, ExtDataTip, false, true,
 ExtChartChart, store, ExtDataStore, false, true,
 ExtChartChart, yField, string, false, true,
 ExtChartChart, xField, string, false, true,
