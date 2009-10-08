@@ -23,7 +23,7 @@ License: BSD, http://www.opensource.org/licenses/bsd-license.php
 - New Upload file feature
 - New Download file feature
 - New TExtObject.JSString method
-- New TExtObject.AjaxSelection? method
+- New TExtObject.AjaxSelection method
 - New TExtObject.MethodURI method
 - New TExtThread.Charset property
 - New ExtFixes? for ExtChart? support
@@ -31,7 +31,7 @@ License: BSD, http://www.opensource.org/licenses/bsd-license.php
 - Enhanced DebugJS define for Firefox
 - Fixes on Ajax multiple parameters
 - Fixes on Self-Translation
-- Fixes for Embedded WebServer?
+- Fixes for Embedded WebServer
 - Fixes for Windows Service mode with FPC
 - More and enhanced error messages
 - Other minor fixes
