@@ -12,7 +12,7 @@ uses
   ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, 
   {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF}, 
   {$IFDEF SERVICE} Services, {$ENDIF}
-  Ext, ExtGlobal, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtAppUser, ExtChart,
+  Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtChart,
   ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;// Draw2D;
 
 {$IFDEF FPC}

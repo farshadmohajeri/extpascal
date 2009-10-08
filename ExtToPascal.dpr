@@ -166,10 +166,7 @@ var
   I, J : integer;
   UName : string;
 begin
-  if Name = 'ExtGlobal' then
-    Result := ''
-  else
-    Result := ', ExtGlobal';
+  Result := '';
   for I := 0 to Classes.Count-1 do
     with TClass(Classes.Objects[I]) do
       if Parent <> '' then begin
@@ -208,7 +205,6 @@ procedure TUnit.ReviewTypes;
             Typ := 'T' + Name + T
           else
             Typ := 'T' + Units[I] + T;
-          if (Name = 'ExtGlobal') and (Units[I] = 'ExtData') then exit; // remove circular reference
           if IsExtJS3 and (Name = 'Ext') and (Units[I] = 'ExtData') then exit; // remove circular reference
           if (Name = 'Ext') and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
