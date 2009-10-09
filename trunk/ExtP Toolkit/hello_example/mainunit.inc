@@ -2,7 +2,7 @@
   Layout := lyAbsolute;
   Height := 334;
   Width := 408;
-  OnEsc := ExtGlobal.Ext.EmptyFn;
+  OnEsc := JSFunction('');
   Title := 'Hello';
 
   with TExtPanel.AddTo(Items) do

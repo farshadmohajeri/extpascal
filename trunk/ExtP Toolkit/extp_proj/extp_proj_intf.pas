@@ -280,7 +280,7 @@ begin
   Result := 'SysUtils, Classes,' + LineEnding +
             '{$IFDEF UseRuntime}' + LineEnding +
             '  Ext, ExtPascal, ExtPascalUtils, ExtForm,' + LineEnding +
-            '  ExtGlobal, ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,' + LineEnding +
+            '  ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,' + LineEnding +
             '  ExtLayout, ExtMenu, ExtState, ExtTree;' + LineEnding +
             LineEnding +
             'type' + LineEnding +
