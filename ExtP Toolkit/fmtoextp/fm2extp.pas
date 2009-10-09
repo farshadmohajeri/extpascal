@@ -500,7 +500,7 @@ begin
     WriteLn(PasFileVar, 'uses');
     WriteLn(PasFileVar, '  SysUtils, Classes,');
     WriteLn(PasFileVar, '  Ext, ExtPascal, ExtPascalUtils, ExtForm,');
-    WriteLn(PasFileVar, '  ExtGlobal, ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,'); 
+    WriteLn(PasFileVar, '  ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,'); 
     WriteLn(PasFileVar, '  ExtLayout, ExtMenu, ExtState, ExtTree;');
     WriteLn(PasFileVar);
 //    WriteLn(PasFileVar, '{$M+}');  //Shouldn't be needed anymore
@@ -811,7 +811,7 @@ begin
                                 'Width := ', FormWidth, ';');
             if FormNum = 0 then  {Is main form?}
               WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                  'OnEsc := ExtGlobal.Ext.EmptyFn;')
+                                  'OnEsc := JSFunction('''');')
                {Don't want Escape key blanking page}
             else if SameText(FmClassName, 'TForm') then  {Not TExtWindow?}
               WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),

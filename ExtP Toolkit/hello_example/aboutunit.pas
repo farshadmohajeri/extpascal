@@ -6,7 +6,7 @@ uses
   SysUtils, Classes, 
 {$IFDEF UseRuntime}
   Ext, ExtPascal, ExtPascalUtils, ExtForm, 
-  ExtGlobal, ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd, 
+  ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd, 
   ExtLayout, ExtMenu, ExtState, ExtTree
 {$ELSE}
   ExtP_Design_Ctrls
