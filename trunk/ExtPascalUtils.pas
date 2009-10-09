@@ -474,7 +474,7 @@ begin
     P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
                      pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, {pOpDivide,} pFunction, pRegex]);
     // keep Ext's onReady function at the first line
-    if (not onReady) and (res[p] = 'f') then
+    if (not onReady) and (P > 0) and (length(Res) >= P) and (res[p] = 'f') then
       if Copy(Res, P-9, 9) = '.onReady(' then begin
         onReady := true;
         continue;
@@ -536,13 +536,13 @@ begin
         end;
         ';' : begin // end of statement
           // fix to ExtPascal parser bug which become helpful, because it could be mark of new object creation
-          if (Res[P+1] = ' ') and (Res[P+2] = 'O') then begin  // ; O string
+          if (length(Res) >= P+2) and (Res[P+1] = ' ') and (Res[P+2] = 'O') then begin  // ; O string
             inProp := false;
             delete(Res, P+1, 1);
             inc(P, AddNewLine(P+1, ^M^J+SpaceIdents(Lvl)));
             continue;
           end;
-          if Res[P+1] = '}' then continue; // skip if it's already at the end of block
+          if (length(Res) >= P+1) and (Res[P+1] = '}') then continue; // skip if it's already at the end of block
           if P = length(Res) then // skip identation on last end of statement
             inc(P, AddNewLine(P+1, SpaceIdents(StartingLevel-1)))
           else
