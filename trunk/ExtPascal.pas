@@ -724,7 +724,7 @@ begin
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN">'^M^J'<html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
-      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=' + Charset + '">'^M^J +
       {$IFDEF CacheFly} // Ext JS Remote
       '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
