@@ -902,6 +902,7 @@ begin
 {$ELSE}
   Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 80, 5);
 {$ENDIF}
+  Application.Icon := 'ExtPascal.ico';
   Application.Run;
 {$ELSE}
 
@@ -924,6 +925,7 @@ begin
       writeln('Service uninstalled')
     else begin
       Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
+      Application.Icon := 'ExtPascal.ico';
       if Exists then
         Run([TServiceThread.Create(true)])
       else
