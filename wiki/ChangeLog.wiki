@@ -20,6 +20,7 @@
   * Fixes for Windows Service mode with FPC
   * More and enhanced error messages
   * Other minor fixes
+  * ExtGlobal.pas unit was removed
 
 ===0.9.6, Ext JS 3.0.0 support, 13-jul-2009===
 
