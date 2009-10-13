@@ -841,6 +841,7 @@ var
   Thread : string;
   GUID : TGUID;
   I : integer;
+  Temp : TStringList;
 begin
   Result := true;
   Application.AccessThreads.Enter;
@@ -869,8 +870,12 @@ begin
     CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
     if CurrentFCGIThread.ReturnValue = 1 then begin // Current thread is sleeping
       CurrentFCGIThread.ReturnValue := 0; // Wakeup it
-      CurrentFCGIThread.FRequestHeader.Assign(Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText));
-      CurrentFCGIThread.FCookie.Assign(Explode(FCookie.Delimiter, FCookie.DelimitedText));
+      Temp := Explode(FRequestHeader.Delimiter, FRequestHeader.DelimitedText);
+      CurrentFCGIThread.FRequestHeader.Assign(Temp);
+      Temp.Free;
+      Temp := Explode(FCookie.Delimiter, FCookie.DelimitedText);
+      CurrentFCGIThread.FCookie.Assign(Temp);
+      Temp.Free;
       CurrentFCGIThread.NewThread := false;
       CurrentFCGIThread.FResponseHeader := '';
       CurrentFCGIThread.ContentType := 'text/html';
@@ -1282,4 +1287,8 @@ function TFCGIApplication.ThreadsCount : integer; begin
   Result := FThreadsCount
 end;
 
+initialization
+
+finalization
+  if Application <> nil then Application.Free
 end.
