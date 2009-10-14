@@ -113,7 +113,7 @@
       </ConfigFile>
       <CompilerPath Value="$(CompPath)"/>
       <ExecuteBefore>
-        <Command Value="&quot;$PKGDIR(ExtP_Ctrls)/../fmtoextp/fmtoextp&quot; &quot;$Project(InfoFile)&quot; -r"/>
+        <Command Value="&quot;$PKGDIR(ExtP_Ctrls)/../fmtoextp/fmtoextp$ExeExt()&quot; &quot;$Project(InfoFile)&quot; -r"/>
         <ScanForFPCMsgs Value="True"/>
         <ShowAllMessages Value="True"/>
       </ExecuteBefore>

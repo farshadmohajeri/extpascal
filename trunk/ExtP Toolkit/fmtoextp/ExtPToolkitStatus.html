@@ -80,7 +80,7 @@ You will need one of these compilers:<P>
 <A HREF="http://www.lazarus.freepascal.org">www.lazarus.freepascal.org</A>
 </UL>
 The ExtP Toolkit was tested with Delphi 7 and Delphi 2006 on Windows and
-Free Pascal 2.2.4 and Lazarus 0.9.28RC on Windows and OS X.<P>
+Free Pascal 2.2.4 and Lazarus 0.9.28 on Windows and OS X.<P>
 
 <LI><B>Web server</B><P>
 You don't need a Web server to design and compile an ExtPascal app, but
@@ -404,21 +404,22 @@ browser. For more information, see the ExtPascal Web site.
 <A name="LazarusTips"></A><H3>Lazarus Tips</H3>
 
 <OL>
-<LI>Depending on whether you created your ExtPascal project on Windows or
-OS X/Linux, the Execute Before Command on the Compiler Options dialog's 
-Compilation tab will specify the converter with or without an .exe extension.
-If you are moving projects between Windows and OS X/Linux, you will need
-to add or delete the .exe extension for fmtoextp before you can compile
-on a different system. Or you can use a trick where you make a copy of the 
-fmtoextp.exe file as fmtoextp on Windows or fmtoextp as fmtoextp.exe on 
-OS X/Linux to avoid changing the name in the project file.<P>
-
 <LI>To make the Lazarus form designer work more like Delphi, choose 
 Environment | Options and change the following:
 <UL>
 <LI>Environment | Form Editor: Uncheck "Show component captions".
 <LI>Codetols | Class Completion: Select "Last" (two places) and uncheck
 "Header comment for class".
+</UL><P>
+
+<LI>With a "runtime" project that you've created using the FmToExtP converter
+from a normal Delphi or Lazarus project, you can create a Lazarus project file
+for it as follows:
+<UL>
+<LI>Open the newly-created .dpr or .lpr file in Lazarus.
+<LI>Select ExtPascal Application from the list when prompted.
+<LI>Choose Project | Compiler Options and blank out the "Execute before" Command
+on the Compilation tab.
 </UL>
 
 </OL>
@@ -692,7 +693,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: Oct. 8, 2009
+Last updated: Oct. 13, 2009
 <P>
 
 </BODY>
