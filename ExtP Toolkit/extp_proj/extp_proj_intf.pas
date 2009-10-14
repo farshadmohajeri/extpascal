@@ -219,10 +219,7 @@ begin
   
   TProject(AProject).CompilerOptions.ExecuteBefore.Command :=
    '"$PKGDIR(ExtP_Ctrls)' + PathDelim + '..' + PathDelim + 
-   'fmtoextp' + PathDelim + 'fmtoextp' +
-{$IFDEF MSWINDOWS}
-   '.exe' +
-{$ENDIF}
+   'fmtoextp' + PathDelim + 'fmtoextp$ExeExt()' +
    '" "$Project(InfoFile)" -r';
    {Include path to converter - assume its folder is at same level
      as control package, as distributed.}

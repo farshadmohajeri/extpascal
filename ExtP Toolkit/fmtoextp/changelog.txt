@@ -1,3 +1,9 @@
+Version 0.1.2 (SVN):
+
+- Now using $ExeExt() macro in "Execute before" Command so platform-specific
+  extension doesn't need to be specified with converter name.
+
+
 Version 0.1.1 (08-Oct-2009):
 
 - Eliminated use of ExtGlobal unit, which is no longer part of ExtPascal 0.9.7.
