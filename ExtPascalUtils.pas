@@ -312,7 +312,7 @@ begin
       end;
     end
     else
-      if (I = 1) and (Result[2] in ['a'..'z', 'A'..'Z']) then
+      if (I = 1) and (length(Result) > 1) and (Result[2] in ['a'..'z', 'A'..'Z']) then
         Result := copy(Result, 2, length(Result))
       else
         Result := '"' + Result + '"'
