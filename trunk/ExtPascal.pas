@@ -309,17 +309,21 @@ var
   Root : string;
 begin
   if pos(pLibrary, Libraries) = 0 then
-   if pLibrary = '' then
-     Libraries := ''
-   else begin
-     Root := RequestHeader['DOCUMENT_ROOT'];
-     if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
-       Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
-       if CSS then Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
-     end
-     else
-       raise Exception.Create('Library: ' + Root + pLibrary + '.js not found');
-   end;
+    if pLibrary = '' then
+      Libraries := ''
+    else begin
+      Root := RequestHeader['DOCUMENT_ROOT'];
+      if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
+        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
+        if CSS then begin
+          if not FileExists(Root + pLibrary + '.css') then  //Assume in css like ux?
+            pLibrary := ExtractFilePath(pLibrary) + 'css/' + ExtractFileName(pLibrary);
+          Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
+        end;
+      end
+      else
+        raise Exception.Create('Library: ' + Root + pLibrary + '.js not found');
+    end;
 end;
 
 {
@@ -724,7 +728,7 @@ begin
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN">'^M^J'<html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
-      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=' + Charset + '">'^M^J +
       {$IFDEF CacheFly} // Ext JS Remote
       '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
