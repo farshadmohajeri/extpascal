@@ -729,7 +729,7 @@ begin
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
-      '<meta http-equiv="content-type" content="charset=' + Charset + '">'^M^J +
+      '<meta http-equiv="content-type" content="charset=' + Charset + '" />'^M^J +
       {$IFDEF CacheFly} // Ext JS Remote
       '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
       '<link rel=stylesheet href="http://extjs.cachefly.net/ext-2.2.1/resources/css/ext-all.css" />'^M^J +
