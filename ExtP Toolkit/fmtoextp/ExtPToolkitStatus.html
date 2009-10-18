@@ -23,6 +23,7 @@
 <A HREF="#Overview">Brief Overview</A><BR>
 <A HREF="#Tutorial">Brief Tutorial: A Simple Web App</A><BR>
 <A HREF="#LazarusTips">Lazarus Tips</A><BR>
+<A HREF="#ExtPascalEquivalents">ExtPascal Equivalents to VCL/LCL Controls</A><BR>
 <A HREF="#DesignControls">Design Controls vs. Runtime Controls</A><BR>
 <A HREF="#DesignProps">Design Properties vs. Runtime Properties</A><BR>
 <A HREF="#LazFileTypes">File Types Used in a Lazarus ExtPascal App</A><P>
@@ -31,8 +32,8 @@
 <A name="Introduction"></A><H3>Introduction</H3>
 
 These notes describe the status of the ExtP Toolkit, a set of tools to assist
-in developing GUI Web apps with the open-source ExtPascal wrapper for Ext JS (
-<A HREF="http://code.google.com/p/extpascal">http://code.google.com/p/extpascal</A>).<P>
+in developing GUI Web apps with the open-source ExtPascal wrapper for the 
+Ext JS JavaScript widgets (<A HREF="http://code.google.com/p/extpascal">http://code.google.com/p/extpascal</A>).<P>
 
 The ExtP Toolkit provides three things:<P>
 <OL>
@@ -149,13 +150,13 @@ you need to make a small change to the Lazarus IDE code. In file <B>customformed
 in the Lazarus <B>ide</B> folder, find this line in TCustomFormEditor.DeleteComponent:<P>
 
 <PRE>
-  if (AForm<>nil) and (not (AForm is TCustomNonFormDesignerForm)) then
+  if (AForm&lt;>nil) and (not (AForm is TCustomNonFormDesignerForm)) then
 </PRE>
 
 Change the line to this by inserting the code that's in bold:<P>
 
 <PRE>
-  if (AForm<>nil) and (not (AForm is TCustomNonFormDesignerForm)) <B>and (not (AForm is TCustomForm))</B> then
+  if (AForm&lt;>nil) and (not (AForm is TCustomNonFormDesignerForm)) <B>and (not (AForm is TCustomForm))</B> then
 </PRE>
 Then save the file. The IDE will be recompiled in the next step.<P>
 
@@ -420,9 +421,376 @@ for it as follows:
 <LI>Select ExtPascal Application from the list when prompted.
 <LI>Choose Project | Compiler Options and blank out the "Execute before" Command
 on the Compilation tab.
+<LI>You can also choose Project | Project Inspector and remove ExtP_Ctrls
+from Required Packages.
 </UL>
 
 </OL>
+
+<HR>
+<A name="ExtPascalEquivalents"></A><H3>ExtPascal Equivalents to VCL/LCL Controls</H3>
+
+Note that in some cases, converter support for a VCL/LCL control is still rudimentary
+and has not been thoroughly tested.<P>
+
+<TABLE BORDER=1 CELLPADDING=3>
+
+<TR VALIGN=TOP>
+<TH>VCL/LCL control</TH>
+<TH>ExtPascal equivalent</TH>
+<TH>FmToExtP<BR>converter supports?</TH>
+<TH>ExtPascal<BR>design control?</TH>
+<TH>Notes</TH>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TBevel</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TBitBtn</TD>
+<TD>TExtButton</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TButton</TD>
+<TD>TExtButton</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TChart</TD>
+<TD>TExtExtChart?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TCheckBox</TD>
+<TD>TExtFormCheckbox</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TCheckListBox</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TColorBox</TD>
+<TD>TExtColorPalette</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TComboBox</TD>
+<TD>TExtFormComboBox</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TDateTimePicker</TD>
+<TD>TExtDatePicker</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TDBGrid</TD>
+<TD>TExtGridEditorGridPanel</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TEdit</TD>
+<TD>TExtFormTextField</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>TExtFormNumberField, TExtFormDateField, TExtFormTimeField design controls are also included.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TForm</TD>
+<TD>TExtWindow</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TGroupBox</TD>
+<TD>TExtPanel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TImage</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TImageList</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TLabel</TD>
+<TD>TExtFormLabel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TLabeledEdit</TD>
+<TD>TExtFormTextField</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TListBox</TD>
+<TD>TExtUxFormMultiSelect</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TListView</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TMainMenu</TD>
+<TD>TExtMenuMenu</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TMaskEdit</TD>
+<TD>TExtFormTextField</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TMemo</TD>
+<TD>TExtFormTextArea</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TMenuItem</TD>
+<TD>TExtMenuItem</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TMonthCalendar</TD>
+<TD>TExtDatePicker</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TPageControl</TD>
+<TD>TExtTabPanel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TPaintBox</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TPanel</TD>
+<TD>TExtPanel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TPopuMenu</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TProgressBar</TD>
+<TD>TExtProgressBar</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TRadioButton</TD>
+<TD>TExtFormRadio</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TRadioGroup</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TRichEdit</TD>
+<TD>TExtFormHtmlEditor</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TScrollBar</TD>
+<TD>TExtSlider</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TShape</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TSpeedBtn</TD>
+<TD>TExtButton</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TStaticText</TD>
+<TD>TExtFormLabel</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TStringGrid</TD>
+<TD>TExtGridEditorGridPanel</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TTabSheet</TD>
+<TD>TExtPanel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>TExtPanel_Tab design control converts to TExtPanel.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TTimer</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TToolbar</TD>
+<TD>TExtToolbar</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TTrackBar</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TTreeView</TD>
+<TD>TExtTreeTreePanel</TD>
+<TD>Yes</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TUpDown</TD>
+<TD>?</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+
+</TABLE>
+<P>
+
 
 <HR>
 <A name="DesignControls"></A><H3>Design Controls vs. Runtime Controls</H3>
@@ -526,6 +894,14 @@ runtime control.<P>
 <TD>TCustomComboBox</TD>
 <TD>TExtFormComboBox</TD>
 <TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TExtUxFormMultiSelect</TD>
+<TD>TCustomListBox</TD>
+<TD>TCustomListBox</TD>
+<TD>TExtUxFormMultiSelect</TD>
+<TD>Works best if on a TExtPanel.</TD>
 </TR>
 
 <TR VALIGN=TOP>
@@ -693,7 +1069,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: Oct. 13, 2009
+Last updated: Oct. 18, 2009
 <P>
 
 </BODY>

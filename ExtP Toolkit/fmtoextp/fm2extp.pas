@@ -227,7 +227,7 @@ begin
   if (Length(PropType) > 5) and
      SameText('Event', Copy(PropType, Length(PropType)-4, 5)) then
     Result := True;
-end;  {IsEventProp}                      
+end;  {IsEventProp} 
 
 
 function CreateOutputFile(  var OutF            : TextFile;
@@ -290,6 +290,7 @@ var
   DefaultProps      : TStringList;
   ClassProps        : TStringList;
   GridColIndexes    : TStringList;
+  JsLibs            : TStringList;
   TargetPath        : string;
   ProgName          : string;
   ThreadClassName   : string;
@@ -327,6 +328,7 @@ var
   GridColIdx        : Integer;
   ColDataDone       : Boolean;
   ColWidth          : string;
+  JsLibIdx          : Integer;
 
 begin
   Result := False;
@@ -359,8 +361,8 @@ begin
 //  ThreadClassName := ProgName + '_thread';  //Use standard name for now.
   ThreadClassName := 'AppThread';
   ThreadFileName := TargetPath + LowerCase(ThreadClassName);
-  if opFmToExtP_AddExtToName in Options then
-    ThreadFileName := ThreadFileName + NameSuffixExt;
+//  if opFmToExtP_AddExtToName in Options then
+//    ThreadFileName := ThreadFileName + NameSuffixExt;
   ThreadFileName := ThreadFileName + PasFileExt;
   ThreadClassName := 'T' + ThreadClassName;
 
@@ -470,6 +472,7 @@ begin
   CfgFileObj.ReadSectionValues('Defaults', DefaultProps);
   ClassProps := TStringList.Create;
   GridColIndexes := TStringList.Create;
+  JsLibs := TStringList.Create;
 
    {Now generate Pascal form units that create ExtPascal windows (forms)}
   for FormNum := 0 to High(FmFileNames) do
@@ -501,7 +504,8 @@ begin
     WriteLn(PasFileVar, '  SysUtils, Classes,');
     WriteLn(PasFileVar, '  Ext, ExtPascal, ExtPascalUtils, ExtForm,');
     WriteLn(PasFileVar, '  ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,'); 
-    WriteLn(PasFileVar, '  ExtLayout, ExtMenu, ExtState, ExtTree;');
+    WriteLn(PasFileVar, '  ExtLayout, ExtMenu, ExtDirect, ExtState, ExtTree,');
+    WriteLn(PasFileVar, '  ExtUxForm;');
     WriteLn(PasFileVar);
 //    WriteLn(PasFileVar, '{$M+}');  //Shouldn't be needed anymore
     WriteLn(PasFileVar);
@@ -534,8 +538,13 @@ begin
           begin
           CfgFileObj.ReadSectionValues(FmClassName, ClassProps);
           if ClassProps.Count > 0 then  {Object's class is mapped?}
-            WriteLn(PasFileVar, '    ', ObjName, ' : ', 
-                    ClassProps.Values['Class'], ';'); 
+            begin
+            ExtClassName := ClassProps.Values['Class'];
+            WriteLn(PasFileVar, '    ', ObjName, ' : ', ExtClassName, ';'); 
+            if (ClassProps.IndexOfName('SetLibrary') >= 0) and  {Ux library?}
+               (JsLibs.IndexOfName(ExtClassName) < 0) then
+              JsLibs.Add(ExtClassName + '=' + ClassProps.Values['SetLibrary']);
+            end;
           end;
         end
       else if SameText(InStr, 'end') then  {Found end of object?}
@@ -887,7 +896,8 @@ begin
                   SameText(FmPropName, 'Lines.Strings') or
                   SameText(FmPropName, 'Value.Strings') then
             begin  {Read item strings and convert}
-            if SameText(ExtClassName, 'TExtFormComboBox') then
+            if SameText(ExtClassName, 'TExtFormComboBox') or
+               SameText(ExtClassName, 'TExtUxFormMultiSelect') then
               WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                       'StoreArray := JSArray(')
             else if SameText(ExtClassName, 'TExtFormTextArea') then
@@ -906,7 +916,8 @@ begin
               if InStr <> '' then  {Lazarus puts ) on its own line}
                 begin
                 InStr := ConvertValue(InStr, '', '', '');
-                if SameText(ExtClassName, 'TExtFormComboBox') then
+                if SameText(ExtClassName, 'TExtFormComboBox') or
+                   SameText(ExtClassName, 'TExtUxFormMultiSelect') then
                   begin
                   if ItemStrCnt > 0 then
                     WriteLn(IncFileVar, ', '' +');
@@ -923,7 +934,8 @@ begin
                 Inc(ItemStrCnt);
                 end;
             until ItemStrDone;
-            if SameText(ExtClassName, 'TExtFormComboBox') then
+            if SameText(ExtClassName, 'TExtFormComboBox') or
+               SameText(ExtClassName, 'TExtUxFormMultiSelect') then
               Write(IncFileVar, ''')');
             WriteLn(IncFileVar, ';');
             end
@@ -1090,6 +1102,9 @@ begin
             begin
             WriteLn(ThrdFileVar, 'procedure ', ThreadClassName, '.Home;');
             WriteLn(ThrdFileVar, 'begin');
+            for JsLibIdx := 0 to JsLibs.Count-1 do
+              WriteLn(ThrdFileVar, '  SetLibrary(ExtPath + ' +
+                                   JsLibs.ValueFromIndex[JsLibIdx], ');');
 //            WriteLn(ThrdFileVar, '  if ', FormObjName, ' = nil then');  //Wrong.
             WriteLn(ThrdFileVar, '  ', FormObjName, ' := ', FormClassName, '.Create;');
             WriteLn(ThrdFileVar, '  ', FormObjName, '.Show;');
@@ -1145,6 +1160,7 @@ begin
   DefaultProps.Free;
   ClassProps.Free;
   GridColIndexes.Free;
+  JsLibs.Free;
 
    {Create little custom config file. This is a way to signal to FPC to
      compile with ExtPascal runtime units, not Extp_Design_Ctrls unit.}

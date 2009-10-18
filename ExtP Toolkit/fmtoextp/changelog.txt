@@ -1,7 +1,15 @@
 Version 0.1.2 (SVN):
 
-- Now using $ExeExt() macro in "Execute before" Command so platform-specific
+- Now using $ExeExt() macro in 'Execute before' Command so platform-specific
   extension doesn't need to be specified with converter name.
+- Fixed two bugs related to forming file names with converter's -e switch.
+- Added ExtDirect and ExtUxForm to uses in converted app and ExtPascal app
+  units.
+- Support for TExtUxFormMultiSelect in converter and as a design control.
+- Support for automatic generation of SetLibrary calls with controls that
+  are not in ext-all.js (for example, TExtUxFormMultiSelect).
+- Added MultiSelect example app.
+- Added table of ExtPascal equivalents to VCL/LCL controls.
 
 
 Version 0.1.1 (08-Oct-2009):
