@@ -26,7 +26,7 @@ uses
 
 const
   ConverterName     = 'FmToExtP';
-  ConverterVersion  = '0.1.1';
+  ConverterVersion  = '0.1.2';
   
 var
   CfgFileName     : string;
@@ -73,7 +73,7 @@ begin
     WriteLn('Usage: ', LowerCase(ConverterName), ' [mainform|projectfile] [otherforms] [programfile] [switches]');
     WriteLn;
     WriteLn('Switches:');
-    WriteLn('  -e  Add "', NameSuffixExt, '" to names of all files created.');
+    WriteLn('  -e  Add "', NameSuffixExt, '" to names of all converted files.');
     WriteLn('  -r  Reformat any error message so Lazarus will display it.');
     WriteLn;
     WriteLn('Examples:');
@@ -221,6 +221,14 @@ begin
         ProjSrcFileName := ProjSrcFileName + NameSuffixExt;
       ProjSrcFileName := ProjSrcFileName + LazProjSrcFileExt; 
       end;
+    end
+  else
+    begin
+    if AddExtToName then
+      ProjSrcFileName := 
+       Copy(ProjSrcFileName, 1, 
+            Length(ProjSrcFileName) - Length(ExtractFileExt(ProjSrcFileName))) +
+       NameSuffixExt + ExtractFileExt(ProjSrcFileName);
     end;
   
   if ConvertFormToExtP(CfgFileName, FmFileNames, ProjSrcFileName, Options,

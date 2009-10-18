@@ -278,7 +278,8 @@ begin
             '{$IFDEF UseRuntime}' + LineEnding +
             '  Ext, ExtPascal, ExtPascalUtils, ExtForm,' + LineEnding +
             '  ExtData, ExtGrid, ExtUtil, ExtAir, ExtDd,' + LineEnding +
-            '  ExtLayout, ExtMenu, ExtState, ExtTree;' + LineEnding +
+            '  ExtLayout, ExtMenu, ExtDirect, ExtState, ExtTree,' + LineEnding +
+            '  ExtUxForm;' + LineEnding +
             LineEnding +
             'type' + LineEnding +
             '  {$M+}' + LineEnding +
