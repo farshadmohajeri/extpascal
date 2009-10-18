@@ -19,6 +19,10 @@ type
     function GetPathInfo: string;
     function GetRequestHeader(HeaderName: string): string;
     function GetQuery(const ParamName: string): string;
+    function GetQueryAsDouble(const ParamName: string): double;
+    function GetQueryAsInteger(const ParamName: string): integer;
+    function GetQueryAsTDateTime(const ParamName: string) : TDateTime;
+    function GetQueryAsBoolean(const ParamName: string): boolean;
     function GetCookie(const CookieName: string): string;
   protected
     // Methods to be implemented in your app
@@ -44,6 +48,11 @@ type
     procedure Alert(Msg : string); virtual;
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
+    property QueryAsBoolean[const ParamName : string] : boolean read GetQueryAsBoolean; // Returns HTTP query info parameters as a boolean
+    property QueryAsInteger[const ParamName : string] : integer read GetQueryAsInteger; // Returns HTTP query info parameters as an integer
+    property QueryAsDouble[const ParamName : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
+    property QueryAsTDateTime[const ParamName : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
+    property Queries : TStringList read FParams; // Returns all HTTP queries as list to ease searching
     property RequestHeader[HeaderName: string]: string read GetRequestHeader;
     property Cookie[const CookieName: string]: string read GetCookie;
     property NewThread : boolean read FNewThread write FNewThread;
@@ -415,6 +424,22 @@ end;
 
 function TIdExtSession.GetQuery(const ParamName: string): string; begin
   Result := FParams.Values[ParamName];
+end;
+
+function TIdExtSession.GetQueryAsBoolean(const ParamName: string): boolean; begin
+  Result := Query[ParamName] = 'true';
+end;
+
+function TIdExtSession.GetQueryAsDouble(const ParamName: string): double; begin
+  Result := StrToFloatDef(Query[ParamName], 0)
+end;
+
+function TIdExtSession.GetQueryAsInteger(const ParamName: string): integer; begin
+  Result := StrToIntDef(Query[ParamName], 0)
+end;
+
+function TIdExtSession.GetQueryAsTDateTime(const ParamName: string): TDateTime; begin
+  Result := StrToFloatDef(Query[ParamName], 0)
 end;
 
 function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
