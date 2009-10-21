@@ -78,7 +78,6 @@ type
     function GetQueryAsBoolean(Name: string): boolean;
     procedure GarbageCollector(FreeGarbage : boolean);
     procedure WriteUploadFile(Buffer : string);
-    procedure DownloadContentType(Name: string);
   protected
     FRequest, FPathInfo : string;
     FIsAjax,
@@ -101,6 +100,7 @@ type
     procedure BeforeThreadDestruction; virtual;
     procedure SetPaths; virtual;
     procedure Refresh;
+    procedure DownloadContentType(Name: string); virtual;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
