@@ -11,7 +11,7 @@ uses
   Parser;
 
 begin
-  writeln('ExtPascalCompiler - ''version 0.1');
+  writeln('ExtPascalCompiler - version 0.1');
   writeln('(c) 2010 by Wanderlan Santos dos Anjos, BSD license');
   writeln('http://extpascal.googlecode.com/'^M^J);
   with TParser.Create(ParamStr(1)) do Compile;

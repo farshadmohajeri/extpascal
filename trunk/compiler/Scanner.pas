@@ -122,7 +122,7 @@ begin
     First := MAXINT;
 end;
 
-// Implementar {$, (*$, Não implementado ^M ^J
+// Implementar {$, (*$
 procedure TScanner.NextToken;
 var
   Str : string;
