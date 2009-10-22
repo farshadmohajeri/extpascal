@@ -30,30 +30,28 @@ type
     procedure NextChar(C: char);
     procedure FindEndComment(EndComment: string);
   protected
-    FLineNumber,
-    First : integer;
+    FLineNumber, Top,
+    First, FErrors : integer;
     procedure ScanChars(Chars: array of TSetChar; Tam : array of integer; Optional : boolean = false);
     procedure NextToken;
   public
     constructor Create(Source : string);
     destructor Destroy; override;
-    procedure Report(Msg : string);
-    procedure ReportExpected(Expected, Found : string);
+    procedure Error(Msg : string);
+    procedure ErrorExpected(Expected, Found : string);
     procedure MatchToken(T : string);
-    procedure MatchTerminal(Code : char);
+    procedure MatchTerminal(KindFound : TTokenKind);
     property LineNumber : integer read FLineNumber;
     property ColNumber : integer read First;
     property Token : TToken read FToken;
     property EndSource : boolean read FEndSource;
+    property Errors : integer read FErrors;
   end;
 
 implementation
 
 uses
   SysUtils;
-
-const
-  AllChars : TSetChar = [#0..#255];
 
 constructor TScanner.Create(Source: string); begin
   SourceName := Source;
@@ -67,7 +65,7 @@ constructor TScanner.Create(Source: string); begin
    end
    else begin
      FEndSource := true;
-     Report('Source file "' + Source + '" not found');
+     Error('Source file ''' + Source + ''' not found');
    end;
 end;
 
@@ -75,11 +73,6 @@ destructor TScanner.Destroy; begin
   inherited;
   FToken.Free;
   close(Arq)
-end;
-
-procedure TScanner.MatchToken(T : string); begin
-  if T <> UpperCase(FToken.Lexeme) then ReportExpected(T, FToken.Lexeme);
-  NextToken;
 end;
 
 procedure TScanner.ScanChars(Chars : array of TSetChar; Tam : array of integer; Optional : boolean = false);
@@ -169,8 +162,18 @@ begin
         Str := '';
         repeat
           inc(First);
-          ScanChars([AllChars - [''''], ['''']], [500, 1]);
+          ScanChars([[#0..#255] - [''''], ['''']], [500, 1]);
           Str := Str + FToken.Lexeme;
+          repeat
+            ScanChars([['^'], ['@'..'Z']], [1, 1], true);
+            if length(FToken.Lexeme) = 2 then
+              Str := copy(Str, 1, length(Str)-1) + char(byte(FToken.Lexeme[2]) - ord('@')) + '''';
+          until FToken.Lexeme = '';
+          repeat
+            ScanChars([['#'], ['0'..'9']], [1, 3], true);
+            if length(FToken.Lexeme) >= 2 then
+              Str := copy(Str, 1, length(Str)-1) + char(StrToIntDef(copy(FToken.Lexeme, 2, 100), 0)) + '''';
+          until FToken.Lexeme = '';
         until Line[First] <> '''';
         FToken.Lexeme := copy(Str, 1, length(Str)-1);
         FToken.Kind   := tkStringConstant;
@@ -240,31 +243,51 @@ begin
         exit;
       end;
     else
-      Report('Invalid character "' + Line[First] + '" ($' + IntToHex(ord(Line[First]), 4) + ')');
+      Error('Invalid character ''' + Line[First] + ''' ($' + IntToHex(ord(Line[First]), 4) + ')');
       First := MAXINT;
     end;
   end;
 end;
 
-procedure TScanner.Report(Msg : string); begin
+procedure TScanner.Error(Msg : string); begin
   writeln('[Error] ' + ExtractFileName(SourceName) + '('+ IntToStr(LineNumber) + ', ' + IntToStr(ColNumber) + '): ' + Msg);
+  inc(FErrors);
 end;
 
-procedure TScanner.ReportExpected(Expected, Found : string); begin
-  Report('"' + Expected + '" expected but "' + Found + '" found')
+procedure TScanner.ErrorExpected(Expected, Found : string); begin
+  Error('''' + Expected + ''' expected but ''' + Found + ''' found')
 end;
 
 const
   Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
     'Label Identifier', 'Type Identifier', 'Class Identifier');
 
-procedure TScanner.MatchTerminal(Code : char);
+procedure TScanner.MatchTerminal(KindFound : TTokenKind);
 var
-  KindFound : TTokenKind;
+  ExpectedKind : TTokenKind;
 begin
-  KindFound := TTokenKind(byte(Code) - 229);
-  if FToken.Kind <> KindFound then ReportExpected(Kinds[FToken.Kind], Kinds[KindFound]);
-  NextToken
+  ExpectedKind := FToken.Kind;
+  if ExpectedKind <> KindFound then begin
+    ErrorExpected(Kinds[ExpectedKind], Kinds[KindFound]);
+    repeat // Recover from error
+      NextToken
+    until (ExpectedKind = FToken.Kind) or EndSource;
+    inc(Top);
+  end
+  else
+    NextToken
+end;
+
+procedure TScanner.MatchToken(T : string); begin
+  if T <> UpperCase(FToken.Lexeme) then begin
+    ErrorExpected(T, FToken.Lexeme);
+    repeat // Recover from error
+      NextToken
+    until (T = UpperCase(FToken.Lexeme)) or EndSource;
+    inc(Top);
+  end
+  else
+    NextToken;
 end;
 
 end.
