@@ -18,10 +18,7 @@ type
     Symbols    : TStack;
     Top        : cardinal;
     Production : string;
-    function TokensExpected : string;
-    function FirstExpected  : string;
-    function ExpandProduction(T : string) : boolean;
-    procedure RecoverError;
+    procedure ExpandProduction(T : string);
   public
     procedure Compile;
   end;
@@ -40,7 +37,6 @@ const
   IntegerConst          = #0#232;
   StringConst           = #0#231;
   Ident                 = #0#230;
-  Empty                 = #0#0;
   Start                 = #0#1;
   ProgramParams         = #0#2;
   FileList              = #0#3;
@@ -48,8 +44,8 @@ const
   UsesList              = #0#5;
   DeclSection           = #0#6;
   VarDecl               = #0#7;
-  VarInit               = #0#8;
-  VarList               = #0#9;
+  VarList               = #0#8;
+  VarInit               = #0#9;
   Type_                 = #0#10;
   EnumList              = #0#11;
   CompoundStmt          = #0#12;
@@ -65,49 +61,44 @@ const
   StringLength          = #0#22;
   ArrayDimension        = #0#23;
   ClassDecl             = #0#24;
-
-  BeginDecl = '|VAR|' + Empty + '|CONST|' + Empty + '|TYPE|'  + Empty + '|LABEL|' + Empty +
-    '|PROCEDURE|' + Empty + '|FUNCTION|' + Empty + '|BEGIN|' + Empty;
+  QualId                = #0#25;
+  Param                 = #0#26;
+  ParamList             = #0#27;
+  BeginDecl             = '|VAR||CONST||TYPE||LABEL||PROCEDURE||FUNCTION||BEGIN|';
 
 const
-  Grammar : array[1..24] of string = (
-// Start
+  Grammar : array[1..27] of string = (
+//1- Start
    '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + CompoundStmt  + '.' +
    '|UNIT|' + Ident + ';' + InterfaceSection + ImplementationSection + InitSection + '.',
-//   '|LIBRARY|' + Ident + ';' + ProgramBlock + '.',
-//   '|PACKAGE|' + Ident + ';' + RequiresClause + ContainsClause + 'END .',
-// ProgramParams
-   '|(|' + Ident + FileList + ')' +
-   '|;|' + Empty,
-// FileList
-   '|,|' + Ident + FileList +
-   '|)|' + Empty,
-// UsesClause
+   //   '|LIBRARY|' + Ident + ';' + ProgramBlock + '.',
+   //   '|PACKAGE|' + Ident + ';' + RequiresClause + ContainsClause + 'END .',
+//2- ProgramParams
+   '|(|' + Ident + FileList + ')',
+//3- FileList
+   '|,|' + Ident + FileList,
+//4- UsesClause
    '|USES|'  + Ident + UsesList + ';' +
    BeginDecl,
-// UsesList
-   '|,|' + Ident + UsesList +
-   '|;|' + Empty,
-// DeclSection
+//5- UsesList
+   '|,|' + Ident + UsesList,
+//6- DeclSection
    '|VAR|' + VarDecl + DeclSection +
-//   '|CONST|' + ConstantDecl +
+   //   '|CONST|' + Ident ConstantDecl + DeclSection +
    '|TYPE|' + TypeDecl + DeclSection +
-   '|LABEL|' + LabelId +
-   '|BEGIN|' + Empty,
-// VarDecl
-   Ident + VarList + ':' + Type_ + VarInit + ';' + VarDecl +
+   '|LABEL|' + LabelId + UsesList + DeclSection,
+//7- VarDecl
+   '|' + Ident + '|' + VarList + ':' + Type_ + VarInit + ';' + VarDecl +
    BeginDecl,
-// VarList
-   '|,|' + Ident + VarList +
-   '|:|' + Empty,
-// VarInit
+//8- VarList
+   '|,|' + Ident + VarList,
+//9- VarInit
    '|=|' + ConstExpr +
-   '|ABSOLUTE|' + Ident +
-   ';' + Empty,
-// Type_
+   '|ABSOLUTE|' + Ident,
+//10- Type_
    '|' + TypeId + '|' +
    '|INTEGER|' + '|CHAR|' + '|BOOLEAN|' + '|BYTE|' + '|WORD|' + '|CARDINAL|' + '|LONGINT|' + '|INT64|' + '|UINT64|' +
-   '|WIDECHAR|' + '|LONGWORD|' + '|SHORTINT|' + '|SMALLINT|' + '|PCHAR|' +
+   '|WIDECHAR|' + '|LONGWORD|' + '|SHORTINT|' + '|SMALLINT|' + '|PCHAR|' + '|POINTER|' +
    '|REAL|' + '|SINGLE|' + '|DOUBLE|' + '|EXTENDED|' + '|CURRENCY|' + '|COMP|' +
    '|'+ ConstExpr + '|' + '..' + ConstExpr +
    '|(|' + Ident + EnumList + ')' +
@@ -116,56 +107,58 @@ const
    '|WIDESTRING|' +
    '|^|' + TypeId +
    '|CLASS|' + ClassDecl,
-// EnumList
-   '|,|' + Ident + EnumList +
-   '|)|' + Empty,
-// CompoundStmt
+//11- EnumList
+   '|,|' + Ident + EnumList,
+//12- CompoundStmt
    '|BEGIN|' + Statement + 'END',
-// Statement
+//13- Statement
+   '|' + Ident + '|' + QualId + Statement +
    '|BEGIN|' + Statement + 'END' +
    '|REPEAT|' + Statement + 'UNTIL' + Expression +
    '|WHILE|' + Expression + 'DO' + Statement +
-//   '|FOR|' + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
-   '|WITH|' + Ident + WithList + 'DO' + Statement +
+   //   '|FOR|' + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
+   '|WITH|' + Ident + QualId + WithList + 'DO' + Statement +
    '|;|' + Statement +
    '|GOTO|' + LabelId + EndStatement +
    '|INHERITED|' + EndStatement +
-//   '|ASM|'  + AsmStatement + 'END' +
-   '|' + LabelId + '|' + ':' + Statement +
-   '|END|' + Empty,
-// EndStatement
-   '|;|' + Statement +
-   '|END|' + Empty,
-// Expression
+   //   '|ASM|'  + AsmStatement + 'END' +
+   '|' + LabelId + '|' + ':' + Statement,
+//14- EndStatement
+   '|;|' + Statement,
+//15- Expression
    '',
-// ToOrDownto
+//16- ToOrDownto
    '|TO|' + '|DOWNTO|',
-// WithList
-   '|,|' + Ident + WithList +
-   '|DO|' + Empty,
-// InterfaceSection
-   '|INTERFACE|' + UsesClause + DeclSection +
-   '|IMPLEMENTATION|' + Empty,
-// InterfaceSection
-   '|IMPLEMENTATION|'+ UsesClause + DeclSection +
-   '|BEGIN|' + Empty,
-// InitSection
+//17- WithList
+   '|,|' + Ident + QualId + WithList,
+//18- InterfaceSection
+   '|INTERFACE|' + UsesClause + DeclSection,
+//19- ImplementationSection
+   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
+//20- InitSection
    '|BEGIN|' + Statement + 'END',
-// TypeDecl
-   Ident + '=' + Type_ + ';' + TypeDecl +
+//21- TypeDecl
+   '|' + Ident + '|' + '=' + Type_ + ';' + TypeDecl +
    BeginDecl,
-// StringLength
-   '|[|' + IntegerConst + ']' +
-   '|;|' + Empty,
-// ArrayDimension
-   '|[|' + IntegerConst + '..' + IntegerConst + ']' +
-   '|OF|' + Empty,
-// ClassDecl
+//22- StringLength
+   '|[|' + IntegerConst + ']',
+//23- ArrayDimension !!!!! Faltam várias dimensões
+   '|[|' + IntegerConst + '..' + IntegerConst + ']',
+//24- ClassDecl
    '|(|' + ClassId + ')' +
-//   '|PRIVATE|' + VarClassDecl + MethodClassDecl + 'END' +
+   //'|PRIVATE|' + VarClassDecl + MethodClassDecl + 'END' +
    '|PUBLIC|' +
    '|PROTECTED|' +
-   '|OF|' + ClassId
+   '|OF|' + ClassId,
+//25- QualId
+   '|.|' + Ident + QualId +
+   '|(|' + Param + ParamList + ')' + QualId,
+//26- Param
+   '|' + ConstExpr + '|' +
+   '|' + Ident + '|' + QualId +
+   '|' + StringConst + '|',
+//27- ParamList
+   '|,|' + Param + ParamList
   );
 
 procedure TParser.Compile; begin
@@ -173,118 +166,65 @@ procedure TParser.Compile; begin
   Symbol     := Start;
   Top        := 1;
   repeat
-    if Symbol[1] <> #0 then begin // Terminal
-      MatchToken(Symbol);
-      dec(Top);
-    end
+    if Symbol[1] <> #0 then // Terminal
+      MatchToken(Symbol)
     else
-      if Symbol[2] < #230 then begin // NonTerminal
-        if not ExpandProduction(Token.Lexeme) then RecoverError;
-      end
-      else begin // Other Terminal
+      if Symbol[2] < #230 then // NonTerminal
+        ExpandProduction(Token.Lexeme)
+      else  // Other Terminal
         MatchTerminal(Symbol[2]);
-        dec(Top);
-      end;
+    dec(Top);
     Symbol := Symbols[Top];
-  until EndSource
+  until EndSource or (Top = 0)
 end;
 
-procedure TParser.RecoverError;
-var
-  TE : string;
-begin
-  TE := TokensExpected;
-  Report(TE + ' expected but ''' + Token.Lexeme + ''' found.');
-  NextToken;
-  if Top = 0 then begin
-    ExpandProduction(FirstExpected);
-    dec(Top)
-  end
-  else // Synchronize
-    while pos('''' + UpperCase(Token.Lexeme) + '''', TE) = 0 do NextToken;
-end;
-
-function TParser.TokensExpected : string;
-var
-  I   : integer;
-  Ins : boolean;
-begin
-  Result := '';
-  Ins    := false;
-  for I := 1 to length(Production) do
-    if Production[I] = '|' then begin
-      Ins := not Ins;
-      if Ins then
-        Result := Result + ''''
-      else
-        Result := Result + ''', '
-    end
-    else
-      if Ins then
-        Result := Result + Production[I];
-  SetLength(Result, length(Result)-2);
-  I := LastDelimiter(',', Result);
-  if I <> 0 then begin
-    delete(Result, I, 2);
-    insert(' or ', Result, I);
-  end;
-end;
-
-function TParser.FirstExpected : string; begin
-  Result := copy(Production, 2, pos('|', copy(Production, 2, 100))-1)
-end;
-
-function TParser.ExpandProduction(T : string) : boolean;
+procedure TParser.ExpandProduction(T : string);
 var
   P, TopAux : integer;
-  Aux : TStack;
+  Aux  : TStack;
+  LenT : integer;
 begin
   Production := Grammar[byte(Symbol[2])];
   P := pos('|' + UpperCase(T) + '|', Production); // find FIRST or FOLLOW terminal
-  if (P <> 0) or (Production[1] = #0) then begin
-    Result := true;
+  if (P = 0) and (Token.Kind <> tkUndefined) then begin
+    P := pos('|'#0 + char(byte(Token.Kind) + 229) + '|', Production);
+    LenT := 2
+  end
+  else
+    LenT := length(T);
+  if P <> 0 then begin
     dec(Top);
-    if Production[1] = #0 then begin
-      TopAux := 0;
-      P := 1
-    end
-    else begin
-      TopAux := 1;
-      Aux[1] := copy(Production, P + 1, length(T));
-      inc(P, length(T) + 2);
-    end;
+    TopAux := 1;
+    Aux[1] := copy(Production, P + 1, LenT);
+    inc(P, LenT + 2);
     while P <= length(Production) do begin
       case Production[P] of
-        #0 : // Nonterminal
-          if Production[P + 1] = #0 then // Empty
-            exit
-          else begin
-            inc(TopAux);
-            Aux[TopAux] := copy(Production, P, 2);
-            inc(P);
-          end;
+        #0 : begin // Nonterminal
+          inc(TopAux);
+          Aux[TopAux] := copy(Production, P, 2);
+          inc(P);
+        end;
         ' ' : begin // optional begin of terminal
           inc(TopAux);
           Aux[TopAux] := '';
         end;
         '|' : break; // End production
-        else
-          if (Aux[TopAux] <> '') and (Aux[TopAux][1] = #0) then begin // begin terminal
-            inc(TopAux);
-            Aux[TopAux] := Production[P]
-          end
-          else // Terminal
-            Aux[TopAux] := Aux[TopAux] + Production[P]
+      else
+        if (Aux[TopAux] <> '') and (Aux[TopAux][1] = #0) then begin // begin terminal
+          inc(TopAux);
+          Aux[TopAux] := Production[P]
+        end
+        else // Terminal
+          Aux[TopAux] := Aux[TopAux] + Production[P]
       end;
       inc(P);
     end;
     for TopAux := TopAux downto 1 do begin // push at reverse order
-       inc(Top);
-       Symbols[Top] := Aux[TopAux];
+      inc(Top);
+      Symbols[Top] := Aux[TopAux];
     end;
-  end
-  else
-    Result := false;
+    inc(Top);
+  end;
 end;
 
 end.

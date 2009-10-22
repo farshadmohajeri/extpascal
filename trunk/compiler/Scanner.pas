@@ -7,8 +7,8 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 interface
 
 type
-  TTokenKind = (Undefined, Identifier, StringConstant, IntegerConstant, RealConstant, ConstantExpression,
-    LabelIdentifier, TypeIdentifier, ClassIdentifier);
+  TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
+                tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier);
   TToken = class
     Lexeme       : string;
     Kind         : TTokenKind;
@@ -38,7 +38,7 @@ type
     constructor Create(Source : string);
     destructor Destroy; override;
     procedure Report(Msg : string);
-    procedure ReportExpected(Found : string);
+    procedure ReportExpected(Expected, Found : string);
     procedure MatchToken(T : string);
     procedure MatchTerminal(Code : char);
     property LineNumber : integer read FLineNumber;
@@ -50,7 +50,7 @@ type
 implementation
 
 uses
-  SysUtils; // IntToStr, FileExists, StrToFloat, StrToInt
+  SysUtils;
 
 const
   AllChars : TSetChar = [#0..#255];
@@ -67,7 +67,7 @@ constructor TScanner.Create(Source: string); begin
    end
    else begin
      FEndSource := true;
-     Report('Source file ' + Source + ' not found');
+     Report('Source file "' + Source + '" not found');
    end;
 end;
 
@@ -78,7 +78,7 @@ destructor TScanner.Destroy; begin
 end;
 
 procedure TScanner.MatchToken(T : string); begin
-  if T <> UpperCase(FToken.Lexeme) then ReportExpected(T);
+  if T <> UpperCase(FToken.Lexeme) then ReportExpected(T, FToken.Lexeme);
   NextToken;
 end;
 
@@ -87,7 +87,7 @@ var
   I, T, Last : integer;
 begin
   FToken.Lexeme := '';
-  FToken.Kind   := Undefined;
+  FToken.Kind   := tkUndefined;
   for I := 0 to high(Chars) do begin
     Last := First;
     T    := 1;
@@ -105,7 +105,7 @@ begin
 end;
 
 procedure TScanner.NextChar(C : char); begin
-  if Line[First + 1] = C then begin
+  if (First < length(Line)) and (Line[First + 1] = C) then begin
     FToken.Lexeme := copy(Line, First, 2);
     inc(First, 2);
   end
@@ -113,7 +113,7 @@ procedure TScanner.NextChar(C : char); begin
     FToken.Lexeme := Line[First];
     inc(First);
   end;
-  FToken.Kind := Undefined;
+  FToken.Kind := tkUndefined;
 end;
 
 procedure TScanner.FindEndComment(EndComment : string);
@@ -156,13 +156,12 @@ begin
       end;
       'A'..'Z', '_', 'a'..'z' : begin // Identifiers
         ScanChars([['A'..'Z', 'a'..'z', '_', '0'..'9']], [255]);
-        FToken.Kind := Identifier;
-        // Insert in symbol table
+        FToken.Kind := tkIdentifier;
         exit;
       end;
       ';', ',', '=', ')', '[', ']', '+', '-', '^', '@' : begin
         FToken.Lexeme := Line[First];
-        FToken.Kind   := Undefined;
+        FToken.Kind   := tkUndefined;
         inc(First);
         exit;
       end;
@@ -174,7 +173,7 @@ begin
           Str := Str + FToken.Lexeme;
         until Line[First] <> '''';
         FToken.Lexeme := copy(Str, 1, length(Str)-1);
-        FToken.Kind   := StringConstant;
+        FToken.Kind   := tkStringConstant;
         exit;
       end;
       '0'..'9': begin // Numbers
@@ -185,40 +184,38 @@ begin
           SetLength(FToken.Lexeme, length(FToken.Lexeme)-1);
         end;
         if (pos('.', FToken.Lexeme) <> 0) or (pos('E', FToken.Lexeme) <> 0) then
-          FToken.Kind := RealConstant
+          FToken.Kind := tkRealConstant
         else
           if length(FToken.Lexeme) > 18 then
-            FToken.Kind := RealConstant
+            FToken.Kind := tkRealConstant
           else
-            FToken.Kind := IntegerConstant;
-        if FToken.Kind = RealConstant then
+            FToken.Kind := tkIntegerConstant;
+        if FToken.Kind = tkRealConstant then
           FToken.RealValue := StrToFloat(FToken.Lexeme)
         else
           FToken.IntegerValue := StrToInt(FToken.Lexeme);
         exit;
       end;
-      '(' : begin
+      '(' :
         if Line[First + 1] = '*' then begin // Comment Style (*
           CommentStyle := '*';
           FindEndComment('*)');
         end
         else begin
           FToken.Lexeme := '(';
-          FToken.Kind   := Undefined;
+          FToken.Kind   := tkUndefined;
           inc(First);
           exit
         end;
-      end;
-      '/' : begin
+      '/' :
         if Line[First + 1] = '/' then // Comment Style //
           First := MAXINT
         else begin
           FToken.Lexeme := '/';
-          FToken.Kind   := Undefined;
+          FToken.Kind   := tkUndefined;
           inc(First);
           exit
         end;
-      end;
       '{' : begin CommentStyle := '{'; FindEndComment('}'); end;
       '.' : begin NextChar('.'); exit; end;
       '>',
@@ -233,17 +230,17 @@ begin
         end
         else
           FToken.Lexeme := char(StrToInt(copy(FToken.Lexeme, 2, 5)));
-        FToken.Kind := StringConstant;
+        FToken.Kind := tkStringConstant;
         exit;
       end;
       '$' : begin // Hexadecimal
         ScanChars([['$'], ['0'..'9', 'A'..'F', 'a'..'f']], [1, 16]);
-        FToken.Kind := IntegerConstant;
+        FToken.Kind := tkIntegerConstant;
         FToken.IntegerValue := StrToInt(FToken.Lexeme);
         exit;
       end;
     else
-      Report('Invalid character ''' + Line[First] + ''' ($' + IntToHex(ord(Line[First]), 4) + ')');
+      Report('Invalid character "' + Line[First] + '" ($' + IntToHex(ord(Line[First]), 4) + ')');
       First := MAXINT;
     end;
   end;
@@ -251,24 +248,22 @@ end;
 
 procedure TScanner.Report(Msg : string); begin
   writeln('[Error] ' + ExtractFileName(SourceName) + '('+ IntToStr(LineNumber) + ', ' + IntToStr(ColNumber) + '): ' + Msg);
-  readln;
 end;
 
-procedure TScanner.ReportExpected(Found : string); begin
-  Report('''' + FToken.Lexeme + ''' expected but ''' + Found + ''' found.')
+procedure TScanner.ReportExpected(Expected, Found : string); begin
+  Report('"' + Expected + '" expected but "' + Found + '" found')
 end;
 
 const
-  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'StringConstant', 'IntegerConstant', 'RealConstant', 'ConstantExpression',
-    'LabelIdentifier', 'TypeIdentifier', 'ClassIdentifier');
+  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
+    'Label Identifier', 'Type Identifier', 'Class Identifier');
 
-procedure TScanner.MatchTerminal(Code: char);
+procedure TScanner.MatchTerminal(Code : char);
 var
   KindFound : TTokenKind;
 begin
   KindFound := TTokenKind(byte(Code) - 229);
-  if FToken.Kind <> KindFound then
-    Report(Kinds[FToken.Kind] + ' expected but ' + Kinds[KindFound] + ' found.');
+  if FToken.Kind <> KindFound then ReportExpected(Kinds[FToken.Kind], Kinds[KindFound]);
   NextToken
 end;
 
