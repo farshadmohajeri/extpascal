@@ -8,7 +8,7 @@ interface
 
 type
   TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
-                tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier);
+                tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord);
   TToken = class
     Lexeme       : string;
     Kind         : TTokenKind;
@@ -31,11 +31,11 @@ type
     procedure FindEndComment(EndComment: string);
   protected
     FLineNumber, Top,
-    First, FErrors : integer;
+    First, FErrors, FMaxErrors : integer;
     procedure ScanChars(Chars: array of TSetChar; Tam : array of integer; Optional : boolean = false);
     procedure NextToken;
   public
-    constructor Create(Source : string);
+    constructor Create(Source : string; MaxErrors : integer);
     destructor Destroy; override;
     procedure Error(Msg : string);
     procedure ErrorExpected(Expected, Found : string);
@@ -53,13 +53,20 @@ implementation
 uses
   SysUtils;
 
-constructor TScanner.Create(Source: string); begin
+const
+  ReservedWords = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
+    'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.mod.nil.'+
+    'not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.then.threadvar.to.try.true.type.unit.'+
+    'until.uses.var.while.with.xor.';
+
+constructor TScanner.Create(Source: string; MaxErrors : integer); begin
   SourceName := Source;
    if FileExists(Source) then begin
      assign(Arq, Source);
      SetTextBuf(Arq, Buf);
      reset(Arq);
      First := 1;
+     FMaxErrors := MaxErrors;
      FToken := TToken.Create;
      NextToken;
    end
@@ -149,7 +156,10 @@ begin
       end;
       'A'..'Z', '_', 'a'..'z' : begin // Identifiers
         ScanChars([['A'..'Z', 'a'..'z', '_', '0'..'9']], [255]);
-        FToken.Kind := tkIdentifier;
+        if pos('.' + LowerCase(FToken.Lexeme) + '.', ReservedWords) = 0 then
+          FToken.Kind := tkIdentifier
+        else
+          FToken.Kind := tkReservedWord;
         exit;
       end;
       ';', ',', '=', ')', '[', ']', '+', '-', '^', '@' : begin
@@ -200,7 +210,7 @@ begin
         exit;
       end;
       '(' :
-        if Line[First + 1] = '*' then begin // Comment Style (*
+        if (length(Line) > First) and (Line[First + 1] = '*') then begin // Comment Style (*
           CommentStyle := '*';
           FindEndComment('*)');
         end
@@ -211,7 +221,7 @@ begin
           exit
         end;
       '/' :
-        if Line[First + 1] = '/' then // Comment Style //
+        if (length(Line) > First) and (Line[First + 1] = '/') then // Comment Style //
           First := MAXINT
         else begin
           FToken.Lexeme := '/';
@@ -252,6 +262,7 @@ end;
 procedure TScanner.Error(Msg : string); begin
   writeln('[Error] ' + ExtractFileName(SourceName) + '('+ IntToStr(LineNumber) + ', ' + IntToStr(ColNumber) + '): ' + Msg);
   inc(FErrors);
+  if FErrors >= FMaxErrors then FEndSource := true;
 end;
 
 procedure TScanner.ErrorExpected(Expected, Found : string); begin
@@ -259,8 +270,9 @@ procedure TScanner.ErrorExpected(Expected, Found : string); begin
 end;
 
 const
-  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
-    'Label Identifier', 'Type Identifier', 'Class Identifier');
+  Kinds : array[TTokenKind] of string =
+    ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
+     'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
 
 procedure TScanner.MatchTerminal(KindFound : TTokenKind);
 var
