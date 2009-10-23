@@ -15,7 +15,6 @@ type
     RealValue    : double;
     IntegerValue : Int64;
   end;
-
   TSetChar = set of char;
   TScanner = class
   private
@@ -30,8 +29,7 @@ type
     procedure NextChar(C: char);
     procedure FindEndComment(EndComment: string);
   protected
-    FLineNumber, Top,
-    First, FErrors, FMaxErrors : integer;
+    FLineNumber, Top, First, FErrors, FMaxErrors : integer;
     procedure ScanChars(Chars: array of TSetChar; Tam : array of integer; Optional : boolean = false);
     procedure NextToken;
   public
@@ -39,8 +37,8 @@ type
     destructor Destroy; override;
     procedure Error(Msg : string);
     procedure ErrorExpected(Expected, Found : string);
-    procedure MatchToken(T : string);
-    procedure MatchTerminal(KindFound : TTokenKind);
+    procedure MatchToken(TokenExpected : string);
+    procedure MatchTerminal(KindExpected : TTokenKind);
     property LineNumber : integer read FLineNumber;
     property ColNumber : integer read First;
     property Token : TToken read FToken;
@@ -54,10 +52,12 @@ uses
   SysUtils;
 
 const
-  ReservedWords = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
+  ReservedWords = '.and.array.as.asm.begin.case.class.const.constructor.destructor.dispinterface.div.do.downto.else.end.except.exports.'+
     'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.mod.nil.'+
     'not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.then.threadvar.to.try.true.type.unit.'+
     'until.uses.var.while.with.xor.';
+  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
+     'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
 
 constructor TScanner.Create(Source: string; MaxErrors : integer); begin
   SourceName := Source;
@@ -156,7 +156,7 @@ begin
       end;
       'A'..'Z', '_', 'a'..'z' : begin // Identifiers
         ScanChars([['A'..'Z', 'a'..'z', '_', '0'..'9']], [255]);
-        if pos('.' + LowerCase(FToken.Lexeme) + '.', ReservedWords) = 0 then
+        if (length(FToken.Lexeme) < 2) or (pos('.' + LowerCase(FToken.Lexeme) + '.', ReservedWords) = 0) then
           FToken.Kind := tkIdentifier
         else
           FToken.Kind := tkReservedWord;
@@ -269,33 +269,28 @@ procedure TScanner.ErrorExpected(Expected, Found : string); begin
   Error('''' + Expected + ''' expected but ''' + Found + ''' found')
 end;
 
-const
-  Kinds : array[TTokenKind] of string =
-    ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
-     'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
-
-procedure TScanner.MatchTerminal(KindFound : TTokenKind);
+procedure TScanner.MatchTerminal(KindExpected : TTokenKind);
 var
-  ExpectedKind : TTokenKind;
+  KindFound : TTokenKind;
 begin
-  ExpectedKind := FToken.Kind;
-  if ExpectedKind <> KindFound then begin
-    ErrorExpected(Kinds[ExpectedKind], Kinds[KindFound]);
+  KindFound := FToken.Kind;
+  if KindExpected <> KindFound then begin
+    ErrorExpected(Kinds[KindExpected], FToken.Lexeme);
     repeat // Recover from error
       NextToken
-    until (ExpectedKind = FToken.Kind) or EndSource;
+    until (KindExpected = FToken.Kind) or EndSource;
     inc(Top);
   end
   else
     NextToken
 end;
 
-procedure TScanner.MatchToken(T : string); begin
-  if T <> UpperCase(FToken.Lexeme) then begin
-    ErrorExpected(T, FToken.Lexeme);
+procedure TScanner.MatchToken(TokenExpected : string); begin
+  if TokenExpected <> UpperCase(FToken.Lexeme) then begin
+    ErrorExpected(TokenExpected, FToken.Lexeme);
     repeat // Recover from error
       NextToken
-    until (T = UpperCase(FToken.Lexeme)) or EndSource;
+    until (TokenExpected = UpperCase(FToken.Lexeme)) or EndSource;
     inc(Top);
   end
   else

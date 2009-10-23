@@ -36,12 +36,12 @@ const
   TypeDecl    = #148; StringLength  = #149; ArrayDim   = #150; ClassDecl    = #151; QualId      = #152;
   Param       = #153; ParamList     = #154; ClassHerit = #155; VarClassDecl = #156; MetClassDecl= #157;
   FormalParams= #158; FormalList    = #159; FormalParam= #160; ParamInit    = #161; ParamType   = #162;
-  ConstDecl   = #163; Directives    = #164;
+  ConstDecl   = #163; ConstType     = #164; OrdinalType= #165; TypedConst   = #166; ConstList   = #167;
+  Directives  = #168;
 
   // Other non terminals
   Ident = #240; StringConst = #241; IntConst = #242; RealConst = #243; ConstExpr = #244; LabelId = #245; TypeId = #246; ClassId = #247;
 
-const
   Grammar : array[Start..Directives] of string = (
 // Start
   '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + CompoundStmt  + '.' +
@@ -115,7 +115,7 @@ const
 // StringLength
   '|[|' + IntConst + ']',
 // ArrayDim !!!!! Faltam várias dimensões
-  '|[|' + IntConst + '..' + IntConst + ']',
+  '|[|' + OrdinalType + '..' + OrdinalType + ']',
 // ClassDecl
   '|PRIVATE|' + VarClassDecl + MetClassDecl + ClassDecl +
   '|PUBLIC|' + VarClassDecl + MetClassDecl + ClassDecl +
@@ -153,7 +153,17 @@ const
 // ParamType
   '|:|' + Ident,
 // ConstDecl
-  '|' + Ident + '|' + '=' + StringConst + ';',
+  '|' + Ident + '|' + ConstType + '=' + TypedConst + ';' + ConstDecl,
+// ConstType
+  '|:|' + Type_,
+// Ordinal Type
+  '|' + IntConst + '|' +
+  '|' + Ident + '|',
+// TypedConst
+  '|' + ConstExpr + '|' + ConstList +
+  '|(|' + TypedConst + ')',
+// ConstList
+  '|,|' + ConstExpr + ConstList,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
