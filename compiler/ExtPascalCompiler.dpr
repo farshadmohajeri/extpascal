@@ -8,7 +8,8 @@ Based on Dragon Book
 {$APPTYPE CONSOLE}
 
 uses
-  Parser;
+  Parser,
+  Grammar in 'Grammar.pas';
 
 begin
   writeln('ExtPascalCompiler - version 0.1');
