@@ -52,10 +52,10 @@ uses
   SysUtils;
 
 const
-  ReservedWords = '.and.array.as.asm.begin.case.class.const.constructor.destructor.dispinterface.div.do.downto.else.end.except.exports.'+
-    'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.mod.nil.'+
-    'not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.then.threadvar.to.try.true.type.unit.'+
-    'until.uses.var.while.with.xor.';
+  ReservedWords = '.and.array.as.asm.automated.begin.case.class.const.constructor.destructor.dispinterface.div.do.downto.else.end.except.exports.' +
+    'file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.mod.nil.' +
+    'not.object.of.or.out.packed.private.procedure.program.property.protected.public.published.raise.record.repeat.resourcestring.set.shl.shr.' +
+    'then.threadvar.to.try.type.unit.until.uses.var.while.with.xor.';
   Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
      'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
 
