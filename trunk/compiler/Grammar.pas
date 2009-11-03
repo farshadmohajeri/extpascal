@@ -14,7 +14,7 @@ const
   ConstDecl   = #163; ConstType     = #164; OrdinalType= #165; TypedConst   = #166; ConstList   = #167;
   TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
   PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
-  MetId       = #178; Directives    = #179;
+  MetId       = #178; AssignStmt    = #179; Directives = #180;
 
   // Other non terminals
   Ident = #240; StringConst = #241; IntConst = #242; RealConst = #243; ConstExpr = #244; LabelId = #245;
@@ -69,17 +69,17 @@ const
 // CompoundStmt
   '|BEGIN|' + Statement + 'END',
 // Statement
-  '|' + Ident + '|' + QualId + Statement +
-  '|BEGIN|' + Statement + 'END' +
-  '|REPEAT|' + Statement + 'UNTIL' + Expression +
-  '|WHILE|' + Expression + 'DO' + Statement +
+  '|' + Ident + '|' + QualId + AssignStmt + EndStatement +
+  '|BEGIN|' + Statement + 'END' + EndStatement +
+  '|REPEAT|' + Statement + 'UNTIL' + Expression + EndStatement +
+  '|WHILE|' + Expression + 'DO' + Statement + EndStatement +
   //   '|FOR|' + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
-  '|WITH|' + Ident + QualId + WithList + 'DO' + Statement +
-  '|;|' + Statement +
+  '|WITH|' + Ident + QualId + WithList + 'DO' + Statement + EndStatement +
+  '|;|' + Statement + EndStatement +
   '|GOTO|' + LabelId + EndStatement +
   '|INHERITED|' + EndStatement +
   //   '|ASM|'  + AsmStatement + 'END' +
-  '|' + LabelId + '|' + ':' + Statement,
+  '|' + LabelId + '|' + ':' + Statement + EndStatement,
 // EndStatement
   '|;|' + Statement,
 // Expression
@@ -187,6 +187,8 @@ const
   '|+|',
 // MetId
   '|.|' + Ident,
+// AssignStmt
+  '|:=|' + Expression,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
