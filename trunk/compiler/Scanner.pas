@@ -38,8 +38,8 @@ type
     destructor Destroy; override;
     procedure Error(Msg : string);
     procedure ErrorExpected(Expected, Found : string);
-    function MatchToken(TokenExpected : string) : boolean;
-    function MatchTerminal(KindExpected : TTokenKind) : boolean;
+    procedure MatchToken(TokenExpected : string);
+    procedure MatchTerminal(KindExpected : TTokenKind);
     property LineNumber : integer read FLineNumber;
     property ColNumber : integer read First;
     property Token : TToken read FToken;
@@ -276,28 +276,22 @@ procedure TScanner.RecoverFromError; begin
   until (FToken.Lexeme = ';') or EndSource;
 end;
 
-function TScanner.MatchTerminal(KindExpected : TTokenKind) : boolean; begin
+procedure TScanner.MatchTerminal(KindExpected : TTokenKind); begin
   if KindExpected <> FToken.Kind then begin
     ErrorExpected(Kinds[KindExpected], FToken.Lexeme);
     RecoverFromError;
-    Result := false;
   end
-  else begin
+  else
     NextToken;
-    Result := true;
-  end;
 end;
 
-function TScanner.MatchToken(TokenExpected : string) : boolean; begin
+procedure TScanner.MatchToken(TokenExpected : string); begin
   if TokenExpected <> UpperCase(FToken.Lexeme) then begin
     ErrorExpected(TokenExpected, FToken.Lexeme);
     RecoverFromError;
-    Result := false;
   end
-  else begin
+  else
     NextToken;
-    Result := true
-  end;
 end;
 
 end.
