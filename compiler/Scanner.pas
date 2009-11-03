@@ -1,7 +1,7 @@
 unit Scanner;
 {
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
-Date: dec-2008
+Date: jan-2010
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 interface
@@ -32,13 +32,14 @@ type
     FLineNumber, Top, First, FErrors, FMaxErrors : integer;
     procedure ScanChars(Chars: array of TSetChar; Tam : array of integer; Optional : boolean = false);
     procedure NextToken;
+    procedure RecoverFromError; virtual;
   public
     constructor Create(Source : string; MaxErrors : integer);
     destructor Destroy; override;
     procedure Error(Msg : string);
     procedure ErrorExpected(Expected, Found : string);
-    procedure MatchToken(TokenExpected : string);
-    procedure MatchTerminal(KindExpected : TTokenKind);
+    function MatchToken(TokenExpected : string) : boolean;
+    function MatchTerminal(KindExpected : TTokenKind) : boolean;
     property LineNumber : integer read FLineNumber;
     property ColNumber : integer read First;
     property Token : TToken read FToken;
@@ -269,32 +270,34 @@ procedure TScanner.ErrorExpected(Expected, Found : string); begin
   Error('''' + Expected + ''' expected but ''' + Found + ''' found')
 end;
 
-procedure TScanner.MatchTerminal(KindExpected : TTokenKind);
-var
-  KindFound : TTokenKind;
-begin
-  KindFound := FToken.Kind;
-  if KindExpected <> KindFound then begin
-    ErrorExpected(Kinds[KindExpected], FToken.Lexeme);
-    repeat // Recover from error
-      NextToken
-    until (KindExpected = FToken.Kind) or EndSource;
-    inc(Top);
-  end
-  else
+procedure TScanner.RecoverFromError; begin
+  repeat
     NextToken
+  until (FToken.Lexeme = ';') or EndSource;
 end;
 
-procedure TScanner.MatchToken(TokenExpected : string); begin
+function TScanner.MatchTerminal(KindExpected : TTokenKind) : boolean; begin
+  if KindExpected <> FToken.Kind then begin
+    ErrorExpected(Kinds[KindExpected], FToken.Lexeme);
+    RecoverFromError;
+    Result := false;
+  end
+  else begin
+    NextToken;
+    Result := true;
+  end;
+end;
+
+function TScanner.MatchToken(TokenExpected : string) : boolean; begin
   if TokenExpected <> UpperCase(FToken.Lexeme) then begin
     ErrorExpected(TokenExpected, FToken.Lexeme);
-    repeat // Recover from error
-      NextToken
-    until (TokenExpected = UpperCase(FToken.Lexeme)) or EndSource;
-    inc(Top);
+    RecoverFromError;
+    Result := false;
   end
-  else
+  else begin
     NextToken;
+    Result := true
+  end;
 end;
 
 end.

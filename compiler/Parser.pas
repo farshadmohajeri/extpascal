@@ -1,7 +1,7 @@
 unit Parser;
 {
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
-Date: dec-2008
+Date: jan-2010
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 interface
@@ -18,6 +18,9 @@ type
     Symbols    : TStack;
     Production : string;
     procedure ExpandProduction(T : string);
+    procedure PopSymbol;
+  protected
+    procedure RecoverFromError; override;
   public
     procedure Compile;
   end;
@@ -26,6 +29,23 @@ implementation
 
 uses
   SysUtils, Grammar;
+
+procedure TParser.PopSymbol; begin
+  if Top > 1 then begin
+    dec(Top);
+    Symbol := Symbols[Top];
+    if (Symbol = Pop) and (Top > 1) then begin
+      dec(Top);
+      Symbol := Symbols[Top];
+    end;
+  end;
+end;
+
+procedure TParser.RecoverFromError; begin
+  inherited;
+  while (Symbol <> ';') and (Top > 1) do PopSymbol;
+  inc(Top);
+end;
 
 procedure TParser.Compile; begin
   Symbols[1] := Start;
@@ -38,14 +58,7 @@ procedure TParser.Compile; begin
     else // Other Terminal
       MatchTerminal(TTokenKind(byte(Symbol[1]) - byte(pred(Ident))));
     end;
-    if Top > 1 then begin
-      dec(Top);
-      Symbol := Symbols[Top];
-      if (Symbol = Pop) and (Top > 1) then begin
-        dec(Top);
-        Symbol := Symbols[Top];
-      end;
-    end;
+    PopSymbol;
   until EndSource or (Top = 0);
   if Errors <> 0 then
     writeln('Compilation with ', Errors, ' error(s)')

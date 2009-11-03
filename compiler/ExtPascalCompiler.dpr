@@ -1,7 +1,7 @@
 program ExtPascalCompiler;
 {
 Author: Wanderlan Santos dos Anjos, wanderlan.anjos@gmail.com
-Date: dec-2008
+Date: jan-2010
 License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 Based on Dragon Book
 }
