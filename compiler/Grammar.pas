@@ -14,7 +14,7 @@ const
   ConstDecl   = #163; ConstType     = #164; OrdinalType= #165; TypedConst   = #166; ConstList   = #167;
   TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
   PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
-  Directives  = #178;
+  MetId       = #178; Directives    = #179;
 
   // Other non terminals
   Ident = #240; StringConst = #241; IntConst = #242; RealConst = #243; ConstExpr = #244; LabelId = #245;
@@ -42,7 +42,11 @@ const
   '|VAR|' + VarDecl + DeclSection +
   '|CONST|' + ConstDecl + DeclSection +
   '|TYPE|' + TypeDecl + DeclSection +
-  '|LABEL|' + LabelId + UsesList + DeclSection,
+  '|LABEL|' + LabelId + UsesList + DeclSection +
+  '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' +
+  '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + DeclSection + CompoundStmt + ';' +
+  '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' +
+  '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';',
 // VarDecl
   '|' + Ident + '|' + VarList + ':' + Type_ + VarInit + ';' + VarDecl,
 // VarList
@@ -181,6 +185,8 @@ const
 // RelOp
   '|>||<||>=||<=||<>||IN||IS||AS|' +
   '|+|',
+// MetId
+  '|.|' + Ident,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
