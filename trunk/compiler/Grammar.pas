@@ -13,7 +13,8 @@ const
   FormalParams= #158; FormalList    = #159; FormalParam= #160; ParamInit    = #161; ParamSpec   = #162;
   ConstDecl   = #163; ConstType     = #164; OrdinalType= #165; TypedConst   = #166; ConstList   = #167;
   TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
-  PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; Directives  = #177;
+  PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
+  Directives  = #178;
 
   // Other non terminals
   Ident = #240; StringConst = #241; IntConst = #242; RealConst = #243; ConstExpr = #244; LabelId = #245;
@@ -78,7 +79,15 @@ const
 // EndStatement
   '|;|' + Statement,
 // Expression
-  '',
+  '|' + IntConst + '|' + RelOp + Expression +
+  '|' + StringConst + '|' + RelOp + Expression +
+  '|' + RealConst + '|' + RelOp + Expression +
+  '|+|' + Expression +
+  '|-|' + Expression +
+  '|NOT|' + Expression +
+  '|(|' + Expression + ')' +
+  '|NIL|' +
+  '|[|' + Expression + ']',
 // ToOrDownto
   '|TO|' + '|DOWNTO|',
 // WithList
@@ -169,6 +178,9 @@ const
   '|NODEFAULT|',
 // PropImplem
   '|IMPLEMENTS|' + TypeId,
+// RelOp
+  '|>||<||>=||<=||<>||IN||IS||AS|' +
+  '|+|',
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
