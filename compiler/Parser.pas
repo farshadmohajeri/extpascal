@@ -34,9 +34,15 @@ procedure TParser.PopSymbol; begin
   if Top > 1 then begin
     dec(Top);
     Symbol := Symbols[Top];
-    if (Symbol = Pop) and (Top > 1) then begin
-      dec(Top);
-      Symbol := Symbols[Top];
+    case Symbol[1] of
+      Mark : PopSymbol;
+      Pop  : begin
+        repeat
+          dec(Top);
+        until (Symbols[Top] = Mark) or (Top <= 2);
+        dec(Top);
+        Symbol := Symbols[Top];
+      end;
     end;
   end;
 end;
