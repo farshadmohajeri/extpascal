@@ -73,7 +73,10 @@ var
   LenT : integer;
 begin
   Production := Productions[Symbol[1]];
-  P := pos('|' + UpperCase(T) + '|', Production); // find FIRST or FOLLOW terminal
+  if T <> '' then
+    P := pos('|' + UpperCase(T) + '|', Production) // find FIRST or FOLLOW terminal
+  else
+    P := 0;
   if (P = 0) and (Token.Kind <> tkUndefined) then begin
     P := pos('|' + char(byte(Token.Kind) + byte(pred(Ident))) + '|', Production);
     LenT := 1

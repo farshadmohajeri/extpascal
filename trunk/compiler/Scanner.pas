@@ -7,7 +7,7 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 interface
 
 type
-  TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
+  TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkCharConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
                 tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord);
   TToken = class
     Lexeme       : string;
@@ -26,7 +26,7 @@ type
     CommentStyle : char;
     FEndSource   : boolean;
     LenLine      : integer;
-    procedure NextChar(C: char);
+    procedure NextChar(C : TSetChar);
     procedure FindEndComment(EndComment: string);
   protected
     FLineNumber, Top, First, FErrors, FMaxErrors : integer;
@@ -57,24 +57,24 @@ const
     'file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.mod.nil.' +
     'not.object.of.or.out.packed.private.procedure.program.property.protected.public.published.raise.record.repeat.resourcestring.set.shl.shr.' +
     'then.threadvar.to.try.type.unit.until.uses.var.while.with.xor.';
-  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
+  Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Char Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
      'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
 
 constructor TScanner.Create(Source: string; MaxErrors : integer); begin
   SourceName := Source;
-   if FileExists(Source) then begin
-     assign(Arq, Source);
-     SetTextBuf(Arq, Buf);
-     reset(Arq);
-     First := 1;
-     FMaxErrors := MaxErrors;
-     FToken := TToken.Create;
-     NextToken;
-   end
-   else begin
-     FEndSource := true;
-     Error('Source file ''' + Source + ''' not found');
-   end;
+  if FileExists(Source) then begin
+    assign(Arq, Source);
+    SetTextBuf(Arq, Buf);
+    reset(Arq);
+    First := 1;
+    FMaxErrors := MaxErrors;
+    FToken := TToken.Create;
+    NextToken;
+  end
+  else begin
+    FEndSource := true;
+    Error('Source file ''' + Source + ''' not found');
+  end;
 end;
 
 destructor TScanner.Destroy; begin
@@ -105,8 +105,8 @@ begin
   end;
 end;
 
-procedure TScanner.NextChar(C : char); begin
-  if (First < length(Line)) and (Line[First + 1] = C) then begin
+procedure TScanner.NextChar(C : TSetChar); begin
+  if (First < length(Line)) and (Line[First + 1] in C) then begin
     FToken.Lexeme := copy(Line, First, 2);
     inc(First, 2);
   end
@@ -146,7 +146,7 @@ begin
     end;
     // End comment across many lines
     case CommentStyle of
-      #0  : ;
+      #0  : ; 
       '{' : begin FindEndComment('}');  continue; end;
       '*' : begin FindEndComment('*)'); continue; end;
     end;
@@ -187,7 +187,10 @@ begin
           until FToken.Lexeme = '';
         until Line[First] <> '''';
         FToken.Lexeme := copy(Str, 1, length(Str)-1);
-        FToken.Kind   := tkStringConstant;
+        if length(FToken.Lexeme) = 1 then
+          FToken.Kind := tkCharConstant
+        else
+          FToken.Kind := tkStringConstant;
         exit;
       end;
       '0'..'9': begin // Numbers
@@ -231,11 +234,11 @@ begin
           exit
         end;
       '{' : begin CommentStyle := '{'; FindEndComment('}'); end;
-      '.' : begin NextChar('.'); exit; end;
+      '.' : begin NextChar(['.']); exit; end;
       '>',
-      '<',
-      ':' : begin NextChar('='); exit; end;
-      '*' : begin NextChar('*'); exit; end;
+      ':' : begin NextChar(['=']); exit; end;
+      '<' : begin NextChar(['=', '>']); exit; end;
+      '*' : begin NextChar(['*']); exit; end;
       '#' : begin
         ScanChars([['#'], ['0'..'9']], [1, 5]);
         if (FToken.Lexeme = '#') and (Line[First] = '$') then begin
@@ -244,7 +247,10 @@ begin
         end
         else
           FToken.Lexeme := char(StrToInt(copy(FToken.Lexeme, 2, 5)));
-        FToken.Kind := tkStringConstant;
+        if length(FToken.Lexeme) = 1 then
+          FToken.Kind := tkCharConstant
+        else
+          FToken.Kind := tkStringConstant;
         exit;
       end;
       '$' : begin // Hexadecimal
@@ -266,8 +272,20 @@ procedure TScanner.Error(Msg : string); begin
   if FErrors >= FMaxErrors then FEndSource := true;
 end;
 
+function ReplaceSpecialChars(S : string) : string;
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 1 to length(S) do
+    if S[I] >= ' ' then
+      Result := Result + S[I]
+    else
+      Result := Result + '#' + IntToStr(byte(S[I]));
+end;
+
 procedure TScanner.ErrorExpected(Expected, Found : string); begin
-  Error('''' + Expected + ''' expected but ''' + Found + ''' found')
+  Error('''' + Expected + ''' expected but ''' + ReplaceSpecialChars(Found) + ''' found')
 end;
 
 procedure TScanner.RecoverFromError; begin
