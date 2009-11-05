@@ -6,7 +6,7 @@ const
   // Productions id
   Start       = #128; ProgramParams = #129; IdentList  = #130; UsesClause   = #131; UsesList    = #132;
   DeclSection = #133; VarDecl       = #134; VarList    = #135; VarInit      = #136; Type_       = #137;
-  EnumList    = #138; CompoundStmt  = #139; Statement  = #140; EndStatement = #141; Expression  = #142;
+  EnumList    = #138; CompoundStmt  = #139; Statement  = #140; StmtList     = #141; Expression  = #142;
   ToOrDownto  = #143; WithList      = #144; IntSection = #145; ImplSection  = #146; InitSection = #147;
   TypeDecl    = #148; StringLength  = #149; ArrayDim   = #150; ClassDecl    = #151; QualId      = #152;
   Param       = #153; ParamList     = #154; ClassHerit = #155; VarClassDecl = #156; MetClassDecl= #157;
@@ -14,10 +14,11 @@ const
   ConstDecl   = #163; ConstType     = #164; OrdinalType= #165; TypedConst   = #166; ConstList   = #167;
   TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
   PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
-  MetId       = #178; AssignStmt    = #179; Directives = #180;
+  MetId       = #178; AssignStmt    = #179; ElseBranch = #180; ExprList     = #181; CaseList    = #182;
+  EndCaseList = #183; Directives    = #184;
 
   // Other non terminals
-  Ident = #240; StringConst = #241; IntConst = #242; RealConst = #243; ConstExpr = #244; LabelId = #245;
+  Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244; ConstExpr = #245; LabelId = #246;
   Pop   = #255;
 
   SimpleType = '|' + Ident + '|' + '|INTEGER|' + '|BOOLEAN|' + '|BYTE|' + '|WORD|' + '|CARDINAL|' + '|LONGINT|' + '|INT64|' + '|UINT64|' +
@@ -43,10 +44,10 @@ const
   '|CONST|' + ConstDecl + DeclSection +
   '|TYPE|' + TypeDecl + DeclSection +
   '|LABEL|' + LabelId + UsesList + DeclSection +
-  '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' +
-  '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + DeclSection + CompoundStmt + ';' +
-  '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' +
-  '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';',
+  '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection +
+  '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection +
+  '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection +
+  '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection,
 // VarDecl
   '|' + Ident + '|' + VarList + ':' + Type_ + VarInit + ';' + VarDecl,
 // VarList
@@ -67,29 +68,33 @@ const
 // EnumList
   '|,|' + Ident + EnumList,
 // CompoundStmt
-  '|BEGIN|' + Statement + 'END',
+  '|BEGIN|' + Statement + StmtList + 'END',
 // Statement
-  '|' + Ident + '|' + QualId + AssignStmt + EndStatement +
-  '|BEGIN|' + Statement + 'END' + EndStatement +
-  '|REPEAT|' + Statement + 'UNTIL' + Expression + EndStatement +
-  '|WHILE|' + Expression + 'DO' + Statement + EndStatement +
-  //   '|FOR|' + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
-  '|WITH|' + Ident + QualId + WithList + 'DO' + Statement + EndStatement +
-  '|;|' + Statement + EndStatement +
-  '|GOTO|' + LabelId + EndStatement +
-  '|INHERITED|' + EndStatement +
+  '|' + Ident + '|' + QualId + AssignStmt +
+  '|BEGIN|' + Statement + StmtList + 'END' +
+  '|IF|' + Expression + 'THEN' + Statement + ElseBranch +
+  '|REPEAT|' + Statement + 'UNTIL' + Expression +
+  '|WHILE|' + Expression + 'DO' + Statement +
+  '|FOR|' + Ident + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
+  '|WITH|' + Ident + QualId + WithList + 'DO' + Statement +
+//  '|;|' + Statement +
+  '|CASE|' + Expression + 'OF' + Expression + ExprList + ':' + Statement + CaseList +
+  '|GOTO|' + LabelId +
+  '|INHERITED|' +
   //   '|ASM|'  + AsmStatement + 'END' +
-  '|' + LabelId + '|' + ':' + Statement + EndStatement,
-// EndStatement
-  '|;|' + Statement,
+  '|' + LabelId + '|' + ':' + Statement,
+// StmtList
+  '|;|' + Statement + StmtList,
 // Expression
+  '|' + Ident + '|' + QualId + RelOp + Expression +
   '|' + IntConst + '|' + RelOp + Expression +
   '|' + StringConst + '|' + RelOp + Expression +
+  '|' + CharConst + '|' + RelOp + Expression +
   '|' + RealConst + '|' + RelOp + Expression +
   '|+|' + Expression +
   '|-|' + Expression +
   '|NOT|' + Expression +
-  '|(|' + Expression + ')' +
+  '|(|' + Expression + ')' + RelOp + Expression +
   '|NIL|' +
   '|[|' + Expression + ']',
 // ToOrDownto
@@ -101,7 +106,7 @@ const
 // ImplSection
   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
 // InitSection
-  '|BEGIN|' + Statement + 'END',
+  '|BEGIN|' + Statement + StmtList + 'END',
 // TypeDecl
   '|' + Ident + '|' + '=' + Type_ + ';' + TypeDecl,
 // StringLength
@@ -116,11 +121,13 @@ const
   '|AUTOMATED|' + VarClassDecl + MetClassDecl + ClassDecl,
 // QualId
   '|.|' + Ident + QualId +
-  '|(|' + Param + ParamList + ')' + QualId,
+  '|(|' + Expression + ExprList + ')' + QualId +
+  '|[|' + Expression + ExprList + ']' + QualId ,
 // Param
   '|' + IntConst + '|' +
   '|' + Ident + '|' + QualId +
-  '|' + StringConst + '|',
+  '|' + StringConst + '|' +
+  '|' + CharConst + '|',
 // ParamList
   '|,|' + Param + ParamList,
 // ClassHerit
@@ -153,6 +160,7 @@ const
   '|:|' + Type_,
 // OrdinalType
   '|' + IntConst + '|' +
+  '|' + CharConst + '|' +
   '|' + Ident + '|',
 // TypedConst
   '',
@@ -183,12 +191,21 @@ const
 // PropImplem
   '|IMPLEMENTS|' + TypeId,
 // RelOp
-  '|>||<||>=||<=||<>||IN||IS||AS|' +
-  '|+|',
+  '|>||<||>=||<=||<>||=||IN||IS||AS|' +
+  '|+||AND|',
 // MetId
   '|.|' + Ident,
 // AssignStmt
   '|:=|' + Expression,
+// ElseBranch
+  '|ELSE|' + Statement,
+// ExprList
+  '|,|' + Expression + ExprList,
+// CaseList
+  '|;|' + EndCaseList + Expression + ExprList + ':' + Statement + CaseList,
+// EndCaseList
+  '|ELSE|' + Statement + 'END' + Pop +
+  '|END|' + Pop,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
