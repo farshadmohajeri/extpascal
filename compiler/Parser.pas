@@ -80,7 +80,7 @@ var
   LenT : integer;
 begin
   Production := Productions[Symbol[1]];
-  if T <> '' then
+  if (T <> '') and not(Token.Kind in [tkStringConstant, tkCharConstant]) then
     P := pos('|' + UpperCase(T) + '|', Production) // find FIRST or FOLLOW terminal
   else
     P := 0;

@@ -193,7 +193,7 @@ const
   '|IMPLEMENTS|' + TypeId,
 // RelOp
   '|>||<||>=||<=||<>||=||IN||IS||AS|' +
-  '|+||AND||OR|',
+  '|+||-||AND||OR|',
 // MetId
   '|.|' + Ident,
 // AssignStmt
