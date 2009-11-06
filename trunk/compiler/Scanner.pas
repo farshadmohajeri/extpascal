@@ -8,7 +8,7 @@ interface
 
 type
   TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkCharConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
-                tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord);
+                tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord, tkSpecialSymbol);
   TToken = class
     Lexeme       : string;
     Kind         : TTokenKind;
@@ -60,7 +60,7 @@ const
     'not.object.of.or.out.packed.private.procedure.program.property.protected.public.published.raise.record.repeat.resourcestring.set.shl.shr.' +
     'then.threadvar.to.try.type.unit.until.uses.var.while.with.xor.';
   Kinds : array[TTokenKind] of string = ('Undefined', 'Identifier', 'String Constant', 'Char Constant', 'Integer Constant', 'Real Constant', 'Constant Expression',
-     'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
+     'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word', 'Special Symbol');
 
 constructor TScanner.Create(Source: string; MaxErrors : integer); begin
   FElapsed   := Now;
@@ -117,7 +117,7 @@ procedure TScanner.NextChar(C : TSetChar); begin
     FToken.Lexeme := Line[First];
     inc(First);
   end;
-  FToken.Kind := tkUndefined;
+  FToken.Kind := tkSpecialSymbol;
 end;
 
 procedure TScanner.FindEndComment(EndComment : string);
@@ -149,7 +149,7 @@ begin
     end;
     // End comment across many lines
     case CommentStyle of
-      #0  : ; 
+      #0  : ;
       '{' : begin FindEndComment('}');  continue; end;
       '*' : begin FindEndComment('*)'); continue; end;
     end;
@@ -168,7 +168,7 @@ begin
       end;
       ';', ',', '=', ')', '[', ']', '+', '-', '^', '@' : begin
         FToken.Lexeme := Line[First];
-        FToken.Kind   := tkUndefined;
+        FToken.Kind   := tkSpecialSymbol;
         inc(First);
         exit;
       end;
@@ -223,7 +223,7 @@ begin
         end
         else begin
           FToken.Lexeme := '(';
-          FToken.Kind   := tkUndefined;
+          FToken.Kind   := tkSpecialSymbol;
           inc(First);
           exit
         end;
@@ -232,7 +232,7 @@ begin
           First := MAXINT
         else begin
           FToken.Lexeme := '/';
-          FToken.Kind   := tkUndefined;
+          FToken.Kind   := tkSpecialSymbol;
           inc(First);
           exit
         end;
