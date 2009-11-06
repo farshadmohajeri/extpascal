@@ -67,9 +67,10 @@ procedure TParser.Compile; begin
     PopSymbol;
   until EndSource or (Top = 0);
   if Errors <> 0 then
-    writeln('Compilation with ', Errors, ' error(s)')
+    writeln('Compilation with ', Errors, ' error(s).')
   else
-    writeln('Successful compilation')
+    writeln('Successful compilation.');
+  writeln(LineNumber, ' lines,', FormatDateTime(' s.z ', Now-Elapsed), 'seconds.')
 end;
 
 procedure TParser.ExpandProduction(T : string);
