@@ -26,6 +26,7 @@ type
     CommentStyle : char;
     FEndSource   : boolean;
     LenLine      : integer;
+    FElapsed     : TDateTime;
     procedure NextChar(C : TSetChar);
     procedure FindEndComment(EndComment: string);
   protected
@@ -45,6 +46,7 @@ type
     property Token : TToken read FToken;
     property EndSource : boolean read FEndSource;
     property Errors : integer read FErrors;
+    property Elapsed : TDateTime read FElapsed;
   end;
 
 implementation
@@ -61,6 +63,7 @@ const
      'Label Identifier', 'Type Identifier', 'Class Identifier', 'Reserved Word');
 
 constructor TScanner.Create(Source: string; MaxErrors : integer); begin
+  FElapsed   := Now;
   SourceName := Source;
   if FileExists(Source) then begin
     assign(Arq, Source);
@@ -138,10 +141,10 @@ begin
   while not FEndSource do begin
     while First > LenLine do begin
       readln(Arq, Line);
-      inc(FLineNumber);
       LenLine := length(Line);
       FEndSource := EOF(Arq) and (LenLine = 0);
       if FEndSource then exit;
+      inc(FLineNumber);
       First := 1;
     end;
     // End comment across many lines
@@ -235,10 +238,10 @@ begin
         end;
       '{' : begin CommentStyle := '{'; FindEndComment('}'); end;
       '.' : begin NextChar(['.']); exit; end;
+      '*' : begin NextChar(['*']); exit; end;
       '>',
       ':' : begin NextChar(['=']); exit; end;
       '<' : begin NextChar(['=', '>']); exit; end;
-      '*' : begin NextChar(['*']); exit; end;
       '#' : begin
         ScanChars([['#'], ['0'..'9']], [1, 5]);
         if (FToken.Lexeme = '#') and (Line[First] = '$') then begin

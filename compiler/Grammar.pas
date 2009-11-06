@@ -15,7 +15,7 @@ const
   TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
   PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
   MetId       = #178; AssignStmt    = #179; ElseBranch = #180; ExprList     = #181; CaseList    = #182;
-  EndCaseList = #183; Interval      = #184; Directives = #185;
+  EndCaseList = #183; SetList       = #184; Directives = #185;
 
   // Other non terminals
   Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244; ConstExpr = #245; LabelId = #246;
@@ -73,12 +73,12 @@ const
   '|' + Ident + '|' + QualId + AssignStmt +
   '|BEGIN|' + Statement + StmtList + 'END' +
   '|IF|' + Expression + 'THEN' + Statement + ElseBranch +
-  '|REPEAT|' + Statement + 'UNTIL' + Expression +
+  '|REPEAT|' + Statement + StmtList + 'UNTIL' + Expression +
   '|WHILE|' + Expression + 'DO' + Statement +
   '|FOR|' + Ident + QualId + ':=' + Expression + ToOrDownto + Expression + 'DO' + Statement +
   '|WITH|' + Ident + QualId + WithList + 'DO' + Statement +
 //  '|;|' + Statement +
-  '|CASE|' + Expression + 'OF' + Expression + Interval + ExprList + ':' + Statement + CaseList + Mark +
+  '|CASE|' + Expression + 'OF' + Expression + SetList + ':' + Statement + CaseList + Mark +
   '|GOTO|' + LabelId +
   '|INHERITED|' +
   //   '|ASM|'  + AsmStatement + 'END' +
@@ -94,9 +94,9 @@ const
   '|+|' + Expression +
   '|-|' + Expression +
   '|NOT|' + Expression +
-  '|(|' + Expression + ')' + RelOp + Expression +
+  '|(|' + Expression + ExprList + ')' + RelOp + Expression +
   '|NIL|' +
-  '|[|' + Expression + ExprList + ']',
+  '|[|' + Expression + SetList + ']',
 // ToOrDownto
   '|TO|' + '|DOWNTO|',
 // WithList
@@ -106,13 +106,14 @@ const
 // ImplSection
   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
 // InitSection
-  '|BEGIN|' + Statement + StmtList + 'END',
+  '|BEGIN|' + Statement + StmtList + 'END' +
+  '|END|',
 // TypeDecl
   '|' + Ident + '|' + '=' + Type_ + ';' + TypeDecl,
 // StringLength
   '|[|' + IntConst + ']',
-// ArrayDim !!!!! Faltam várias dimensões
-  '|[|' + Expression + Interval + ']',
+// ArrayDim 
+  '|[|' + Expression + SetList + ']',
 // ClassDecl
   '|PRIVATE|' + VarClassDecl + MetClassDecl + ClassDecl +
   '|PROTECTED|' + VarClassDecl + MetClassDecl + ClassDecl +
@@ -192,7 +193,7 @@ const
   '|IMPLEMENTS|' + TypeId,
 // RelOp
   '|>||<||>=||<=||<>||=||IN||IS||AS|' +
-  '|+||AND|',
+  '|+||AND||OR|',
 // MetId
   '|.|' + Ident,
 // AssignStmt
@@ -200,14 +201,17 @@ const
 // ElseBranch
   '|ELSE|' + Statement,
 // ExprList
-  '|,|' + Expression + Interval + ExprList,
+  '|,|' + Expression + SetList,
 // CaseList
-  '|;|' + EndCaseList + Expression + Interval + ExprList + ':' + Statement + CaseList,
+  '|;|' + EndCaseList + Expression + SetList + ':' + Statement + CaseList + 
+  '|ELSE|' + Statement + StmtList + 'END' +
+  '|END|',
 // EndCaseList
-  '|ELSE|' + Statement + 'END' + Pop +
+  '|ELSE|' + Statement + StmtList + 'END' + Pop +
   '|END|' + Pop,
-// Interval
-  '|..|' + Expression,
+// SetList
+  '|,|' + Expression + SetList +
+  '|..|' + Expression + ExprList,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
