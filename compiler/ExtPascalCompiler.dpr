@@ -8,8 +8,7 @@ Based on Dragon Book
 {$APPTYPE CONSOLE}
 
 uses
-  Parser,
-  Grammar in 'Grammar.pas';
+  Parser, Grammar;
 
 begin
   writeln('ExtPascalCompiler - version 0.1');
@@ -18,4 +17,3 @@ begin
   with TParser.Create(ParamStr(1), 10) do Compile;
   readln;
 end.
-
