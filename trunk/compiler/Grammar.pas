@@ -96,7 +96,7 @@ const
   '|NOT|' + Expression +
   '|(|' + Expression + ')' + RelOp + Expression +
   '|NIL|' +
-  '|[|' + Expression + ']',
+  '|[|' + Expression + ExprList + ']',
 // ToOrDownto
   '|TO|' + '|DOWNTO|',
 // WithList
@@ -112,7 +112,7 @@ const
 // StringLength
   '|[|' + IntConst + ']',
 // ArrayDim !!!!! Faltam várias dimensões
-  '|[|' + OrdinalType + '..' + OrdinalType + ']',
+  '|[|' + Expression + Interval + ']',
 // ClassDecl
   '|PRIVATE|' + VarClassDecl + MetClassDecl + ClassDecl +
   '|PROTECTED|' + VarClassDecl + MetClassDecl + ClassDecl +
