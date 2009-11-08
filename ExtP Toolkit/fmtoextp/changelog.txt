@@ -9,7 +9,8 @@ Version 0.1.2 (SVN):
 - Support for automatic generation of SetLibrary calls with controls that
   are not in ext-all.js (for example, TExtUxFormMultiSelect).
 - Added MultiSelect example app.
-- Added table of ExtPascal equivalents to VCL/LCL controls.
+- Added table of ExtPascal equivalents to VCL/LCL controls in documentation.
+- Support for TExtFormRadioGroup in converter and as a design control.
 
 
 Version 0.1.1 (08-Oct-2009):

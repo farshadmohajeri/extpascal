@@ -930,14 +930,30 @@ begin
                     WriteLn(IncFileVar, ' + ''\n'' +');  {Start new line}
                   Write(IncFileVar, BlankStr(IndentInc*(ObjLevel)+1),
                                     InStr);
+                  end
+                else if SameText(ExtClassName, 'TExtFormRadioGroup') then
+                  begin
+                  WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                      'with TExtFormRadio.AddTo(Items) do');
+                  WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                      'begin');
+                  WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                      'Name := ''', ObjName, ''';');  {Group}
+                  WriteLn(IncFilevar, BlankStr(IndentInc*(ObjLevel+1)),
+                                      'BoxLabel := ', InStr, ';');
+                  WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
+                                      'end;');
                   end;
                 Inc(ItemStrCnt);
                 end;
             until ItemStrDone;
-            if SameText(ExtClassName, 'TExtFormComboBox') or
-               SameText(ExtClassName, 'TExtUxFormMultiSelect') then
-              Write(IncFileVar, ''')');
-            WriteLn(IncFileVar, ';');
+            if not SameText(ExtClassName, 'TExtFormRadioGroup') then
+              begin
+              if SameText(ExtClassName, 'TExtFormComboBox') or
+                 SameText(ExtClassName, 'TExtUxFormMultiSelect') then
+                Write(IncFileVar, ''')');
+              WriteLn(IncFileVar, ';');
+              end;
             end
 
           else  {Normal property}
