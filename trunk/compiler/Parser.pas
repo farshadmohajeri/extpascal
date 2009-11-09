@@ -65,12 +65,11 @@ procedure TParser.Compile; begin
       MatchTerminal(TTokenKind(byte(Symbol[1]) - byte(pred(Ident))));
     end;
     PopSymbol;
-  until EndSource or (Top = 0);
+  until EndSource or (Top = 1);
   if Errors <> 0 then
-    writeln('Compilation with ', Errors, ' error(s).')
+    writeln(Errors, ' error(s).')
   else
-    writeln('Successful compilation.');
-  writeln(LineNumber, ' lines,', FormatDateTime(' s.z ', Now-Elapsed), 'seconds.')
+    writeln(LineNumber, ' lines,', FormatDateTime(' s.z ', Now-Elapsed), 'seconds.')
 end;
 
 procedure TParser.ExpandProduction(T : string);
@@ -121,6 +120,13 @@ begin
     end;
     inc(Top);
   end
+  else begin
+    P := pos(Required, Production);
+    if P <> 0 then begin
+      ErrorExpected(copy(Production, 1, P-1), Token.Lexeme);
+      RecoverFromError;
+    end;
+  end;
 end;
 
 end.
