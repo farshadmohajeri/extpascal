@@ -31,9 +31,12 @@ type
     procedure FindEndComment(EndComment: string);
   protected
     FLineNumber, Top, First, FErrors, FMaxErrors : integer;
+    function CharToTokenKind(N : char) : TTokenKind;
+    function TokenKindToChar(T : TTokenKind) : char;
+    function GetNonTerminalName(N : char) : string;
     procedure ScanChars(Chars: array of TSetChar; Tam : array of integer; Optional : boolean = false);
     procedure NextToken;
-    procedure RecoverFromError; virtual;
+    procedure RecoverFromError(Expected, Found : string); virtual;
   public
     constructor Create(Source : string; MaxErrors : integer);
     destructor Destroy; override;
@@ -52,7 +55,7 @@ type
 implementation
 
 uses
-  SysUtils;
+  SysUtils, Grammar;
 
 const
   ReservedWords = '.and.array.as.asm.automated.begin.case.class.const.constructor.destructor.dispinterface.div.do.downto.else.end.except.exports.' +
@@ -289,31 +292,41 @@ begin
 end;
 
 procedure TScanner.ErrorExpected(Expected, Found : string); begin
-  Error('''' + Expected + ''' expected but ''' + ReplaceSpecialChars(Found) + ''' found')
+  if Expected[1] <> '''' then Expected := '''' + Expected + '''';
+  Error(Expected + ' expected but ''' + ReplaceSpecialChars(Found) + ''' found')
 end;
 
-procedure TScanner.RecoverFromError; begin
+procedure TScanner.RecoverFromError(Expected, Found : string); begin
+  ErrorExpected(Expected, Found);
   repeat
     NextToken
   until (FToken.Lexeme = ';') or EndSource;
 end;
 
 procedure TScanner.MatchTerminal(KindExpected : TTokenKind); begin
-  if KindExpected <> FToken.Kind then begin
-    ErrorExpected(Kinds[KindExpected], FToken.Lexeme);
-    RecoverFromError;
-  end
+  if KindExpected <> FToken.Kind then
+    RecoverFromError(Kinds[KindExpected], FToken.Lexeme)
   else
     NextToken;
 end;
 
 procedure TScanner.MatchToken(TokenExpected : string); begin
-  if TokenExpected <> UpperCase(FToken.Lexeme) then begin
-    ErrorExpected(TokenExpected, FToken.Lexeme);
-    RecoverFromError;
-  end
+  if TokenExpected <> UpperCase(FToken.Lexeme) then
+    RecoverFromError(TokenExpected, FToken.Lexeme)
   else
     NextToken;
+end;
+
+function TScanner.CharToTokenKind(N : char) : TTokenKind; begin
+  Result := TTokenKind(byte(N) - byte(pred(Ident)))
+end;
+
+function TScanner.TokenKindToChar(T : TTokenKind) : char; begin
+  Result := char(byte(T) + byte(pred(Ident)))
+end;
+
+function TScanner.GetNonTerminalName(N : char): string; begin
+  Result := Kinds[CharToTokenKind(N)]
 end;
 
 end.

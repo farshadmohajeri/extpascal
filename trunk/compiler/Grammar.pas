@@ -28,9 +28,8 @@ const
 
   Productions : array[Start..Directives] of string = (
 // Start
-  'UNIT or PROGRAM' + Required +
   '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + CompoundStmt  + '.' +
-  '|UNIT|' + Ident + ';' + IntSection + ImplSection + InitSection + '.',
+  '|UNIT|' + Ident + ';' + IntSection + Required + ImplSection + Required + InitSection + '.',
   //   '|LIBRARY|' + Ident + ';' + ProgramBlock + '.',
   //   '|PACKAGE|' + Ident + ';' + RequiresClause + ContainsClause + 'END .',
 // Params
@@ -42,7 +41,7 @@ const
 // UsesList
   '|,|' + Ident + UsesList,
 // DeclSection
-  '|VAR|' + VarDecl + DeclSection +
+  '|VAR|' + VarDecl + Required + DeclSection +
   '|CONST|' + ConstDecl + DeclSection +
   '|TYPE|' + TypeDecl + DeclSection +
   '|LABEL|' + LabelId + UsesList + DeclSection +
@@ -51,7 +50,6 @@ const
   '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection +
   '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection,
 // VarDecl
-  'Identifier' + Required +
   '|' + Ident + '|' + VarList + ':' + Type_ + VarInit + ';' + VarDecl,
 // VarList
   '|,|' + Ident + VarList,
@@ -105,10 +103,8 @@ const
 // WithList
   '|,|' + Ident + QualId + WithList,
 // IntSection
-  'INTERFACE' + Required +
   '|INTERFACE|' + UsesClause + DeclSection,
 // ImplSection
-  'IMPLENTATION' + Required +
   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
 // InitSection
   '|BEGIN|' + Statement + StmtList + 'END' +
@@ -218,7 +214,7 @@ const
   '|,|' + Expression + SetList +
   '|..|' + Expression + ExprList,
 // Directives
-  '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives +
+  '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives + '|INLINE|' + Directives +
   '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
   '|CDECL|;' + Directives + '|SAFECALL|;' + Directives + '|STDCALL|;' + Directives + '|REGISTER|;' + Directives + '|PASCAL|;' + Directives
   );
