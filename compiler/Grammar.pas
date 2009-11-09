@@ -19,7 +19,8 @@ const
 
   // Other non terminals
   Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244; ConstExpr = #245; LabelId = #246;
-  Mark  = #254; Pop         = #255;
+  // Grammar commands
+  Required = #253; Mark = #254; Pop = #255;
 
   SimpleType = '|' + Ident + '|' + '|INTEGER|' + '|BOOLEAN|' + '|BYTE|' + '|WORD|' + '|CARDINAL|' + '|LONGINT|' + '|INT64|' + '|UINT64|' +
     '|CHAR|' + '|WIDECHAR|' + '|WIDESTRING|' +'|LONGWORD|' + '|SHORTINT|' + '|SMALLINT|' + '|PCHAR|' + '|POINTER|' +
@@ -27,6 +28,7 @@ const
 
   Productions : array[Start..Directives] of string = (
 // Start
+  'UNIT or PROGRAM' + Required +
   '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + CompoundStmt  + '.' +
   '|UNIT|' + Ident + ';' + IntSection + ImplSection + InitSection + '.',
   //   '|LIBRARY|' + Ident + ';' + ProgramBlock + '.',
@@ -49,6 +51,7 @@ const
   '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection +
   '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + DeclSection + CompoundStmt + ';' + DeclSection,
 // VarDecl
+  'Identifier' + Required +
   '|' + Ident + '|' + VarList + ':' + Type_ + VarInit + ';' + VarDecl,
 // VarList
   '|,|' + Ident + VarList,
@@ -96,14 +99,16 @@ const
   '|NOT|' + Expression +
   '|(|' + Expression + ExprList + ')' + RelOp + Expression +
   '|NIL|' +
-  '|[|' + Expression + SetList + ']',
+  '|[|' + Expression + SetList + ']' + Expression,
 // ToOrDownto
   '|TO|' + '|DOWNTO|',
 // WithList
   '|,|' + Ident + QualId + WithList,
 // IntSection
+  'INTERFACE' + Required +
   '|INTERFACE|' + UsesClause + DeclSection,
 // ImplSection
+  'IMPLENTATION' + Required +
   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
 // InitSection
   '|BEGIN|' + Statement + StmtList + 'END' +

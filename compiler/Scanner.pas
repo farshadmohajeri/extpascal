@@ -68,6 +68,7 @@ constructor TScanner.Create(Source: string; MaxErrors : integer); begin
   if FileExists(Source) then begin
     assign(Arq, Source);
     SetTextBuf(Arq, Buf);
+    writeln(Source);
     reset(Arq);
     First := 1;
     FMaxErrors := MaxErrors;
