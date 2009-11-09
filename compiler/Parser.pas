@@ -17,10 +17,11 @@ type
     Symbol     : TSymbol;
     Symbols    : TStack;
     Production : string;
+    function GetProductionName(P : string) : string;
     procedure ExpandProduction(T : string);
     procedure PopSymbol;
   protected
-    procedure RecoverFromError; override;
+    procedure RecoverFromError(Expected, Found : string); override;
   public
     procedure Compile;
   end;
@@ -28,14 +29,14 @@ type
 implementation
 
 uses
-  SysUtils, Grammar;
+  SysUtils, StrUtils, Grammar;
 
 procedure TParser.PopSymbol; begin
   if Top > 1 then begin
     dec(Top);
     Symbol := Symbols[Top];
     case Symbol[1] of
-      Mark : PopSymbol;
+      Required, Mark : PopSymbol;
       Pop  : begin
         repeat
           dec(Top);
@@ -47,8 +48,8 @@ procedure TParser.PopSymbol; begin
   end;
 end;
 
-procedure TParser.RecoverFromError; begin
-  inherited;
+procedure TParser.RecoverFromError(Expected, Found : string); begin
+  inherited RecoverFromError(Expected, Found);
   while (Symbol <> ';') and (Top > 1) do PopSymbol;
   inc(Top);
 end;
@@ -62,7 +63,7 @@ procedure TParser.Compile; begin
       #0..#127           : MatchToken(Symbol); // Terminal
       Start..pred(Ident) : ExpandProduction(Token.Lexeme) // Production
     else // Other Terminal
-      MatchTerminal(TTokenKind(byte(Symbol[1]) - byte(pred(Ident))));
+      MatchTerminal(CharToTokenKind(Symbol[1]));
     end;
     PopSymbol;
   until EndSource or (Top = 1);
@@ -84,7 +85,7 @@ begin
   else
     P := 0;
   if (P = 0) and (Token.Kind <> tkUndefined) then begin
-    P := pos('|' + char(byte(Token.Kind) + byte(pred(Ident))) + '|', Production);
+    P := pos('|' + TokenKindToChar(Token.Kind) + '|', Production);
     LenT := 1
   end
   else
@@ -120,13 +121,36 @@ begin
     end;
     inc(Top);
   end
-  else begin
-    P := pos(Required, Production);
-    if P <> 0 then begin
-      ErrorExpected(copy(Production, 1, P-1), Token.Lexeme);
-      RecoverFromError;
-    end;
-  end;
+  else
+    if (Top = 1) or (Symbols[Top-1] = Required) then
+      RecoverFromError(GetProductionName(Production), Token.Lexeme);
+end;
+
+function TParser.GetProductionName(P : string) : string;
+var
+  I, J : integer;
+  S : string;
+begin
+  Result := '';
+  if P[1] = '|' then begin
+    I := 2;
+    repeat
+      J := posex('|', P, I);
+      S := copy(P, I, J-I);
+      if S[1] > Start then S := GetNonTerminalName(S[1]);
+      S := '''' + S + '''';
+      if Result = '' then
+        Result := S
+      else
+        Result := Result + ', ' + S;
+      I := posex('|', P, J+1)+1;
+    until I = 1;
+    I := LastDelimiter(',', Result);
+    delete(Result, I, 2);
+    insert(' or ', Result, I);
+  end
+  else
+    Result := copy(P, 1, pos('|', P)-1);
 end;
 
 end.
