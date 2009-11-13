@@ -29,7 +29,7 @@ const
   Productions : array[Start..Directives] of string = (
 // Start
   '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + CompoundStmt  + '.' +
-  '|UNIT|' + Ident + ';' + IntSection + Required + ImplSection + Required + InitSection + '.',
+  '|UNIT|' + Ident + ';' + Required + IntSection + Required + ImplSection + InitSection + '.',
   //   '|LIBRARY|' + Ident + ';' + ProgramBlock + '.',
   //   '|PACKAGE|' + Ident + ';' + RequiresClause + ContainsClause + 'END .',
 // Params
@@ -41,7 +41,8 @@ const
 // UsesList
   '|,|' + Ident + UsesList,
 // DeclSection
-  '|VAR|' + VarDecl + Required + DeclSection +
+  'Declaration Section' +
+  '|VAR|' + Required + VarDecl + DeclSection +
   '|CONST|' + ConstDecl + DeclSection +
   '|TYPE|' + TypeDecl + DeclSection +
   '|LABEL|' + LabelId + UsesList + DeclSection +
