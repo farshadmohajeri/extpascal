@@ -122,7 +122,7 @@ begin
     inc(Top);
   end
   else
-    if (Top = 1) or (Symbols[Top-1] = Required) then
+    if (Top = 1) or (Symbols[Top+1] = Required) then
       RecoverFromError(GetProductionName(Production), Token.Lexeme);
 end;
 
@@ -137,8 +137,10 @@ begin
     repeat
       J := posex('|', P, I);
       S := copy(P, I, J-I);
-      if S[1] > Start then S := GetNonTerminalName(S[1]);
-      S := '''' + S + '''';
+      if S[1] > Start then
+        S := GetNonTerminalName(S[1])
+      else
+        S := '''' + S + '''';
       if Result = '' then
         Result := S
       else
@@ -146,8 +148,10 @@ begin
       I := posex('|', P, J+1)+1;
     until I = 1;
     I := LastDelimiter(',', Result);
-    delete(Result, I, 2);
-    insert(' or ', Result, I);
+    if I <> 0 then begin
+      delete(Result, I, 2);
+      insert(' or ', Result, I);
+    end;
   end
   else
     Result := copy(P, 1, pos('|', P)-1);
