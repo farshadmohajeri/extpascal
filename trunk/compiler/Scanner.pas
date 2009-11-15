@@ -6,7 +6,7 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 }
 interface
 
-type
+type 
   TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkCharConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
                 tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord, tkSpecialSymbol);
   TToken = class
@@ -292,7 +292,6 @@ begin
 end;
 
 procedure TScanner.ErrorExpected(Expected, Found : string); begin
-  if Expected[1] <> '''' then Expected := '''' + Expected + '''';
   Error(Expected + ' expected but ''' + ReplaceSpecialChars(Found) + ''' found')
 end;
 
@@ -312,7 +311,7 @@ end;
 
 procedure TScanner.MatchToken(TokenExpected : string); begin
   if TokenExpected <> UpperCase(FToken.Lexeme) then
-    RecoverFromError(TokenExpected, FToken.Lexeme)
+    RecoverFromError('''' + TokenExpected + '''', FToken.Lexeme)
   else
     NextToken;
 end;
