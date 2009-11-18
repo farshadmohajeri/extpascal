@@ -6,7 +6,7 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 }
 interface
 
-type 
+type
   TTokenKind = (tkUndefined, tkIdentifier, tkStringConstant, tkCharConstant, tkIntegerConstant, tkRealConstant, tkConstantExpression,
                 tkLabelIdentifier, tkTypeIdentifier, tkClassIdentifier, tkReservedWord, tkSpecialSymbol);
   TToken = class
