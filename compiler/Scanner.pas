@@ -146,8 +146,13 @@ begin
     while First > LenLine do begin
       readln(Arq, Line);
       LenLine := length(Line);
-      FEndSource := EOF(Arq) and (LenLine = 0);
-      if FEndSource then exit;
+      if EOF(Arq) and (LenLine = 0) then begin
+        if FToken.Lexeme = 'End of Source' then
+          FEndSource := true
+        else
+          FToken.Lexeme := 'End of Source';
+        exit;
+      end;
       inc(FLineNumber);
       First := 1;
     end;

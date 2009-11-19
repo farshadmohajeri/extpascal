@@ -32,12 +32,12 @@ uses
   SysUtils, StrUtils, Grammar;
 
 procedure TParser.PopSymbol; begin
-  if Top > 1 then begin
-    dec(Top);
+  dec(Top);
+  if Top >= 1 then begin
     Symbol := Symbols[Top];
     case Symbol[1] of
-      Required, Mark : PopSymbol;
-      Pop  : begin
+      Require, Mark : PopSymbol;
+      Pop : begin
         repeat
           dec(Top);
         until (Symbols[Top] = Mark) or (Top <= 2);
@@ -45,7 +45,7 @@ procedure TParser.PopSymbol; begin
         Symbol := Symbols[Top];
       end;
     end;
-  end;
+  end
 end;
 
 procedure TParser.RecoverFromError(Expected, Found : string); begin
@@ -66,7 +66,7 @@ procedure TParser.Compile; begin
       MatchTerminal(CharToTokenKind(Symbol[1]));
     end;
     PopSymbol;
-  until EndSource or (Top = 1);
+  until EndSource or (Top < 1);
   if Errors <> 0 then
     writeln(Errors, ' error(s).')
   else
@@ -122,7 +122,7 @@ begin
     inc(Top);
   end
   else
-    if (Top = 1) or (Symbols[Top+1] = Required) then
+    if (Top = 1) or (Symbols[Top+1] = Require) then
       RecoverFromError(GetProductionName(Production), Token.Lexeme);
 end;
 
