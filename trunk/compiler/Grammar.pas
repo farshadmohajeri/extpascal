@@ -4,7 +4,7 @@ interface
 
 const
   // Productions id
-  Start       = #128; ProgramParams = #129; IdentList  = #130; UsesClause   = #131; Filler      = #132;
+  Start       = #128; ParIdentList  = #129; IdentList  = #130; UsesClause   = #131; ExportsList = #132;
   DeclSection = #133; VarDecl       = #134; VarList    = #135; VarInit      = #136; Type_       = #137;
   EnumList    = #138; CompoundStmt  = #139; Statement  = #140; StmtList     = #141; Expression  = #142;
   ToOrDownto  = #143; WithList      = #144; IntSection = #145; ImplSection  = #146; InitSection = #147;
@@ -16,7 +16,8 @@ const
   PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
   MetId       = #178; AssignStmt    = #179; ElseBranch = #180; ExprList     = #181; CaseList    = #182;
   EndCaseList = #183; SetList       = #184; InterDecl  = #185; LabelId      = #186; SubRange    = #187;
-  FileOf      = #188; ForStmt       = #189; PropParams = #190; Directives   = #191;
+  FileOf      = #188; ForStmt       = #189; PropParams = #190; IdentDir     = #191; NameDir     = #192;
+  GUID        = #193; ExceptFin     = #194; Directives = #195;
 
   // Other non terminals
   Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244;
@@ -29,29 +30,30 @@ const
 
   Productions : array[Start..Directives] of string = (
 // Start
-  '|PROGRAM|' + Ident + ProgramParams + ';' + UsesClause + DeclSection + Required + CompoundStmt  + '.' +
+  '|PROGRAM|' + Ident + ParIdentList + ';' + UsesClause + DeclSection + Required + CompoundStmt  + '.' +
   '|UNIT|' + Ident + ';' + Required + IntSection + Required + ImplSection + InitSection + '.' +
-  '|LIBRARY|' + Ident + ';' + UsesClause + DeclSection + Required + CompoundStmt  + '.',
-  (*   '|PACKAGE|' + Ident + ';' + RequiresClause + ContainsClause + 'END .',*)
-// ProgramParams
+  '|LIBRARY|' + Ident + ';' + UsesClause + DeclSection + Required + CompoundStmt  + '.' +
+  '|PACKAGE|' + Ident + ';' + '|REQUIRES|' + Ident + IdentList + '|CONTAINS|' + Ident + IdentList + 'END.',
+// ParIdentList
   '|(|' + Ident + IdentList + ')',
 // IdentList
   '|,|' + Ident + IdentList,
 // UsesClause
   '|USES|' + Ident + IdentList + ';',
-// Filler
-  '',
+// ExportsList
+  '|,|' + Ident + FormalParams + PropIndex + NameDir + ExportsList,
 // DeclSection
   'Declaration Section' +
   '|VAR|' + Required + VarDecl + DeclSection +
   '|CONST|' + Required + ConstDecl + DeclSection +
   '|TYPE|' + Required + TypeDecl + DeclSection +
   '|LABEL|' + Required + LabelId + LabelList + DeclSection +
-  '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + InterDecl + CompoundStmt + ';' + DeclSection +
-  '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + InterDecl + CompoundStmt + ';' + DeclSection +
+  '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + InterDecl + CompoundStmt + ';' + Mark + DeclSection +
+  '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + InterDecl + CompoundStmt + ';' + Mark + DeclSection +
   '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + InterDecl + Required + CompoundStmt + ';' + DeclSection +
   '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + InterDecl + Required + CompoundStmt + ';' + DeclSection +
-  '|EXPORTS|'     + Ident + IdentList + DeclSection, // COMPLETAR ...
+  '|THREADVAR|' + Required + VarDecl + DeclSection +
+  '|EXPORTS|'     + Ident + FormalParams + PropIndex + NameDir + ';' + ExportsList + DeclSection,
 // VarDecl
   '|' + Ident + '|' + VarList + ':' + Required + Type_ + VarInit + ';' + VarDecl,
 // VarList
@@ -69,6 +71,7 @@ const
   '|^|' + Ident +
   '|CLASS|' + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark +
   '|RECORD|' + FieldDecl + 'END' +
+  '|INTERFACE|' + ParIdentList + GUID + MethodDecl + 'END' +
   '|SET|' + 'OF' + Required + OrdinalType +
   '|FILE|' + FileOf +
   '|TEXT|',
@@ -85,6 +88,7 @@ const
   '|FOR|' + Ident + QualId + Required + ForStmt + 'DO' + Statement +
   '|WITH|' + Ident + QualId + WithList + 'DO' + Statement +
   '|CASE|' + Required + Expression + 'OF' + Required + Expression + SetList + ':' + Statement + CaseList + Mark +
+  '|TRY|' + Statement + StmtList + ExceptFin + 'END' +
   '|GOTO|' + Required + LabelId +
   '|INHERITED|' +
   '|' + IntConst + '|' + ':' + Statement +
@@ -239,9 +243,21 @@ const
   '|IN|' + Required + Expression,
 // PropParams
   '|[|' + Required + FormalParam + FormalList + ']',
+// IdentDir
+  '|' + StringConst + '|' +
+  '|' + Ident + '|' +
+  '|' + CharConst + '|',
+// NameDir
+  '|NAME|' + Required + IdentDir,
+// GUID
+  '|[|' + IdentDir + ']',
+// ExceptFin
+  '|EXCEPT|' + Statement + StmtList +
+  '|FINALLY|' + Statement + StmtList,
 // Directives
   '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives + '|INLINE|' + Directives +
-  '|EXTERNAL|;' + Directives + '|FORWARD|;' + Directives + '|MESSAGE|;' + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
+  '|EXTERNAL|' + IdentDir + NameDir + ';' + Pop +
+  '|FORWARD|;' + Pop + Directives + '|MESSAGE|;' + LabelId + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
   '|CDECL|;' + Directives + '|SAFECALL|;' + Directives + '|STDCALL|;' + Directives + '|REGISTER|;' + Directives + '|PASCAL|;' + Directives
   );
 
