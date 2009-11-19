@@ -18,7 +18,8 @@ const
   EndCaseList = #183; SetList       = #184; InterDecl  = #185; LabelId      = #186; SubRange    = #187;
   FileOf      = #188; ForStmt       = #189; PropParams = #190; IdentDir     = #191; NameDir     = #192;
   GUID        = #193; ExceptFin     = #194; ExceptHand = #195; ExceptType   = #196; ExceptList  = #197;
-  InterfMet   = #198; InterDir      = #199; Directives = #200;
+  InterfMet   = #198; InterDir      = #199; AbstractDir= #200; FinSection   = #201; RaiseStmt   = #202;
+  RaiseAt     = #203; Directives    = #204;
 
   // Other non terminals
   Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244;
@@ -32,7 +33,7 @@ const
   Productions : array[Start..Directives] of string = (
 // Start
   '|PROGRAM|' + Ident + ParIdentList + ';' + UsesClause + DeclSection + Require + CompoundStmt  + '.' +
-  '|UNIT|' + Ident + ';' + Require + IntSection + Require + ImplSection + Require + InitSection + '.' +
+  '|UNIT|'    + Ident + ';' + Require + IntSection + Require + ImplSection + Require + InitSection + '.' +
   '|LIBRARY|' + Ident + ';' + UsesClause + DeclSection + Require + CompoundStmt  + '.' +
   '|PACKAGE|' + Ident + ';' + 'REQUIRES' + Ident + IdentList + 'CONTAINS' + Ident + IdentList + 'END.',
 // ParIdentList
@@ -70,9 +71,9 @@ const
   '|'+ CharConst + '|' + Require + SubRange +
   '|(|' + Ident + EnumList + ')' +
   '|^|' + Ident +
-  '|CLASS|' + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark +
+  '|CLASS|' + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark + // Forwardclass
   '|RECORD|' + FieldDecl + 'END' +
-  '|INTERFACE|' + ParIdentList + GUID + InterfMet +
+  '|INTERFACE|' + ParIdentList + GUID + InterfMet + 'END' + // ForwardClass
   '|SET|' + 'OF' + Require + OrdinalType +
   '|FILE|' + FileOf +
   '|TEXT|',
@@ -92,6 +93,7 @@ const
   '|TRY|' + Statement + StmtList + ExceptFin +
   '|GOTO|' + Require + LabelId +
   '|INHERITED|' +
+  '|RAISE|' + RaiseStmt +
   '|' + IntConst + '|' + ':' + Statement +
   '|ASM|' + (*AsmStatement +*) 'END',
 // StmtList
@@ -119,6 +121,7 @@ const
   '|IMPLEMENTATION|'+ UsesClause + DeclSection,
 // InitSection
   '|BEGIN|' + Statement + StmtList + 'END' +
+  '|INITIALIZATION|' + Statement + StmtList + FinSection +
   '|END|',
 // TypeDecl
   '|' + Ident + '|' + '=' + Require + Type_ + ';' + TypeDecl,
@@ -262,15 +265,23 @@ const
 // ExceptList
   '|;|' + ExceptHand,
 // InterfMet
-  '|PROCEDURE|' + Ident + FormalParams + ';' + InterDir + InterfMet + 'END' +
-  '|FUNCTION|'  + Ident + FormalParams + ':' + Ident + ';' + InterDir + InterfMet + 'END' +
-  '|PROPERTY|'  + Ident + PropParams + PropInterf + PropIndex + PropRead + PropWrite + PropDef + ';' + InterfMet + 'END',
+  '|PROCEDURE|' + Ident + FormalParams + ';' + InterDir + InterfMet +
+  '|FUNCTION|'  + Ident + FormalParams + ':' + Ident + ';' + InterDir + InterfMet +
+  '|PROPERTY|'  + Ident + PropParams + PropInterf + PropIndex + PropRead + PropWrite + PropDef + ';' + InterfMet,
 // InterDir
   '|CDECL|;' + '|SAFECALL|;' + '|STDCALL|;' + '|REGISTER|;' + '|PASCAL|;',
+// AbstractDir
+  '|ABSTRACT|;',
+// FinSection
+  '|FINALIZATION|' + Statement + StmtList + 'END',
+// RaiseStmt
+  '|' + Ident + '|' + QualId + RaiseAt,
+// RaiseAt
+  '|AT|' + Require + Expression,
 // Directives
-  '|VIRTUAL|;' + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives + '|INLINE|' + Directives +
+  '|VIRTUAL|;' + AbstractDir + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives + '|INLINE|' + Directives +
   '|EXTERNAL|' + IdentDir + NameDir + ';' + Pop +
-  '|FORWARD|;' + Pop + Directives + '|MESSAGE|;' + LabelId + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + Directives + '|EXPORT|;' + Directives +
+  '|FORWARD|;' + Pop + Directives + '|MESSAGE|;' + LabelId + Directives + '|FAR|;' + Directives + '|DYNAMIC|;' + AbstractDir + Directives + '|EXPORT|;' + Directives +
   '|CDECL|;' + Directives + '|SAFECALL|;' + Directives + '|STDCALL|;' + Directives + '|REGISTER|;' + Directives + '|PASCAL|;' + Directives
   );
 
