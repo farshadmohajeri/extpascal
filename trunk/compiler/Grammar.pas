@@ -4,22 +4,23 @@ interface
 
 const
   // Productions id
-  Start       = #128; ParIdentList  = #129; IdentList  = #130; UsesClause   = #131; ExportsList = #132;
-  DeclSection = #133; VarDecl       = #134; VarList    = #135; VarInit      = #136; Type_       = #137;
-  EnumList    = #138; CompoundStmt  = #139; Statement  = #140; StmtList     = #141; Expression  = #142;
-  ToOrDownto  = #143; WithList      = #144; IntSection = #145; ImplSection  = #146; InitSection = #147;
-  TypeDecl    = #148; StringLength  = #149; ArrayDim   = #150; ClassDecl    = #151; QualId      = #152;
-  LabelAssign = #153; LabelList     = #154; ClassHerit = #155; FieldDecl    = #156; MethodDecl  = #157;
-  FormalParams= #158; FormalList    = #159; FormalParam= #160; ParamInit    = #161; ParamSpec   = #162;
-  ConstDecl   = #163; ConstType     = #164; Ordinal    = #165; OrdinalType  = #166; ArrayOfType = #167;
-  TypeId      = #168; ParamType     = #169; PropInterf = #170; PropIndex    = #171; PropRead    = #172;
-  PropWrite   = #173; PropStored    = #174; PropDef    = #175; PropImplem   = #176; RelOp       = #177;
-  MetId       = #178; AssignStmt    = #179; ElseBranch = #180; ExprList     = #181; CaseList    = #182;
-  EndCaseList = #183; SetList       = #184; InterDecl  = #185; LabelId      = #186; SubRange    = #187;
-  FileOf      = #188; ForStmt       = #189; PropParams = #190; IdentDir     = #191; NameDir     = #192;
-  GUID        = #193; ExceptFin     = #194; ExceptHand = #195; ExceptType   = #196; ExceptList  = #197;
-  InterfMet   = #198; InterDir      = #199; AbstractDir= #200; FinSection   = #201; RaiseStmt   = #202;
-  RaiseAt     = #203; Directives    = #204;
+  Start        = #128; ParIdentList = #129; IdentList    = #130; UsesClause   = #131; ExportsList = #132;
+  DeclSection  = #133; VarDecl      = #134; VarList      = #135; VarInit      = #136; Type_        = #137;
+  EnumList     = #138; CompoundStmt = #139; Statement    = #140; StmtList     = #141; Expression   = #142;
+  ToOrDownto   = #143; WithList     = #144; IntSection   = #145; ImplSection  = #146; InitSection  = #147;
+  TypeDecl     = #148; StringLength = #149; ArrayDim     = #150; ClassDecl    = #151; QualId       = #152;
+  LabelAssign  = #153; LabelList    = #154; ClassHerit   = #155; FieldDecl    = #156; MethodDecl   = #157;
+  FormalParams = #158; FormalList   = #159; FormalParam  = #160; ParamInit    = #161; ParamSpec    = #162;
+  ConstDecl    = #163; ConstType    = #164; Ordinal      = #165; OrdinalType  = #166; ArrayOfType  = #167;
+  TypeId       = #168; ParamType    = #169; PropInterf   = #170; PropIndex    = #171; PropRead     = #172;
+  PropWrite    = #173; PropStored   = #174; PropDef      = #175; PropImplem   = #176; RelOp        = #177;
+  MetId        = #178; AssignStmt   = #179; ElseBranch   = #180; ExprList     = #181; CaseList     = #182;
+  EndCaseList  = #183; SetList      = #184; InterDecl    = #185; LabelId      = #186; SubRange     = #187;
+  FileOf       = #188; ForStmt      = #189; PropParams   = #190; IdentDir     = #191; NameDir      = #192;
+  GUID         = #193; ExceptFin    = #194; ExceptHand   = #195; ExceptType   = #196; ExceptList   = #197;
+  InterfMet    = #198; InterDir     = #199; AbstractDir  = #200; FinSection   = #201; RaiseStmt    = #202;
+  RaiseAt      = #203; PackedDecl   = #204; ObjHerit     = #205; ObjDecl      = #206; ForwardClass = #207;
+  RsrcDecl     = #208; Directives   = #209;
 
   // Other non terminals
   Ident = #240; StringConst = #241; CharConst = #242; IntConst = #243; RealConst = #244;
@@ -46,16 +47,17 @@ const
   '|,|' + Ident + FormalParams + PropIndex + NameDir + ExportsList,
 // DeclSection
   'Declaration Section' +
-  '|VAR|' + Require + VarDecl + DeclSection +
-  '|CONST|' + Require + ConstDecl + DeclSection +
-  '|TYPE|' + Require + TypeDecl + DeclSection +
-  '|LABEL|' + Require + LabelId + LabelList + DeclSection +
+  '|VAR|'         + Require + VarDecl + DeclSection +
+  '|CONST|'       + Require + ConstDecl + DeclSection +
+  '|TYPE|'        + Require + TypeDecl + DeclSection +
+  '|LABEL|'       + Require + LabelId + LabelList + DeclSection +
   '|PROCEDURE|'   + Ident + MetId + FormalParams + ';' + Directives + InterDecl + CompoundStmt + ';' + Mark + DeclSection +
   '|FUNCTION|'    + Ident + MetId + FormalParams + ':' + Ident + ';' + Directives + InterDecl + CompoundStmt + ';' + Mark + DeclSection +
   '|CONSTRUCTOR|' + Ident + MetId + FormalParams + ';' + Directives + InterDecl + Require + CompoundStmt + ';' + DeclSection +
   '|DESTRUCTOR|'  + Ident + MetId + FormalParams + ';' + Directives + InterDecl + Require + CompoundStmt + ';' + DeclSection +
   '|THREADVAR|'   + Require + VarDecl + DeclSection +
-  '|EXPORTS|'     + Ident + FormalParams + PropIndex + NameDir + ';' + ExportsList + DeclSection,
+  '|EXPORTS|'     + Ident + FormalParams + PropIndex + NameDir + ExportsList + DeclSection +
+  '|RESOURCESTRING|' + Require + RsrcDecl + DeclSection,
 // VarDecl
   '|' + Ident + '|' + VarList + ':' + Require + Type_ + VarInit + ';' + VarDecl,
 // VarList
@@ -65,18 +67,21 @@ const
   '|ABSOLUTE|' + Ident,
 // Type_
   SimpleType +
-  '|ARRAY|' + ArrayDim + 'OF' + Require + Type_ +
+  '|ARRAY|'  + ArrayDim + 'OF' + Require + Type_ +
   '|STRING|' + StringLength +
   '|'+ IntConst + '|' + Require + SubRange +
   '|'+ CharConst + '|' + Require + SubRange +
   '|(|' + Ident + EnumList + ')' +
   '|^|' + Ident +
-  '|CLASS|' + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark + // Forwardclass
   '|RECORD|' + FieldDecl + 'END' +
-  '|INTERFACE|' + ParIdentList + GUID + InterfMet + 'END' + // ForwardClass
+  '|CLASS|' + ForwardClass + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark +
+  '|OBJECT|' + ObjHerit + FieldDecl + MethodDecl + ObjDecl + 'END' +
+  '|INTERFACE|' + ForwardClass + ParIdentList + GUID + InterfMet + 'END' + Mark +
   '|SET|' + 'OF' + Require + OrdinalType +
-  '|FILE|' + FileOf +
-  '|TEXT|',
+  '|PACKED|' + PackedDecl +
+  '|FILE|'   + FileOf +
+  '|TEXT|'   +
+  '|TYPE|'   + Ident,
 // EnumList
   '|,|' + Ident + EnumList,
 // CompoundStmt
@@ -110,6 +115,7 @@ const
   '|NOT|' + Expression +
   '|(|' + Expression + ExprList + ')' + RelOp + Expression +
   '|NIL|' +
+  '|@|' + Expression +
   '|[|' + Expression + SetList + ']' + Expression,
 // ToOrDownto
   '|TO||DOWNTO|',
@@ -234,7 +240,8 @@ const
   '|TYPE|' + Require + TypeDecl + InterDecl +
   '|LABEL|' + Require + LabelId + LabelList + InterDecl +
   '|PROCEDURE|' + Ident + FormalParams + ';' + Directives + InterDecl + Require + CompoundStmt + ';' + InterDecl +
-  '|FUNCTION|'  + Ident + FormalParams + ':' + Ident + ';' + Directives + InterDecl + Require + CompoundStmt + ';' + InterDecl,
+  '|FUNCTION|'  + Ident + FormalParams + ':' + Ident + ';' + Directives + InterDecl + Require + CompoundStmt + ';' + InterDecl +
+  '|RESOURCESTRING|' + Require + RsrcDecl + DeclSection,
 // LabelId
   '|' + Ident + '|' +
   '|' + IntConst + '|',
@@ -278,6 +285,23 @@ const
   '|' + Ident + '|' + QualId + RaiseAt,
 // RaiseAt
   '|AT|' + Require + Expression,
+// PackedDecl
+  '|ARRAY|' + ArrayDim + 'OF' + Require + Type_ +
+  '|RECORD|' + FieldDecl + 'END' +
+  '|CLASS|' + ForwardClass + ClassHerit + FieldDecl + MethodDecl + ClassDecl + 'END' + Mark + // Forwardclass
+  '|OBJECT|' + ObjHerit + FieldDecl + MethodDecl + ObjDecl + 'END' +
+  '|SET|' + 'OF' + Require + OrdinalType +
+  '|FILE|' + FileOf,
+// ObjHerit
+  '|(|' + Ident + ')',
+// ObjDecl
+  '|PRIVATE|' + FieldDecl + MethodDecl + ObjDecl +
+  '|PROTECTED|' + FieldDecl + MethodDecl + ObjDecl +
+  '|PUBLIC|' + FieldDecl + MethodDecl + ObjDecl,
+// ForwardClass
+  '|;|' + Pop,
+// RsrcDecl
+  '|' + Ident + '|' + '=' + StringConst + ';' + RsrcDecl,
 // Directives
   '|VIRTUAL|;' + AbstractDir + Directives + '|OVERRIDE|;' + Directives + '|OVERLOAD|;' + Directives + '|REINTRODUCE|;' + Directives + '|INLINE|' + Directives +
   '|EXTERNAL|' + IdentDir + NameDir + ';' + Pop +
