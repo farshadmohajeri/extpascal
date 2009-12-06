@@ -11,6 +11,9 @@ Version 0.1.2 (SVN):
 - Added MultiSelect example app.
 - Added table of ExtPascal equivalents to VCL/LCL controls in documentation.
 - Support for TExtFormRadioGroup in converter and as a design control.
+- Added extp_grid package, with TExtGridEditorGridPanel and associated grid
+  column controls.
+- Added grid_example project.
 
 
 Version 0.1.1 (08-Oct-2009):
