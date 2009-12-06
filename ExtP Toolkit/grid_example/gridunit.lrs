@@ -1,0 +1,47 @@
+{ This is an automatically generated lazarus resource file }
+
+
+LazarusResources.Add('TGridWindow','FORMDATA',[
+
+  'TPF0'#11'TGridWindow'#10'GridWindow'#4'Left'#3'3'#1#6'Height'#3#144#1#3'Top'
+
+  +#3#172#0#5'Width'#3#138#2#6'Border'#8#5'Plain'#9#5'Title'#6#12'Grid Example'
+
+  +#0#23'TExtGridEditorGridPanel'#8'EditGrid'#4'Left'#2#24#6'Height'#3'0'#1#3'T'
+
+  +'op'#2#24#5'Width'#3'Z'#2#16'AutoExpandColumn'#6#9'CommonCol'#12'ClicksToEdi'
+
+  +'t'#2#1#8'ColCount'#2#5#5'Frame'#9#5'Title'#6#12'Edit Plants?'#8'CellData'#1
+
+  +#6#20'GridWindow.IndoorCol'#6#23'GridWindow.AvailDateCol'#6#19'GridWindow.Pr'
+
+  +'iceCol'#6#19'GridWindow.LightCol'#6#20'GridWindow.CommonCol'#0#7'RowData'#1
+
+  +#2#30#0#7'ColData'#1#3#220#0#8#9#6#20'GridWindow.CommonCol'#3#130#0#8#9#6#19
+
+  +'GridWindow.LightCol'#2'F'#8#9#6#19'GridWindow.PriceCol'#2'_'#8#9#6#23'GridW'
+
+  +'indow.AvailDateCol'#2'7'#8#9#6#20'GridWindow.IndoorCol'#0#0#0#22'TExtFormTe'
+
+  +'xtField_Grid'#9'CommonCol'#9'DataIndex'#6#6'common'#4'Grid'#7#8'EditGrid'#6
+
+  +'Header'#6#11'Common Name'#4'left'#3#128#0#3'top'#2#8#0#0#21'TExtFormComboBo'
+
+  +'x_Grid'#8'LightCol'#9'DataIndex'#6#5'light'#4'Grid'#7#8'EditGrid'#6'Header'
+
+  +#6#5'Light'#4'left'#3'0'#1#3'top'#2#8#0#0#24'TExtFormNumberField_Grid'#8'Pri'
+
+  +'ceCol'#9'DataIndex'#6#5'price'#4'Grid'#7#8'EditGrid'#6'Header'#6#5'Price'#4
+
+  +'left'#3#144#1#3'top'#2#8#0#0#22'TExtFormDateField_Grid'#12'AvailDateCol'#9
+
+  +'DataIndex'#6#9'availDate'#4'Grid'#7#8'EditGrid'#6'Header'#6#9'Available'#4
+
+  +'left'#3#224#1#3'top'#2#8#0#0#21'TExtFormCheckBox_Grid'#9'IndoorCol'#9'DataI'
+
+  +'ndex'#6#6'indoor'#4'Grid'#7#8'EditGrid'#6'Header'#6#7'Indoor?'#4'left'#3'0'
+
+  +#2#3'top'#2#8#0#0#0
+
+]);
+
