@@ -261,6 +261,9 @@ type
   TRecord = TExtObject; // Ext 3.0 RC2
   TNull = TExtObject; // Ext 3.0 RC2
   TMisc = TExtObject; // doc fault Ext 3.0
+  THash = TExtObject; // doc fault Ext 3.1
+  TXMLElement = TExtObject; // doc fault Ext 3.1
+  TExtListView = TExtObject; // doc fault Ext 3.1
 //DOM-IGNORE-END*)
 
 const

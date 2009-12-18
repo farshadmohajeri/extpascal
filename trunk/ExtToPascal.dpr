@@ -22,7 +22,7 @@ function FixReserved(S : string) : string;
 const
   Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
     'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.'+
-    'mod.nil.not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.set.shl.shr.string.then.'+
+    'mod.nil.not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.result.set.shl.shr.string.then.'+
     'threadvar.to.try.true.type.unit.until.uses.var.while.with.xor.';
 begin
   if pos('.' + lowercase(S) + '.', Reserved) = 0 then
@@ -44,7 +44,7 @@ begin
         Result := Result + Ident[I]
     else
       if (I <> 1) and (I <> length(Ident)) and (Ident[I] in ['(', '[', '{', ')', ']', '}']) then
-        break
+        //break
       else
         if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
   if IsType then begin
@@ -210,6 +210,7 @@ procedure TUnit.ReviewTypes;
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
         end;
+      if AllClasses.IndexOf(Typ + 'Singleton') <> -1 then Typ := Typ + 'Singleton';
     end;
   end;
 
@@ -224,6 +225,12 @@ begin
         InsertNamespace(TProp(Properties.Objects[J]).Typ);
       for J := 0 to Methods.Count-1 do
         with TMethod(Methods.Objects[J]) do begin
+          InsertNamespace(Return);
+          for K := 0 to Params.Count-1 do
+            InsertNamespace(TParam(Params.Objects[K]).Typ);
+        end;
+      for J := 0 to Events.Count-1 do
+        with TMethod(Events.Objects[J]) do begin
           InsertNamespace(Return);
           for K := 0 to Params.Count-1 do
             InsertNamespace(TParam(Params.Objects[K]).Typ);
@@ -586,6 +593,7 @@ begin
       InMethods, InEvents :
         if Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
           JSName := ClearHRef(Matches[0]);
+          if JSName = '' then continue; // Doc fault
           if JSName = 'create' then begin
             CurClass.AltCreate := true;
             continue;
@@ -629,6 +637,7 @@ begin
               if (State = InEvents) and SameText(Matches[1], 'This') then
                 Matches[0] := CurClass.Name;
               Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
+                ((JSName = 'un') and (I = 2)) or // Doc fault
                 (Matches[1] = 'Config') or ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
             end;
           end;
@@ -647,7 +656,7 @@ begin
               with EventsOrMethods do begin
                 I := IndexOf(MetName);
                 while I <> -1 do begin
-                  Objects[i].Free; 
+                  Objects[i].Free;
                   Delete(I);
                   I := IndexOf(MetName); // delete method inherited and overloads
                 end;
@@ -769,7 +778,7 @@ begin
                     else // Update
                       with TMethod(Events.Objects[J]) do begin
                         For k:=0 to Params.Count-1 do
-                          Params.Objects[k].Free; 
+                          Params.Objects[k].Free;
                         Params.Clear;
                         for K := 0 to ((Fields.Count-2) div 2)-1 do
                           Params.AddObject(Fields[K*2+3], TParam.Create(Fields[K*2+3], FixType(Fields[K*2+4]), false));
