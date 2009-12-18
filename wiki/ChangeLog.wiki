@@ -1,4 +1,8 @@
 #labels Featured
+===0.9.7 in SVN===
+
+  * New ExtJS 3.1.0 support  
+
 ===0.9.7, Draw2D initial support, 07-out-2009===
 
   * New Delphi 2010 support
