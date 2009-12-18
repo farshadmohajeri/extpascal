@@ -1,5 +1,5 @@
 #labels Featured
-===0.9.7 in SVN===
+===0.9.8 in SVN===
 
   * New ExtJS 3.1.0 support  
 
