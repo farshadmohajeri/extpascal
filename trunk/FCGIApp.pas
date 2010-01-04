@@ -288,7 +288,7 @@ var
   I : Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then FGarbageCollector.Objects[I] := nil;
+  if I >= 0 then TExtObject(FGarbageCollector.Objects[I]).IsChild := true;
 end;
 
 {
@@ -327,7 +327,7 @@ begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
       try
-        if Objects[I] <> nil then TExtObject(Objects[I]).Free;
+        if (Objects[I] <> nil) and not TExtObject(Objects[I]).IsChild then TExtObject(Objects[I]).Free;
       except end;
     if FreeGarbage then Free;
   end;
