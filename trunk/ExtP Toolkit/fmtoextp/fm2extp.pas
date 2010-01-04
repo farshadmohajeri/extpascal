@@ -320,9 +320,6 @@ var
   FormHeight        : Integer;
   FormWidth         : Integer;
   IgnoreObj         : array [1..MaxNestedObjs] of Boolean;
-  BtnLevel          : Integer;
-  BtnPropNum        : Integer;
-  BtnWidth          : string;
   ItemStrDone       : Boolean;
   ItemStrCnt        : Integer;
   GridColIdx        : Integer;
@@ -553,6 +550,13 @@ begin
         begin
         if ObjLevel = 1 then  {Is form?}
           begin
+           {Note: With Lazarus, Height and Width are client height/width,
+             not form height/width, so increase TExtWindow's Height and
+             Width so it has at least that much client area for worst
+             case form (designed with Lazarus on Windows, with its 4 pixel
+             thick border on left, right and bottom and 30 pixel high title 
+             bar). Not a great solution, but don't really want to change 
+             meaning of Lazarus form's Height and Width.}
           FmPropName := GetFmPropName(InStr);
           FmPropVal := GetFmPropVal(InStr);
           if SameText(FmPropName, 'Height') or
@@ -710,45 +714,6 @@ begin
           ExtClassName := ClassProps.Values['Class'];
           if ObjLevel > 1 then
             WriteLn(IncFileVar);  {For readability}
-          BtnLevel := -1;
-          if SameText(ExtClassName, 'TExtButton') then
-            begin  {Position button by placing it on transparent panel}
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)), 
-                                'with TExtPanel.AddTo(Items) do');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'begin');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'Layout := lyAbsolute;');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'Border := False;');
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'BodyStyle := ''background:transparent'';');
-            BtnWidth := '';
-            for BtnPropNum := 1 to 4 do  {Assume next 4 are position/dimensions}
-              begin
-              ReadLn(FmFileVar, InStr);
-              FmPropName := GetFmPropName(InStr);
-              FmPropVal := GetFmPropVal(InStr);
-              ExtPropName := '';
-              if SameText(FmPropName, 'Height') then
-                ExtPropName := 'Height'
-              else if SameText(FmPropName, 'Width') then
-                begin
-                ExtPropName := 'Width';
-                BtnWidth := FmPropVal;
-                end
-              else if SameText(FmPropName, 'Left') then
-                ExtPropName := 'X'
-              else if SameText(FmPropName, 'Top') then
-                ExtPropName := 'Y';
-              if ExtPropName <> '' then
-                WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                    ExtPropName, ' := ', FmPropVal, ';');
-              end;
-            BtnLevel := ObjLevel;
-            Inc(ObjLevel);
-            IgnoreObj[ObjLevel] := False;
-            end;
 
           if ObjLevel > 1 then  {Object on form?}
             begin
@@ -762,13 +727,9 @@ begin
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
                               'Id := ''', ObjName, ''';');
 
-          if SameText(ExtClassName, 'TExtButton') and (BtnWidth <> '') then
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                'MinWidth := ', BtnWidth, ';')        
-
-          else if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
-                 ((not SameText(FmClassName, 'TExtGridEditorGridPanel')) and
-                  (not SameText(FmClassName, 'TOvcTable'))) then
+          if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
+            ((not SameText(FmClassName, 'TExtGridEditorGridPanel')) and
+             (not SameText(FmClassName, 'TOvcTable'))) then
             begin  {Create dummy data store and column model objects}
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'Store := TExtDataStore.Create;');
@@ -845,11 +806,6 @@ begin
         else if not IgnoreObj[ObjLevel] then  {Object's class is mapped?}
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'end;');
         Dec(ObjLevel);
-        if ObjLevel = BtnLevel then  {Need one more because of position panel?}
-          begin
-          WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'end;');
-          Dec(ObjLevel);
-          end;
         end  {is end of object}
 
       else  {Found property}
@@ -900,7 +856,8 @@ begin
                SameText(ExtClassName, 'TExtUxFormMultiSelect') then
               WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                       'StoreArray := JSArray(')
-            else if SameText(ExtClassName, 'TExtFormTextArea') then
+            else if SameText(ExtClassName, 'TExtFormTextArea') or
+                    SameText(ExtClassName, 'TExtFormHtmlEditor') then
               WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                       'Value :=');
             ItemStrCnt := 0;
@@ -924,7 +881,8 @@ begin
                   Write(IncFileVar, BlankStr(IndentInc*(ObjLevel)+1), 
                                     '''"', Copy(InStr, 2, Length(InStr)-2), '"');
                   end
-                else if SameText(ExtClassName, 'TExtFormTextArea') then
+                else if SameText(ExtClassName, 'TExtFormTextArea') or
+                        SameText(ExtClassName, 'TExtFormHtmlEditor') then
                   begin
                   if ItemStrCnt > 0 then
                     WriteLn(IncFileVar, ' + ''\n'' +');  {Start new line}

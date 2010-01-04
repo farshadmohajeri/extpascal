@@ -86,7 +86,7 @@
   <CompilerOptions>
     <Version Value="8"/>
     <SearchPaths>
-      <OtherUnitFiles Value="$PKGDIR(ExtP_Ctrls)/../"/>
+      <OtherUnitFiles Value="$PKGDIR(ExtP_Ctrls)/../../"/>
       <LCLWidgetType Value="nogui"/>
     </SearchPaths>
     <Parsing>
