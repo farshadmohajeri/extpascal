@@ -12,8 +12,7 @@ uses
   ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, 
   {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF}, 
   {$IFDEF SERVICE} Services, {$ENDIF}
-  Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtAir, ExtChart,
-  ExtDirect, ExtUx, ExtUxData, ExtUxForm, ExtUxGrid, ExtUxLayout, ExtUxTree;// Draw2D;
+  Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
 
 {$IFDEF FPC}
   // workaround for FPC bug in $IF feature!!! :P
