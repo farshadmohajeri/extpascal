@@ -39,6 +39,7 @@ type
     RowSelect  : TExtGridRowSelectionModel;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
     procedure AddShowSourceButton(Buttons: TExtObjectList; Proc : string);
+    procedure RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord);
   published
     procedure Home; override;
     procedure BasicTabPanel;
@@ -60,7 +61,6 @@ type
 //    procedure UML;
     procedure FileUpload;
     procedure ProcessUpload;
-    procedure RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord);
   end;
 
 procedure TSamples.Home;

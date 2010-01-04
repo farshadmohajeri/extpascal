@@ -812,7 +812,6 @@ destructor TExtObjectList.Destroy;
 var
   I : integer;
 begin
-  for I := 0 to high(FObjects) do try FObjects[I].Free except end;
   SetLength(FObjects, 0);
   inherited;
 end;
