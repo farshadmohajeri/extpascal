@@ -70,22 +70,16 @@
       end;
     end;
 
-  with TExtPanel.AddTo(Items) do
+  ExtButton1 := TExtButton.Create;
+  with ExtButton1.AddTo(Items) do
     begin
-    Layout := lyAbsolute;
-    Border := False;
-    BodyStyle := 'background:transparent';
+    Id := 'ExtButton1';
+    TooltipType := 'title';
     X := 40;
     Height := 27;
     Y := 252;
     Width := 76;
-    ExtButton1 := TExtButton.Create;
-    with ExtButton1.AddTo(Items) do
-      begin
-      Id := 'ExtButton1';
-      MinWidth := 76;
-      Text := 'Go';
-      On('click', Ajax(CurrentThread.ExtWindow1_ExtButton1Click));
-      end;
+    Text := 'Go';
+    On('click', Ajax(CurrentThread.ExtWindow1_ExtButton1Click));
     end;
 

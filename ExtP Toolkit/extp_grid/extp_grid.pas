@@ -2,12 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit ExtP_Grid; 
+unit extp_grid; 
 
 interface
 
 uses
-ExtP_Design_Grid, LazarusPackageIntf;
+  ExtP_Design_Grid, LazarusPackageIntf;
 
 implementation
 

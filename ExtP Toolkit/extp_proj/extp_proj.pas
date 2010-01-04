@@ -1,14 +1,13 @@
-{ This file was automatically created by Lazarus. Do not edit!
-This source is only used to compile and install the package.
+{ This file was automatically created by Lazarus. do not edit!
+  This source is only used to compile and install the package.
  }
 
-unit ExtP_Proj; 
+unit extp_proj; 
 
 interface
 
 uses
-  ExtP_Proj_Intf,
-  LazarusPackageIntf; 
+  ExtP_Proj_Intf, LazarusPackageIntf;
 
 implementation
 

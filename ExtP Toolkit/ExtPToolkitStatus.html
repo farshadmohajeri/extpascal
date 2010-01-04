@@ -36,7 +36,7 @@ These notes describe the status of the ExtP Toolkit, a set of tools to assist
 in developing GUI Web apps with the open-source ExtPascal wrapper for the 
 Ext JS JavaScript widgets (<A HREF="http://code.google.com/p/extpascal">code.google.com/p/extpascal</A>).<P>
 
-The ExtP Toolkit provides three things:<P>
+The ExtP Toolkit provides four things:<P>
 <OL>
 <LI>FmToExtP converter converts Delphi or Lazarus forms (.dfm/.lfm)
 to ExtPascal code. This is a simple way to preserve some of the forms' visual 
@@ -44,10 +44,11 @@ layout in a Web app. The converter can be run standalone to convert existing
 Delphi and Lazarus forms, or automatically from the Lazarus IDE when compiling 
 an ExtPascal application.<P>
 <LI>ExtP_Ctrls package of ExtPascal design controls for Delphi and Lazarus.
-This package adds an ExtPascal tab of controls to the IDE's component palette.<P>
+This package adds an ExtPascal tab of basic controls to the IDE's component palette.<P>
 <LI>ExtP_Proj package that adds "ExtPascal Application" and "ExtPascal Form"
 to the Lazarus File | New list. Selecting ExtPascal Application creates a new 
 ExtPascal project that can be used with the design controls.<P>
+<LI>Optional ExtP_Grid package of ExtPascal grid controls for Delphi and Lazarus.
 </OL>
 
 For a list of versions and changes, refer to the <B>changelog.txt</B> file
@@ -212,7 +213,7 @@ To run one of these examples, first review the tutorial below.
 <LI>multiselect_example project - this simple Web app shows how to use the 
 TExtUxFormMultiSelect control (list box).<P>
 
-<LI>grid_example project - this simple Web app shows how to program an
+<LI>grid_example project - this simple Web app shows how to program a
 TExtGridEditorGridPanel.
 </UL>
 
@@ -738,7 +739,7 @@ and has not been thoroughly tested.<P>
 <TD>TRichEdit</TD>
 <TD>TExtFormHtmlEditor</TD>
 <TD>Yes</TD>
-<TD>&nbsp;</TD>
+<TD>Yes</TD>
 <TD>&nbsp;</TD>
 </TR>
 
@@ -930,6 +931,14 @@ runtime control.<P>
 <TD>TCustomMemo</TD>
 <TD>TCustomMemo</TD>
 <TD>TExtFormTextArea</TD>
+<TD>&nbsp;</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TExtFormHtmlEditor</TD>
+<TD>TCustomMemo</TD>
+<TD>TCustomMemo</TD>
+<TD>TExtFormHtmlEditor</TD>
 <TD>&nbsp;</TD>
 </TR>
 
@@ -1186,7 +1195,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: Dec. 6, 2009
+Last updated: Jan 2, 2010
 <P>
 
 </BODY>

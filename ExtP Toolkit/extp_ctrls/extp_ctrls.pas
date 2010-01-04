@@ -2,12 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit ExtP_Ctrls; 
+unit extp_ctrls; 
 
 interface
 
 uses
-ExtP_Design_Ctrls, LazarusPackageIntf;
+  ExtP_Design_Ctrls, LazarusPackageIntf;
 
 implementation
 

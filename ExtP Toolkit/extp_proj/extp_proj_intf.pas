@@ -183,11 +183,11 @@ begin
   TProject(AProject).Resources.XPManifest.UseManifest := False;
   TProject(AProject).Resources.ProjectIcon.SetStream(nil);
 
-   {Set path to ExtPascal units - assume it's one level up from
+   {Set path to ExtPascal units - assume it's two levels up from
      control package.}
   if AProject.LazCompilerOptions.OtherUnitFiles = '' then
     AProject.LazCompilerOptions.OtherUnitFiles := 
-     '$PKGDIR(ExtP_Ctrls)' + PathDelim + '..' + PathDelim;
+     '$PKGDIR(ExtP_Ctrls)' + PathDelim + '..' + PathDelim + '..' + PathDelim;
      
    {This eliminates most LCL and widgetset code when compiling app.
      Note that Laz IDE might warn about a missing "nogui" folder
