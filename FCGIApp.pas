@@ -686,7 +686,9 @@ begin
     'H' : FRequestMethod := rmHead;
     'D' : FRequestMethod := rmDelete;
   end;
-  FQuery.DelimitedText := URLDecode(FRequestHeader.Values['QUERY_STRING']);
+  FQuery.DelimitedText := FRequestHeader.Values['QUERY_STRING'];
+  for J := 0 to FQuery.Count-1 do
+    FQuery[J] := URLDecode(FQuery[J]);
   FIsUpload := false;
   CT := RequestHeader['CONTENT_TYPE'];
   if pos('multipart/form-data', CT) <> 0 then begin
@@ -1033,9 +1035,13 @@ type
 var
   PageMethod : TMethod;
   MethodCode : pointer;
+  I : integer;
 begin
-  if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then
-    FQuery.DelimitedText := URLDecode(pRequest)
+  if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then begin
+    FQuery.DelimitedText := pRequest;
+    for I := 0 to FQuery.Count - 1 do
+      FQuery[I] := URLDecode(FQuery[I]);
+  end
   else
     FRequest := pRequest;
   if not IsUpload then Response := '';
