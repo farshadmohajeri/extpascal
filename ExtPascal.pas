@@ -152,6 +152,7 @@ type
     procedure HandleEvent(const AEvtName: string); virtual;
     property JSCommand : string read GetJSCommand write SetJSCommand; // Last commands written in Response
   public
+    IsChild : boolean;
     constructor CreateInternal(Owner : TExtObject; Attribute : string);
     constructor Create(Owner : TExtObject = nil);
     constructor CreateSingleton(Attribute : string = '');

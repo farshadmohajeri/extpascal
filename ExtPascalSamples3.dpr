@@ -9,8 +9,8 @@ program ExtPascalSamples3; // for Ext JS 3 and later
 
 uses
   {$IFDEF WebServer}{$IFNDEF MSWINDOWS}cthreads, {$ENDIF}{$ENDIF}
-  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math, 
-  {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF}, 
+  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math,
+  {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF},
   {$IFDEF SERVICE} Services, {$ENDIF}
   Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
 
@@ -36,6 +36,7 @@ type
     DataStore : TExtDataStore;
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
+    RowSelect  : TExtGridRowSelectionModel;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
     procedure AddShowSourceButton(Buttons: TExtObjectList; Proc : string);
   published
@@ -59,6 +60,7 @@ type
 //    procedure UML;
     procedure FileUpload;
     procedure ProcessUpload;
+    procedure RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord);
   end;
 
 procedure TSamples.Home;
@@ -349,6 +351,10 @@ begin
   end;
 end;
 
+procedure TSamples.RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord); begin
+  ExtMessageBox.Alert('You selected the record number', IntToStr(RowIndex));
+end;
+
 procedure TSamples.ArrayGrid;
 var
   DataStore  : TExtDataArrayStore;
@@ -449,7 +455,9 @@ begin
     Frame      := true;
     AutoExpandColumn := 'company';
     TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
-    Free;
+    RowSelect := TExtGridRowSelectionModel.Create;
+    SelModel  := RowSelect;
+    RowSelect.OnRowSelect := RowSelectOnRowselect;
   end;
 end;
 
