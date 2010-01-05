@@ -127,6 +127,7 @@ type
     function  PopJSCommand : string;
     function FormatParams(MethodName : string; Params: array of const): string;
     procedure AjaxCode(MethodName, RawParams : string; Params : array of const);
+    function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function AddJSReturn(Expression : string; MethodsValues : array of const): string;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
@@ -180,7 +181,6 @@ type
     function Ajax(MethodName : string; Params : array of const; IsEvent : boolean = false) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
@@ -808,10 +808,7 @@ constructor TExtObjectList.CreateSingleton(pAttribute : string); begin
 end;
 
 // Frees this list and all objects linked in it
-destructor TExtObjectList.Destroy;
-var
-  I : integer;
-begin
+destructor TExtObjectList.Destroy; begin
   SetLength(FObjects, 0);
   inherited;
 end;
