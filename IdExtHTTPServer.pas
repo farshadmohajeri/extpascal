@@ -487,11 +487,13 @@ procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: T
         AResponse.LastModified := FileDateTime;
         AResponse.ContentType  := FileType2MimeType(FileName);
       end
-        else
-          AResponse.ResponseNo := 304; //Not Modified, use cache version
+      else
+        AResponse.ResponseNo := 304; // Not Modified, use cache version
     end
-    else
+    else begin
+      AResponse.ResponseNo := 404; // Not found
       Result := false;
+    end;
   end;
 
 type
