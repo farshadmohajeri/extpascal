@@ -101,6 +101,7 @@ type
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
+    procedure SetCSS(pCSS : string; Check : boolean = true);
     procedure SetIconCls(Cls : array of string);
     procedure SetCustomJS(JS : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
@@ -314,13 +315,13 @@ var
 begin
   if pos(pLibrary, Libraries) = 0 then
     if pLibrary = '' then
-      Libraries := ''
+      Libraries := '' // Clear Libraries
     else begin
       Root := RequestHeader['DOCUMENT_ROOT'];
       if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
         Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
         if CSS then begin
-          if not FileExists(Root + pLibrary + '.css') then  //Assume in css like ux?
+          if not FileExists(Root + pLibrary + '.css') then // Assume in /css like ux
             pLibrary := ExtractFilePath(pLibrary) + 'css/' + ExtractFileName(pLibrary);
           Libraries := Libraries + '<link rel=stylesheet href="' + pLibrary + '.css" />';
         end;
@@ -330,6 +331,29 @@ begin
     end;
 end;
 
+{
+Adds/Removes an user CSS (cascade style sheet) to be used in current response.
+If the WebServer is Apache tests if the CSS file exists.
+Repeated CSS's are ignored.
+@param pCSS CSS file name without extension (.css), but with Path based on Web server document root.
+@param Check Checks if the CSS file exists, default is true.
+If pCSS is '' then all user CSS AND JS libraries to this session will be removed from response.
+}
+procedure TExtThread.SetCSS(pCSS : string; Check : boolean = true);
+var
+  Root : string;
+begin
+  if pos(pCSS, Libraries) = 0 then
+    if pCSS = '' then
+      Libraries := '' // Clear Libraries
+    else begin
+      Root := RequestHeader['DOCUMENT_ROOT'];
+      if Check and (Root <> '') and not FileExists(Root + pCSS + '.css') then
+        raise Exception.Create('Library: ' + Root + pCSS + '.js not found')
+      else
+        Libraries := Libraries + '<link rel=stylesheet href="' + pCSS + '.css" />';
+    end;
+end;
 {
 Adds/Removes an user JS code to be used in current response.
 Repeated code is ignored.
