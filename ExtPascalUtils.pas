@@ -75,8 +75,16 @@ Returns the number of occurrences of Substr in Str until UntilStr occurs
 }
 function CountStr(const Substr, Str : string; UntilStr : string = '') : integer;
 
-// Replaces " to ' and ^M^J to <br/>, surrounds the string with " and insert %0..%9 JS place holders
-function StrToJS(const S : string) : string;
+{
+Converts a string with param place holders to a JavaScript string. Converts a string representing a regular expression to a JavaScript RegExp.
+Replaces " to ', ^M^J to <br/> and isolated ^M or ^J to <br/>, surrounds the string with " and insert %0..%9 JS place holders.
+When setting a TExtFormTextField value (in property setter setvalue), the UseBR should be set to false,
+because otherwise it is impossible to display multiline text in a TExtFormTextArea.
+@param S Source string with param place holders or RegExpr
+@param UseBR If true uses replace ^M^J to <br/> else to \n
+@return a well formatted JS string
+}
+function StrToJS(const S : string; UseBR : boolean = true) : string;
 
 {
 Finds S string in Cases array, returning its index or -1 if not found. Good to use in Pascal "case" command. Similar to AnsiIndexText.
@@ -288,11 +296,15 @@ begin
   until I = 0;
 end;
 
-function StrToJS(const S : string) : string;
+function StrToJS(const S : string; UseBR : boolean = true) : string;
 var
   I, J : integer;
+  BR   : string;
 begin
-  Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, '<br/>');
+  BR := IfThen(UseBR, '<br/>', '\n');
+  Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, BR);
+  Result := AnsiReplaceStr(Result, ^M, BR);
+  Result := AnsiReplaceStr(Result, ^J, BR);
   if (Result <> '') and (Result[1] = #3) then begin // Is RegEx
     delete(Result, 1, 1);
     if Pos('/', Result) <> 1 then Result := '/' + Result + '/';
