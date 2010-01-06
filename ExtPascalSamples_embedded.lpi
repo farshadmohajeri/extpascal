@@ -11,6 +11,7 @@
       </Flags>
       <MainUnit Value="0"/>
       <TargetFileExt Value=""/>
+      <Title Value="ExtPascalSamples_embedded"/>
       <UseAppBundle Value="False"/>
       <ActiveEditorIndexAtStart Value="0"/>
     </General>
@@ -31,8 +32,9 @@
     </RunParams>
     <Units Count="1">
       <Unit0>
-        <Filename Value="ExtPascalSamples3.dpr"/>
+        <Filename Value="ExtPascalSamples_embedded.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="ExtPascalSamples"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
