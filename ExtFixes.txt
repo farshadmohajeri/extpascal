@@ -1,5 +1,5 @@
 * For Ext JS 3.0 and later
-* USED FORMATS in ExtFixes3.txt
+* USED FORMATS in ExtFixes.txt
 *
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
