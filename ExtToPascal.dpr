@@ -717,7 +717,7 @@ var
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  FixesFile := 'ExtFixes' + IfThen(IsExtJS3, '3', '') + '.txt';
+  FixesFile := 'ExtFixes' + IfThen(IsExtJS3, '', '230') + '.txt';
   writeln('Loading custom fixes...');
   writeln('  > ' + FixesFile);
   if FileExists(FixesFile) then begin
@@ -1369,7 +1369,7 @@ begin
       try
         Units.Sorted:=True;
         writeln('ExtToPascal - ExtJS docs to Pascal units wrapper, version ', ExtPascalVersion);
-        writeln('(c) 2008-2009 by Wanderlan Santos dos Anjos, BSD license');
+        writeln('(c) 2008-2010 by Wanderlan Santos dos Anjos, BSD license');
         writeln('http://extpascal.googlecode.com/'^M^J);
         writeln('Reading ExtJS HTML files...');
         I := 0;

@@ -1,5 +1,5 @@
 {$A1,B-,C-,D+,E-,F-,G+,H+,I+,J+,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V-,W-,X+,Y+,Z1}
-program ExtPascalSamples; // for Ext JS 3 and later
+program ExtPascalSamples; // for Ext JS 3.1.0 and later
 
 {$IFDEF FPC}{$MACRO ON}{$ENDIF}
 {.$DEFINE SERVICE}
@@ -13,19 +13,6 @@ uses
   {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF},
   {$IFDEF SERVICE} Services, {$ENDIF}
   Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
-
-{$IFDEF FPC}
-  // workaround for FPC bug in $IF feature!!! :P
-  const IsExtJS2 = not IsExtJS3;
-  {$IF IsExtJS2}
-    {$FATAL Don't use this program for ExtJS 2 compiling, use ExtPascalSamples instead!}
-  {$IFEND}
-{$ELSE}
-  {$IF not IsExtJS3}
-    {$MESSAGE 'Don''t use this program for ExtJS 2 compiling, use ExtPascalSamples instead!'}
-    FATAL: Don't use this program for ExtJS 2 compiling, use ExtPascalSamples instead!
-  {$IFEND}
-{$ENDIF}
 
 type
   TSamples = class(TExtThread)

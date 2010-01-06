@@ -1,5 +1,4 @@
-* For Ext JS 3.0 and later
-* USED FORMATS in ExtFixes3.txt
+* USED FORMATS in ExtFixes.txt
 *
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
@@ -22,19 +21,29 @@
 * Adding new classes:
 <class name>,<parent class name>,<unit name>,<JavaScript class name>
 *
+ExtComponent, region, string, false, true,
 ExtComponent, split, Boolean, false, true,
 ExtComponent, collapseMode, string, false, true,
 ExtComponent, minWidth, Integer, false, true,
 ExtComponent, maxWidth, Integer, false, true,
 ExtComponent, minSize, Integer, false, true,
 ExtComponent, maxSize, Integer, false, true,
-ExtBoxComponent, margins, string, false, true,
+ExtComponent, margins, string, false, true,
 ExtComponent, cmargins, string, false, true,
 ExtComponent, closable, Boolean, false, true,
 ExtComponent, anchor, string, false, true,
 ExtComponent, el, string, false, true,
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false, false,
+ExtGridColumnModel, renderer, String, false, true, FORCEADD
+*ExtDataField,, ExtData, Object
+*ExtDataField, name, string, false, true,
+*ExtDataField, mapping, string, false, true,
+*ExtDataField, type, string, false, true,
+*ExtDataField, sortTypes, string, false, true,
+*ExtDataField, sortDir, string, false, true,
+*ExtDataField, convert, ExtFunction, false, true,
+*ExtDataField, dateFormat, string, false, true,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
 ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
 ExtFormFormPanel, buttons, ExtObjectList, false, true,
@@ -75,8 +84,7 @@ ExtProgressWaitConfig, fn, ExtFunction, false, true,
 ExtProgressWaitConfig, scope, ExtObject, false, true,
 ExtToolbar, items, ExtObjectList, false, true,
 ExtMenuMenu, items, ExtObjectList, false, true,
-* Lack ExtToolbarButton component in Ext JS 3 docs!!!!!
-ExtButton, menu, ExtUtilObservable, false, true,
+ExtToolbarButton, menu, ExtUtilObservable, false, true,
 ExtMenuItem, menu, ExtMenuMenu, false, true,
 ExtGridGridPanel, loadMask, Boolean, false, true, FORCEADD
 ExtDataJsonStore, id, string, false, true,
@@ -114,12 +122,12 @@ ExtUxCodePress, toggleAutoComplete, void, false, false
 ExtUxCodePress, toggleReadOnly, void, false, false
 ExtUxCodePress, toggleLineNumbers, void, false, false
 ExtUxCodePress, toggleEditor, void, false, false
-ExtContainer, layout, (lyAuto, lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyHbox, lyMenu, lyTable, lyToolbar, lyVbox)
-ExtBoxComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
-ExtComponent, xtype, (xtBox, xtButton, xtButtonGroup, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtFlash, xtGrid, xtListView, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSpacer, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtMenu, xtColorMenu, xtDateMenu, xtMenuBaseItem, xtMenuCheckItem, xtMenuItem, xtMenuSeparator, xtMenuTextItem, xtForm, xtCheckBox, xtCheckBoxGroup, xtCombo, xtDateField, xtDisplayField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtRadioGroup, xtTextArea, xtTextField, xtTimeField, xtTrigger, xtChart, xtBarChart, xtCartesianChart, xtColumnChart, xtLineChart, xtPieChart)
+ExtContainer, layout, (lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyTable)
+ExtComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
+ExtComponent, xtype, (xtBox, xtButton, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtGrid, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtForm, xtCheckBox, xtCombo, xtDateField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtTextArea, xtTextField, xtTimeField, xtTrigger)
 ExtContainer, defaultType, (ExtComponentXType)
 ExtElement, defaultUnit, (CSSUnit)
-ExtGridColumn, align, (alInherit, alLeft, alRight, alCenter, alJustify)
+ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
 ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
 ExtFormFormPanel, buttonAlign, (ExtPanelButtonAlign)
 ExtFormFormPanel, labelAlign, (laLeft, laTop, laRight)
@@ -144,44 +152,4 @@ ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false,
 ExtFormField, inputType, (itText, itButton, itCheckbox, itFile, itHidden, itImage, itPassword, itRadio, itReset, itSubmit)
 ExtStateProvider, on, void, false, false, EventName, string, false, Handler, ExtFunction, false
 ExtStateProvider, un, void, false, false, EventName, string, false, Handler, ExtFunction, false
-ExtGridColumn, renderer, ExtFunction, false, true, FORCEADD
-ExtFont, , Ext, Object
-ExtFont, name, string, false, true,
-ExtFont, color, string, false, true,
-ExtFont, size, integer, false, true,
-ExtFont, bold, boolean, false, true,
-ExtBorder, , Ext, Object
-ExtBorder, color, string, false, true,
-ExtBorder, size, integer, false, true,
-ExtBackground, , Ext, Object
-ExtBackground, color, string, false, true,
-ExtBackground, alpha, float, false, true,
-ExtDataTip, ,Ext, Object
-ExtDataTip, padding, integer, false, true,
-ExtDataTip, border, ExtBorder, false, true,
-ExtDataTip, background, ExtBackground, false, true,
-ExtDataTip, font, ExtFont, false, true,
-ExtChartStyle, , ExtChart, Object
-ExtChartStyle, padding, integer, false, true,
-ExtChartStyle, animationEnabled, boolean, false, true,
-ExtChartStyle, font, ExtFont, false, true,
-ExtChartStyle, dataTip, ExtDataTip, false, true,
-ExtChartChart, store, ExtDataStore, false, true,
-ExtChartChart, yField, string, false, true,
-ExtChartChart, xField, string, false, true,
-ExtChartChart, xAxis, ExtChartAxis, false, true,
-ExtChartChart, yAxis, ExtChartAxis, false, true,
-ExtChartChart, tipRenderer, ExtFunction, false, true,
-ExtChartChart, series, ExtObjectList, false, true,
-ExtChartChart, chartStyle, ExtChartStyle, false, true,
-ExtChartAxis, displayName, string, false, true,
-ExtChartAxis, labelRenderer, ExtFunction, false, true,
-ExtChartAxis, title, string, false, true,
-ExtChartPieChart, dataField, string, false, true,
-ExtChartPieChart, categoryField, string, false, true,
 ExtFormFormPanel, fileUpload, Boolean, false, true,
-ExtChartSeriesStyle, ,ExtChart, Object
-ExtChartSeriesStyle, image, string, false, true,
-ExtChartSeriesStyle, mode, string, false, true,
-ExtChartSeriesStyle, color, string, false, true,
-ExtChartSeries, style, ExtChartSeriesStyle, false, true,
