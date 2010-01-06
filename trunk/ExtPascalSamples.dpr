@@ -1,5 +1,5 @@
 {$A1,B-,C-,D+,E-,F-,G+,H+,I+,J+,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V-,W-,X+,Y+,Z1}
-program ExtPascalSamples; // for Ext JS 2.2.1 and older
+program ExtPascalSamples; // for Ext JS 3 and later
 
 {$IFDEF FPC}{$MACRO ON}{$ENDIF}
 {.$DEFINE SERVICE}
@@ -8,19 +8,22 @@ program ExtPascalSamples; // for Ext JS 2.2.1 and older
 {$ENDIF}
 
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, Math, {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, {$IFDEF SERVICE}Services,{$ENDIF}
-  Classes, Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree;
+  {$IFDEF WebServer}{$IFNDEF MSWINDOWS}cthreads, {$ENDIF}{$ENDIF}
+  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math,
+  {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF},
+  {$IFDEF SERVICE} Services, {$ENDIF}
+  Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
 
 {$IFDEF FPC}
   // workaround for FPC bug in $IF feature!!! :P
   const IsExtJS2 = not IsExtJS3;
-  {$IF not IsExtJS2}
-    {$FATAL Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!}
+  {$IF IsExtJS2}
+    {$FATAL Don't use this program for ExtJS 2 compiling, use ExtPascalSamples instead!}
   {$IFEND}
 {$ELSE}
-  {$IF IsExtJS3}
-    {$MESSAGE 'Don''t use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!'}
-    FATAL: Don't use this program for ExtJS 3 compiling, use ExtPascalSamples3 instead!
+  {$IF not IsExtJS3}
+    {$MESSAGE 'Don''t use this program for ExtJS 2 compiling, use ExtPascalSamples instead!'}
+    FATAL: Don't use this program for ExtJS 2 compiling, use ExtPascalSamples instead!
   {$IFEND}
 {$ENDIF}
 
@@ -33,8 +36,10 @@ type
     DataStore : TExtDataStore;
     Plant : TExtDataRecord;
     FormLogin : TExtWindow;
+    RowSelect  : TExtGridRowSelectionModel;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
-    procedure AddShowSourceButton(Buttons : TExtObjectList; Proc : string);
+    procedure AddShowSourceButton(Buttons: TExtObjectList; Proc : string);
+    procedure RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord);
   published
     procedure Home; override;
     procedure BasicTabPanel;
@@ -53,7 +58,56 @@ type
     procedure Login;
     procedure CheckLogin; // Ajax
     procedure ShowSource;
+//    procedure UML;
+    procedure FileUpload;
+    procedure ProcessUpload;
   end;
+
+procedure TSamples.Home;
+const
+  Examples : array[0..8] of record
+    Name, Proc, Image, Desc : string
+  end = (
+    (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
+    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Image: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
+    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Image: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
+    (Name: 'Layout Window';  Proc: 'Layout';        Image: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
+    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Image: 'tabs-adv';         Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
+    (Name: 'Border Layout';  Proc: 'BorderLayout';  Image: 'border-layout';    Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
+    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Image: 'grid-array';       Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
+    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Image: 'grid-edit';        Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
+    (Name: 'Simple Login';   Proc: 'Login';         Image: 'login.png';        Desc: 'A simple login form showing AJAX use with parameters.')
+  );
+var
+  I : integer;
+  HTM : string;
+begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  // Theme := 'gray';
+  SetStyle('img:hover{border:1px solid blue}');
+  with TExtPanel.Create do begin
+    Title       := 'ExtPascal Samples';
+    RenderTo    := 'body';
+    Width       := 400;
+    Frame       := true;
+//    Floating    := true;
+    Collapsible := true;
+//    SetPosition(300, 0);
+    AddShowSourceButton(TbarArray, 'Home');
+    for I := 0 to high(Examples) do
+      with Examples[I], TExtPanel.AddTo(Items) do begin
+        Title := Name;
+        Frame := true;
+        HTM   := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
+        if pos('.png', Image) = 0 then
+          Html := HTM + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
+        else
+          Html := HTM + '<img src=' + ImagePath + '/' + Image + ' /></a></td><td>' + Desc + '</td></table>';
+        Collapsible := true;
+      end;
+    Free;
+  end;
+end;
 
 procedure TSamples.AddShowSourceButton(Buttons : TExtObjectList; Proc : string); begin
   with TExtButton.AddTo(Buttons) do begin
@@ -68,7 +122,7 @@ var
   Line, Lines, Proc, FName : string;
 begin
   Proc := Query['Proc'];
-  FName := 'ExtPascalSamples.dpr';
+  FName := 'ExtPascalSamples3.dpr';
   if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName;
   assign(Source, FName);
   reset(Source);
@@ -98,50 +152,45 @@ begin
   end;
 end;
 
-procedure TSamples.Home;
-const
-  Examples : array[0..7] of record
-    Name, Proc, Gif, Desc : string
-  end = (
-    (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Gif: 'window';        Desc: 'Simple Hello World window that contains a basic TabPanel.'),
-    (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Gif: 'msg-box';       Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
-    (Name: 'Layout Window';  Proc: 'Layout';        Gif: 'window-layout'; Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
-    (Name: 'Advanced Tabs';  Proc: 'AdvancedTabs';  Gif: 'tabs-adv';      Desc: 'Advanced tab features including tab scrolling, adding tabs programmatically using AJAX and a context menu plugin.'),
-    (Name: 'Border Layout';  Proc: 'BorderLayout';  Gif: 'border-layout'; Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
-    (Name: 'Array Grid';     Proc: 'ArrayGrid';     Gif: 'grid-array';    Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
-    (Name: 'Editable Grid';  Proc: 'EditableGrid';  Gif: 'grid-edit';     Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
-    (Name: 'Simple Login';   Proc: 'Login';         Gif: '';              Desc: 'A simple login form showing AJAX use with parameters.')
-  );
+(*
+procedure TSamples.UML;
 var
-  I : integer;
+  Note : TAnnotation;
+  P : TExtPanel;
+  W : TWorkFlow;
 begin
-  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
-  // Theme := 'gray';
-  SetStyle('img:hover{border:1px solid blue}');
-  with TExtPanel.Create do begin
-    Title       := 'ExtPascal Samples';
-    RenderTo    := 'body';
-    Width       := 400;
-    Frame       := true;
-//    Floating    := true;
-    Collapsible := true;
-//    SetPosition(300, 0);
-    AddShowSourceButton(TbarArray, 'Home');
-    for I := 0 to high(Examples) do
-      with Examples[I], TExtPanel.AddTo(Items) do begin
-        Title := Name;
-        Frame := true;
-        Html  := '<table><td><a href=' + RequestHeader['SCRIPT_NAME'] + '/' + Proc + ' target=blank>';
-        if Gif <> '' then
-          Html := Html + '<img src=' + ExtPath + '/examples/shared/screens/' + Gif + '.gif /></a></td><td>' + Desc + '</td></table>'
-        else
-          Html := Html + Desc + '</a></td></table>';
-        Collapsible := true;
-      end;
-    Free;
+  SetLibrary(ExtPath + '/draw2d/wz_jsgraphics');
+  SetLibrary(ExtPath + '/draw2d/mootools');
+  SetLibrary(ExtPath + '/draw2d/moocanvas');
+  SetLibrary(ExtPath + '/draw2d/draw2d');
+  P := TExtPanel.Create;
+  with P do begin
+    Title    := 'ExtPascal Samples';
+    RenderTo := 'body';
+    Width    := 600;
+    Height   := 400;
+    Frame    := true;
+    Id       := 'paintarea';
   end;
+  W := TWorkflow.Create('paintarea');
+  with W do begin
+    // Add a simple annotation to the canvas
+    Note := TAnnotation.Create('NOTE: Drag&Drop the red port to the blue port to create a connection. Use the connection context menu to switch the router implementation.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 50);
+    Note := TAnnotation.Create('NOTE: Drag&Drop the objects from the left hand tool palette to the canvas to insert a new object.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 150);
+    Note := TAnnotation.Create('NOTE: Test the context menu of the blue connections!!!.');
+    Note.SetDimension(300, 70);
+    AddFigure(Note, 20, 250);
+    ScrollArea := P.GetEl;
+    JSCode(JSName + '.scrollArea=document.getElementById(''paintarea'').parentNode;');
+//    SetBackgroundImage('grid_10.png', nil);
+  end;
+//  P.Show;
 end;
-
+*)
 procedure TSamples.Layout;
 var
   Tabs : TExtTabPanel;
@@ -222,8 +271,8 @@ begin
   FormLogin := TExtWindow.Create;
   with FormLogin do begin
     Title    := 'Login';
-    Width    := 380;
-    Height   := 140;
+    Width    := 366;
+    Height   := 137;
     Plain    := true;
     Layout   := lyFit;
     Closable := false;
@@ -232,10 +281,11 @@ begin
       Border      := false;
       XType       := xtForm;
       ButtonAlign := baRight;
-      BodyStyle   := SetPaddings(10, 15);
+      BodyStyle   := SetPaddings(5, 5);
       DefaultType := xtTextField;
       Defaults    := JSObject('width: 250');
       UserName    := TExtFormTextField.Create;
+      Frame       := true;
       with UserName.AddTo(Items) do begin
         Name       := 'user';
         FieldLabel := 'Username';
@@ -277,7 +327,6 @@ begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   SetStyle('.new-tab{background-image:url(' + ExtPath + '/examples/feed-viewer/images/new_tab.gif) !important}');
   SetStyle('.tabs{background:url(' + ExtPath + '/examples/desktop/images/tabs.gif)}');
-  SetLibrary(ExtPath + '/examples/tabs/TabCloseMenu', false, false);
   with TExtButton.Create do begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
@@ -297,98 +346,101 @@ begin
     Height          := 150;
     Defaults        := JSObject('autoScroll:true');
     EnableTabScroll := true;
-    Plugins         := JSObject('', 'Ext.ux.TabCloseMenu');
     for I := 1 to 7 do AddTab;
     AddShowSourceButton(Buttons, 'AdvancedTabs');
   end;
 end;
 
+procedure TSamples.RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord); begin
+  ExtMessageBox.Alert('You selected the record number', IntToStr(RowIndex));
+end;
+
 procedure TSamples.ArrayGrid;
 var
-  DataStore  : TExtDataSimpleStore;
+  DataStore  : TExtDataArrayStore;
   ColorValue : TExtFunction;
 begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Statefull !!!
   ExtStateManager.SetProvider(TExtStateCookieProvider.Create);
   // create the data store
-  DataStore := TExtDataSimpleStore.Create;
+  DataStore := TExtDataArrayStore.Create;
   with DataStore do begin
     TExtDataField.AddTo(Fields).Name := 'company';
     with TExtDataField.AddTo(Fields) do begin Name := 'price';     TypeJS := 'float' end;
     with TExtDataField.AddTo(Fields) do begin Name := 'change';    TypeJS := 'float' end;
     with TExtDataField.AddTo(Fields) do begin Name := 'pctchange'; TypeJS := 'float' end;
-    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';TypeJS := 'date'; DateFormat := 'n/j h:ia' end;
+    with TExtDataField.AddTo(Fields) do begin Name := 'lastchange';TypeJS := 'date'; DateFormat := 'Y/m/d' end;
     Data := JSArray(
-      '["3m Co",71.72,0.02,0.03,"9/1 12:00am"],' +
-      '["Alcoa Inc",29.01,0.42,1.47,"9/1 12:00am"],' +
-      '["Altria Group Inc",83.81,0.28,0.34,"9/1 12:00am"],' +
-      '["American Express Company",52.55,0.01,0.02,"9/1 12:00am"],' +
-      '["American International Group, Inc.",64.13,0.31,0.49,"9/1 12:00am"],' +
-      '["AT&T Inc.",31.61,-0.48,-1.54,"9/1 12:00am"],' +
-      '["Boeing Co.",75.43,0.53,0.71,"9/1 12:00am"],' +
-      '["Caterpillar Inc.",67.27,0.92,1.39,"9/1 12:00am"],' +
-      '["Citigroup, Inc.",49.37,0.02,0.04,"9/1 12:00am"],' +
-      '["E.I. du Pont de Nemours and Company",40.48,0.51,1.28,"9/1 12:00am"],' +
-      '["Exxon Mobil Corp",68.1,-0.43,-0.64,"9/1 12:00am"],' +
-      '["General Electric Company",34.14,-0.08,-0.23,"9/1 12:00am"],' +
-      '["General Motors Corporation",30.27,1.09,3.74,"9/1 12:00am"],' +
-      '["Hewlett-Packard Co.",36.53,-0.03,-0.08,"9/1 12:00am"],' +
-      '["Honeywell Intl Inc",38.77,0.05,0.13,"9/1 12:00am"],' +
-      '["Intel Corporation",19.88,0.31,1.58,"9/1 12:00am"],' +
-      '["International Business Machines",81.41,0.44,0.54,"9/1 12:00am"],' +
-      '["Johnson & Johnson",64.72,0.06,0.09,"9/1 12:00am"],' +
-      '["JP Morgan & Chase & Co",45.73,0.07,0.15,"9/1 12:00am"],' +
-      '["McDonald\"s Corporation",36.76,0.86,2.40,"9/1 12:00am"],' +
-      '["Merck & Co., Inc.",40.96,0.41,1.01,"9/1 12:00am"],' +
-      '["Microsoft Corporation",25.84,0.14,0.54,"9/1 12:00am"],' +
-      '["Pfizer Inc",27.96,0.4,1.45,"9/1 12:00am"],' +
-      '["The Coca-Cola Company",45.07,0.26,0.58,"9/1 12:00am"],' +
-      '["The Home Depot, Inc.",34.64,0.35,1.02,"9/1 12:00am"],' +
-      '["The Procter & Gamble Company",61.91,0.01,0.02,"9/1 12:00am"],' +
-      '["United Technologies Corporation",63.26,0.55,0.88,"9/1 12:00am"],' +
-      '["Verizon Communications",35.57,0.39,1.11,"9/1 12:00am"],' +
-      '["Wal-Mart Stores, Inc.",45.45,0.73,1.63,"9/1 12:00am"]');
+      '["3m Co",71.72,0.02,0.03,"2009/01/02"],' +
+      '["Alcoa Inc",29.01,0.42,1.47,"2009/01/02"],' +
+      '["Altria Group Inc",83.81,0.28,0.34,"2009/01/02"],' +
+      '["American Express Company",52.55,0.01,0.02,"2009/01/02"],' +
+      '["American International Group, Inc.",64.13,0.31,0.49,"2009/01/02"],' +
+      '["AT&T Inc.",31.61,-0.48,-1.54,"2009/01/02"],' +
+      '["Boeing Co.",75.43,0.53,0.71,"2009/01/02"],' +
+      '["Caterpillar Inc.",67.27,0.92,1.39,"2009/01/02"],' +
+      '["Citigroup, Inc.",49.37,0.02,0.04,"2009/01/02"],' +
+      '["E.I. du Pont de Nemours and Company",40.48,0.51,1.28,"2009/01/02"],' +
+      '["Exxon Mobil Corp",68.1,-0.43,-0.64,"2009/01/02"],' +
+      '["General Electric Company",34.14,-0.08,-0.23,"2009/01/02"],' +
+      '["General Motors Corporation",30.27,1.09,3.74,"2009/01/02"],' +
+      '["Hewlett-Packard Co.",36.53,-0.03,-0.08,"2009/01/02"],' +
+      '["Honeywell Intl Inc",38.77,0.05,0.13,"2009/01/02"],' +
+      '["Intel Corporation",19.88,0.31,1.58,"2009/01/02"],' +
+      '["International Business Machines",81.41,0.44,0.54,"2009/01/02"],' +
+      '["Johnson & Johnson",64.72,0.06,0.09,"2009/01/02"],' +
+      '["JP Morgan & Chase & Co",45.73,0.07,0.15,"2009/01/02"],' +
+      '["McDonald\"s Corporation",36.76,0.86,2.40,"2009/01/02"],' +
+      '["Merck & Co., Inc.",40.96,0.41,1.01,"2009/01/02"],' +
+      '["Microsoft Corporation",25.84,0.14,0.54,"2009/01/02"],' +
+      '["Pfizer Inc",27.96,0.4,1.45,"2009/01/02"],' +
+      '["The Coca-Cola Company",45.07,0.26,0.58,"2009/01/02"],' +
+      '["The Home Depot, Inc.",34.64,0.35,1.02,"2009/01/02"],' +
+      '["The Procter & Gamble Company",61.91,0.01,0.02,"2009/01/02"],' +
+      '["United Technologies Corporation",63.26,0.55,0.88,"2009/01/02"],' +
+      '["Verizon Communications",35.57,0.39,1.11,"2009/01/02"],' +
+      '["Wal-Mart Stores, Inc.",45.45,0.73,1.63,"2009/01/02"]');
   end;
   with TExtGridGridPanel.Create do begin
     Store := DataStore;
     ColorValue := JSFunction('V', 'if(V>0){return "<span style=''color:green''>" + V + "</span>";}else ' +
       'if(V<0){return "<span style=''color:red''>" + V + "</span>";}' +
       'return V;');
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Id        := 'company';
       Header    := 'Company';
       Width     := 160;
       Sortable  := true;
       DataIndex := Id;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Price';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'price';
-      RendererString := 'usMoney';
+      Renderer  := 'usMoney';
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'change';
-      Renderer  := ColorValue;
+      RendererExtFunction := ColorValue;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := '% Change';
       Width     := 75;
       Sortable  := true;
       DataIndex := 'pctchange';
-      Renderer  := ColorValue;
+      RendererExtFunction := ColorValue;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Last Updated';
       Width     := 85;
       Sortable  := true;
       DataIndex := 'lastchange';
-      Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
+      RendererExtFunction := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Show modal dialog using Ajax';
@@ -403,7 +455,9 @@ begin
     Frame      := true;
     AutoExpandColumn := 'company';
     TExtGridRowSelectionModel(GetSelectionModel).SelectFirstRow;
-    Free;
+    RowSelect := TExtGridRowSelectionModel.Create;
+    SelModel  := RowSelect;
+    RowSelect.OnRowSelect := RowSelectOnRowselect;
   end;
 end;
 
@@ -624,7 +678,7 @@ begin
     RenderTo := 'body';
     ClicksToEdit := 1;
     AutoExpandColumn := 'common';
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Id := 'common';
       Header := 'Common Name';
       Width  := 220;
@@ -632,7 +686,7 @@ begin
       Editor := TExtFormTextField.Create;
       TExtFormTextField(Editor).AllowBlank := false;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header := 'Light';
       Width  := 130;
       DataIndex := 'light';
@@ -644,12 +698,12 @@ begin
         TriggerAction := 'all';
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header := 'Price';
       Width  := 70;
       Align  := alRight;
       DataIndex := 'price';
-      RendererString := 'usMoney';
+      Renderer := 'usMoney';
       Editor := TExtFormNumberField.Create;
       with TExtFormNumberField(Editor) do begin
         MaxValue      := 100000;
@@ -657,25 +711,25 @@ begin
         AllowNegative := false;
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Available';
       Width     := 95;
       DataIndex := 'availDate';
-      Renderer  := JSFunction('v', 'return v?v.dateFormat("M d, Y"):"";');
+      RendererExtFunction := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
       Editor    := TExtFormDateField.Create;
       with TExtFormDateField(Editor) do begin
-        Format := 'm/d/y';
-        MinValueString   := '01/01/06';
+        Format           := 'm/d/Y';
+        MinValueString   := '01/01/2006';
         DisabledDays     := JSArray('0, 6');
         DisabledDaysText := 'Plants are not available on the weekends'
       end;
     end;
-    with TExtGridColumnModel.AddTo(Columns) do begin
+    with TExtGridColumn.AddTo(Columns) do begin
       Header    := 'Indoor?';
       DataIndex := 'indoor';
       Width     := 55;
       Editor    := TExtFormCheckbox.Create;
-      Renderer  := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
+      RendererExtFunction := JSFunction('v', 'return "<div class=''x-grid3-check-col"+(v?"-on":"")+"''></div>";');
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Add Plant using AJAX!';
@@ -688,6 +742,48 @@ begin
     AddShowSourceButton(Buttons, 'EditableGrid');
   end;
   DataStore.Load(nil);
+end;
+
+procedure TSamples.FileUpload;
+var
+  F : TExtFormFormPanel;
+  SubmitAction : TExtFormActionSubmit;
+begin
+  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  with TExtWindow.Create do begin
+    Modal := true;
+    Title := 'File Upload Window';
+    F     := TExtFormFormPanel.Create;
+    with F.AddTo(Items) do begin
+      FileUpload := true;
+      Frame      := true;
+      AutoHeight := true;
+      Width      := 300;
+      LabelWidth := 20;
+      with TExtFormTextField.AddTo(Items) do begin
+        FieldLabel := 'File';
+        InputType  := itFile;
+      end;
+      with TExtButton.AddTo(Buttons) do begin
+        Text := 'Upload';
+        SubmitAction := TExtFormActionSubmit.Create;
+        with SubmitAction do begin
+          Url       := MethodURI(ProcessUpload);
+          WaitMsg   := 'Uploading your file...';
+          WaitTitle := 'Wait please';
+          Success   := ExtMessageBox.Alert('Success', 'File: %1.result.file uploaded on /uploads folder');
+          Failure   := ExtMessageBox.Alert('Upload Error', '%1.result.message')
+        end;
+        Handler := TExtFormBasicForm(GetForm).Submit(SubmitAction);
+      end;
+      with TExtButton.AddTo(Buttons) do begin
+        Text    := 'Reset';
+        Handler := TExtFormBasicForm(GetForm).Reset;
+      end;
+      AddShowSourceButton(Buttons, 'FileUpload');
+    end;
+    Show;
+  end;
 end;
 
 procedure TSamples.ReadButtonAjax; begin
@@ -804,6 +900,9 @@ begin
   end;
 end;
 
+procedure TSamples.ProcessUpload; begin
+end;
+
 {$IFNDEF SERVICE}
 begin
 {$IFNDEF WebServer}
@@ -811,6 +910,7 @@ begin
 {$ELSE}
   Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 80, 5);
 {$ENDIF}
+  Application.Icon := 'ExtPascal.ico';
   Application.Run;
 {$ELSE}
 
@@ -833,6 +933,7 @@ begin
       writeln('Service uninstalled')
     else begin
       Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
+      Application.Icon := 'ExtPascal.ico';
       if Exists then
         Run([TServiceThread.Create(true)])
       else
