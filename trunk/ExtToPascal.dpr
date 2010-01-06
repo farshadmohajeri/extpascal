@@ -1246,14 +1246,13 @@ begin
                 writeln(Pas, 'end;'^M^J);
               end;
             end;
+
             for K := 0 to Events.Count-1 do // Write Set procedures implementation
               with TMethod(Events.Objects[K]) do
                 if not Static then begin
                   writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', CName, Name, '); begin');
                   writeln(Pas, Tab, 'if Assigned(F', Name, ') then');
-                  write(Pas, Tab(2), 'Un(''', JSName, ''', Ajax(''', JSName, ''', ');
-                  WriteEventParamsAdapter(TMethod(Events.Objects[K]));
-                  writeln(Pas, ', true));');
+                  writeln(Pas, Tab(2), 'JSCode(JSName+'+'''.events ["'+JSName+'"].listeners=[];'');');
                   writeln(Pas, Tab, 'if Assigned(Value) then');
                   write(Pas, Tab(2), 'On(''', JSName, ''', Ajax(''', JSName, ''', ');
                   WriteEventParamsAdapter(TMethod(Events.Objects[K]));
