@@ -109,7 +109,7 @@ var
   Line, Lines, Proc, FName : string;
 begin
   Proc := Query['Proc'];
-  FName := 'ExtPascalSamples3.dpr';
+  FName := 'ExtPascalSamples.dpr';
   if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName;
   assign(Source, FName);
   reset(Source);
