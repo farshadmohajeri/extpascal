@@ -6,7 +6,7 @@ unit ExtUxForm;
 interface
 
 uses
-  StrUtils, ExtPascal, ExtPascalUtils, ExtForm, Ext;
+  StrUtils, ExtPascal, ExtPascalUtils, Ext, ExtForm;
 
 type
   TExtUxFormItemSelector = class;
