@@ -194,7 +194,7 @@ procedure TUnit.ReviewTypes;
       if (Name <> 'Ext') and (pos('TExt', T) = 1) and (pos('Ext,', UsesList + ',') = 0) then begin // uses Ext?
         I := AllClasses.IndexOf(T);
         if (I <> -1) and (TClass(AllClasses.Objects[I]).UnitName = 'Ext') then begin
-          UsesList := UsesList + ', Ext';
+          UsesList := ', Ext' + UsesList;
           exit;
         end;
       end;
@@ -1364,10 +1364,10 @@ begin
     T := now;
     AllClasses := TStringList.Create;
     try
-      AllClasses.Sorted:=True;
+      AllClasses.Sorted := true;
       Units := TStringList.Create;
       try
-        Units.Sorted:=True;
+        Units.Sorted := true;
         writeln('ExtToPascal - ExtJS docs to Pascal units wrapper, version ', ExtPascalVersion);
         writeln('(c) 2008-2010 by Wanderlan Santos dos Anjos, BSD license');
         writeln('http://extpascal.googlecode.com/'^M^J);
