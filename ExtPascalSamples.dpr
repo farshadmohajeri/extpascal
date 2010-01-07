@@ -56,8 +56,6 @@ const
   Examples : array[0..9] of record
     Name, Proc, Image, Desc : string
   end = (
-    (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
-    (Name: 'File Download';  Proc: 'FileDownload';  Image: 'filedownload.png'; Desc: 'Download the Advanced Configuration document (a pdf file).'),
     (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Image: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
     (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Image: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
     (Name: 'Layout Window';  Proc: 'Layout';        Image: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
@@ -65,7 +63,9 @@ const
     (Name: 'Border Layout';  Proc: 'BorderLayout';  Image: 'border-layout';    Desc: 'A complex BorderLayout implementation that shows nesting multiple components, sub-layouts and a treeview with Ajax and Browser side events'),
     (Name: 'Array Grid';     Proc: 'ArrayGrid';     Image: 'grid-array';       Desc: 'A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.<br/>And a simple modal dialog invoked using AJAX.'),
     (Name: 'Editable Grid';  Proc: 'EditableGrid';  Image: 'grid-edit';        Desc: 'An editable grid loaded from XML that shows multiple types of grid editors as well adding new custom data records using AJAX.'),
-    (Name: 'Simple Login';   Proc: 'Login';         Image: 'login.png';        Desc: 'A simple login form showing AJAX use with parameters.')
+    (Name: 'Simple Login';   Proc: 'Login';         Image: 'login.png';        Desc: 'A simple login form showing AJAX use with parameters.'),
+    (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
+    (Name: 'File Download';  Proc: 'FileDownload';  Image: 'filedownload.png'; Desc: 'Download the Advanced Configuration document (a pdf file).')
   );
 var
   I : integer;
@@ -737,6 +737,7 @@ procedure TSamples.FileDownload;
 var
   FileName : string;
 begin
+  // Put the file in the same folder of executable
   FileName := 'ExtPascal-Advanced-Configuration-eng-v6.pdf';
   if not FileExists(FileName) then FileName := 'E:\Clientes\ExtPascal\cgi-bin\' + FileName;
   DownloadFile(FileName);
