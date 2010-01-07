@@ -347,7 +347,8 @@ procedure TFCGIThread.DownloadContentType(Name : string); begin
   case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
                                      '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
                                      '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
-                                     '.odt', '.odp', '.ods', '.odg', '.odb']) of
+                                     '.odt', '.odp', '.ods', '.odg', '.odb',
+                                     '.htm', '.html']) of
     0 : ContentType := 'text/plain';
     1 : ContentType := 'application/pdf';
     2 : ContentType := 'text/csv';
@@ -366,6 +367,7 @@ procedure TFCGIThread.DownloadContentType(Name : string); begin
     26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
     27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
     28 : ContentType := 'application/vnd.oasis.opendocument.database';
+    29, 30 : ContentType := 'text/html';
   else
     ContentType := 'application/octet-stream';
   end;
