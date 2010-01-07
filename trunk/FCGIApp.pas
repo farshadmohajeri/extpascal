@@ -140,8 +140,8 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TExtProcedure) : string; overload;
-    procedure DownloadFile(Name : string);
-    procedure DownloadBuffer(Name, Buffer: string);
+    procedure DownloadFile(Name : string; pContentType : string = '');
+    procedure DownloadBuffer(Name, Buffer: string; pContentType : string = '');
     procedure Terminate; reintroduce;
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
@@ -371,7 +371,7 @@ procedure TFCGIThread.DownloadContentType(Name : string); begin
   end;
 end;
 
-procedure TFCGIThread.DownloadFile(Name : string);
+procedure TFCGIThread.DownloadFile(Name : string; pContentType : string = '');
 var
   F : file;
   Buffer : string;
@@ -382,12 +382,15 @@ begin
     SetLength(Buffer, FileSize(F));
     BlockRead(F, Buffer[1], FileSize(F));
     Close(F);
-    DownloadBuffer(Name, Buffer);
+    DownloadBuffer(Name, Buffer, pContentType);
   end;
 end;
 
-procedure TFCGIThread.DownloadBuffer(Name, Buffer : string); begin
-  DownloadContentType(Name);
+procedure TFCGIThread.DownloadBuffer(Name, Buffer : string; pContentType : string = ''); begin
+  if pContentType = '' then
+    DownloadContentType(Name)
+  else
+    ContentType := pContentType;
   FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
   Response    := Buffer;
   FIsDownload := true;
