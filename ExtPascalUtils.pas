@@ -520,7 +520,7 @@ begin
           end;
         '}' : begin // statement block end
           // some pair values are treated specially: keep },{ pair intact to save empty lines
-          if (Res[P+1] = ',') and (Res[P+2] = '{') then begin
+          if (length(Res) >= (P+2)) and (Res[P+1] = ',') and (Res[P+2] = '{') then begin
             dec(Lvl);
             inc(P, AddNewLine(P, SpaceIdents(Lvl)) + 2);
             inc(Lvl);
@@ -531,16 +531,16 @@ begin
             inNew := (Res[P+1] = ')') and (Res[P+2] = ']');
           // common treatment for block ending
           dec(Lvl); // decrease identation level
-          p := p + AddNewLine(p, SpaceIdents(lvl));
+          P := P + AddNewLine(P, SpaceIdents(lvl));
           // bring the following trails
-          i := p;
+          I := P;
           Backward := false;
           repeat
-            i := i+1;
+            inc(I);
             // find multiple statement block end
-            if (res[i] = '{') or (res[i] = '}') or (res[i] = ';') then backward := true;
-            if inNew and (res[i] = ']') then backward := true;
-          until (res[i] = ',') or backward;
+            if (length(Res) >= I) and (Res[I] in ['{', '}', ';']) then backward := true;
+            if inNew and (length(Res) >= I) and (Res[I] = ']') then backward := true;
+          until ((length(Res) >= I) and (Res[I] = ',')) or backward;
           if not backward then // add new line
             inc(P, AddNewLine(i+1, SpaceIdents(Lvl)))
           else // suspend new line to proceed with next block

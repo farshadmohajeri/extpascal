@@ -48,14 +48,16 @@ type
 //    procedure UML;
     procedure FileUpload;
     procedure ProcessUpload;
+    procedure FileDownload;
   end;
 
 procedure TSamples.Home;
 const
-  Examples : array[0..8] of record
+  Examples : array[0..9] of record
     Name, Proc, Image, Desc : string
   end = (
     (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
+    (Name: 'File Download';  Proc: 'FileDownload';  Image: 'filedownload.png'; Desc: 'Download the Advanced Configuration document (a pdf file).'),
     (Name: 'Basic TabPanel'; Proc: 'BasicTabPanel'; Image: 'window';           Desc: 'Simple Hello World window that contains a basic TabPanel.'),
     (Name: 'Message Boxes';  Proc: 'MessageBoxes';  Image: 'msg-box';          Desc: 'Different styles include confirm, alert, prompt, progress, wait and also support custom icons. Calling events passing parameters using AJAX or browser side logic'),
     (Name: 'Layout Window';  Proc: 'Layout';        Image: 'window-layout';    Desc: 'A window containing a basic BorderLayout with nested TabPanel.'),
@@ -75,16 +77,16 @@ begin
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';
-    Width       := 400;
+    AutoWidth   := true;
     Frame       := true;
-//    Floating    := true;
+    Layout      := lyColumn;
     Collapsible := true;
-//    SetPosition(300, 0);
     AddShowSourceButton(TbarArray, 'Home');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
+        Width := 380;
         HTM   := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
         if pos('.png', Image) = 0 then
           Html := HTM + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
@@ -731,6 +733,15 @@ begin
   DataStore.Load(nil);
 end;
 
+procedure TSamples.FileDownload;
+var
+  FileName : string;
+begin
+  FileName := 'ExtPascal-Advanced-Configuration-eng-v6.pdf';
+  if not FileExists(FileName) then FileName := 'E:\Clientes\ExtPascal\cgi-bin\' + FileName;
+  DownloadFile(FileName);
+end;
+
 procedure TSamples.FileUpload;
 var
   F : TExtFormFormPanel;
@@ -888,6 +899,9 @@ begin
 end;
 
 procedure TSamples.ProcessUpload; begin
+  //DeleteFile(FileUploadedFullName);
+  // process your file here, by example loading a database table with it
+  // or reject it using by example: Response := '{success:false,message:"The file is invalid"}';
 end;
 
 {$IFNDEF SERVICE}

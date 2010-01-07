@@ -795,7 +795,8 @@ begin
   end
   {$IFDEF DEBUGJS}
   else
-    Response := BeautifyJS(Response);
+    if not(IsDownload or IsUpload) then
+      Response := BeautifyJS(Response);
   {$ENDIF}
 end;
 
