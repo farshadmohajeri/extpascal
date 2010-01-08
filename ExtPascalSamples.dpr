@@ -86,7 +86,7 @@ begin
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;
         Frame := true;
-        Width := 380;
+        if Browser <> brChrome then Width := 380; // Chrome doesn't support Column layout correctly
         HTM   := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
         if pos('.png', Image) = 0 then
           Html := HTM + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
@@ -900,7 +900,7 @@ begin
 end;
 
 procedure TSamples.ProcessUpload; begin
-  //DeleteFile(FileUploadedFullName);
+  // DeleteFile(FileUploadedFullName);
   // process your file here, by example loading a database table with it
   // or reject it using by example: Response := '{success:false,message:"The file is invalid"}';
 end;
