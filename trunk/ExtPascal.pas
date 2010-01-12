@@ -1258,7 +1258,7 @@ function TExtObject.JSExpression(Method : TExtFunction) : integer; begin
 end;
 
 function TExtObject.JSString(Expression : string; MethodsValues : array of const) : string; begin
-  Result := AddJSReturn('"' + Expression + '"', MethodsValues);
+  Result := AddJSReturn('"+' + Expression + '+"', MethodsValues);
 end;
 
 function TExtObject.JSString(Method : TExtFunction) : string; begin
