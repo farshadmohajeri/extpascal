@@ -24,7 +24,9 @@ Note that Delphi 2006 and later already includes Indy 10.
     # On the Directories/Conditionals tab, enter the path to Indy in "Search path" (not needed if your Delphi includes Indy 10).
     # On the same tab, enter WEBSERVER in "Conditional defines".
 
-  * With Lazarus, choose Project | Compiler Options and change Other Unit Files to point to Indy.
+  * With Lazarus, choose Project | Compiler Options.
+    # On the Paths tab, change Other Unit Files to point to Indy.
+    # On the Other tab, make sure -dWEBSERVER is entered in Custom options.
 
 4. With Delphi, choose Project | Compile. With Lazarus, choose Run | Build.
 
