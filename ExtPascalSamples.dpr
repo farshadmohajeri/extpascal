@@ -81,7 +81,7 @@ begin
     Frame       := true;
     Layout      := lyColumn;
     Collapsible := true;
-    AddShowSourceButton(TbarArray, 'Home');
+    AddShowSourceButton(TBarArray, 'Home');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
         Title := Name;

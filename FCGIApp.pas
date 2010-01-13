@@ -62,7 +62,7 @@ type
     UploadMark,
     FFileUploaded,
     FFileUploadedFullName,
-    FResponseHeader : string; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
+    FResponseHeader : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
     FQuery,
     FCookie : TStringList;
@@ -77,7 +77,7 @@ type
     function GetQueryAsTDateTime(Name: string) : TDateTime;
     function GetQueryAsBoolean(Name: string): boolean;
     procedure GarbageCollector(FreeGarbage : boolean);
-    procedure WriteUploadFile(Buffer : string);
+    procedure WriteUploadFile(Buffer : AnsiString);
   protected
     FRequest, FPathInfo : string;
     FIsAjax,
@@ -87,10 +87,10 @@ type
     class function URLDecode(Encoded: string): string;
     class function URLEncode(Decoded: string): string;
     procedure AddParam(var S : string; Param: array of string);
-    procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
-    procedure ReadBeginRequest(var FCGIHeader; Content : string);
+    procedure ReadRequestHeader(var RequestHeader : TStringList; Stream : AnsiString; const Cookies : TStringList = nil);
+    procedure ReadBeginRequest(var FCGIHeader; Content : AnsiString);
     procedure GetValues(Content : string);
-    function HandleRequest(pRequest : string) : string;
+    function HandleRequest(pRequest : AnsiString) : AnsiString;
     function BeforeHandleRequest : boolean; virtual;
     function SetCurrentFCGIThread : boolean;
     procedure AfterHandleRequest; virtual;
@@ -100,7 +100,7 @@ type
     procedure BeforeThreadDestruction; virtual;
     procedure SetPaths; virtual;
     procedure Refresh;
-    procedure DownloadContentType(Name: string); virtual;
+    procedure DownloadContentType(Name : string); virtual;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -119,12 +119,12 @@ type
     property QueryAsDouble[Name : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
     property QueryAsTDateTime[Name : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
     property Queries : TStringList read FQuery; // Returns all HTTP queries as list to ease searching
-    property FileUploaded : string read FFileUploaded; // Last uploaded file
-    property FileUploadedFullName : string read FFileUploadedFullName; // Last uploaded file
+    property FileUploaded : AnsiString read FFileUploaded; // Last uploaded file
+    property FileUploadedFullName : AnsiString read FFileUploadedFullName; // Last uploaded file
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
     property IsUpload : boolean read FIsUpload;
     property IsDownload : boolean read FIsDownload;
-    property ScriptName : string read FScriptName;
+    property ScriptName : AnsiString read FScriptName;
     property Browser : TBrowser read FBrowser; // Browser in use in this session
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
@@ -132,16 +132,16 @@ type
     procedure DeleteFromGarbage(Obj : TObject);
     function FindObject(Name : string) : TObject;
     function ExistsReference(Name : string) : boolean;
-    procedure SendResponse(S : string; pRecType : TRecType = rtStdOut);
+    procedure SendResponse(S : AnsiString; pRecType : TRecType = rtStdOut);
     procedure Execute; override;
     procedure SendEndRequest(Status: TProtocolStatus = psRequestComplete);
-    procedure SetResponseHeader(Header : string);
+    procedure SetResponseHeader(Header : AnsiString);
     procedure Alert(Msg : string); virtual;
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TExtProcedure) : string; overload;
     procedure DownloadFile(Name : string; pContentType : string = '');
-    procedure DownloadBuffer(Name, Buffer: string; pContentType : string = '');
+    procedure DownloadBuffer(Name, Buffer: AnsiString; pContentType : string = '');
     procedure Terminate; reintroduce;
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
@@ -235,7 +235,7 @@ Converts a Request string into a FastCGI Header
 @param FCGIHeader FastCGI header converted from Buffer
 @see MoveFromFCGIHeader
 }
-procedure MoveToFCGIHeader(var Buffer : char; var FCGIHeader : TFCGIHeader); begin
+procedure MoveToFCGIHeader(var Buffer : AnsiChar; var FCGIHeader : TFCGIHeader); begin
   move(Buffer, FCGIHeader, sizeof(TFCGIHeader));
   {$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
@@ -249,7 +249,7 @@ Converts a Request string into a FastCGI Header
 @param FCGIHeader FastCGI header converted from Buffer
 @see MoveToFCGIHeader
 }
-procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : char); begin
+procedure MoveFromFCGIHeader(FCGIHeader : TFCGIHeader; var Buffer : AnsiChar); begin
   {$IFNDEF FPC_BIG_ENDIAN}
   FCGIHeader.ID  := swap(FCGIHeader.ID);
   FCGIHeader.Len := swap(FCGIHeader.Len);
@@ -376,7 +376,7 @@ end;
 procedure TFCGIThread.DownloadFile(Name : string; pContentType : string = '');
 var
   F : file;
-  Buffer : string;
+  Buffer : AnsiString;
 begin
   if FileExists(Name) then begin
     Assign(F, Name);
@@ -388,7 +388,7 @@ begin
   end;
 end;
 
-procedure TFCGIThread.DownloadBuffer(Name, Buffer : string; pContentType : string = ''); begin
+procedure TFCGIThread.DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = ''); begin
   if pContentType = '' then
     DownloadContentType(Name)
   else
@@ -402,7 +402,7 @@ end;
 Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse, SendResponse> method.
 @param Header Use '' to clean response header else Header parameter is appended to response header
 }
-procedure TFCGIThread.SetResponseHeader(Header : string); begin
+procedure TFCGIThread.SetResponseHeader(Header : AnsiString); begin
   if Header = '' then
     FResponseHeader := ''
   else
@@ -448,12 +448,12 @@ Sends a FastCGI response record to the Web Server. Puts the HTTP header in front
 @see MoveFromFCGIHeader
 @see TBlockSocket.SendString
 }
-procedure TFCGIThread.SendResponse(S : string; pRecType : TRecType = rtStdOut);
+procedure TFCGIThread.SendResponse(S : AnsiString; pRecType : TRecType = rtStdOut);
 const
   MAX_BUFFER = 65536 - sizeof(TFCGIHeader);
 var
   FCGIHeader : TFCGIHeader;
-  Buffer : string;
+  Buffer : AnsiString;
   I : integer;
 begin
   if pRecType = rtStdOut then begin
@@ -505,7 +505,7 @@ Reads the begin request record from FastCGI request to the thread.
 @param FCGIHeader FastCGI Header
 @param Content Additional bytes from FastCGI request
 }
-procedure TFCGIThread.ReadBeginRequest(var FCGIHeader; Content : string);
+procedure TFCGIThread.ReadBeginRequest(var FCGIHeader; Content : AnsiString);
 var
   BeginRequest : TBeginRequest;
 begin
@@ -527,11 +527,11 @@ Reads HTTP headers and cookies from FastCGI rtParams record type
 @param Stream rtParams record type body
 @param Cookies List of HTTP cookies to initialize
 }
-procedure TFCGIThread.ReadRequestHeader(var RequestHeader : TStringList; Stream : string; const Cookies : TStringList = nil);
+procedure TFCGIThread.ReadRequestHeader(var RequestHeader : TStringList; Stream : AnsiString; const Cookies : TStringList = nil);
 var
   I, Pos : integer;
   Len    : array[0..1] of integer;
-  Param  : array[0..1] of string;
+  Param  : array[0..1] of AnsiString;
 begin
   RequestHeader.Clear;
   if Cookies <> nil then Cookies.Clear;
@@ -628,7 +628,7 @@ Processing to execute before <link TFCGIThread.HandleRequest, HandleRequest> met
 }
 function TFCGIThread.BeforeHandleRequest : boolean; begin Result := true end;
 
-procedure TFCGIThread.WriteUploadFile(Buffer : string);
+procedure TFCGIThread.WriteUploadFile(Buffer : AnsiString);
 var
   F : file;
   I, J, Tam : integer;
@@ -917,7 +917,7 @@ On receive a request, each request, on its execution cycle, does:
 procedure TFCGIThread.Execute;
 var
   FCGIHeader : TFCGIHeader;
-  Buffer, Content : string;
+  Buffer, Content : AnsiString;
   I : integer;
 begin
   CurrentFCGIThread := Self;
@@ -1032,7 +1032,7 @@ The published method will use the Request as input and the Response as output.
 @param pRequest Request body assigned to FRequest field or to <link TFCGIThread.Query, Query> array if FRequestMethod is <link TRequestMethod, rmPost>, it is the input to the published method
 @return Response body to <link TFCGIThread.SendResponse, send>
 }
-function TFCGIThread.HandleRequest(pRequest : string) : string;
+function TFCGIThread.HandleRequest(pRequest : AnsiString) : AnsiString;
 //{DOM-IGNORE-BEGIN
 type
   MethodCall = procedure of object;
