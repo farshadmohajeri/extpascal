@@ -58,8 +58,8 @@ type
     FSocket : TBlockSocket; // Current socket for current FastCGI request
     FGarbage,
     FKeepConn : boolean; // Not used
+    FUploadMark,
     FScriptName,
-    UploadMark,
     FFileUploaded,
     FFileUploadedFullName,
     FResponseHeader : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
@@ -69,7 +69,7 @@ type
     FLastAccess : TDateTime;
     FBrowser : TBrowser;
     function GetRequestHeader(Name: string): string;
-    function CompleteRequestHeaderInfo(Buffer : string; I : integer) : boolean;
+    function CompleteRequestHeaderInfo(Buffer : AnsiString; I : integer) : boolean;
     function GetCookie(Name: string): string;
     function GetQuery(Name: string) : string;
     function GetQueryAsDouble(Name: string): double;
@@ -635,7 +635,7 @@ var
 begin
   if FileUploaded <> '' then begin
     Assign(F, FileUploadedFullName);
-    I := pos(UploadMark, Buffer);
+    I := pos(FUploadMark, Buffer);
     case I of
       0 : begin // middle blocks
         Reset(F, 1);
@@ -646,7 +646,7 @@ begin
       1 : begin // begin block
         Rewrite(F, 1);
         I := pos(^M^J^M^J, Buffer) + 4;
-        J := posex(UploadMark, Buffer, I);
+        J := posex(FUploadMark, Buffer, I);
         if J = 0 then begin
           Tam := length(Buffer) - I + 1;
           Response := '{success:false,file:"' + FileUploaded + '"}'
@@ -669,9 +669,9 @@ begin
 end;
 
 // Sets FLastAccess, FPathInfo, FRequestMethod and FQuery internal fields
-function TFCGIThread.CompleteRequestHeaderInfo(Buffer : string; I : integer) : boolean;
+function TFCGIThread.CompleteRequestHeaderInfo(Buffer : AnsiString; I : integer) : boolean;
 var
-  ReqMet, CT : string;
+  ReqMet, CT : AnsiString;
   J : integer;
 begin
   FLastAccess := Now;
@@ -699,8 +699,12 @@ begin
   if pos('multipart/form-data', CT) <> 0 then begin
     FIsUpload := true;
     J := pos('=', CT);
-    UploadMark := '--' + copy(CT, J+1, length(CT));
-    I := posex(UploadMark, Buffer, I);
+    FUploadMark := '--' + copy(CT, J+1, length(CT));
+    {$IFDEF FPC} // Very stranger bug in FPC !!!
+    I := pos(FUploadMark, Buffer);
+    {$ELSE}
+    I := posex(FUploadMark, Buffer, I);
+    {$ENDIF}
     I := posex('filename="', Buffer, I);
     J := posex('"', Buffer, I+10);
     FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
@@ -952,7 +956,7 @@ begin
                             FFileUploaded         := CurrentFCGIThread.FFileUploaded;
                             FFileUploadedFullName := CurrentFCGIThread.FFileUploadedFullName;
                             Response              := CurrentFCGIThread.Response;
-                            UploadMark            := CurrentFCGIThread.UploadMark;
+                            FUploadMark           := CurrentFCGIThread.FUploadMark;
                           end;
                         end
                         else
