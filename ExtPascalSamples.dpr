@@ -73,7 +73,7 @@ var
 begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Theme := 'gray';
-  SetStyle('img:hover{border:1px solid blue}');
+  //SetStyle('img:hover{border:1px solid blue}');
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples';
     RenderTo    := 'body';

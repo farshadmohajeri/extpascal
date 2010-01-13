@@ -46,6 +46,7 @@ License: <extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlin
 }
 program CGIGateway;
 
+{$IFDEF FPC}{$MODE DELPHI}{$ENDIF}
 {$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
 
 // force HAS_CONFIG flag if config file is mandatory
@@ -75,7 +76,7 @@ const
   {$IFDEF HAS_CONFIG}
   ConfigSection = 'FCGI';      // Configuration section to be read
   {$ENDIF}
-  
+
 var
   Socket     : TBlockSocket;   // Block socket object
   FCGIApp    : string;         // FastCGI program file name. The extension is '.exe' on Windows and '.fcgi' on Posix platforms
@@ -89,7 +90,7 @@ Adds a pair Name/Value to a <link FCGIApp.pas, FastCGI> <link TRecType, rtGetVal
 @param S Body of <link TRecType, rtGetValuesResult> record type
 @param Param Pair Name/Value
 }
-procedure AddParam(var S : string; Param : array of string);
+procedure AddParam(var S : AnsiString; Param : array of AnsiString);
 var
   I, J   : integer;
   Len    : array[0..1] of integer;
@@ -104,18 +105,18 @@ begin
       Format[I] := 4;
   end;
   Tam := Len[0] + Format[0] + Len[1] + Format[1];
-  S := S + #1#4#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0; // FCGI Params header
+  S := S + #1#4#0#1 + AnsiChar(hi(Tam)) + AnsiChar(lo(Tam)) + #0#0; // FCGI Params header
   J := length(S);
   SetLength(S, J + Tam);
   inc(J);
   for I := 0 to 1 do begin
     if Format[I] = 1 then
-      S[J] := char(Len[I])
+      S[J] := AnsiChar(Len[I])
     else begin
-      S[J]   := char(((Len[I] shr 24) and $FF) + $80);
-      S[J+1] := char( (Len[I] shr 16) and $FF);
-      S[J+2] := char( (Len[I] shr  8) and $FF);
-      S[J+3] := char(  Len[I] and $FF);
+      S[J]   := AnsiChar(((Len[I] shr 24) and $FF) + $80);
+      S[J+1] := AnsiChar( (Len[I] shr 16) and $FF);
+      S[J+2] := AnsiChar( (Len[I] shr  8) and $FF);
+      S[J+3] := AnsiChar(  Len[I] and $FF);
     end;
     inc(J, Format[I]);
   end;
@@ -140,7 +141,7 @@ Returns the environment variables encapsulated using FastCGI protocol
 @param EnvName Optional environment variable name to override
 @param EnvValue Optional value to override
 }
-function EnvVariables(EnvName : string = ''; EnvValue : string = '') : string;
+function EnvVariables(EnvName : string = ''; EnvValue : string = '') : AnsiString;
 const
   EnvVar : array[0..39] of string = (
     'QUERY_STRING', 'PATH_INFO', 'REQUEST_METHOD', 'HTTP_COOKIE', 'HTTP_ACCEPT_LANGUAGE', 'SCRIPT_NAME', 'DOCUMENT_ROOT', 'HTTP_X_REQUESTED_WITH', //7 only essential
@@ -154,7 +155,7 @@ var
   I : integer;
   Value : string;
 begin
-  // Result := #1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request (redundant!)
+  Result := ''; //#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0; // FCGI Begin Request (redundant!)
   for I := 0 to high(EnvVar) do begin
     // override default value
     if EnvVar[I] = EnvName then
@@ -180,11 +181,11 @@ Sends Environment variables to FastCGI application using FastCGI protocol.
 Receives the response and returns this response to Web Server
 @param EnvVars Environment variables to send
 }
-procedure TalkFCGI(EnvVars : string);
+procedure TalkFCGI(EnvVars : AnsiString);
 var
-  Request : string;
-  Tam : word;
-  R : char;
+  Request : AnsiString;
+  Tam     : word;
+  R       : AnsiChar;
 begin
   with Socket do begin
     Request := '';
@@ -193,16 +194,16 @@ begin
         read(R);
         if R = IISDelim then break; // for IIS bug
         Request := Request + R;
-      until seekeof(Input);
+      until SeekEOF(Input);
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
-               EnvVars + #1#5#0#1 + chr(hi(Tam)) + chr(lo(Tam)) + #0#0 + Request);
+               EnvVars + #1#5#0#1 + AnsiChar(hi(Tam)) + AnsiChar(lo(Tam)) + #0#0 + Request);
 {$IFDEF HAS_CONFIG}
     if ConfigFile <> '' then
       Request := RecvString(Config.ReadInteger(ConfigSection, 'Timeout', 10000))
     else
-{$ENDIF}    
+{$ENDIF}
     Request := RecvString(10000);  {timeout after 10 seconds}
     if length(Request) > 8 then
       writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
