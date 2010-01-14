@@ -676,11 +676,12 @@ end;
 // Override this method to change ExtPath, ImagePath, ExtBuild and Charset default values
 procedure TExtThread.SetPaths; begin
   inherited;
-  ExtPath    := '/ext';
-  ImagePath  := '/images';
-  ExtBuild   := 'ext-all';
-  Charset    := 'utf-8'; // 'iso-8859-1'
-  UpLoadPath := '/uploads';
+  ExtPath       := '/ext';
+  ImagePath     := '/images';
+  ExtBuild      := 'ext-all';
+  Charset       := 'utf-8'; // 'iso-8859-1'
+  UpLoadPath    := '/uploads';
+  MaxUploadSize := MAXLONGINT;
 end;
 
 {

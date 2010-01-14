@@ -41,6 +41,7 @@ type
   public
     Response,
     ContentType : string; // HTTP content-type header, default is 'text/html'
+    MaxUploadSize : integer;
     constructor Create(NewSocket : integer); reintroduce; virtual; abstract;
     constructor CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); override;
     destructor Destroy; override;
@@ -338,18 +339,21 @@ begin
   J := posex('"', Buffer, I+10);
   FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
   if FFileUploaded <> '' then begin
-    FFileUploadedFullName := '.' + UploadPath + '/' + FFileUploaded;
-    Assign(F, FileUploadedFullName);
-    Rewrite(F, 1);
     I := posex(^M^J^M^J, Buffer, I) + 4;
     J := posex(FUploadMark, Buffer, I);
     if J = 0 then
       Response := '{success:false,file:"' + FileUploaded + '"}'
     else begin // unique block
-      Tam := J - I - 2;
+      if MaxUploadSize <> 0 then begin
+        FFileUploadedFullName := '.' + UploadPath + '/' + FFileUploaded;
+        Assign(F, FileUploadedFullName);
+        Rewrite(F, 1);
+        Tam := J - I - 2;
+        if Tam <= MaxUploadSize then
+          Blockwrite(F, Buffer[I], Tam);
+        Close(F);
+      end;
       Response := '{success:true,file:"' + FileUploaded + '"}';
-      Blockwrite(F, Buffer[I], Tam);
-      Close(F);
     end;
   end
   else

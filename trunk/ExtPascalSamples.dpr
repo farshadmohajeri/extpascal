@@ -744,6 +744,7 @@ var
   F : TExtFormFormPanel;
   SubmitAction : TExtFormActionSubmit;
 begin
+  MaxUploadSize := 0; // My site won´t write data ;)
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   with TExtWindow.Create do begin
     Modal := true;
