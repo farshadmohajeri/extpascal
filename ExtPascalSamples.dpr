@@ -3,15 +3,11 @@ program ExtPascalSamples; // for Ext JS 3.1.0 and later
 
 {$IFDEF FPC}{$MACRO ON}{$ENDIF}
 {.$DEFINE SERVICE}
-{$IFNDEF WebServer}
-{$IFDEF MSWINDOWS}{$APPTYPE CONSOLE}{$ENDIF}
-{$ENDIF}
 
 uses
-  {$IFDEF WebServer}{$IFNDEF MSWINDOWS}cthreads, {$ENDIF}{$ENDIF}
   ExtPascal, ExtPascalUtils, SysUtils, Classes, Math,
-  {$IFNDEF WebServer} FCGIApp {$ELSE} IdExtHTTPServer {$ENDIF},
-  {$IFDEF SERVICE} Services, {$ENDIF}
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF},
+  {$IFDEF SERVICE}Services,{$ENDIF}
   Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
 
 type

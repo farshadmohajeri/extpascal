@@ -15,7 +15,10 @@ type
     FNewThread        : boolean;
     FParams,
     FGarbageCollector : TStringList;
-    FBrowser          : TBrowser; 
+    FBrowser          : TBrowser;
+    FFileUploaded,
+    FFileUploadedFullName,
+    FUploadMark       : string;
     function GetPathInfo: string;
     function GetRequestHeader(HeaderName: string): string;
     function GetQuery(const ParamName: string): string;
@@ -24,16 +27,20 @@ type
     function GetQueryAsTDateTime(const ParamName: string) : TDateTime;
     function GetQueryAsBoolean(const ParamName: string): boolean;
     function GetCookie(const CookieName: string): string;
+    procedure WriteUpload(CT, Buffer : string; AResponseInfo: TIdHTTPResponseInfo);
   protected
     // Methods to be implemented in your app
     FIsAjax, FIsUpload, FIsDownload : boolean;
+    UploadPath : string;
     function BeforeHandleRequest : boolean; virtual;
     procedure AfterHandleRequest; virtual;
     procedure OnError(Msg, Method, Params : string); virtual;
     procedure OnNotFoundError; virtual;
+    procedure DownloadContentType(Name : string); virtual;
     procedure SetPaths; virtual; abstract;
   public
-    Response: string;
+    Response,
+    ContentType : string; // HTTP content-type header, default is 'text/html'
     constructor Create(NewSocket : integer); reintroduce; virtual; abstract;
     constructor CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); override;
     destructor Destroy; override;
@@ -46,6 +53,7 @@ type
     function MethodURI(AMethodName: string): string; overload;
     function MethodURI(AMethodName : TExtProcedure) : string; overload;
     procedure Alert(Msg : string); virtual;
+    procedure DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = '');
     property PathInfo: string read GetPathInfo;
     property Query[const ParamName: string]: string read GetQuery;
     property QueryAsBoolean[const ParamName : string] : boolean read GetQueryAsBoolean; // Returns HTTP query info parameters as a boolean
@@ -57,7 +65,11 @@ type
     property Cookie[const CookieName: string]: string read GetCookie;
     property NewThread : boolean read FNewThread write FNewThread;
     property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
+    property IsUpload : boolean read FIsUpload;
+    property IsDownload : boolean read FIsDownload;
     property Browser : TBrowser read FBrowser;
+    property FileUploaded : string read FFileUploaded;
+    property FileUploadedFullName : string read FFileUploadedFullName;
   published
     procedure Home; virtual; abstract;
     procedure Logout; virtual;
@@ -313,8 +325,44 @@ constructor TIdExtHTTPServer.Create(const AExtSessionClass: TIdExtSessionClass);
   inherited Create(nil);
 end;
 
+procedure TIdExtSession.WriteUpload(CT, Buffer : string; AResponseInfo: TIdHTTPResponseInfo);
+var
+  I, J, Tam : integer;
+  F : file;
+begin
+  FIsUpload := true;
+  J := pos('=', CT);
+  FUploadMark := '--' + copy(CT, J+1, length(CT));
+  I := pos(FUploadMark, Buffer);
+  I := posex('filename="', Buffer, I);
+  J := posex('"', Buffer, I+10);
+  FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
+  if FFileUploaded <> '' then begin
+    FFileUploadedFullName := '.' + UploadPath + '/' + FFileUploaded;
+    Assign(F, FileUploadedFullName);
+    Rewrite(F, 1);
+    I := posex(^M^J^M^J, Buffer, I) + 4;
+    J := posex(FUploadMark, Buffer, I);
+    if J = 0 then
+      Response := '{success:false,file:"' + FileUploaded + '"}'
+    else begin // unique block
+      Tam := J - I - 2;
+      Response := '{success:true,file:"' + FileUploaded + '"}';
+      Blockwrite(F, Buffer[I], Tam);
+      Close(F);
+    end;
+  end
+  else
+    Response := '{success:false,message:"File not informed"}';
+  FCurrentResponse := AResponseInfo;
+  FCurrentResponse.ContentText := Response;
+end;
+
 procedure TIdExtHTTPServer.CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); begin
-  TIdExtSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
+  if pos('multipart/form-data', ARequestInfo.ContentType) <> 0 then
+    TIdExtSession(ARequestInfo.Session).WriteUpload(ARequestInfo.ContentType, ARequestInfo.UnparsedParams, AResponseInfo)
+  else
+    TIdExtSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
 end;
 
 procedure TIdExtHTTPServer.InitComponent; begin
@@ -407,6 +455,18 @@ begin
   inherited;
 end;
 
+procedure TIdExtSession.DownloadBuffer(Name, Buffer: AnsiString; pContentType: string); begin
+  if pContentType = '' then
+    DownloadContentType(Name)
+  else
+    ContentType := pContentType;
+  FCurrentResponse.CustomHeaders.Values['content-disposition'] := 'attachment;filename="' + ExtractFileName(Name) + '"';
+  Response    := Buffer;
+  FIsDownload := true;
+end;
+
+procedure TIdExtSession.DownloadContentType(Name: string); begin end;
+
 function TIdExtSession.GetCookie(const CookieName: string): string;
 var
   FCookieIndex : Integer;
@@ -446,7 +506,9 @@ function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
   if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
   HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
   Result := FCurrentRequest.RawHeaders.Values[HeaderName];
-  if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
+  try
+    if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
+  except end;
 end;
 
 procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
@@ -502,6 +564,8 @@ var
   PageMethod : TMethod;
   MethodCode : pointer;
 begin
+  FIsDownload       := false;
+  FIsUpload         := false;
   CurrentFCGIThread := Self;
   FCurrentRequest   := ARequest;
   FCurrentResponse  := AResponse;

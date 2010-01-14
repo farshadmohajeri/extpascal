@@ -61,8 +61,7 @@ type
     FUploadMark,
     FScriptName,
     FFileUploaded,
-    FFileUploadedFullName,
-    FResponseHeader : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
+    FFileUploadedFullName : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequestHeader,
     FQuery,
     FCookie : TStringList;
@@ -79,6 +78,7 @@ type
     procedure GarbageCollector(FreeGarbage : boolean);
     procedure WriteUploadFile(Buffer : AnsiString);
   protected
+    FResponseHeader : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequest, FPathInfo : string;
     FIsAjax,
     FIsUpload,
@@ -99,8 +99,8 @@ type
     procedure AfterThreadConstruction; virtual;
     procedure BeforeThreadDestruction; virtual;
     procedure SetPaths; virtual;
-    procedure Refresh;
     procedure DownloadContentType(Name : string); virtual;
+    procedure Refresh;
   public
     BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
     Response     : string; // Response string
@@ -140,8 +140,7 @@ type
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
     function  MethodURI(AMethodName : string) : string; overload;
     function  MethodURI(AMethodName : TExtProcedure) : string; overload;
-    procedure DownloadFile(Name : string; pContentType : string = '');
-    procedure DownloadBuffer(Name, Buffer: AnsiString; pContentType : string = '');
+    procedure DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = '');
     procedure Terminate; reintroduce;
   published
     procedure Home; virtual; abstract; // Default method to be called by <link TFCGIThread.HandleRequest, HandleRequest>
@@ -343,61 +342,6 @@ destructor TFCGIThread.Destroy; begin
   {$IFDEF MSWINDOWS}inherited;{$ENDIF} // Collateral effect of Unix RTL FPC bug
 end;
 
-procedure TFCGIThread.DownloadContentType(Name : string); begin
-  case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
-                                     '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
-                                     '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
-                                     '.odt', '.odp', '.ods', '.odg', '.odb',
-                                     '.htm', '.html']) of
-    0 : ContentType := 'text/plain';
-    1 : ContentType := 'application/pdf';
-    2 : ContentType := 'text/csv';
-    3 : ContentType := 'application/zip';
-    4 : ContentType := 'audio/x-wav';
-    5 : ContentType := 'audio/x-ms-wma';
-    6, 7 : ContentType := 'application/msword';
-    8, 9 : ContentType := 'application/vnd.ms-excel';
-    10..13 : ContentType := 'application/vnd.ms-powerpoint';
-    14 : ContentType := 'video/x-ms-wmv';
-    15..20 : ContentType := 'video/mpeg';
-    21 : ContentType := 'video/mp4';
-    22, 23 : ContentType := 'video/quicktime';
-    24 : ContentType := 'application/vnd.oasis.opendocument.text';
-    25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
-    26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
-    27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
-    28 : ContentType := 'application/vnd.oasis.opendocument.database';
-    29, 30 : ContentType := 'text/html';
-  else
-    ContentType := 'application/octet-stream';
-  end;
-end;
-
-procedure TFCGIThread.DownloadFile(Name : string; pContentType : string = '');
-var
-  F : file;
-  Buffer : AnsiString;
-begin
-  if FileExists(Name) then begin
-    Assign(F, Name);
-    Reset(F, 1);
-    SetLength(Buffer, FileSize(F));
-    BlockRead(F, Buffer[1], FileSize(F));
-    Close(F);
-    DownloadBuffer(Name, Buffer, pContentType);
-  end;
-end;
-
-procedure TFCGIThread.DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = ''); begin
-  if pContentType = '' then
-    DownloadContentType(Name)
-  else
-    ContentType := pContentType;
-  FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
-  Response    := Buffer;
-  FIsDownload := true;
-end;
-
 {
 Appends or cleans HTTP response header. The HTTP response header is sent using <link TFCGIThread.SendResponse, SendResponse> method.
 @param Header Use '' to clean response header else Header parameter is appended to response header
@@ -417,6 +361,18 @@ procedure TFCGIThread.Shutdown; begin
     Application.Terminated := true;
   end;
 end;
+
+procedure TFCGIThread.DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = ''); begin
+  if pContentType = '' then
+    DownloadContentType(Name)
+  else
+    ContentType := pContentType;
+  FResponseHeader := 'content-disposition:attachment;filename="' + ExtractFileName(Name) + '"'^M^J;
+  Response    := Buffer;
+  FIsDownload := true;
+end;
+
+procedure TFCGIThread.DownloadContentType(Name: string); begin end;
 
 procedure TFCGIThread.Terminate; begin
   inherited;
@@ -900,10 +856,6 @@ begin
   Application.AccessThreads.Leave;
 end;
 
-procedure TFCGIThread.SetPaths; begin
-  UploadPath := '/uploads'
-end;
-
 {
 The thread main loop.<p>
 On receive a request, each request, on its execution cycle, does:
@@ -1075,15 +1027,11 @@ begin
     except
       on E : Exception do OnError(E.Message, PathInfo, pRequest)
     end;
-  if IsDownload then
+  AfterHandleRequest;
+  if IsDownload or (IsUpload and (Browser = brIE)) then
     Result := Response
-  else begin
-    AfterHandleRequest;
-    if IsUpload and (Browser = brIE) then
-      Result := Response
-    else
-      Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
-  end;
+  else
+    Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
 end;
 
 {$IFDEF HAS_CONFIG}
