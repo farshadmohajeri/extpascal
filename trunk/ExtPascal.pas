@@ -88,6 +88,7 @@ type
     procedure OnError(Msg, Method, Params : string); override;
     function GetSequence : string;
     function JSConcat(PrevCommand, NextCommand : string) : string;
+    procedure DownloadContentType(Name : string); override;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme     : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -107,6 +108,7 @@ type
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
     procedure Alert(Msg : string); override;
+    procedure DownloadFile(Name : string; pContentType : string = '');
   published
     {$IFDEF HAS_CONFIG}
     procedure Reconfig; override;
@@ -283,6 +285,51 @@ threadvar
   InJSFunction : boolean;
 
 { TExtThread }
+
+procedure TExtThread.DownloadContentType(Name : string); begin
+  case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
+                                     '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
+                                     '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
+                                     '.odt', '.odp', '.ods', '.odg', '.odb',
+                                     '.htm', '.html']) of
+    0 : ContentType := 'text/plain';
+    1 : ContentType := 'application/pdf';
+    2 : ContentType := 'text/csv';
+    3 : ContentType := 'application/zip';
+    4 : ContentType := 'audio/x-wav';
+    5 : ContentType := 'audio/x-ms-wma';
+    6, 7 : ContentType := 'application/msword';
+    8, 9 : ContentType := 'application/vnd.ms-excel';
+    10..13 : ContentType := 'application/vnd.ms-powerpoint';
+    14 : ContentType := 'video/x-ms-wmv';
+    15..20 : ContentType := 'video/mpeg';
+    21 : ContentType := 'video/mp4';
+    22, 23 : ContentType := 'video/quicktime';
+    24 : ContentType := 'application/vnd.oasis.opendocument.text';
+    25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
+    26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
+    27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
+    28 : ContentType := 'application/vnd.oasis.opendocument.database';
+    29, 30 : ContentType := 'text/html';
+  else
+    ContentType := 'application/octet-stream';
+  end;
+end;
+
+procedure TExtThread.DownloadFile(Name : string; pContentType : string = '');
+var
+  F : file;
+  Buffer : AnsiString;
+begin
+  if FileExists(Name) then begin
+    Assign(F, Name);
+    Reset(F, 1);
+    SetLength(Buffer, FileSize(F));
+    BlockRead(F, Buffer[1], FileSize(F));
+    Close(F);
+    DownloadBuffer(Name, Buffer, pContentType);
+  end;
+end;
 
 {
 Removes identificated JS commands from response.
@@ -629,10 +676,11 @@ end;
 // Override this method to change ExtPath, ImagePath, ExtBuild and Charset default values
 procedure TExtThread.SetPaths; begin
   inherited;
-  ExtPath   := '/ext';
-  ImagePath := '/images';
-  ExtBuild  := 'ext-all';
-  Charset   := 'utf-8'; // 'iso-8859-1'
+  ExtPath    := '/ext';
+  ImagePath  := '/images';
+  ExtBuild   := 'ext-all';
+  Charset    := 'utf-8'; // 'iso-8859-1'
+  UpLoadPath := '/uploads';
 end;
 
 {
@@ -743,6 +791,7 @@ procedure TExtThread.AfterHandleRequest;
 var
   I, J : integer;
 begin
+  if IsDownLoad or IsUpLoad then exit;  
   I := pos('/*', Response);
   while I <> 0 do begin // Extracts comments
     J := PosEx('*/', Response, I);
@@ -795,8 +844,7 @@ begin
   end
   {$IFDEF DEBUGJS}
   else
-    if not(IsDownload or IsUpload) then
-      Response := BeautifyJS(Response);
+    Response := BeautifyJS(Response);
   {$ENDIF}
 end;
 
