@@ -102,10 +102,11 @@ type
     procedure DownloadContentType(Name : string); virtual;
     procedure Refresh;
   public
-    BrowserCache : boolean;// If false generates 'cache-control:no-cache' in HTTP header, default is false
-    Response     : string; // Response string
-    ContentType  : string; // HTTP content-type header, default is 'text/html'
-    UploadPath   : string; // Upload path below document root. Default value is '/uploads'
+    BrowserCache  : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
+    Response      : string;  // Response string
+    ContentType   : string;  // HTTP content-type header, default is 'text/html'
+    UploadPath    : string;  // Upload path below document root. Default value is '/uploads'
+    MaxUploadSize : integer; // Max size of upload file. Default is MaxLongint(2GB)
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
     property PathInfo : string read FPathInfo; // Path info string for the current request
@@ -590,6 +591,10 @@ var
   I, J, Tam : integer;
 begin
   if FileUploaded <> '' then begin
+    if MaxUploadSize = 0 then begin
+      Response := '{success:true,file:"' + FileUploaded + '"}';
+      exit;
+    end;
     Assign(F, FileUploadedFullName);
     I := pos(FUploadMark, Buffer);
     case I of
@@ -619,7 +624,8 @@ begin
       I := 1;
       Response := '{success:true,file:"' + FileUploaded + '"}'
     end;
-    Blockwrite(F, Buffer[I], Tam);
+    if (FileSize(F) + Tam) <= MaxUploadSize then
+      Blockwrite(F, Buffer[I], Tam);
     Close(F);
   end;
 end;
@@ -855,6 +861,8 @@ begin
   end;
   Application.AccessThreads.Leave;
 end;
+
+procedure TFCGIThread.SetPaths; begin end;
 
 {
 The thread main loop.<p>
