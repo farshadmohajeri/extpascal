@@ -424,7 +424,7 @@ var
   I: Integer;
 begin
   I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, ''));
-  if I >= 0 then FGarbageCollector.Objects[I] := nil;
+  if I >= 0 then TExtObject(FGarbageCollector.Objects[I]).IsChild := true;
 end;
 
 function TIdExtSession.FindObject(Name: string): TObject;
@@ -449,7 +449,7 @@ begin
   with FGarbageCollector do begin
     for I := Count-1 downto 0 do
       try
-        if Objects[I] <> nil then TObject(Objects[I]).Free;
+        if (Objects[I] <> nil) and not TExtObject(Objects[I]).IsChild then TExtObject(Objects[I]).Free;
       except end;
     Free;
   end;
