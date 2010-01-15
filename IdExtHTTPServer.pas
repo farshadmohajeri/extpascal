@@ -364,9 +364,8 @@ end;
 
 procedure TIdExtHTTPServer.CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); begin
   if pos('multipart/form-data', ARequestInfo.ContentType) <> 0 then
-    TIdExtSession(ARequestInfo.Session).WriteUpload(ARequestInfo.ContentType, ARequestInfo.UnparsedParams, AResponseInfo)
-  else
-    TIdExtSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
+    TIdExtSession(ARequestInfo.Session).WriteUpload(ARequestInfo.ContentType, ARequestInfo.UnparsedParams, AResponseInfo);
+  TIdExtSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
 end;
 
 procedure TIdExtHTTPServer.InitComponent; begin
@@ -509,8 +508,8 @@ end;
 function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
   if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
   HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
-  Result := FCurrentRequest.RawHeaders.Values[HeaderName];
   try
+    Result := FCurrentRequest.RawHeaders.Values[HeaderName];
     if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
   except end;
 end;
@@ -568,8 +567,6 @@ var
   PageMethod : TMethod;
   MethodCode : pointer;
 begin
-  FIsDownload       := false;
-  FIsUpload         := false;
   CurrentFCGIThread := Self;
   FCurrentRequest   := ARequest;
   FCurrentResponse  := AResponse;
@@ -579,9 +576,11 @@ begin
       Value      := SessionID;
       ARequest.Cookies.AddSrcCookie(CookieText);
     end;
-  AResponse.ContentType := 'text/html';
-  Response := '';
-  FParams.DelimitedText := FCurrentRequest.UnParsedParams;
+  if not IsUpload then begin
+    AResponse.ContentType := 'text/html';
+    Response := '';
+    FParams.DelimitedText := FCurrentRequest.UnParsedParams;
+  end;
   if Browser = brUnknown then
     FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
   if BeforeHandleRequest then
@@ -601,9 +600,13 @@ begin
       else
         if not TryToServeFile then OnNotFoundError;
     end;
-  AfterHandleRequest;
-  if not Assigned(AResponse.ContentStream) and (Response <> '') and (AResponse.ResponseNo <> 304) then
-    FCurrentResponse.ContentText := Response;
+  if not IsUpload then begin
+    AfterHandleRequest;
+    if not Assigned(AResponse.ContentStream) and (Response <> '') and (AResponse.ResponseNo <> 304) then
+      FCurrentResponse.ContentText := Response;
+  end;
+  FIsDownload := false;
+  FIsUpload   := false;
 end;
 
 procedure TIdExtSession.Logout; begin

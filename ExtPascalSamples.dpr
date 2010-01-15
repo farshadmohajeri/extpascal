@@ -739,12 +739,18 @@ begin
   DownloadFile(FileName);
 end;
 
+procedure TSamples.ProcessUpload; begin
+  // process your file here, by example loading a database table with it
+  // or reject it using by example: Response := '{success:false,message:"The file is invalid"}';
+  //if FileExists(FileUploadedFullName) then DeleteFile(FileUploadedFullName);
+end;
+
 procedure TSamples.FileUpload;
 var
   F : TExtFormFormPanel;
   SubmitAction : TExtFormActionSubmit;
 begin
-  MaxUploadSize := 0; // My site won´t write data ;)
+  //MaxUploadSize := 0; // My demo site won´t write data ;)
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   with TExtWindow.Create do begin
     Modal := true;
@@ -764,7 +770,7 @@ begin
         Text := 'Upload';
         SubmitAction := TExtFormActionSubmit.Create;
         with SubmitAction do begin
-          Url       := MethodURI(ProcessUpload);
+          Url       := MethodURI(ProcessUpload); // Post upload process
           WaitMsg   := 'Uploading your file...';
           WaitTitle := 'Wait please';
           Success   := ExtMessageBox.Alert('Success', 'File: %1.result.file uploaded on /uploads folder');
@@ -894,12 +900,6 @@ begin
     AddShowSourceButton(Buttons, 'MessageBoxes');
     //Free;
   end;
-end;
-
-procedure TSamples.ProcessUpload; begin
-  // DeleteFile(FileUploadedFullName);
-  // process your file here, by example loading a database table with it
-  // or reject it using by example: Response := '{success:false,message:"The file is invalid"}';
 end;
 
 {$IFNDEF SERVICE}
