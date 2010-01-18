@@ -416,7 +416,7 @@ var
   I: Integer;
 begin
   I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then FGarbageCollector.Objects[I] := nil;
+  if I >= 0 then TExtObject(FGarbageCollector.Objects[I]).IsChild := true;
 end;
 
 procedure TIdExtSession.DeleteFromGarbage(Name: string);
