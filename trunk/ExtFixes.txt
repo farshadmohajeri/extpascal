@@ -83,6 +83,7 @@ ExtDataJsonStore, id, string, false, true,
 ExtDataJsonStore, root, string, false, true,
 ExtDataJsonStore, successProperty, string, false, true,
 ExtDataJsonStore, totalProperty, string, false, true,
+ExtDataStore, removeAll, void, false, false, Silent, Boolean, true
 ExtFormCheckboxGroup, items, ExtObjectList, false, true,
 ExtWindow, bbar, ExtObjectList, false, true,
 ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject

@@ -72,7 +72,8 @@ begin
       if pos('mixedcollection', lowercase(Ident)) <> 0 then
         Result := 'TExtObjectList'
       else begin
-        I := LastDelimiter('/[:', Ident);
+        I := pos('/', Ident);
+        if I = 0 then I := LastDelimiter('[:', Ident);
         if I <> 0 then begin
           if Ident[I] <> '/' then begin
             Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
