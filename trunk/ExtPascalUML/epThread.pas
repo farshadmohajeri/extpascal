@@ -619,16 +619,15 @@ begin
     TExtGridGridView(ViewConfig).EmptyText := '<center><big>Nenhum dado a apresentar</big></center>';
     Store  := DataStore;
     Title  := Props.AliasProp[0];
-    Border := false;
     TrackMouseOver := true;
-    StripeRows := true;
     ClickstoEdit := 1;
-    Frame := true;
-    SelModel := Selection;
+    SelModel   := Selection;
+    StripeRows := true;
+    Frame      := true;
     AutoScroll := true;
-//    Height := JSExpression('%s - 2', [GridPanel.GetInnerHeight]);
     AutoHeight := true;
     AutoWidth  := true;
+    ColumnLines:= true;
 //    On('validateedit', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'),
 //       'Field', '%0.field', 'Value', '%0.value', 'Row', '%0.row']));
     with Props do begin
@@ -778,6 +777,7 @@ begin
 end;
 
 procedure TepThread.Home; begin
+  Theme := 'gray';
   if not NewThread then begin
     Refresh;
     EditorGrid := nil;

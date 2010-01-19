@@ -5,7 +5,7 @@ program ExtPascalSamples; // for Ext JS 3.1.0 and later
 {.$DEFINE SERVICE}
 
 uses
-  ExtPascal, ExtPascalUtils, SysUtils, Classes, Math,
+  ExtPascal, ExtPascalUtils, SysUtils, StrUtils, Classes, Math,
   {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF},
   {$IFDEF SERVICE}Services,{$ENDIF}
   Ext, ExtData, ExtForm, ExtGrid, ExtUtil, ExtDd, ExtLayout, ExtMenu, ExtState, ExtTree, ExtChart, ExtDirect;
@@ -63,15 +63,18 @@ const
     (Name: 'File Upload';    Proc: 'FileUpload';    Image: 'fileupload.png';   Desc: 'A demo of how to give standard file upload fields a bit of Ext style.'),
     (Name: 'File Download';  Proc: 'FileDownload';  Image: 'filedownload.png'; Desc: 'Download the Advanced Configuration document (a pdf file).')
   );
+  SamplesVersion =  ExtPascalVersion + ' - Server on ' + {$IFNDEF FPC}'Windows - i386 - compiled by Delphi'{$ELSE}
+    {$I %FPCTARGETOS%} + ' - ' + {$I %FPCTARGETCPU%} + ' - compiled by FreePascal ' + {$I %FPCVersion%} + '(' + {$I %FPCDATE%} + ')' {$ENDIF};
 var
   I : integer;
-  HTM : string;
+  HTM, WebServer : string;
 begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Theme := 'gray';
   //SetStyle('img:hover{border:1px solid blue}');
   with TExtPanel.Create do begin
-    Title       := 'ExtPascal Samples';
+    WebServer   := RequestHeader['Server_Software'];
+    Title       := 'ExtPascal Samples ' + SamplesVersion + ' - Web Server is ' + IfThen(WebServer = '', 'Embedded', WebServer);
     RenderTo    := 'body';
     AutoWidth   := true;
     Frame       := true;
