@@ -4,7 +4,7 @@ interface
 
 uses
   FCGIApp, epObjectList, epPrevalence, epCommon, epUtils, epProperties,
-  ExtPascal, Ext, ExtGlobal, ExtGrid, ExtTree, ExtData, ExtMenu, ExtForm;
+  ExtPascal, Ext, ExtGrid, ExtTree, ExtData, ExtMenu, ExtForm;
 
 const
   ResponseTimeout = 60000;
@@ -626,7 +626,8 @@ begin
     Frame := true;
     SelModel := Selection;
     AutoScroll := true;
-    Height := JSExpression('%s - 2', [GridPanel.GetInnerHeight]);
+//    Height := JSExpression('%s - 2', [GridPanel.GetInnerHeight]);
+    AutoHeight := true;
     AutoWidth  := true;
 //    On('validateedit', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'),
 //       'Field', '%0.field', 'Value', '%0.value', 'Row', '%0.row']));

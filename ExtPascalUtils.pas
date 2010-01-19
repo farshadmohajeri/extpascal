@@ -540,7 +540,7 @@ begin
             // find multiple statement block end
             if (length(Res) >= I) and (Res[I] in ['{', '}', ';']) then backward := true;
             if inNew and (length(Res) >= I) and (Res[I] = ']') then backward := true;
-          until ((length(Res) >= I) and (Res[I] = ',')) or backward;
+          until (I > length(Res)) or (Res[I] = ',') or backward;
           if not backward then // add new line
             inc(P, AddNewLine(i+1, SpaceIdents(Lvl)))
           else // suspend new line to proceed with next block
