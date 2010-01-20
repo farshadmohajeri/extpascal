@@ -149,22 +149,22 @@ ExtGridColumn, renderer, ExtFunction, false, true, FORCEADD
 ExtFont, , Ext, Object
 ExtFont, name, string, false, true,
 ExtFont, color, string, false, true,
-ExtFont, size, integer, false, true,
-ExtFont, bold, boolean, false, true,
+ExtFont, size, Integer, false, true,
+ExtFont, bold, Boolean, false, true,
 ExtBorder, , Ext, Object
 ExtBorder, color, string, false, true,
-ExtBorder, size, integer, false, true,
+ExtBorder, size, Integer, false, true,
 ExtBackground, , Ext, Object
 ExtBackground, color, string, false, true,
-ExtBackground, alpha, float, false, true,
+ExtBackground, alpha, Double, false, true,
 ExtDataTip, ,Ext, Object
-ExtDataTip, padding, integer, false, true,
+ExtDataTip, padding, Integer, false, true,
 ExtDataTip, border, ExtBorder, false, true,
 ExtDataTip, background, ExtBackground, false, true,
 ExtDataTip, font, ExtFont, false, true,
 ExtChartStyle, , ExtChart, Object
-ExtChartStyle, padding, integer, false, true,
-ExtChartStyle, animationEnabled, boolean, false, true,
+ExtChartStyle, padding, Integer, false, true,
+ExtChartStyle, animationEnabled, Boolean, false, true,
 ExtChartStyle, font, ExtFont, false, true,
 ExtChartStyle, dataTip, ExtDataTip, false, true,
 ExtChartChart, store, ExtDataStore, false, true,
@@ -186,3 +186,9 @@ ExtChartSeriesStyle, image, string, false, true,
 ExtChartSeriesStyle, mode, string, false, true,
 ExtChartSeriesStyle, color, string, false, true,
 ExtChartSeries, style, ExtChartSeriesStyle, false, true,
+ExtButton, rowspan, Integer, false, true,
+ExtContainer, layout, String, false, true, FORCEADD
+ExtContainer, columnWidth, Double, false, true,
+ExtPanel, labelAlign, (laLeft, laTop, laRight)
+ExtPanel, rowWidth, Double, false, true,
+ExtButtonGroup, columns, Integer, false, true,

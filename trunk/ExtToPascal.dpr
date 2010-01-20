@@ -59,15 +59,15 @@ var
   I : integer;
 begin
   if Ident <> '' then
-    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int', 'bool']) of
-      0, 6     : Result := 'string';
+    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int', 'bool', 'double']) of
+      0, 6     : Result := 'String';
       1, 2, 11 : Result := 'Integer';
       3        : Result := 'TExtObject';
       4, 12    : Result := 'Boolean';
       5        : Result := 'TExtFunction';
       7, 8     : Result := 'TExtObjectList';
       9        : Result := 'TDateTime';
-      10       : Result := 'Double';
+      10, 13   : Result := 'Double';
     else
       if pos('mixedcollection', lowercase(Ident)) <> 0 then
         Result := 'TExtObjectList'
