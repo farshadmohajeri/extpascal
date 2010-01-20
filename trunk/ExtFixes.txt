@@ -189,6 +189,4 @@ ExtChartSeries, style, ExtChartSeriesStyle, false, true,
 ExtButton, rowspan, Integer, false, true,
 ExtContainer, layout, String, false, true, FORCEADD
 ExtContainer, columnWidth, Double, false, true,
-ExtPanel, labelAlign, (laLeft, laTop, laRight)
 ExtPanel, rowWidth, Double, false, true,
-ExtButtonGroup, columns, Integer, false, true,
