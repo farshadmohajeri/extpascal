@@ -1783,7 +1783,7 @@ begin
         {$ENDIF}
         vtInteger:    Result := Result + IntToStr(VInteger);
         vtBoolean:    Result := Result + IfThen(VBoolean, 'true', 'false');
-        vtExtended:   Result := Result + FloatToStr(VExtended^);
+        vtExtended:   Result := Result + AnsiReplaceStr(FloatToStr(VExtended^), ',', '.');
         vtCurrency:   Result := Result + CurrToStr(VCurrency^);
         vtInt64:      Result := Result + IntToStr(VInt64^);
         vtVariant:    Result := Result + string(VVariant^);

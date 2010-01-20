@@ -626,7 +626,6 @@ begin
     Frame      := true;
     AutoScroll := true;
     AutoHeight := true;
-    AutoWidth  := true;
     ColumnLines:= true;
 //    On('validateedit', Ajax(ValidateField, ['ID', TExtDataRecord(Selection.GetSelected).Get('ID'),
 //       'Field', '%0.field', 'Value', '%0.value', 'Row', '%0.row']));
@@ -777,7 +776,6 @@ begin
 end;
 
 procedure TepThread.Home; begin
-  Theme := 'gray';
   if not NewThread then begin
     Refresh;
     EditorGrid := nil;
