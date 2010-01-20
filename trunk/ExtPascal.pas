@@ -932,7 +932,7 @@ begin
   end
   else
     if pos(Obj.JSName + '.clone', Obj.JSCommand) = 1 then
-      ListAdd := obj.ExtractJSCommand
+      ListAdd := Obj.ExtractJSCommand
     else
       ListAdd := Obj.JSName;
   Obj.Created := true;
@@ -1174,9 +1174,8 @@ begin
       end;
       if not(pos(IdentDelim + '.get', FJSCommand) in [4..9]) then FJSCommand := '';
       JSCommand := JS;
-    end
-    else
-      JSCommand := '';
+    end;
+    // else JSCommand := '';
     if (pJSName = '') or (pos('T', pJSName) = 1) then
       lJSName := JSName
     else
