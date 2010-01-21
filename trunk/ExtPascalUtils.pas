@@ -463,7 +463,7 @@ begin
   // remove space in the beginning
   if Res[1] = ' ' then Delete(Res, 1, 1);
   // proceed the whole generated script by scanning the text
-  while p > 0 do begin
+  while (p > 0) and (p < Length(Res)-1) do begin
     // chars that will be processed (10 signs)
     inc(P);
     pString     := PosEx('"', Res, P);

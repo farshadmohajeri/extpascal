@@ -190,3 +190,4 @@ ExtButton, rowspan, Integer, false, true,
 ExtContainer, layout, String, false, true, FORCEADD
 ExtContainer, columnWidth, Double, false, true,
 ExtPanel, rowWidth, Double, false, true,
+ExtPanel, rowHeight, Double, false, true,
