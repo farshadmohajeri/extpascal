@@ -1191,7 +1191,7 @@ If called as constructor creates the object before adds it to the list.
 }
 constructor TExtObject.AddTo(List : TExtObjectList); begin
   if JSName = '' then begin
-    CreateJSName;
+    CreateVar(JSClassName + '({});');
     InitDefaults;
   end;
   List.Add(Self);
