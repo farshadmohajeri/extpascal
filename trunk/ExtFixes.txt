@@ -186,8 +186,13 @@ ExtChartSeriesStyle, image, string, false, true,
 ExtChartSeriesStyle, mode, string, false, true,
 ExtChartSeriesStyle, color, string, false, true,
 ExtChartSeries, style, ExtChartSeriesStyle, false, true,
-ExtButton, rowspan, Integer, false, true,
+ExtContainer, colspan, Integer, false, true,
+ExtContainer, rowspan, Integer, false, true,
 ExtContainer, layout, String, false, true, FORCEADD
 ExtContainer, columnWidth, Double, false, true,
 ExtPanel, rowWidth, Double, false, true,
 ExtPanel, rowHeight, Double, false, true,
+FusionCharts,, Ext, FusionCharts
+FusionCharts, Create,, true, false, SwfURL, string, false, Id, string, false, Width, Integer, false, Height, Integer, false, DebugMode, Integer, true, RegisterWithJS, Integer, true
+FusionCharts, setDataURL, void, false, false, XML, string, false
+FusionCharts, render, void, false, false, Id, string, false
