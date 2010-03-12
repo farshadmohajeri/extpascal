@@ -138,6 +138,9 @@ function BeautifyJS(const AScript : string; const StartingLevel : integer = 0; S
 // Beautify generated CSS from ExtPascal, automatically used when DEBUGJS symbol is defined
 function BeautifyCSS(const AStyle : string) : string;
 
+// Screen space, in characters, used for a field using regular expression mask
+function LengthRegExp(Rex : string; CountAll : Boolean = true) : integer;
+
 implementation
 
 uses
@@ -685,6 +688,41 @@ begin
       end;
   end;
   Result := Res;
+end;
+
+function LengthRegExp(Rex : string; CountAll : Boolean = true) : integer;
+var
+  Slash, I : integer;
+  N : string;
+begin
+  Result := 0;
+  N := '';
+  Slash := 0;
+  for I := 1 to length(Rex) do
+    case Rex[I] of
+      '\' :
+        if CountAll and (I < length(Rex)) and (Rex[I+1] in ['d', 'D', 'l', 'f', 'n', 'r', 's', 'S', 't', 'w', 'W']) then inc(Slash);
+      ',', '{' : begin
+        N := '';
+        if Slash > 1 then begin
+          inc(Result, Slash);
+          Slash := 0;
+        end;
+      end;
+      '}' : begin
+        inc(Result, StrToIntDef(N, 0));
+        N := '';
+        dec(Slash);
+      end;
+      '0'..'9' : N := N + Rex[I];
+      '?' : inc(Slash);
+      '*' :
+        if not CountAll then begin
+          Result := -1;
+          exit;
+        end;
+    end;
+  inc(Result, Slash);
 end;
 
 end.

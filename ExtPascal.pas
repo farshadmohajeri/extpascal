@@ -192,6 +192,7 @@ type
     function MethodURI(AMethodName : TExtProcedure) : string; overload;
     function MethodURI(AMethodName : string; Params : array of const) : string; overload;
     function MethodURI(AMethodName : string): string; overload;
+    function CharsToPixels(Chars : integer) : integer;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -784,8 +785,10 @@ procedure TExtThread.AfterHandleRequest;
     I : integer;
   begin
     if (JSReturns <> nil) and (JSReturns.Count <> 0) then
-      for I := 0 to JSReturns.Count-1 do
+      for I := 0 to JSReturns.Count-1 do begin
         Response := AnsiReplaceStr(Response, JSReturns.Names[I], JSReturns.ValueFromIndex[I]);
+        Response := AnsiReplaceStr(Response, IntToStr(StrToInt(JSReturns.Names[I])), JSReturns.ValueFromIndex[I]);
+      end;
     FreeAndNil(JSReturns);
   end;
 
@@ -832,6 +835,7 @@ begin
       ',width:600,height:400,modal:true,items:[new Ext.ux.CodePress({language:"javascript",readOnly:true,code:s})]});w.show();' +
       'w.on("resize",function(){w.items.get(0).resize();});};' +
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxSource(err.message,err.lineNumber,response.responseText);}};' +
+ //     'function AjaxSuccess(response){AjaxSource(0,0,response.responseText);};' +
       {$ELSE}
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/>Use DebugJS define to enhance debugging<br/>"+response.responseText);}};' +
       {$ENDIF}
@@ -988,6 +992,10 @@ If not then config property code will redirect to a relationed method if it exis
 O1.title = 'new title';
 </code>
 }
+function TExtObject.CharsToPixels(Chars : integer) : integer; begin
+  Result := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
+end;
+
 function TExtObject.ConfigAvailable(JSName : string) : boolean; begin
   Result := pos('/*' + JSName + '*/', TExtThread(CurrentFCGIThread).Response) <> 0;
 end;
