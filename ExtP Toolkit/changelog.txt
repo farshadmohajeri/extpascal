@@ -1,3 +1,13 @@
+Version 0.1.4 (13-Mar-2010 SVN):
+
+- Numerous fixes and improvements to converter, particularly with grid column
+  controls.
+- Added Html property to TExtFormLabel design control so you can set HTML in
+  IDE.
+- Improvement to event handling in multiselect_example project and combo
+  column in grid_example project.
+
+
 Version 0.1.3 (03-Jan-2010):
 
 - Moved toolkit subfolders one level down to be consistent with location

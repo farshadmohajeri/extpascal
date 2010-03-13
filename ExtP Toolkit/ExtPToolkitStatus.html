@@ -390,13 +390,14 @@ using these names:
 <LI>Save the project as myproject1.lpi.
 </UL><P>
 <LI>Now that you've named the unit files, change the {$I} include statements
-in the Create constructors to reflect the new names:
+in the Create constructors to reflect the new names (only needed if you're
+not using FPC 2.4.0 or later):
 <UL>
 <LI>In mainunit.pas, change it to {$I mainunit.inc}
 <LI>In aboutunit.pas, change it to {$I aboutunit.inc}
 </UL><P>
 Note that this step is necessary because Free Pascal 2.2.x does not support the 
-{$I *.inc} syntax that Delphi and FPC 2.3.1 do. But it's a one-time change that
+{$I *.inc} syntax that Delphi and FPC 2.4 do. But it's a one-time change that
 doesn't need to be made again unless you rename a form unit.
 <LI>Choose Project | View Source to see the project's program file and
 make sure the port is set to what your CGIGateway.dpr port is expecting
@@ -593,10 +594,10 @@ and has not been thoroughly tested.<P>
 
 <TR VALIGN=TOP>
 <TD>TImage</TD>
-<TD>?</TD>
-<TD>&nbsp;</TD>
-<TD>&nbsp;</TD>
-<TD>&nbsp;</TD>
+<TD>TExtFormLabel</TD>
+<TD>Yes</TD>
+<TD>Yes</TD>
+<TD>Set Html property to load image (&lt;img src=... />) and leave Text property blank.</TD>
 </TR>
 
 <TR VALIGN=TOP>
@@ -1195,7 +1196,7 @@ the next time you compile if you accidentally delete them.
 
 
 <HR>
-Last updated: Jan 2, 2010
+Last updated: March 13, 2010
 <P>
 
 </BODY>

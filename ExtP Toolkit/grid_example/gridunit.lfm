@@ -17,11 +17,11 @@ object GridWindow: TGridWindow
     Frame = True
     Title = 'Edit Plants?'
     CellData = (
-      'GridWindow.IndoorCol'
-      'GridWindow.AvailDateCol'
-      'GridWindow.PriceCol'
-      'GridWindow.LightCol'
       'GridWindow.CommonCol'
+      'GridWindow.LightCol'
+      'GridWindow.PriceCol'
+      'GridWindow.AvailDateCol'
+      'GridWindow.IndoorCol'
     )
     RowData = (
       30
@@ -60,6 +60,13 @@ object GridWindow: TGridWindow
     DataIndex = 'light'
     Grid = EditGrid
     Header = 'Light'
+    StoreArray.Strings = (
+      'Shade'
+      'Mostly Shady'
+      'Sun or Shade'
+      'Mostly Sunny'
+      'Sunny'
+    )
     left = 304
     top = 8
   end
@@ -77,7 +84,7 @@ object GridWindow: TGridWindow
     left = 480
     top = 8
   end
-  object IndoorCol: TExtFormCheckBox_Grid
+  object IndoorCol: TExtFormCheckbox_Grid
     DataIndex = 'indoor'
     Grid = EditGrid
     Header = 'Indoor?'

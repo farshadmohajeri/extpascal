@@ -47,8 +47,8 @@
         <IsPartOfProject Value="True"/>
         <ComponentName Value="ExtWindow1"/>
         <UnitName Value="Unit1"/>
-        <CursorPos X="3" Y="60"/>
-        <TopLine Value="47"/>
+        <CursorPos X="37" Y="56"/>
+        <TopLine Value="49"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>

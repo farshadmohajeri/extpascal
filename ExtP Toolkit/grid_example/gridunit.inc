@@ -1,11 +1,11 @@
   Id := 'GridWindow';
-  Layout := lyAbsolute;
   Height := 434;
   Width := 658;
   OnEsc := JSFunction('');
   Border := False;
   Plain := True;
   Title := 'Grid Example';
+  Layout := lyAbsolute;
 
   EditGrid := TExtGridEditorGridPanel.Create;
   with EditGrid.AddTo(Items) do
@@ -45,34 +45,61 @@
       Width := 55;
       end;
     end;
-  with TExtGridColumn(EditGrid.Columns[0]) do  //CommonCol
+  with TExtGridColumn(EditGrid.Columns[0]) do
     begin
-    Editor := TExtFormTextField.Create;
+    CommonCol := TExtFormTextField.Create;
+    Editor := CommonCol;
+    with CommonCol do
+     begin
     DataIndex := 'common';
     Header := 'Common Name';
+     end;
     end;
-  with TExtGridColumn(EditGrid.Columns[1]) do  //LightCol
+  with TExtGridColumn(EditGrid.Columns[1]) do
     begin
-    Editor := TExtFormComboBox.Create;
+    LightCol := TExtFormComboBox.Create;
+    Editor := LightCol;
+    with LightCol do
+     begin
     DataIndex := 'light';
     Header := 'Light';
+    StoreArray := JSArray(
+     '"Shade", ' +
+     '"Mostly Shady", ' +
+     '"Sun or Shade", ' +
+     '"Mostly Sunny", ' +
+     '"Sunny"');
+    TriggerAction := 'all';
+     end;
     end;
-  with TExtGridColumn(EditGrid.Columns[2]) do  //PriceCol
+  with TExtGridColumn(EditGrid.Columns[2]) do
     begin
-    Editor := TExtFormNumberField.Create;
+    PriceCol := TExtFormNumberField.Create;
+    Editor := PriceCol;
+    with PriceCol do
+     begin
     DataIndex := 'price';
     Header := 'Price';
+     end;
     end;
-  with TExtGridColumn(EditGrid.Columns[3]) do  //AvailDateCol
+  with TExtGridColumn(EditGrid.Columns[3]) do
     begin
-    Editor := TExtFormDateField.Create;
+    AvailDateCol := TExtFormDateField.Create;
+    Editor := AvailDateCol;
+    with AvailDateCol do
+     begin
     DataIndex := 'availDate';
     Header := 'Available';
+     end;
     end;
-  with TExtGridColumn(EditGrid.Columns[4]) do  //IndoorCol
+  with TExtGridColumn(EditGrid.Columns[4]) do
     begin
-    Editor := TExtFormCheckbox.Create;
+    IndoorCol := TExtFormCheckbox.Create;
+    Editor := IndoorCol;
+    with IndoorCol do
+     begin
     DataIndex := 'indoor';
     Header := 'Indoor?';
+     end;
     end;
 
