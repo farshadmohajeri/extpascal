@@ -93,7 +93,7 @@ begin
              'project''s paths:'#10#10 +
              '(1)  Choose Project | Compiler Options, then on the Paths tab, ' +
              'check the path to the ExtPascal units in the Other Unit Files ' +
-             'box. By default it''s set to one level up from the design ' +
+             'box. By default it''s set to two levels up from the design ' +
              'control package.'#10#10 +
              '(2)  Also in Compiler Options, on the Compilation tab, check ' +
              'the path to the FmToExtP converter in the Execute Before ' +
@@ -344,7 +344,7 @@ begin
             'begin' + LineEnding +
             '  inherited;' + LineEnding +
             '{$IFDEF UseRuntime}' + LineEnding +  {So Laz IDE doesn't complain}
-            ' {$I ' + LowerCase(SourceName) + '.inc}' + LineEnding +
+            ' {$I *.inc}' + LineEnding +
             '{$ENDIF}' + LineEnding +
             'end;' + LineEnding +
             LineEnding +

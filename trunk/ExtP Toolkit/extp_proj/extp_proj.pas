@@ -2,7 +2,7 @@
   This source is only used to compile and install the package.
  }
 
-unit extp_proj; 
+unit ExtP_Proj; 
 
 interface
 

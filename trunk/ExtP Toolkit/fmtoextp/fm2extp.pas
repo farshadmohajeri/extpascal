@@ -4,7 +4,7 @@ unit Fm2ExtP;
   Unit that converts Delphi or Lazarus form design files (.dfm or .lfm)
    to Pascal files that can be compiled against the ExtPascal units.
 
-  Note that the Delphi form files (.dfm) must be text files.
+  Note that Delphi form files (.dfm) must be text files.
    
   Author:     Phil Hess.
   Copyright:  Copyright (C) 2009 Phil Hess. All rights reserved.
@@ -120,6 +120,15 @@ begin
   else if SameText(FmPropName, 'Enabled') and 
           SameText(ExtPropName, 'Disabled') then
     begin  {Convert Enabled to Disabled}
+    if SameText(ValStr, 'True') then
+      Result := 'False'
+    else
+      Result := 'True';
+    end
+
+  else if SameText(FmPropName, 'Visible') and 
+          SameText(ExtPropName, 'Hidden') then
+    begin  {Convert Visible to Hidden}
     if SameText(ValStr, 'True') then
       Result := 'False'
     else
@@ -319,6 +328,7 @@ var
   IsDfm             : Boolean;
   FormHeight        : Integer;
   FormWidth         : Integer;
+  CheckDefaults     : Boolean;
   IgnoreObj         : array [1..MaxNestedObjs] of Boolean;
   ItemStrDone       : Boolean;
   ItemStrCnt        : Integer;
@@ -355,11 +365,8 @@ begin
   ProgName := Copy(ProgName, 1,
                    Length(ProgName) - Length(ExtractFileExt(ProgName)));
 
-//  ThreadClassName := ProgName + '_thread';  //Use standard name for now.
   ThreadClassName := 'AppThread';
   ThreadFileName := TargetPath + LowerCase(ThreadClassName);
-//  if opFmToExtP_AddExtToName in Options then
-//    ThreadFileName := ThreadFileName + NameSuffixExt;
   ThreadFileName := ThreadFileName + PasFileExt;
   ThreadClassName := 'T' + ThreadClassName;
 
@@ -466,7 +473,6 @@ begin
   ControlProps := TStringList.Create;
   CfgFileObj.ReadSectionValues('TControl', ControlProps);
   DefaultProps := TStringList.Create;
-  CfgFileObj.ReadSectionValues('Defaults', DefaultProps);
   ClassProps := TStringList.Create;
   GridColIndexes := TStringList.Create;
   JsLibs := TStringList.Create;
@@ -635,11 +641,8 @@ begin
     WriteLn(PasFileVar, '  public');
     WriteLn(PasFileVar, '    constructor Create;');
     WriteLn(PasFileVar, '    procedure Show;');
-//    WriteLn(PasFileVar, '  published');  
     WriteLn(PasFileVar, '  end;');
     WriteLn(PasFileVar);
-//    WriteLn(PasFileVar, 'var');  //Declared in thread class now, not global.
-//    WriteLn(PasFileVar, '  ', FormObjName, ' : ', FormClassName, ';');
     WriteLn(PasFileVar);
     WriteLn(PasFileVar, 'implementation');
     WriteLn(PasFileVar);
@@ -670,10 +673,36 @@ begin
     Reset(FmFileVar);
     GridColIndexes.Clear;
     ObjLevel := 0;
+    CheckDefaults := False;
     while not Eof(FmFileVar) do  
       begin
       ReadLn(FmFileVar, InStr);
       InStr := Trim(InStr);
+
+      if (SameText(Copy(InStr, 1, 7), 'object ') or
+          SameText(InStr, 'end')) and  {New object or end of current object?}
+         CheckDefaults then  {And haven't already checked?}  
+        begin  {Do anything here to finish current object's properties}
+         {If any default properties were not set in form for current object, 
+           set them now.}
+        CheckDefaults := False;
+        for DefPropIdx := 0 to DefaultProps.Count-1 do  {Default properties}
+          begin
+          DefPropStr := DefaultProps.Strings[DefPropIdx];
+          if SameText(FmClassName + '.', 
+                      Copy(DefPropStr, 1, Length(FmClassName)+1)) then
+            begin
+            ExtPropName := Copy(DefPropStr, 
+                                Length(FmClassName)+2, 
+                                Pos('=', DefPropStr) - Length(FmClassName) - 2);
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
+                                ExtPropName, ' := ', 
+                                Copy(DefPropStr, Pos('=', DefPropStr)+1, MaxInt), 
+                                ';');
+            end;
+          end;
+        end;
+
       if SameText(Copy(InStr, 1, 7), 'object ') then  {Found object?}
         begin
         Inc(ObjLevel);
@@ -701,10 +730,19 @@ begin
                                 GridColIndexes.Values[ObjName] + '.Columns[' +
                                 IntToStr(Integer(GridColIndexes.Objects[
                                                   GridColIndexes.IndexOfName(ObjName)])) +
-                                ']) do  //', ObjName);
+//                                ']) do  //', ObjName);
+                                ']) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                                'Editor := ', ExtClassName, '.Create;');
+                                ObjName, ' := ', ExtClassName, '.Create;');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                'Editor := ', ObjName, ';');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                'with ', ObjName, ' do');
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                                ' begin');
+             {Note outputting two with statements so can reference either
+               column model or column editor properties naturally.}
             end;
           end
         
@@ -733,20 +771,11 @@ begin
             begin  {Create dummy data store and column model objects}
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'Store := TExtDataStore.Create;');
-//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-//                                'with TExtDataStore(Store) do');
-//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-//                                'begin');
-//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-//                                'TExtDataField.AddTo(Fields).Name := ''column1'';');
-//            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-//                                'end;');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
                                 'with TExtGridColumn.AddTo(Columns) do');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'begin');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
-//                                'Id := ''column1'';');
                                 'Id := ''', ObjName, '_Col1'';');
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel+1)),
                                 'Editor := TExtFormTextField.Create;');
@@ -758,21 +787,6 @@ begin
                                 'end;');
             end;
             
-          for DefPropIdx := 0 to DefaultProps.Count-1 do  {Default properties}
-            begin
-            DefPropStr := DefaultProps.Strings[DefPropIdx];
-            if SameText(FmClassName + '.', 
-                        Copy(DefPropStr, 1, Length(FmClassName)+1)) then
-              begin
-              ExtPropName := Copy(DefPropStr, 
-                                  Length(FmClassName)+2, 
-                                  Pos('=', DefPropStr) - Length(FmClassName) - 2);
-              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                  ExtPropName, ' := ', 
-                                  Copy(DefPropStr, Pos('=', DefPropStr)+1, MaxInt), 
-                                  ';');
-              end;
-            end;
           if ObjLevel = 1 then  {Is form?}
             begin
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
@@ -797,6 +811,10 @@ begin
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel-1)), 
                               '{', FmClassName, ' not mapped}');
           end;
+
+        CheckDefaults := True;
+         {Reload defaults in case any were deleted with previous object} 
+        CfgFileObj.ReadSectionValues('Defaults', DefaultProps);
         end  {is object}
 
       else if SameText(InStr, 'end') then  {Found end of object?}
@@ -804,7 +822,13 @@ begin
         if ObjLevel = 1 then  {Is form?}
           WriteLn(IncFileVar)
         else if not IgnoreObj[ObjLevel] then  {Object's class is mapped?}
+          begin
+          if (Length(FmClassName) > 5) and
+            SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid') then
+            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), ' end;');
+             {Need extra end for second with statement used with grid column}
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'end;');
+          end;
         Dec(ObjLevel);
         end  {is end of object}
 
@@ -852,14 +876,11 @@ begin
                   SameText(FmPropName, 'Lines.Strings') or
                   SameText(FmPropName, 'Value.Strings') then
             begin  {Read item strings and convert}
+            Write(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                  ExtPropName, ' := ');
             if SameText(ExtClassName, 'TExtFormComboBox') or
-               SameText(ExtClassName, 'TExtUxFormMultiSelect') then
-              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                      'StoreArray := JSArray(')
-            else if SameText(ExtClassName, 'TExtFormTextArea') or
-                    SameText(ExtClassName, 'TExtFormHtmlEditor') then
-              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                      'Value :=');
+               SameText(ExtClassName, 'TExtUxFormMultiSelect') then               
+              WriteLn(IncFileVar, 'JSArray(');
             ItemStrCnt := 0;
             ItemStrDone := False;
             repeat
@@ -922,6 +943,11 @@ begin
                                              ExtClassName, ExtPropName), 
                                 ';');
             end;
+
+          DefPropIdx :=
+           DefaultProps.IndexOfName(FmClassName + '.' + ExtPropName);
+          if DefPropIdx >= 0 then  {Won't need this default for class?}
+            DefaultProps.Delete(DefPropIdx);
           end  {Property is mapped}
           
         else if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
@@ -1079,7 +1105,6 @@ begin
             for JsLibIdx := 0 to JsLibs.Count-1 do
               WriteLn(ThrdFileVar, '  SetLibrary(ExtPath + ' +
                                    JsLibs.ValueFromIndex[JsLibIdx], ');');
-//            WriteLn(ThrdFileVar, '  if ', FormObjName, ' = nil then');  //Wrong.
             WriteLn(ThrdFileVar, '  ', FormObjName, ' := ', FormClassName, '.Create;');
             WriteLn(ThrdFileVar, '  ', FormObjName, '.Show;');
             WriteLn(ThrdFileVar, 'end;');

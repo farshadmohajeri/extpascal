@@ -1,9 +1,9 @@
   Id := 'ExtWindow1';
-  Layout := lyAbsolute;
   Height := 334;
   Width := 408;
   OnEsc := JSFunction('');
   Title := 'MultiSelect Example';
+  Layout := lyAbsolute;
 
   ExtFormLabel2 := TExtFormLabel.Create;
   with ExtFormLabel2.AddTo(Items) do
@@ -20,11 +20,11 @@
   with ExtPanel1.AddTo(Items) do
     begin
     Id := 'ExtPanel1';
-    Layout := lyAbsolute;
     X := 17;
     Height := 222;
     Y := 12;
     Width := 367;
+    Layout := lyAbsolute;
 
     ExtFormLabel1 := TExtFormLabel.Create;
     with ExtFormLabel1.AddTo(Items) do
@@ -41,7 +41,6 @@
     with ExtUxFormMultiSelect1.AddTo(Items) do
       begin
       Id := 'ExtUxFormMultiSelect1';
-      StoreArray := JSArray('');
       X := 14;
       Height := 152;
       Y := 42;
@@ -74,12 +73,12 @@
   with ExtButton1.AddTo(Items) do
     begin
     Id := 'ExtButton1';
-    TooltipType := 'title';
     X := 40;
     Height := 27;
     Y := 252;
     Width := 76;
     Text := 'Go';
     On('click', Ajax(CurrentThread.ExtWindow1_ExtButton1Click));
+    TooltipType := 'title';
     end;
 

@@ -4,7 +4,7 @@ program FmToExtP;
   Console app that converts Delphi or Lazarus form design files (.dfm or .lfm) 
    to Pascal files that can be compiled against the ExtPascal units.
 
-  Note that the Delphi form files (.dfm) must be text files.
+  Note that Delphi form files (.dfm) must be text files.
 
   Component and property mappings are read from fmtoextp.ini.
    
@@ -26,7 +26,7 @@ uses
 
 const
   ConverterName     = 'FmToExtP';
-  ConverterVersion  = '0.1.3';
+  ConverterVersion  = '0.1.4';
   
 var
   CfgFileName     : string;
@@ -77,19 +77,18 @@ begin
     WriteLn('  -r  Reformat any error message so Lazarus will display it.');
     WriteLn;
     WriteLn('Examples:');
-    WriteLn('  ', LowerCase(ConverterName), ' hellomain.dfm helloabout.dfm myproj\hello.dpr -- creates');
-    WriteLn('    hello.dpr, appthread.pas, hellomain.pas, hellomain.inc,');
-    WriteLn('    helloabout.pas and helloabout.inc in myproj folder from');
-    WriteLn('    hellomain.dfm and helloabout.dfm forms.');
+    WriteLn('  ', LowerCase(ConverterName), ' hellomain.dfm helloabout.dfm myproj\hello.dpr -- creates hello.dpr,');
+    WriteLn('    appthread.pas, hellomain.pas, hellomain.inc, helloabout.pas and');
+    WriteLn('    helloabout.inc in myproj folder from hellomain.dfm and helloabout.dfm.');
     WriteLn;
     WriteLn('  ', LowerCase(ConverterName), ' hello.lpi -e -- creates hello', NameSuffixExt, '.lpr, etc. from project .lfm forms');
-    WriteLn('    in same folder, adding "', NameSuffixExt, '" to all file names to make them unique.');
+    WriteLn('    in same folder, adding "', NameSuffixExt, '" to file names to make them unique.');
     WriteLn;
     WriteLn('Notes:');
     WriteLn('  ', ConverterName, ' will look for its configuration data in:');
     WriteLn('    ', CfgFileName);
     WriteLn;
-    WriteLn('  The resulting Pascal files require open-source ExtPascal units to compile.'); 
+    WriteLn('  The generated Pascal files require open-source ExtPascal units to compile.'); 
     Halt;
     end;
 
@@ -109,8 +108,8 @@ begin
         begin
         AddExtToName := True;
         Include(Options, opFmToExtP_AddExtToName);
-        end;
-      if ParamStr(ParamNum) = '-r' then
+        end
+      else if ParamStr(ParamNum) = '-r' then
         ReformatErr := True;
       end
 
