@@ -26,7 +26,7 @@ uses
 
 const
   ConverterName     = 'FmToExtP';
-  ConverterVersion  = '0.1.4';
+  ConverterVersion  = '0.1.5';
   
 var
   CfgFileName     : string;
@@ -34,16 +34,21 @@ var
   ProjSrcFileName : string;
   Options         : TFmToExtPOptions;
   AddExtToName    : Boolean;
-  ReformatErr     : Boolean;
+  ReformatErrMsg  : Boolean;
   ParamNum        : Integer;
   FileExt         : string;
 {$IFNDEF FPC}
   MatchFound      : TFilenameCaseMatch;
 {$ENDIF}
-  ProjInfFileVar  : TextFile;
-  ProjInfFileName : string;
-  InUnits         : Boolean;
+  ProjFileVar     : TextFile;
+  ProjFileName    : string;
   InStr           : string;
+  InUses          : Boolean;
+  InBegin         : Boolean;
+  MainFmNum       : Integer;
+  FmNum           : Integer;
+  SaveFmName      : string;
+  InUnits         : Boolean;
   QuotePos        : Integer;
   ErrMsg          : string;  
 
@@ -71,7 +76,7 @@ begin
             ' - converts Delphi or Lazarus form files to ExtPascal.');
     WriteLn;
     WriteLn('Usage: ', LowerCase(ConverterName), ' [mainform|projectfile] [otherforms] [programfile] [switches]');
-    WriteLn;
+    WriteLn('          (where form is .dfm or .lfm, project is .dpr or .lpi)');
     WriteLn('Switches:');
     WriteLn('  -e  Add "', NameSuffixExt, '" to names of all converted files.');
     WriteLn('  -r  Reformat any error message so Lazarus will display it.');
@@ -96,8 +101,8 @@ begin
   ProjSrcFileName := '';
   Options := [];
   AddExtToName := False;
-  ReformatErr := False;
-  ProjInfFileName := '';
+  ReformatErrMsg := False;
+  ProjFileName := '';
 
    {Get names of input form file(s) and Pascal output file from command line}
   for ParamNum := 1 to ParamCount do
@@ -110,7 +115,7 @@ begin
         Include(Options, opFmToExtP_AddExtToName);
         end
       else if ParamStr(ParamNum) = '-r' then
-        ReformatErr := True;
+        ReformatErrMsg := True;
       end
 
     else  {File name on command line}
@@ -129,69 +134,142 @@ begin
 {$ENDIF}
         end
 
-      else if SameText(FileExt, DelProjSrcFileExt) or
-              SameText(FileExt, LazProjSrcFileExt) then  {Project output file?}
+      else if SameText(FileExt, LazProjSrcFileExt) then  {Project output file?}
         ProjSrcFileName := ParamStr(ParamNum)
 
-      else if SameText(FileExt, LazProjInfFileExt) then {Laz project info file?}
+      else if SameText(FileExt, DelProjSrcFileExt) and
+              (Length(FmFileNames) > 0) then  {Project output, not input file?}
+        ProjSrcFileName := ParamStr(ParamNum)
+
+      else if SameText(FileExt, DelProjSrcFileExt) or {Delphi project src file?}
+              SameText(FileExt, LazProjInfFileExt) then {Laz project info file?}
         begin  {Open project file and look for form units to convert}
-        ProjInfFileName := ParamStr(ParamNum);
-        AssignFile(ProjInfFileVar, ProjInfFileName);
+        ProjFileName := ParamStr(ParamNum);
+        AssignFile(ProjFileVar, ProjFileName);
         try
-          Reset(ProjInfFileVar);
+          Reset(ProjFileVar);
         except
           on EInOutError do
             begin
-            if ReformatErr then
+            if ReformatErrMsg then
               Write(FpcErrLastLine, ' - ');
-            WriteLn('Error: Can''t open project file ' + ProjInfFileName);
+            WriteLn('Error: Can''t open project file ' + ProjFileName);
             Halt;
             end;
           end;
-        InUnits := False;
-        while not Eof(ProjInfFileVar) do
+
+        if SameText(FileExt, DelProjSrcFileExt) then {Delphi project src file?}
           begin
-          ReadLn(ProjInfFileVar, InStr);
-          if Copy(Trim(InStr), 1, 6) = '<Units' then
-            InUnits := True
-          else if Copy(Trim(InStr), 1, 8) = '</Units>' then
-            InUnits := False
-          else if InUnits and (Copy(Trim(InStr), 1, 9) = '<Filename') then
-            begin  {Found unit file name}
-            QuotePos := Pos('"', InStr);
-            if QuotePos > 0 then
+          InUses := False;
+          InBegin := False;
+          while not Eof(ProjFileVar) do
+            begin
+            ReadLn(ProjFileVar, InStr);
+            if SameText(Copy(Trim(InStr), 1, 4), 'uses') then
+              InUses := True
+            else if SameText(Copy(Trim(InStr), 1, 5), 'begin') then
               begin
-              InStr := Copy(InStr, Succ(QuotePos), MaxInt);
-              QuotePos := Pos('"', InStr);
-              if QuotePos > 0 then
+              InUses := False;
+              InBegin := True;
+              end
+            else if InUses and (Pos(''' {', InStr) > 0) and
+                    (Pos(':', InStr) = 0) then {Found form unit?}
+              begin  {Note checking to make sure not Application: CoClass}
+              SetLength(FmFileNames, High(FmFileNames)+2);
+              FmFileNames[High(FmFileNames)] :=
+               Copy(InStr, Pos('''', InStr)+1, MaxInt);
+                {Add everything to list (file name + form object name
+                  in comment) - will fix up later}
+              end
+            else if InBegin and (Pos('.CREATEFORM', UpperCase(InStr)) > 0) then
+              begin  {Assume first CreateForm is for main form}
+              InBegin := False;
+              InStr := UpperCase(Trim(Copy(InStr, Pos(',', InStr)+1, MaxInt)));
+              if Pos(');', InStr) > 0 then
+                InStr := Trim(Copy(InStr, 1, Pos(');', InStr)-1));
+              InStr := '{' + InStr + '}';  {Look for this to find main form}
+              MainFmNum := 0;
+              for FmNum := 0 to High(FmFileNames) do
                 begin
-                InStr := Copy(InStr, 1, Pred(QuotePos));
-                if (Pos(PathDelim, InStr) = 0) and
-                   (ExtractFilePath(ProjInfFileName) <> '') then
-                  InStr := ExtractFilePath(ProjInfFileName) + InStr;
-                   {If file name has no path, make relative to project file}
-                if (SameText(ExtractFileExt(InStr), PasFileExt) or
-                    SameText(ExtractFileExt(InStr), PasAltFileExt)) and
-                   FileExists(ChangeFileExt(InStr, LazFormFileExt)) then
-                  begin  {Pascal unit with form design file, so add to list}
-                  SetLength(FmFileNames, High(FmFileNames)+2);
-                  FmFileNames[High(FmFileNames)] :=
-                   ChangeFileExt(InStr, LazFormFileExt);
-                  end
-                else if SameText(ExtractFileExt(InStr), DelProjSrcFileExt) or
-                        SameText(ExtractFileExt(InStr), LazProjSrcFileExt) then
-                  ProjSrcFileName := InStr;  {Project source code file}
+                if Pos(InStr, UpperCase(FmFileNames[FmNum])) > 0 then
+                  MainFmNum := FmNum;  {Found main form}
+                FmFileNames[FmNum] :=  {Strip out object name and change ext}
+                 ExtractFilePath(ProjFileName) + 
+                 ChangeFileExt(Copy(FmFileNames[FmNum], 1,
+                                    Pos('''', FmFileNames[FmNum])-1),
+                               DelFormFileExt);
+                end;
+              if MainFmNum > 0 then  {Main form wasn't first form in uses?}
+                begin  {Swap so main form is first in list}
+                SaveFmName := FmFileNames[MainFmNum];
+                for FmNum := MainFmNum downto 1 do
+                  FmFileNames[FmNum] := FmFileNames[FmNum-1];
+                FmFileNames[0] := SaveFmName;
                 end;
               end;
             end;
-          end;  {while not Eof}
-        end;  {Lazarus project file}
+          end  {Delphi project file}
+          
+        else if SameText(FileExt, LazProjInfFileExt) then {Laz project info file?}
+          begin  {Open project file and look for form units to convert}
+          ProjFileName := ParamStr(ParamNum);
+          AssignFile(ProjFileVar, ProjFileName);
+          try
+            Reset(ProjFileVar);
+          except
+            on EInOutError do
+              begin
+              if ReformatErrMsg then
+                Write(FpcErrLastLine, ' - ');
+              WriteLn('Error: Can''t open project file ' + ProjFileName);
+              Halt;
+              end;
+            end;
+          InUnits := False;
+          while not Eof(ProjFileVar) do
+            begin
+            ReadLn(ProjFileVar, InStr);
+            if Copy(Trim(InStr), 1, 6) = '<Units' then
+              InUnits := True
+            else if Copy(Trim(InStr), 1, 8) = '</Units>' then
+              InUnits := False
+            else if InUnits and (Copy(Trim(InStr), 1, 9) = '<Filename') then
+              begin  {Found unit file name}
+              QuotePos := Pos('"', InStr);
+              if QuotePos > 0 then
+                begin
+                InStr := Copy(InStr, Succ(QuotePos), MaxInt);
+                QuotePos := Pos('"', InStr);
+                if QuotePos > 0 then
+                  begin
+                  InStr := Copy(InStr, 1, Pred(QuotePos));
+                  if (Pos(PathDelim, InStr) = 0) and
+                     (ExtractFilePath(ProjFileName) <> '') then
+                    InStr := ExtractFilePath(ProjFileName) + InStr;
+                     {If file name has no path, make relative to project file}
+                  if (SameText(ExtractFileExt(InStr), PasFileExt) or
+                      SameText(ExtractFileExt(InStr), PasAltFileExt)) and
+                     FileExists(ChangeFileExt(InStr, LazFormFileExt)) then
+                    begin  {Pascal unit with form design file, so add to list}
+                    SetLength(FmFileNames, High(FmFileNames)+2);
+                    FmFileNames[High(FmFileNames)] :=
+                     ChangeFileExt(InStr, LazFormFileExt);
+                    end
+                  else if SameText(ExtractFileExt(InStr), DelProjSrcFileExt) or
+                          SameText(ExtractFileExt(InStr), LazProjSrcFileExt) then
+                    ProjSrcFileName := InStr;  {Project source code file}
+                  end;
+                end;
+              end;
+            end;  {while not Eof}
+          end;  {Lazarus project file}
+        end;  {Delphi or Laz project file}
       end;  {File name on command line}
     end;  {for ParamNum}
     
   if High(FmFileNames) < 0 then
     begin
-    if ReformatErr then
+    if ReformatErrMsg then
       Write(FpcErrLastLine, ' - ');
     WriteLn('Error: No project or form input file specified.');
     Halt;
@@ -202,7 +280,7 @@ begin
      in Lazarus project info file.}
   if ProjSrcFileName = '' then
     begin
-    if ProjInfFileName = '' then
+    if ProjFileName = '' then
       begin
       ProjSrcFileName :=
        Copy(FmFileNames[0], 1, 
@@ -214,8 +292,8 @@ begin
     else
       begin
       ProjSrcFileName := 
-       Copy(ProjInfFileName, 1, 
-            Length(ProjInfFileName) - Length(ExtractFileExt(ProjInfFileName)));
+       Copy(ProjFileName, 1, 
+            Length(ProjFileName) - Length(ExtractFileExt(ProjFileName)));
       if AddExtToName then
         ProjSrcFileName := ProjSrcFileName + NameSuffixExt;
       ProjSrcFileName := ProjSrcFileName + LazProjSrcFileExt; 
@@ -237,7 +315,7 @@ begin
     end
   else
     begin
-    if ReformatErr then
+    if ReformatErrMsg then
       Write(FpcErrLastLine, ' - ');
     WriteLn(ErrMsg);
     end;

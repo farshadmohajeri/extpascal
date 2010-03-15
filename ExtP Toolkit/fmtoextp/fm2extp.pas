@@ -64,10 +64,76 @@ function ConvertValue(const ValStr       : string;
                       const ExtClassName : string;
                       const ExtPropName  : string) : string;
  {Convert form property value to ExtPascal property value.}
+
+type
+  THtmlColorRec = record
+    Name  : string;
+    Value : string;
+    end;
+const
+   {HTML/CSS color equivalents to Delphi color constants.
+     See http://www.w3.org/TR/REC-CSS2/ui.html#system-colors
+    Colors like clBtnFace differ by platform and by user preferences on
+     a particular computer. RGB values below were generated on a Windows
+     computer with "Windows XP style" and "Default (blue)" color scheme.}
+  HtmlColors : array [0..51] of THtmlColorRec =
+   ((Name: 'clBlack'; Value: 'Black'),  //#000000
+    (Name: 'clMaroon'; Value: 'Maroon'),  //#800000
+    (Name: 'clGreen'; Value: 'Green'),  //#008000
+    (Name: 'clOlive'; Value: 'Olive'),  //#808000
+    (Name: 'clNavy'; Value: 'Navy'),  //#000080
+    (Name: 'clPurple'; Value: 'Purple'),  //#800080
+    (Name: 'clTeal'; Value: 'Teal'),  //#008080
+    (Name: 'clGray'; Value: 'Gray'),  //#808080
+    (Name: 'clSilver'; Value: 'Silver'),  //#C0C0C0
+    (Name: 'clRed'; Value: 'Red'),  //#FF0000
+    (Name: 'clLime'; Value: 'Lime'),  //#00FF00
+    (Name: 'clYellow'; Value: 'Yellow'),  //#FFFF00
+    (Name: 'clBlue'; Value: 'Blue'),  //#0000FF
+    (Name: 'clFuchsia'; Value: 'Fuchsia'),  //#FF00FF
+    (Name: 'clAqua'; Value: 'Aqua'),  //#00FFFF
+    (Name: 'clWhite'; Value: 'White'),  //#FFFFFF
+    (Name: 'clMoneyGreen'; Value: '#C0DCC0'),
+    (Name: 'clSkyBlue'; Value: '#A6CAF0'),
+    (Name: 'clCream'; Value: '#FFFBF0'),
+    (Name: 'clMedGray'; Value: '#A0A0A4'),
+    (Name: 'clActiveBorder'; Value: 'ActiveBorder'),  //#D4D0C8
+    (Name: 'clActiveCaption'; Value: 'ActiveCaption'),  //#0054E3
+    (Name: 'clAppWorkSpace'; Value: 'AppWorkspace'),  //#808080
+    (Name: 'clBackground'; Value: 'Background'),  //#A6CAF0
+    (Name: 'clBtnFace'; Value: 'ButtonFace'),  //#ECE9D8
+    (Name: 'clBtnHighlight'; Value: 'ButtonHighlight'),  //#FFFFFF
+    (Name: 'clBtnShadow'; Value: 'ButtonShadow'),  //#ACA899
+    (Name: 'clBtnText'; Value: 'ButtonText'),  //#000000
+    (Name: 'clCaptionText'; Value: 'CaptionText'),  //#FFFFFF
+    (Name: 'clDefault'; Value: 'Black'),  //#000000
+    (Name: 'clGradientActiveCaption'; Value: 'ActiveCaption'),  //#3D95FF
+    (Name: 'clGradientInactiveCaption'; Value: 'InactiveCaption'),  //#9DB9EB
+    (Name: 'clGrayText'; Value: 'GrayText'),  //#ACA899
+    (Name: 'clHighlight'; Value: 'Highlight'),  //#316AC5
+    (Name: 'clHighlightText'; Value: 'HighlightText'),  //#FFFFFF
+    (Name: 'clHotLight'; Value: 'Navy'),  //#000080
+    (Name: 'clInactiveBorder'; Value: 'InactiveBorder'),  //#D4D0C8
+    (Name: 'clInactiveCaption'; Value: 'InactiveCaption'),  //#7A96DF
+    (Name: 'clInactiveCaptionText'; Value: 'InactiveCaptionText'),  //#D8E4F8
+    (Name: 'clInfoBk'; Value: 'InfoBackground'),  //#FFFFE1
+    (Name: 'clInfoText'; Value: 'InfoText'),  //#000000
+    (Name: 'clMenu'; Value: 'Menu'),  //#FFFFFF
+    (Name: 'clMenuBar'; Value: 'ButtonFace'),  //#ECE9D8
+    (Name: 'clMenuHighlight'; Value: 'Highlight'),  //#316AC5
+    (Name: 'clMenuText'; Value: 'MenuText'),  //#000000
+    (Name: 'clNone'; Value: 'White'),  //#FFFFFF
+    (Name: 'clScrollBar'; Value: 'ScrollBar'),  //#D4D0C8
+    (Name: 'cl3DDkShadow'; Value: 'ThreeDDarkShadow'),  //#716F64
+    (Name: 'cl3DLight'; Value: 'ThreeDLightShadow'),  //#F1EFE2
+    (Name: 'clWindow'; Value: 'Window'),  //#FFFFFF
+    (Name: 'clWindowFrame'; Value: 'WindowFrame'),  //#000000
+    (Name: 'clWindowText'; Value: 'WindowText'));  //#000000
 var
-  PrevAmp : Boolean;
-  CurChar : Char;
-  CharIdx : Integer;
+  PrevAmp  : Boolean;
+  CurChar  : Char;
+  CharIdx  : Integer;
+  ColorIdx : Integer;
 begin
   Result := '';
   if Copy(ValStr, 1, 1) = '''' then  {Quoted string?}
@@ -101,14 +167,47 @@ begin
         PrevAmp := False;
         end;  
       end;
+
+     {See if quoted string needs to be converted}
+    if SameText(FmPropName, 'Font.Name') then
+      Result := '"font-family":"' + Copy(Result, 2, Length(Result)-2) + '"';
     end
     
+  else if Pos('color', LowerCase(FmPropName)) > 0 then  {Color property?}
+    begin
+    if SameText(Copy(ValStr, 1, 2), 'cl') then  {Color constant name?}
+      begin  {Get HTML color value}
+      for ColorIdx := Low(HtmlColors) to High(HtmlColors) do
+        begin
+        if ValStr = HtmlColors[ColorIdx].Name then
+          begin
+          Result := HtmlColors[ColorIdx].Value;
+          Break;
+          end;
+        end;
+      end
+    else if (Copy(ValStr, 1, 1) = '$') and
+            (Length(ValStr) = 9) then  {Color hex RGB value?}
+      begin  {Convert to HTML color value}
+      Result := '#' + Copy(ValStr, 8, 2) +  {Red}
+                      Copy(ValStr, 6, 2) +  {Green}
+                      Copy(ValStr, 4, 2);   {Blue}
+      end;
+    if Result <> '' then
+      begin
+      if SameText(FmPropName, 'Font.Color') then
+        Result := '"color":"' + Result + '"'
+      else if SameText(FmPropName, 'Color') then
+        Result := '"background-color":"' + Result + '"';
+      end;
+    end
+
   else if SameText(ValStr, 'taLeftJustify') then
-    Result := '''text-align:left'''
+    Result := '"text-align":"left"'
   else if SameText(ValStr, 'taCenter') then
-    Result := '''text-align:center'''
+    Result := '"text-align":"center"'
   else if SameText(ValStr, 'taRightJustify') then
-    Result := '''text-align:right'''
+    Result := '"text-align":"right"'
 
   else if SameText(ValStr, 'csDropDown') then
     Result := 'True'  {Editable}
@@ -139,9 +238,34 @@ begin
     Result := '''' + ValStr + ''''
      {Convert to string}
 
-  else  {Not a quoted string}
-    Result := ValStr;
+  else if Copy(ValStr, 1, 1) = '[' then  {Set?}
+    begin
+    if SameText(FmPropName, 'Font.Style') then
+      begin
+      Result := '';
+      if Pos('fsitalic', LowerCase(ValStr)) > 0 then
+        Result := Result + '"font-style":"italic"';
+      if Pos('fsbold', LowerCase(ValStr)) > 0 then
+        begin
+        if Result <> '' then
+          Result := Result + ',';
+        Result := Result + '"font-weight":"bold"';
+        end;
+      end;
+    end
 
+  else  {Must be a number}
+    begin
+    Result := ValStr;
+    if SameText(FmPropName, 'Font.Height') then
+      begin
+      if Copy(Result, 1, 1) = '-' then  {Line leading not included?}
+        Delete(Result, 1, 1);
+         {TODO: Should reduce font size if positive (line leading
+                included in size), but by how much?}
+      Result := '"font-size":"' + Result + 'px"';
+      end;
+    end;
 end;  {ConvertValue}
 
 
@@ -329,6 +453,7 @@ var
   FormHeight        : Integer;
   FormWidth         : Integer;
   CheckDefaults     : Boolean;
+  StyleProps        : string;
   IgnoreObj         : array [1..MaxNestedObjs] of Boolean;
   ItemStrDone       : Boolean;
   ItemStrCnt        : Integer;
@@ -666,7 +791,7 @@ begin
     WriteLn(PasFileVar, 'constructor ', FormClassName, '.Create;');
     WriteLn(PasFileVar, 'begin');
     WriteLn(PasFileVar, '  inherited;');
-    WriteLn(PasFileVar, '{$I ', ExtractFileName(IncFileName), '}');
+    WriteLn(PasFileVar, '{$I *.inc}');
     WriteLn(PasFileVar, 'end;  {', FormClassName, '.Create}');
 
      {Now generate the actual code that creates ExtPascal components}
@@ -674,6 +799,7 @@ begin
     GridColIndexes.Clear;
     ObjLevel := 0;
     CheckDefaults := False;
+    StyleProps := '';
     while not Eof(FmFileVar) do  
       begin
       ReadLn(FmFileVar, InStr);
@@ -685,6 +811,12 @@ begin
         begin  {Do anything here to finish current object's properties}
          {If any default properties were not set in form for current object, 
            set them now.}
+        if StyleProps <> '' then
+          begin
+          WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                  'JSCode(''style:{', StyleProps, '}'');');
+          StyleProps := '';
+          end;
         CheckDefaults := False;
         for DefPropIdx := 0 to DefaultProps.Count-1 do  {Default properties}
           begin
@@ -848,13 +980,21 @@ begin
           until Copy(InStr, Length(InStr), 1) <> '+'; 
           end;
         ExtPropName := '';
-        if (ClassProps.IndexOfName(FmPropName) < 0) or  {Not mapped in class?}
-           (GetExtPropName(ClassProps.Values[FmPropName]) <> '') then  {Or non-blank prop?}
+        if (ClassProps.IndexOfName(FmPropName) < 0) or  {Not mapped at all in class?}
+           (GetExtPropName(ClassProps.Values[FmPropName]) <> '') then  {Or non-blank mapping?}
           begin  {Okay to output property if mapped}
-          if SameText(ClassProps.Values['IsControl'], 'True') then
-            ExtPropName := ControlProps.Values[FmPropName];  {Try ancestor's}
-          if ExtPropName = '' then
-            ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);  {Use class's}  
+          if SameText(FmPropName, 'Font.Color') or
+             SameText(FmPropName, 'Font.Height') or
+             SameText(FmPropName, 'Font.Name') or
+             SameText(FmPropName, 'Font.Style') then
+            ExtPropName := 'Style'  {Map individual font props to Style}
+          else
+            begin
+            if SameText(ClassProps.Values['IsControl'], 'True') then
+              ExtPropName := ControlProps.Values[FmPropName];  {Try ancestor's}
+            if ExtPropName = '' then
+              ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);  {Use class's}  
+            end;
           end;
         if ExtPropName <> '' then  {Is property mapped?}
           begin
@@ -935,13 +1075,25 @@ begin
               end;
             end
 
+          else if SameText(ExtPropName, 'Style') then
+            begin
+            FmPropVal := ConvertValue(FmPropVal, FmPropName,
+                                      ExtClassName, ExtPropName);
+            if FmPropVal <> '' then
+              begin
+              if StyleProps <> '' then
+                StyleProps := StyleProps + ',';
+              StyleProps := StyleProps + FmPropVal;
+              end;
+            end
+
           else  {Normal property}
             begin
-            WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
-                                ExtPropName, ' := ', 
-                                ConvertValue(FmPropVal, FmPropName,
-                                             ExtClassName, ExtPropName), 
-                                ';');
+            FmPropVal := ConvertValue(FmPropVal, FmPropName,
+                                      ExtClassName, ExtPropName);
+            if FmPropVal <> '' then
+              WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 
+                                  ExtPropName, ' := ', FmPropVal, ';');
             end;
 
           DefPropIdx :=
@@ -1078,7 +1230,7 @@ begin
   WriteLn(ThrdFileVar);
   WriteLn(ThrdFileVar);
 
-   {Now generate thread handlers that call form handlers} 
+   {Now generate published thread handlers that call form handlers} 
   for FormNum := 0 to High(FmFileNames) do
     begin
     AssignFile(FmFileVar, FmFileNames[FormNum]);
