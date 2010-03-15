@@ -1,3 +1,13 @@
+Version 0.1.5, preliminary (14-Mar-2010 SVN):
+
+- Added support for background color and font to converter.
+- Added BackgroundColor and Font property to TExtFormLabel design control to
+  test color and font support.
+- Converter can now accept a Delphi .dpr as input and attempts to determine
+  project's forms from its uses statement.
+- Adds fishfacts_example project.
+
+
 Version 0.1.4 (13-Mar-2010 SVN):
 
 - Numerous fixes and improvements to converter, particularly with grid column
