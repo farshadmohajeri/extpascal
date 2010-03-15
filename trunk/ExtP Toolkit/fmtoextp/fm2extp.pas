@@ -1016,8 +1016,9 @@ begin
                   SameText(FmPropName, 'Lines.Strings') or
                   SameText(FmPropName, 'Value.Strings') then
             begin  {Read item strings and convert}
-            Write(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
-                  ExtPropName, ' := ');
+            if not SameText(ExtClassName, 'TExtFormRadioGroup') then
+              Write(IncFileVar, BlankStr(IndentInc*(ObjLevel)),
+                    ExtPropName, ' := ');
             if SameText(ExtClassName, 'TExtFormComboBox') or
                SameText(ExtClassName, 'TExtUxFormMultiSelect') then               
               WriteLn(IncFileVar, 'JSArray(');
