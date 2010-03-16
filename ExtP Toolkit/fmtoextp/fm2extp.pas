@@ -360,7 +360,20 @@ begin
   if (Length(PropType) > 5) and
      SameText('Event', Copy(PropType, Length(PropType)-4, 5)) then
     Result := True;
-end;  {IsEventProp} 
+end;  {IsEventProp}
+
+
+function IsGridColumn(const FmClassName : string) : Boolean;
+begin
+  Result := ((Length(FmClassName) > 5) and
+             SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid')) or
+            SameText(FmClassName, 'TOvcTCCheckBox') or
+            SameText(FmClassName, 'TOvcTCComboBox') or
+            SameText(FmClassName, 'TOvcTCMemo') or
+            SameText(FmClassName, 'TOvcTCSimpleField') or
+            SameText(FmClassName, 'TOvcTCString') or
+            SameText(FmClassName, 'TO32TCFlexEdit');
+end;
 
 
 function CreateOutputFile(  var OutF            : TextFile;
@@ -845,8 +858,7 @@ begin
           FmClassName := Trim(Copy(InStr, Pos(':', InStr)+2, MaxInt));
         CfgFileObj.ReadSectionValues(FmClassName, ClassProps);
         
-        if (Length(FmClassName) > 5) and
-           SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid') then
+        if IsGridColumn(FmClassName) then
           begin  {Column editor control column model already created with grid}
           if GridColIndexes.Values[ObjName] = '' then  {Not part of a grid?}
             begin
@@ -955,8 +967,7 @@ begin
           WriteLn(IncFileVar)
         else if not IgnoreObj[ObjLevel] then  {Object's class is mapped?}
           begin
-          if (Length(FmClassName) > 5) and
-            SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid') then
+          if IsGridColumn(FmClassName) then
             WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), ' end;');
              {Need extra end for second with statement used with grid column}
           WriteLn(IncFileVar, BlankStr(IndentInc*(ObjLevel)), 'end;');
@@ -974,7 +985,12 @@ begin
             ReadLn(FmFileVar, InStr);
             InStr := Trim(InStr);
             if Copy(InStr, Length(InStr)-2, 3) = ''' +' then
-              FmPropVal := FmPropVal + Copy(InStr, 1, Length(InStr)-3)
+              begin
+              if FmPropVal = '' then
+                FmPropVal := Copy(InStr, 1, Length(InStr)-3)
+              else
+                FmPropVal := FmPropVal + Copy(InStr, 2, Length(InStr)-4);
+              end
             else
               FmPropVal := FmPropVal + Copy(InStr, 2, MaxInt);
           until Copy(InStr, Length(InStr), 1) <> '+'; 
