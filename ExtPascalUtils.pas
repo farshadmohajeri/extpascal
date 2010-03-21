@@ -314,7 +314,7 @@ begin
   end
   else begin
     I := pos('%', Result);
-    if (pos(';', Result) = 0) and (I <> 0) and ((length(Result) > 1) and (Result[I+1] in ['0'..'9'])) then begin // Has param place holder, ";" disable place holder
+    if (pos(';', Result) = 0) and (I <> 0) and ((length(Result) > I) and (Result[I+1] in ['0'..'9'])) then begin // Has param place holder, ";" disable place holder
       J := FirstDelimiter(' "''[]{}><=!*-+/,', Result, I+2);
       if J = 0 then J := length(Result)+1;
       if J <> (length(Result)+1) then begin
