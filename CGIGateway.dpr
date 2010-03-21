@@ -253,7 +253,7 @@ begin
           SetLength(ArgV, 2);
           ArgV[0] := pchar(Prog);
           ArgV[1] := nil;
-          FpExecv(Prog, ArgV);
+          FpExecv(Prog, PPChar(@ArgV[0]));
         end;
         FpExit(0);
       end
