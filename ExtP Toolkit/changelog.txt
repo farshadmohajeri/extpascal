@@ -1,3 +1,15 @@
+Version 0.1.6, converter (21-Mar-2010 SVN):
+
+- Restructured converter code into base class and main converter class.
+- Added basic support for converting Delphi/Lazarus forms that contain
+  Orpheus controls (table + several standalone).
+- Added support to converter for custom configuration file to supplement 
+  or override standard config file (fmtoextp.ini).
+- Added support to converter for "inherited" in Delphi .dfm files.
+- Added fixbiolife.pas that fixes Delphi biolife.xml so it can be used
+  with Ext JS XML reader and saves images to external .bmp files.
+
+
 Version 0.1.5, preliminary (14-Mar-2010 SVN):
 
 - Added support for background color and font to converter.
