@@ -1,4 +1,6 @@
 #labels Featured
+  * My second project using ExtPascal [http://extpascal.call.inf.br/cgi-bin/SGI_RDM.cgi SGI]
+This example is not functional, the original project is commercial.
   * Farshad's [http://prime.fmsoft.net/out/dbdemo.dll Fish facts demo]. [http://extpascal.googlegroups.com/web/fishfacts_example_20100312.zip?gda=nqKdR1AAAAAHXQ9ZEtz1gOpjR5eIa3efCFAkj91iW9RO0vyonRENPxbyVrDoD5ytZzqdeX10uwmydimo-E4VCKBhBGDizNJybcVT3VtYGKLco-_l-8AzjQ&gsc=JyVlmgsAAACd7wymbCyyyZLYVBtoSZBU Sources of a similar project].
   * Web application for Indonesian government. It is being used national wide by about 100-200 active users per day with about 20-30 concurrent users. [http://extpascal.googlegroups.com/web/d3tkjdt-ext300.zip?gda=WYKqDUQAAAAHXQ9ZEtz1gOpjR5eIa3efUJHofg5RsnrWnzpQPct_EWJcmF1pWIBdANYrUFnETdlV6u9SiETdg0Q2ffAyHU-dzc4BZkLnSFWX59nr5BxGqA&gsc=JyVlmgsAAACd7wymbCyyyZLYVBtoSZBU Sources]
 
