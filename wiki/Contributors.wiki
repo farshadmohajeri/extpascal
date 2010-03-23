@@ -27,5 +27,5 @@
 
  * *Phil Hess*
   * PowerPC fixes
-  * [http://extpascal.call.inf.br/ExtPToolkitStatus.html ExtP Toolkit (Delphi/Lazarus forms converter to ExtPascal)]
+  * [http://web.me.com/macpgmr/ExtPascal/ExtPToolkitStatus.html ExtP Toolkit (Delphi/Lazarus forms converter to ExtPascal)]
   * Revised Embedded Web Server support 
