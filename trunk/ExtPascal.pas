@@ -193,6 +193,7 @@ type
     function MethodURI(AMethodName : string; Params : array of const) : string; overload;
     function MethodURI(AMethodName : string): string; overload;
     function CharsToPixels(Chars : integer) : integer;
+    function LinesToPixels(Lines : integer) : integer;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
 
@@ -835,7 +836,6 @@ begin
       ',width:600,height:400,modal:true,items:[new Ext.ux.CodePress({language:"javascript",readOnly:true,code:s})]});w.show();' +
       'w.on("resize",function(){w.items.get(0).resize();});};' +
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxSource(err.message,err.lineNumber,response.responseText);}};' +
- //     'function AjaxSuccess(response){AjaxSource(0,0,response.responseText);};' +
       {$ELSE}
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/>Use DebugJS define to enhance debugging<br/>"+response.responseText);}};' +
       {$ENDIF}
@@ -982,6 +982,26 @@ constructor TExtObject.CreateSingleton(Attribute : string = ''); begin
 end;
 
 {
+Converts a TExtFormField length in characters to pixels to use in Width property.
+Uses dynamic JS in browser.
+@param Chars Field length in characters
+@return Pixels used by browser to render these Chars
+}
+function TExtObject.CharsToPixels(Chars : integer) : integer; begin
+  Result := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
+end;
+
+{
+Converts a TExtFormTextArea height in characters to pixels to use in Height property.
+Uses dynamic JS in browser.
+@param Lines TextArea height in characters.
+@return Pixels used by browser to render these Lines
+}
+function TExtObject.LinesToPixels(Lines : integer) : integer; begin
+  Result := JSExpression('%s * %.2f', [ExtUtilTextMetrics.GetHeight('W'), Lines * 0.8]);
+end;
+
+{
 When assign value to a config property, check if it is in creating process.
 If not then config property code will redirect to a relationed method if it exists.
 @param JSName Objects name to be searched in generated script
@@ -992,10 +1012,6 @@ If not then config property code will redirect to a relationed method if it exis
 O1.title = 'new title';
 </code>
 }
-function TExtObject.CharsToPixels(Chars : integer) : integer; begin
-  Result := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
-end;
-
 function TExtObject.ConfigAvailable(JSName : string) : boolean; begin
   Result := pos('/*' + JSName + '*/', TExtThread(CurrentFCGIThread).Response) <> 0;
 end;

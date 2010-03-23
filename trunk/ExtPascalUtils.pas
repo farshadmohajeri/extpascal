@@ -141,10 +141,12 @@ function BeautifyCSS(const AStyle : string) : string;
 // Screen space, in characters, used for a field using regular expression mask
 function LengthRegExp(Rex : string; CountAll : Boolean = true) : integer;
 
+function JSDateToDateTime(JSDate : string) : TDateTime;
+
 implementation
 
 uses
-  StrUtils, SysUtils, Math;
+  StrUtils, SysUtils, Math, DateUtils;
 
 {$IF not Defined(FPC) and (RTLVersion <= 17)}
 function TStringList.GetDelimitedText: string;
@@ -314,7 +316,7 @@ begin
   end
   else begin
     I := pos('%', Result);
-    if (pos(';', Result) = 0) and (I <> 0) and ((length(Result) > I) and (Result[I+1] in ['0'..'9'])) then begin // Has param place holder, ";" disable place holder
+    if (pos(';', Result) = 0) and (I <> 0) and ((length(Result) > 1) and (I < length(Result)) and (Result[I+1] in ['0'..'9'])) then begin // Has param place holder, ";" disable place holder
       J := FirstDelimiter(' "''[]{}><=!*-+/,', Result, I+2);
       if J = 0 then J := length(Result)+1;
       if J <> (length(Result)+1) then begin
@@ -394,7 +396,7 @@ begin
   Result := true;
 end;
 
-function SpaceIdents(const aLevel: integer; const aWidth: string = '   '): string;
+function SpaceIdents(const aLevel: integer; const aWidth: string = '  '): string;
 var
   c: integer;
 begin
@@ -422,8 +424,8 @@ var
   Res : string;
 
   function AddNewLine(const atPos : integer; const AddText : string) : integer; begin
-    insert(^M^J + AddText, Res, atPos);
-    Result := length(^M^J + AddText);
+    insert(^J + AddText, Res, atPos);
+    Result := length(^J + AddText);
   end;
 
   function SplitHTMLString(AStart, AEnd : integer): integer;  // range is including the quotes
@@ -440,7 +442,7 @@ var
     // html new line is found
     // Result-5 is to skip the mark at the end of the line
     while (ps > 0) and (ps < Result-5) do begin
-      s := '"+'^M^J+SpaceIdents(Lvl)+SpaceIdents(3,'  ')+'"';
+      s := '"+'^J+SpaceIdents(Lvl)+SpaceIdents(3)+'"';
       Insert(s, res, ps+4);
       Result := Result + length(s);
       // find next new line
@@ -554,7 +556,7 @@ begin
           if (length(Res) >= P+2) and (Res[P+1] = ' ') and (Res[P+2] = 'O') then begin  // ; O string
             inProp := false;
             delete(Res, P+1, 1);
-            inc(P, AddNewLine(P+1, ^M^J+SpaceIdents(Lvl)));
+            inc(P, AddNewLine(P+1, ^J+SpaceIdents(Lvl)));
             continue;
           end;
           if (length(Res) >= P+1) and (Res[P+1] = '}') then continue; // skip if it's already at the end of block
@@ -646,7 +648,7 @@ var
 begin
   P := 1;
   Lvl := 0;
-  Res := ^M^J+AStyle;
+  Res := ^J+AStyle;
   while P > 0 do begin
     inc(P);
     pString := PosEx('''', Res, P);
@@ -664,15 +666,15 @@ begin
             Insert(' ', res, p);
             p := p+1;
           end;
-          Insert(^M^J+SpaceIdents(lvl), res, p+1);
-          p := p + Length(^M^J+SpaceIdents(lvl));
+          Insert(^J+SpaceIdents(lvl), res, p+1);
+          p := p + Length(^J+SpaceIdents(lvl));
         end;
         '}' : begin
           dec(lvl);
-          insert(^M^J+SpaceIdents(lvl), Res, P);
-          inc(P, length(^M^J+SpaceIdents(Lvl)));
-          insert(^M^J+SpaceIdents(lvl), Res, P+1);
-          inc(P, length(^M^J+SpaceIdents(Lvl)));
+          insert(^J+SpaceIdents(lvl), Res, P);
+          inc(P, length(^J+SpaceIdents(Lvl)));
+          insert(^J+SpaceIdents(lvl), Res, P+1);
+          inc(P, length(^J+SpaceIdents(Lvl)));
         end;
         ':' :
           if Res[P+1] <> ' ' then begin
@@ -682,8 +684,8 @@ begin
         ';' : begin
           if Res[P+1] = '}' then continue;
           if Res[P+1] = ' ' then delete(Res, P+1, 1);
-          insert(^M^J+SpaceIdents(Lvl), Res, P+1);
-          inc(P, length(^M^J+SpaceIdents(Lvl)));
+          insert(^J+SpaceIdents(Lvl), Res, P+1);
+          inc(P, length(^J+SpaceIdents(Lvl)));
         end;
       end;
   end;
@@ -724,5 +726,11 @@ begin
     end;
   inc(Result, Slash);
 end;
+
+function JSDateToDateTime(JSDate : string) : TDateTime; begin
+  Result := EncodeDateTime(StrToInt(copy(JSDate, 12, 4)), AnsiIndexStr(copy(JSDate, 5, 3), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) +1,
+    StrToInt(copy(JSDate, 9, 2)), StrToInt(copy(JSDate, 17, 2)), StrToInt(copy(JSDate, 20, 2)), StrToInt(copy(JSDate, 23, 2)), 0);
+end;
+
 
 end.
