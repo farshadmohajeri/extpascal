@@ -429,7 +429,7 @@ begin
     I := 1;
     repeat
       Len := IfThen((length(S)-I+1) <= MAX_BUFFER, length(S)-I+1, MAX_BUFFER);
-      PadLen := 7 - ((Len + 7) and 7);
+      PadLen := Len mod 8; 
       SetLength(Buffer, sizeof(TFCGIHeader) + Len + PadLen);
       MoveFromFCGIHeader(FCGIHeader, Buffer[1]);
       move(S[I], Buffer[sizeof(TFCGIHeader) + 1], Len);
@@ -912,6 +912,7 @@ begin
                         ReadRequestHeader(FRequestHeader, FRequest, FCookie);
                         if SetCurrentFCGIThread then begin
                           FIsUpload := CurrentFCGIThread.CompleteRequestHeaderInfo(Buffer, I);
+                          MaxUploadSize := CurrentFCGIThread.MaxUploadSize;
                           if FIsUpload then begin
                             FFileUploaded         := CurrentFCGIThread.FFileUploaded;
                             FFileUploadedFullName := CurrentFCGIThread.FFileUploadedFullName;
