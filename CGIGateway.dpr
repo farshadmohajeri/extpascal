@@ -136,6 +136,24 @@ begin
   writeln(Msg);
 end;
 
+
+var
+  DebugFile : Text;
+
+// Writes a debug message to log.txt file
+procedure Debug(Msg : string);
+const
+	First : boolean = true;
+begin
+  if First then begin
+  	First := false;
+    assign(DebugFile, 'log.txt');
+    rewrite(DebugFile);
+  end;
+  writeln(DebugFile, Msg);
+  flush(DebugFile);
+end;
+
 {
 Returns the environment variables encapsulated using FastCGI protocol
 @param EnvName Optional environment variable name to override
@@ -186,6 +204,7 @@ var
   Request : AnsiString;
   Tam     : word;
   R       : AnsiChar;
+  I       : integer;
 begin
   with Socket do begin
     Request := '';
@@ -204,9 +223,14 @@ begin
       Request := RecvString(Config.ReadInteger(ConfigSection, 'Timeout', 10000))
     else
 {$ENDIF}
-    Request := RecvString(10000);  {timeout after 10 seconds}
-    if length(Request) > 8 then
-      writeln(copy(Request, 9, (byte(Request[5]) shl 8) + byte(Request[6])));
+    Request := RecvString(10000); // timeout after 10 seconds
+    I := 9;
+    while (Request[I-7] <> #3) and (length(Request) > 8) do begin // While <> EndRequest
+      Tam := (byte(Request[I-4]) shl 8) + byte(Request[I-3]); // Block length
+      write(copy(Request, I, Tam));
+      inc(I, Tam + 8 + byte(Request[I-2])); // Add PadLen and FCGI Header length to next block
+    end;
+    writeln;
   end;
 end;
 
