@@ -77,6 +77,7 @@ type
     function GetQueryAsBoolean(Name: string): boolean;
     procedure GarbageCollector(FreeGarbage : boolean);
     procedure WriteUploadFile(Buffer : AnsiString);
+    function GetWebServer: string;
   protected
     FResponseHeader : AnsiString; // HTTP response header @see SetResponseHeader, SetCookie, SendResponse, Response
     FRequest, FPathInfo : string;
@@ -127,6 +128,7 @@ type
     property IsDownload : boolean read FIsDownload;
     property ScriptName : AnsiString read FScriptName;
     property Browser : TBrowser read FBrowser; // Browser in use in this session
+    property WebServer : string read GetWebServer; // WebServer in use in this session
     constructor Create(NewSocket : integer); virtual;
     destructor Destroy; override;
     procedure AddToGarbage(const Name : string; Obj: TObject);
@@ -760,6 +762,11 @@ begin
   if Values.IndexOf('FCGI_MPXS_CONNS') <> -1 then AddParam(GetValuesResult, ['FCGI_MPXS_CONNS', '0']);
   Values.Free;
   SendResponse(GetValuesResult, rtGetValuesResult);
+end;
+
+function TFCGIThread.GetWebServer: string; begin
+  Result := RequestHeader['Server_Software'];
+  if Result = '' then Result := 'Embedded';
 end;
 
 {

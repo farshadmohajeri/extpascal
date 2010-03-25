@@ -67,14 +67,13 @@ const
     {$I %FPCTARGETOS%} + ' - ' + {$I %FPCTARGETCPU%} + ' - compiled by FreePascal ' + {$I %FPCVersion%} + '(' + {$I %FPCDATE%} + ')' {$ENDIF};
 var
   I : integer;
-  HTM, WebServer : string;
+  HTM : string;
 begin
   SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
   // Theme := 'gray';
   //SetStyle('img:hover{border:1px solid blue}');
   with TExtPanel.Create do begin
-    WebServer   := RequestHeader['Server_Software'];
-    Title       := 'ExtPascal Samples ' + SamplesVersion + ' - Web Server is ' + IfThen(WebServer = '', 'Embedded', WebServer);
+    Title       := 'ExtPascal Samples ' + SamplesVersion + ' - Web Server is ' + WebServer;
     RenderTo    := 'body';
     AutoWidth   := true;
     Frame       := true;
@@ -773,6 +772,7 @@ begin
         Text := 'Upload';
         SubmitAction := TExtFormActionSubmit.Create;
         with SubmitAction do begin
+          if pos('IIS', WebServer) <> 0 then Params := 'IIS=' + IISDelim; // IIS bug
           Url       := MethodURI(ProcessUpload); // Post upload process
           WaitMsg   := 'Uploading your file...';
           WaitTitle := 'Wait please';
