@@ -155,7 +155,7 @@ begin
                            NotesMemo.JSName + '.setValue(rec.get("Notes"));' +
                            PictureLabel.JSName +
                             '.setText("<img src=\''' + DataDir +
-                            '/" + rec.get("Common_Name") + ".gif' +
+                            '/" + rec.get("Common_Name") + ".bmp' +
                             '\'' width=\''250\'' height=\''150\'' />", false);'));
 
   DataStore.On('load', JSFunction(RowSelect.JSName + '.selectFirstRow();'));
