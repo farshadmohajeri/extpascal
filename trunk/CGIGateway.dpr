@@ -210,10 +210,10 @@ begin
     Request := '';
     if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then
       repeat
-        read(R);
+        Read(R);
         if R = IISDelim then break; // for IIS bug
         Request := Request + R;
-      until SeekEOF(Input);
+      until EOF(Input);
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request

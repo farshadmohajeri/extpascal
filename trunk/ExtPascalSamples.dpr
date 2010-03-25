@@ -241,7 +241,8 @@ procedure TSamples.CheckLogin; begin
       with TExtPanel.AddTo(Items) do begin
         Border    := false;
         BodyStyle := SetPaddings(5, 8);
-        HTML      := 'Welcome, ' + Query['UserName'] + '.<br/>Password: ' + Query['Password'];
+        HTML      := 'Welcome, ' + AnsiReplaceStr(Query['UserName'], ' ', '&nbsp ') +
+                     '.<br/>Password: ' + AnsiReplaceStr(Query['Password'], ' ', '&nbsp ');
       end;
       AddShowSourceButton(Buttons, 'CheckLogin');
       Show;
