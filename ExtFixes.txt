@@ -33,6 +33,7 @@ ExtComponent, cmargins, string, false, true,
 ExtComponent, closable, Boolean, false, true,
 ExtComponent, anchor, string, false, true,
 ExtComponent, el, string, false, true,
+ExtComponent, style, ExtObject, false, true, FORCEADD
 ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
 ExtDataHttpProxy, conn, ExtDataConnection, false, false,
 ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
