@@ -1566,12 +1566,16 @@ end;
 function TExtObject.Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction;
 var
   MetName : string;
+  I : integer;
 begin
   with TExtThread(CurrentFCGIThread) do begin
     MetName := MethodName(@Method);
     if MetName = '' then begin
-      ErrorMessage('Ajax method not published');
-      Result := TExtFunction(Self);
+      MetName := 'An ajax method was not published';
+      if high(Params) <> 0 then
+        MetName := MetName + ^J'Params:' + VarToJSON(Params);
+      ErrorMessage(MetName);
+      Result := nil;
     end
     else
       Result := Ajax(MetName, Params, false);
@@ -1585,12 +1589,18 @@ var
 begin
   with TExtThread(CurrentFCGIThread) do begin
     MetName := MethodName(@Method);
-    if MetName = '' then
-      ErrorMessage('Ajax method not published')
-    else
+    if MetName = '' then begin
+      MetName := 'An ajax method was not published';
+      if Params <> '' then
+        MetName := MetName + ^J'Params:' + Params;
+      ErrorMessage(MetName);
+      Result := nil;
+    end
+    else begin
       JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params + '},success:AjaxSuccess,failure:AjaxFailure});');
+      Result := TExtFunction(Self);
+    end;
   end;
-  Result := TExtFunction(Self);
 end;
 
 // Ajax with JSFunction as params
