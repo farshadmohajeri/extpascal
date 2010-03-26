@@ -307,7 +307,8 @@ var
   BR   : string;
 begin
   BR := IfThen(UseBR, '<br/>', '\n');
-  Result := AnsiReplaceStr(AnsiReplaceStr(S, '"', ''''), ^M^J, BR);
+  Result := AnsiReplaceStr(S, '"', '''');
+  Result := AnsiReplaceStr(Result, ^M^J, BR);
   Result := AnsiReplaceStr(Result, ^M, BR);
   Result := AnsiReplaceStr(Result, ^J, BR);
   if (Result <> '') and (Result[1] = #3) then begin // Is RegEx
