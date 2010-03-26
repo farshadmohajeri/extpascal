@@ -67,7 +67,7 @@ begin
       Icon    := ExtMessageBox.QUESTION;
       Buttons := ExtMessageBox.YESNOCANCEL;
       AnimEl  := Id;
-      Fn      := Ajax(ReadButtonAjax, ['ButtonID', '%0']);
+      Fn      := Ajax(SelfSession.ReadButtonAjax, ['ButtonID', '%0']);
     end;
     Handler := ExtMessageBox.Show(ShowConfig);
     ShowConfig.Free;
