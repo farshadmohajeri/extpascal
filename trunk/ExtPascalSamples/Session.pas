@@ -26,19 +26,14 @@ type
     procedure ShowSource;
     procedure ShowBasicTabPanel;
     procedure ShowMessageBoxes;
-    procedure ReadButtonAjax; // Ajax
     procedure ShowLayoutWindow;
     procedure ShowAdvancedTabs;
-    procedure AddTab; // Ajax
     procedure ShowBorderLayout;
-    procedure SelectNodeEventServerSide;  // Ajax
     procedure ShowArrayGrid;
     procedure ShowEditableGrid;
-    procedure AddPlant; // Ajax
     procedure ShowLogin;
-    procedure CheckLogin; // Ajax
     procedure ShowFileUpload;
-    procedure ProcessUpload;
+    procedure CheckLogin;
     procedure FileDownload;
   end;
 
@@ -155,10 +150,6 @@ procedure TSession.ShowAdvancedTabs; begin
   AdvancedTabs := TAdvancedTabs.Create
 end;
 
-procedure TSession.AddTab; begin
-  AdvancedTabs.AddTab
-end;
-
 procedure TSession.ShowArrayGrid; begin
   ArrayGrid.Free;
   ArrayGrid := TArrayGrid.Create
@@ -173,10 +164,6 @@ end;
 procedure TSession.ShowBorderLayout; begin
   BorderLayout.Free;
   BorderLayout := TBorderLayout.Create
-end;
-
-procedure TSession.SelectNodeEventServerSide; begin
-  BorderLayout.SelectNodeEventServerSide
 end;
 
 procedure TSession.ShowEditableGrid; begin
@@ -204,18 +191,6 @@ end;
 procedure TSession.ShowMessageBoxes; begin
   MessageBoxes.Free;
   MessageBoxes := TMessageBoxes.Create;
-end;
-
-procedure TSession.ReadButtonAjax; begin
-  MessageBoxes.ReadButtonAjax
-end;
-
-procedure TSession.AddPlant; begin
-  EditableGrid.AddPlant
-end;
-
-procedure TSession.ProcessUpload; begin
-  FileUpload.Process
 end;
 
 procedure TSession.ShowFileUpload; begin

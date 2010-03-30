@@ -141,8 +141,8 @@ type
     procedure SetResponseHeader(Header : AnsiString);
     procedure Alert(Msg : string); virtual;
     procedure SetCookie(Name, Value : string; Expires : TDateTime = 0; Domain : string = ''; Path : string = ''; Secure : boolean = false);
-    function  MethodURI(AMethodName : string) : string; overload;
-    function  MethodURI(AMethodName : TExtProcedure) : string; overload;
+    function  MethodURI(MethodName : string) : string; overload;
+    function  MethodURI(Method : TExtProcedure) : string; overload;
     procedure DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = '');
     procedure Terminate; reintroduce;
   published
@@ -792,16 +792,16 @@ end;
 Returns the URI address of a Method. Doesn't test if Method name is invalid.
 @param AMethodName Method name.
 }
-function TFCGIThread.MethodURI(AMethodName : string) : string; begin
-  Result := ScriptName + AMethodName;
+function TFCGIThread.MethodURI(MethodName : string) : string; begin
+  Result := ScriptName + MethodName;
 end;
 
 {
 Returns the URI address of a Method. If method is not published raises an exception
 @param AMethodName Method reference
 }
-function TFCGIThread.MethodURI(AMethodName : TExtProcedure) : string; begin
-  Result := CurrentFCGIThread.MethodName(@AMethodName);
+function TFCGIThread.MethodURI(Method : TExtProcedure) : string; begin
+  Result := CurrentFCGIThread.MethodName(@Method);
   if Result <> '' then
     Result := MethodURI(Result)
   else
@@ -1031,10 +1031,13 @@ begin
         Home
       else
         if not IsUpload or (pos('success:true', Response) <> 0) then begin
-          MethodCode := MethodAddress(PathInfo);
+          if (Query['Obj'] = '') or (Query['IsEvent'] = '1') then
+            PageMethod.Data := Self
+          else
+            PageMethod.Data := FindObject(Query['Obj']);
+          MethodCode := TObject(PageMethod.Data).MethodAddress(PathInfo);
           if MethodCode <> nil then begin
             PageMethod.Code := MethodCode;
-            PageMethod.Data := Self;
             MethodCall(PageMethod); // Call published method
           end
           else

@@ -2,7 +2,7 @@
 program ExtPascalSamples;
 
 {$IF Defined(MSWINDOWS) and not Defined(WebServer)}
-  {$DEFINE DEFAULT}
+  {$DEFINE DEFAULT}{$APPTYPE CONSOLE}
 {$IFEND}
 
 uses

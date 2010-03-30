@@ -8,6 +8,7 @@ uses
 type
   TLayoutWindow = class(TExtWindow)
     constructor Create;
+    procedure ExtTabPanelOnTabchange(AThis : TExtTabPanel; ATab : TExtPanel);
   end;
 
 implementation
@@ -22,12 +23,13 @@ var
 begin
   inherited;
   SelfSession.SetCodePress;
-  Tabs := TExtTabPanel.Create;
+  Tabs := TExtTabPanel.AddTo(Items);
   with Tabs do begin
     Region   := rgCenter;
     Margins  := SetMargins(3, 3, 3);
     Defaults := JSObject('autoScroll:true');
     ActiveTabNumber := 0;
+    OnTabChange := ExtTabPanelOnTabchange;
     with TExtPanel.AddTo(Items) do begin
       Title := 'Bogus Tab';
       Html  := 'Blah blah blah';
@@ -59,8 +61,11 @@ begin
   Layout   := lyBorder;
   Modal    := true;
   Nav.AddTo(Items);
-  Tabs.AddTo(Items);
   SelfSession.AddShowSourceButton(Buttons, 'LayoutWindow');
+end;
+
+procedure TLayoutWindow.ExtTabPanelOnTabchange(AThis : TExtTabPanel; ATab : TExtPanel); begin
+   ExtMessageBox.Alert('Active Tab is', ATab.Title);
 end;
 
 end.

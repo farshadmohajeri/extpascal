@@ -11,6 +11,7 @@ type
     procedure ReadButtonJS;
   public
     constructor Create;
+  published
     procedure ReadButtonAjax;
   end;
 
@@ -31,7 +32,7 @@ begin
   Frame    := true;
   with TExtButton.AddTo(Buttons) do begin
     Text    := 'Alert Dialog';
-    Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully', Ajax(SelfSession.ReadButtonAjax, ['ButtonID', '%0']));
+    Handler := ExtMessageBox.Alert('Status', 'Changes saved succesfully', Ajax(ReadButtonAjax, ['ButtonID', '%0']));
   end;
   with TExtButton.AddTo(Buttons) do begin
     Text    := 'Confirm Message';
@@ -67,7 +68,7 @@ begin
       Icon    := ExtMessageBox.QUESTION;
       Buttons := ExtMessageBox.YESNOCANCEL;
       AnimEl  := Id;
-      Fn      := Ajax(SelfSession.ReadButtonAjax, ['ButtonID', '%0']);
+      Fn      := Ajax(ReadButtonAjax, ['ButtonID', '%0']);
     end;
     Handler := ExtMessageBox.Show(ShowConfig);
     ShowConfig.Free;
