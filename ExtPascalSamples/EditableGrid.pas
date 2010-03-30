@@ -13,6 +13,7 @@ type
     Grid : TExtGridEditorGridPanel;
   public
     constructor Create;
+  published
     procedure AddPlant;
   end;
 
@@ -113,7 +114,7 @@ begin
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Add Plant using AJAX!';
-      Handler := Ajax(SelfSession.AddPlant);
+      Handler := Ajax(AddPlant);
     end;
     with TExtButton.AddTo(TBarArray) do begin
       Text    := 'Logout';

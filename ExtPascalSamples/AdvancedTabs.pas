@@ -11,8 +11,9 @@ type
     TabIndex : integer;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
   public
-    procedure AddTab;
     constructor Create;
+  published
+    procedure AddTab;
   end;
 
 implementation
@@ -47,7 +48,7 @@ begin
     RenderTo := 'body';
     Text     := 'Add Tab using AJAX!';
     IconCls  := 'new-tab';
-    Handler  := Ajax(SelfSession.AddTab);
+    Handler  := Ajax(AddTab);
     OnClick  := HandleExtButtonClick; // Delphi style event handler
   end;
   RenderTo        := 'body';

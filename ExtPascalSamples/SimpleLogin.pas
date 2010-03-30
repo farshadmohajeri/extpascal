@@ -8,6 +8,7 @@ uses
 type
   TSimpleLogin = class(TExtWindow)
     constructor Create;
+  published
     procedure CheckLogin;
   end;
 
@@ -30,7 +31,7 @@ procedure TSimpleLogin.CheckLogin; begin
         BodyStyle := SetPaddings(5, 8);
         HTML      := 'Welcome, ' + AnsiReplaceStr(Query['UserName'], ' ', '&nbsp ') +
                      '.<br/>Password: ' + AnsiReplaceStr(Query['Password'], ' ', '&nbsp ');
-        AddShowSourceButton(Buttons, 'CheckLogin');
+        AddShowSourceButton(Buttons, 'SimpleLogin', 'CheckLogin');
       end;
       Show;
     end
@@ -73,7 +74,7 @@ begin
     end;
     with TExtButton.AddTo(Buttons) do begin
       Text    := 'LOGIN';
-      Handler := Ajax(SelfSession.CheckLogin, ['UserName', UserName.GetValue, 'Password', Password.GetValue]);
+      Handler := Ajax(CheckLogin, ['UserName', UserName.GetValue, 'Password', Password.GetValue]);
     end;
     SelfSession.AddShowSourceButton(Buttons, 'SimpleLogin');
   end;

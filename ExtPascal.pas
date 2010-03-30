@@ -132,6 +132,7 @@ type
     procedure AjaxCode(MethodName, RawParams : string; Params : array of const);
     function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function AddJSReturn(Expression : string; MethodsValues : array of const): string;
+    function FindMethod(Method: TExtProcedure; var PascalName, ObjName: string): TExtFunction;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -188,10 +189,10 @@ type
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function MethodURI(AMethodName : TExtProcedure; Params: array of const): string; overload;
-    function MethodURI(AMethodName : TExtProcedure) : string; overload;
-    function MethodURI(AMethodName : string; Params : array of const) : string; overload;
-    function MethodURI(AMethodName : string): string; overload;
+    function MethodURI(Method : TExtProcedure; Params: array of const): string; overload;
+    function MethodURI(Method : TExtProcedure) : string; overload;
+    function MethodURI(MethodName : string; Params : array of const) : string; overload;
+    function MethodURI(MethodName : string): string; overload;
     function CharsToPixels(Chars : integer) : integer;
     function LinesToPixels(Lines : integer) : integer;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
@@ -617,20 +618,28 @@ begin
     Result := PrevCommand;
 end;
 
-function TExtObject.MethodURI(AMethodName : TExtProcedure; Params: array of const) : string; begin
-  Result := CurrentFCGIThread.MethodURI(AMethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(CurrentFCGIThread.MethodName(@AMethodName), Params))
+function TExtObject.MethodURI(Method : TExtProcedure; Params : array of const) : string; begin
+  Result := MethodURI(Method);
+  if length(Params) <> 0 then begin
+    if pos('?', Result) = 0 then Result := Result + '?';
+    Result := Result + FormatParams('TExtObject.MethodURI', Params)
+  end;
 end;
 
-function TExtObject.MethodURI(AMethodName : TExtProcedure) : string; begin
-  Result := CurrentFCGIThread.MethodURI(AMethodName)
+function TExtObject.MethodURI(Method : TExtProcedure) : string;
+var
+  MetName, ObjName : string;
+begin
+  FindMethod(Method, MetName, ObjName);
+  Result := CurrentFCGIThread.MethodURI(MetName) + IfThen(ObjName = '', '', '?Obj=' + ObjName);
 end;
 
-function TExtObject.MethodURI(AMethodName : string; Params : array of const) : string; begin
-  Result := CurrentFCGIThread.MethodURI(AMethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(AMethodName, Params))
+function TExtObject.MethodURI(MethodName : string; Params : array of const) : string; begin
+  Result := CurrentFCGIThread.MethodURI(MethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(MethodName, Params))
 end;
 
-function TExtObject.MethodURI(AMethodName : string): string; begin
-  Result := CurrentFCGIThread.MethodURI(AMethodName)
+function TExtObject.MethodURI(MethodName : string): string; begin
+  Result := CurrentFCGIThread.MethodURI(MethodName)
 end;
 
 {
@@ -1166,9 +1175,14 @@ end;
 
 function TExtObject.RequestDownload(Method : TExtProcedure; Params: array of const): TExtFunction;
 var
-  P : string;
+  P, MetName, ObjName : string;
 begin
-  P := FormatParams(CurrentFCGIThread.MethodName(@Method), Params);
+  FindMethod(Method, MetName, ObjName);
+  P := FormatParams(MetName, Params);
+  if ObjName <> '' then begin
+    if P <> '' then P := P + '&';
+    P := P + 'Obj=' + ObjName;
+  end;
   if P <> '' then P := '?' + P;
   Result := JSFunction('Download.src="' + CurrentFCGIThread.MethodURI(Method) + P + '";')
 end;
@@ -1565,42 +1579,43 @@ end;
 }
 function TExtObject.Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction;
 var
-  MetName : string;
-  I : integer;
+  MetName, ObjName : string;
 begin
-  with TExtThread(CurrentFCGIThread) do begin
-    MetName := MethodName(@Method);
-    if MetName = '' then begin
-      MetName := 'An ajax method was not published';
-      if high(Params) <> 0 then
-        MetName := MetName + ^J'Params:' + VarToJSON(Params);
-      ErrorMessage(MetName);
-      Result := nil;
-    end
+  Result := FindMethod(Method, MetName, ObjName);
+  AjaxCode(MetName, IfThen(ObjName = '', '', 'Obj=' + ObjName), Params);
+end;
+
+{
+Discovers the Pascal name and the JavaScript object name for a method
+Raises an exception if method is not published
+@return Self
+}
+function TExtObject.FindMethod(Method : TExtProcedure; var PascalName, ObjName : string) : TExtFunction;
+var
+  Obj : TObject;
+begin
+  InJSFunction := false;
+  Obj := TMethod(Method).Data;
+  PascalName := Obj.MethodName(@Method);
+  if PascalName = '' then
+    raise Exception.Create('Ajax: Method is not published')
+  else begin
+    if Obj is TExtObject then
+      ObjName := TExtObject(Obj).JSName
     else
-      Result := Ajax(MetName, Params, false);
+      ObjName := '';
+    Result := TExtFunction(Self);
   end;
 end;
 
 // Ajax with raw string as params
-function TExtObject.Ajax(Method : TExtProcedure; Params : string): TExtFunction;
+function TExtObject.Ajax(Method : TExtProcedure; Params : string) : TExtFunction;
 var
-  MetName : string;
+  MetName, ObjName : string;
 begin
-  with TExtThread(CurrentFCGIThread) do begin
-    MetName := MethodName(@Method);
-    if MetName = '' then begin
-      MetName := 'An ajax method was not published';
-      if Params <> '' then
-        MetName := MetName + ^J'Params:' + Params;
-      ErrorMessage(MetName);
-      Result := nil;
-    end
-    else begin
-      JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params + '},success:AjaxSuccess,failure:AjaxFailure});');
-      Result := TExtFunction(Self);
-    end;
-  end;
+  Result := FindMethod(Method, MetName, ObjName);
+  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params +
+    IfThen(ObjName = '', '', ',Obj:' + ObjName) + '},success:AjaxSuccess,failure:AjaxFailure});');
 end;
 
 // Ajax with JSFunction as params
@@ -1611,7 +1626,7 @@ end;
 function TExtObject.AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const): TExtFunction;
 var
   CurrentResponse : string;
-  MetName : string;
+  MetName, ObjName : string;
 begin
   InJSFunction := true;
   Result := TExtFunction(Self);
@@ -1621,8 +1636,8 @@ begin
     with TExtGridRowSelectionModel(SelectionModel) do begin
       JSCode('var Sel=[];');
       Each(JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'));
-      MetName := CurrentFCGIThread.MethodName(@Method);
-      AjaxCode(MetName, FormatParams(MetName, [TargetQuery, '%Sel.toString()']), Params);
+      FindMethod(Method, MetName, ObjName);
+      AjaxCode(MetName, FormatParams(MetName, [TargetQuery, '%Sel.toString()', 'Obj', ObjName]), Params);
     end;
     JSCommand := '';
     JSCommand := Response;

@@ -8,6 +8,7 @@ uses
 type
   TFileUpload = class(TExtWindow)
     constructor Create;
+  published
     procedure Process;
   end;
 
@@ -49,7 +50,7 @@ begin
       SubmitAction := TExtFormActionSubmit.Create;
       with SubmitAction do begin
         if pos('IIS', SelfSession.WebServer) <> 0 then Params := 'IIS=' + IISDelim; // IIS bug
-        Url       := MethodURI(SelfSession.ProcessUpload); // Post upload process
+        Url       := MethodURI(Process); // Post upload process
         WaitMsg   := 'Uploading your file...';
         WaitTitle := 'Wait please';
         Success   := ExtMessageBox.Alert('Success', 'File: %1.result.file uploaded on /uploads folder');

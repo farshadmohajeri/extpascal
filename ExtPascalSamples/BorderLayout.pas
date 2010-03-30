@@ -10,8 +10,9 @@ type
   private
     procedure SelectNodeEventBrowserSide;
   public
-    procedure SelectNodeEventServerSide;  // Ajax
     constructor Create;
+  published
+    procedure SelectNodeEventServerSide; // Ajax
   end;
 
 implementation
@@ -48,7 +49,7 @@ begin
   Node := TExtTreeTreeNode.Create;
   with Node do begin
     Text := 'child0';
-    on('click', Ajax(SelfSession.SelectNodeEventServerSide, ['Name', '%0.text']));
+    on('click', Ajax(SelectNodeEventServerSide, ['Name', '%0.text']));
   end;
   Tree.Root_.AppendChild(Node);
 
