@@ -53,6 +53,9 @@ unit ExtPascal;
 // Uses CacheFly for performance boost see: http://extjs.com/blog/2008/11/18/ext-cdn-custom-builds-compression-and-fast-performance/
 {.$DEFINE CacheFly}
 
+// Uses DebugExtJS to load ext-all-debug.js library instead ext-all.js to debugging purposes
+{.$DEFINE DebugExtJS}
+
 interface
 
 uses
@@ -687,7 +690,11 @@ end;
 // Override this method to change ExtPath, ImagePath, ExtBuild and Charset default values
 procedure TExtThread.SetPaths; begin
   inherited;
+{$IFDEF CacheFly}
+  ExtPath       := 'http://extjs.cachefly.net/ext-3.1.1';
+{$ELSE}
   ExtPath       := '/ext';
+{$ENDIF}
   ImagePath     := '/images';
   ExtBuild      := 'ext-all';
   Charset       := 'utf-8'; // 'iso-8859-1'
@@ -826,15 +833,10 @@ begin
       '<img src="' + ExtPath + '/resources/images/default/shared/loading-balls.gif"/>' +
       ' Loading ' + Application.Title + '...</div>'^M^J +
       '</div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J +
-      {$IFDEF CacheFly} // Ext JS Remote
-      '<script src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>'^M^J +
-      '<link rel=stylesheet href="http://extjs.cachefly.net/ext-2.2.1/resources/css/ext-all.css" />'^M^J +
-      {$ELSE} // Ext JS Local
       '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
       '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
-      '<script src="' + ExtPath + '/' + ExtBuild + {.$IFDEF DEBUGJS}'-debug'+{.$ENDIF} '.js"></script>'^M^J +
-      {$IFDEF DEBUGJS}'<script src="' + ExtPath + '/codepress/Ext.ux.CodePress.js"></script>'^M^J +{$ENDIF}
-      {$ENDIF}
+      '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DebugExtJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
+      {$IFDEF DEBUGJS}'<script src="/codepress/Ext.ux.CodePress.js"></script>'^M^J +{$ENDIF}
       IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
       IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
       GetStyle + Libraries +
