@@ -22,7 +22,7 @@ The main advantages are:
  * Install ExtJS below Apache's Document Root (usually htdocs) at folder *ext*
  * For Windows install Delphi (7..2010) or FreePascal 2.4.0 with Lazarus 0.9.28+ or [http://sourceforge.net/projects/mseide-msegui MSEide 2.0+]. I used Turbo Delphi, FreePascal 2.2.4 and MSEide 2.0.
  * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.4.0 with Lazarus 0.9.28+ or MSEide 2.0+. I used FreePascal 2.2.4 and MSEide 2.0.
- * Download ExtPascal using SVN (see [http://code.google.com/p/extpascal/source/checkout  for instructions]) to a working directory, for example: C:\ExtPascal.
+ * Download ExtPascal using SVN (see [http://code.google.com/p/extpascal/source/checkout  instructions]) to a working directory, for example: C:\ExtPascal.
  * Copy *codepress* folder, which is in ExtPascal package, underneath the *htdocs* folder. 
 
 = First Steps =
