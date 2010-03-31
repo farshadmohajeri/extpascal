@@ -112,8 +112,10 @@ var
 begin
   Proc  := Query['ProcName'];
   FName := Query['UnitName'] + '.pas';
-//  if not FileExists(FName) then FName := 'E:\Clientes\ExtPascal\cgi-bin\' + FName; // My cgi-bin path
-  assign(Source, FName);
+  if FileExists(FName) then
+    assign(Source, FName)
+  else
+    assign(Source, 'E:\Clientes\ExtPascal\cgi-bin\' + FName); // My cgi-bin path
   reset(Source);
   repeat
     readln(Source, Line);
@@ -205,7 +207,7 @@ var
 begin
   // Put the file in the same folder of executable
   FileName := 'ExtPascal-Advanced-Configuration-eng-v6.pdf';
-//  if not FileExists(FileName) then FileName := 'E:\Clientes\ExtPascal\cgi-bin\' + FileName; // My cgi-bin path
+  if not FileExists(FileName) then FileName := 'E:\Clientes\ExtPascal\cgi-bin\' + FileName; // My cgi-bin path
   DownloadFile(FileName);
 end;
 
