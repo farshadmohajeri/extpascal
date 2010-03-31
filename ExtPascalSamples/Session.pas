@@ -19,7 +19,7 @@ type
     SimpleLogin   : TSimpleLogin;
     FileUpload    : TFileUpload;
   public
-    procedure AddShowSourceButton(Buttons: TExtObjectList; UnitName : string; ProcName : string = '');
+    procedure AddShowSourceButton(Buttons: TExtObjectList; UnitName : string; ProcName : string = ''; Caption : string = 'Show Source Code');
     procedure SetCodePress;
   published
     procedure Home; override;
@@ -72,7 +72,7 @@ var
   HTM : string;
 begin
   SetCodePress;
-  // Theme := 'gray';
+  // Theme := 'access'; //'gray';
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples ' + SamplesVersion + ' - Web Server is ' + WebServer;
     RenderTo    := 'body';
@@ -80,6 +80,8 @@ begin
     Frame       := true;
     Layout      := lyColumn;
     Collapsible := true;
+    AddShowSourceButton(TBarArray, 'ExtPascalSamples.dpr', '', 'Show Main Program');
+    TExtToolbarSeparator.AddTo(TBarArray);
     AddShowSourceButton(TBarArray, 'Session');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
@@ -98,9 +100,9 @@ begin
 end;
 
 
-procedure TSession.AddShowSourceButton(Buttons : TExtObjectList; UnitName : string; ProcName : string = ''); begin
+procedure TSession.AddShowSourceButton(Buttons : TExtObjectList; UnitName : string; ProcName : string = ''; Caption : string = 'Show Source Code'); begin
   with TExtButton.AddTo(Buttons) do begin
-    Text := 'Show Source Code';
+    Text := Caption;
     Handler := Ajax(ShowSource, ['UnitName', UnitName, 'ProcName', ProcName]);
   end;
 end;
@@ -111,7 +113,8 @@ var
   Line, Lines, Proc, FName : string;
 begin
   Proc  := Query['ProcName'];
-  FName := Query['UnitName'] + '.pas';
+  FName := Query['UnitName'];
+  if pos('.', FName) = 0 then FName := FName + '.pas';
   if FileExists(FName) then
     assign(Source, FName)
   else
@@ -128,7 +131,7 @@ begin
   Lines := Lines + 'end' + IfThen(Proc = '', '.', ';');
   close(Source);
   with TExtWindow.Create do begin
-    Title  := 'Object Pascal Source: unit ' + FName + IfThen(Proc = '', '', ', procedure ' + Proc);
+    Title  := 'Object Pascal Source: ' + FName + IfThen(Proc = '', '', ', procedure ' + Proc);
     Width  := 600;
     Height := 400;
     Modal  := true;
@@ -144,7 +147,7 @@ begin
 end;
 
 procedure TSession.SetCodePress; begin
-  SetLibrary(ExtPath + '/codepress/Ext.ux.CodePress');
+  SetLibrary('/codepress/Ext.ux.CodePress');
 end;
 
 procedure TSession.ShowAdvancedTabs; begin
