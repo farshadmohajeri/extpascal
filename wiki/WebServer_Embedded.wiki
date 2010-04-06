@@ -17,7 +17,7 @@ Here are the steps for compiling the example app with an embedded Web server:
 
 Note that Delphi 2006 and later already includes Indy 10.
 
-3. Open *!ExtPascalSamples3.dpr* with Delphi or open *!ExtPascalSamples3_embedded.lpi* with Lazarus.
+3. Open *!ExtPascalSamples.dpr* with Delphi or open *!ExtPascalSamples_embedded.lpi* with Lazarus.
 
   * With Delphi, choose Project | Options.
     # On the Compiler tab, check "Assignable typed constants".
@@ -30,9 +30,9 @@ Note that Delphi 2006 and later already includes Indy 10.
 
 4. With Delphi, choose Project | Compile. With Lazarus, choose Run | Build.
 
-5. Copy the ExtJS folder below the folder where the !ExtPascalSamples3 executable file is located. Make sure the ExtJS folder is named *ext* for this example.
+5. Copy the ExtJS folder below the folder where the !ExtPascalSamples executable file is located. Make sure the ExtJS folder is named *ext* for this example.
 
-6. Start !ExtPascalSamples3 from the command line or by double-clicking it. Note that the embedded server example does not appear to work when run within the Delphi or Lazarus IDE.
+6. Start !ExtPascalSamples from the command line or by double-clicking it. Note that the embedded server example does not appear to work when run within the Delphi or Lazarus IDE.
 
 7. Start a Web browser and enter `http://localhost/Home`
 
