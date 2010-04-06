@@ -3,7 +3,7 @@
 
 01. The *Parser* able to scan Ext JS documentation in HTML format and to create the Wrapper.
 
-02. The *Wrapper* programmatically created by Parser. It's in fact a set of units twelve in Ext JS 2.2 which has the definition of all Ext JS classes, properties, methods and events.
+02. The *Wrapper* programmatically created by Parser. It's in fact a set of units which has the definition of all Ext JS classes, properties, methods and events.
 
 03. The *Self-translating* engine, ExtPascal unit. It's triggered when using the *Wrapper*, ie by creating objects, assigning properties and events, and invoking methods.
 
