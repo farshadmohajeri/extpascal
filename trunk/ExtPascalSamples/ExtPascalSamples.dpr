@@ -51,9 +51,9 @@ begin
   end;
 {$ELSE}
   {$IFNDEF WebServer}
-  Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion, TSessao, Port);
+  Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion, TSession, Port);
   {$ELSE}
-  Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 80, 5);
+  Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSession, 80, 5);
   {$ENDIF}
   Application.Icon := 'ExtPascal.ico';
   Application.Run;

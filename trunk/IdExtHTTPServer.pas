@@ -28,6 +28,7 @@ type
     function GetQueryAsBoolean(const ParamName: string): boolean;
     function GetCookie(const CookieName: string): string;
     procedure WriteUpload(CT, Buffer : string; AResponseInfo: TIdHTTPResponseInfo);
+    function GetWebServer: string;
   protected
     // Methods to be implemented in your app
     FIsAjax, FIsUpload, FIsDownload : boolean;
@@ -71,6 +72,7 @@ type
     property Browser : TBrowser read FBrowser;
     property FileUploaded : string read FFileUploaded;
     property FileUploadedFullName : string read FFileUploadedFullName;
+    property WebServer : string read GetWebServer;
   published
     procedure Home; virtual; abstract;
     procedure Logout; virtual;
@@ -512,6 +514,10 @@ function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
     Result := FCurrentRequest.RawHeaders.Values[HeaderName];
     if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
   except end;
+end;
+
+function TIdExtSession.GetWebServer: string; begin
+  Result := 'Embedded'
 end;
 
 procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
