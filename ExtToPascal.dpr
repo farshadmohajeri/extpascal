@@ -59,10 +59,11 @@ var
   I : integer;
 begin
   if Ident <> '' then
-    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...', 'date', 'float', 'int', 'bool', 'double']) of
+    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...',
+                        'date', 'float', 'int', 'bool', 'double', 'object.']) of
       0, 6     : Result := 'String';
       1, 2, 11 : Result := 'Integer';
-      3        : Result := 'TExtObject';
+      3, 14    : Result := 'TExtObject';
       4, 12    : Result := 'Boolean';
       5        : Result := 'TExtFunction';
       7, 8     : Result := 'TExtObjectList';
@@ -191,6 +192,7 @@ procedure TUnit.ReviewTypes;
     I : integer;
   begin
     if (Typ <> '') and (pos('.' + Typ + '.', Types) = 0) then begin
+      if AllClasses.IndexOf(Typ + 'Singleton') <> -1 then Typ := Typ + 'Singleton';
       T := Typ;
       if (Name <> 'Ext') and (pos('TExt', T) = 1) and (pos('Ext,', UsesList + ',') = 0) then begin // uses Ext?
         I := AllClasses.IndexOf(T);
@@ -211,7 +213,6 @@ procedure TUnit.ReviewTypes;
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
         end;
-      if AllClasses.IndexOf(Typ + 'Singleton') <> -1 then Typ := Typ + 'Singleton';
     end;
   end;
 
@@ -600,7 +601,7 @@ begin
             continue;
           end;
           if State = InEvents then begin
-            MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
+            MetName := Unique(Unique('On' + FixIdent(JSName), CurClass.Properties), CurClass.Methods);
             Params  := Explode(',', Matches[1]);
           end
           else begin
@@ -1210,9 +1211,9 @@ begin
               if not Static then begin
                 writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
                 writeln(Pas, Tab, 'F', Name, ' := Value;');
-                RegExParam := IfThen(Typ = 'TRegExp', '#3 +', '');
+                RegExParam := IfThen(LowerCase(Typ) = 'tregexp', '#3 +', '');
                 BoolParam  := AddBoolParam(Typ);
-                if (BoolParam = ', false') and not Enum then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
+                if (BoolParam = ', false') and not Enum and (RegExParam = '') then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
                 if Config then begin
                   // If there is an alternative method, and its parameters are
                   // compatible, implement an workaround to reconfig objects created in a previous request
