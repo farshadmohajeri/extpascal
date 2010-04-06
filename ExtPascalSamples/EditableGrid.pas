@@ -43,7 +43,7 @@ begin
   // create the Data Store
   DataStore := TExtDataStore.Create;
   with DataStore do begin
-    URL := SelfSession.ExtPath + '/examples/grid/plants.xml';
+    URL := '/ext/examples/grid/plants.xml'; // Don´t use CacheFly here!
     // the return will be XML, so lets set up a reader, records will have a "plant" tag
     Reader := TExtDataXmlReader.Create(JSObject('record:"plant"'), Plant);
     SortInfo := JSObject('field:"common", direction:"ASC"');
