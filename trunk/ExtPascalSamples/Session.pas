@@ -33,7 +33,6 @@ type
     procedure ShowEditableGrid;
     procedure ShowLogin;
     procedure ShowFileUpload;
-    procedure CheckLogin;
     procedure FileDownload;
   end;
 
@@ -151,56 +150,69 @@ procedure TSession.SetCodePress; begin
 end;
 
 procedure TSession.ShowAdvancedTabs; begin
-  AdvancedTabs.Free;
-  AdvancedTabs := TAdvancedTabs.Create
+  if AdvancedTabs = nil then
+    AdvancedTabs := TAdvancedTabs.Create
+  else
+    AdvancedTabs.Create;
 end;
 
 procedure TSession.ShowArrayGrid; begin
-  ArrayGrid.Free;
-  ArrayGrid := TArrayGrid.Create
+  if ArrayGrid = nil then
+    ArrayGrid := TArrayGrid.Create
+  else
+    ArrayGrid.Create;
 end;
 
 procedure TSession.ShowBasicTabPanel; begin
-  BasicTabPanel.Free;
-  BasicTabPanel := TBasicTabPanel.Create;
+  if BasicTabPanel = nil then
+    BasicTabPanel := TBasicTabPanel.Create
+  else
+    BasicTabPanel.Create;
   BasicTabPanel.Show;
 end;
 
 procedure TSession.ShowBorderLayout; begin
-  BorderLayout.Free;
-  BorderLayout := TBorderLayout.Create
+  if BorderLayout = nil then
+    BorderLayout := TBorderLayout.Create
+  else
+    BorderLayout.Create;
 end;
 
 procedure TSession.ShowEditableGrid; begin
-  EditableGrid.Free;
-  EditableGrid := TEditableGrid.Create
+  if EditableGrid = nil then
+    EditableGrid := TEditableGrid.Create
+  else
+    EditableGrid.Create;
 end;
 
 procedure TSession.ShowLayoutWindow; begin
-  LayoutWindow.Free;
-  LayoutWindow := TLayoutWindow.Create;
+  if LayoutWindow = nil then
+    LayoutWindow := TLayoutWindow.Create
+  else
+    LayoutWindow.Create;
   LayoutWindow.Show;
 end;
 
 procedure TSession.ShowLogin; begin
-  SimpleLogin.Free;
-  SimpleLogin := TSimpleLogin.Create;
+  if SimpleLogin = nil then
+    SimpleLogin := TSimpleLogin.Create
+  else
+    SimpleLogin.Create;
   SimpleLogin.Show;
 end;
 
-procedure TSession.CheckLogin; begin
-  SimpleLogin.Free;
-  SimpleLogin.CheckLogin
-end;
-
 procedure TSession.ShowMessageBoxes; begin
-  MessageBoxes.Free;
-  MessageBoxes := TMessageBoxes.Create;
+  if MessageBoxes = nil then
+    MessageBoxes := TMessageBoxes.Create
+  else
+    MessageBoxes.Create;
 end;
 
 procedure TSession.ShowFileUpload; begin
-  FileUpload.Free;
-  FileUpload := TFileUpload.Create;
+  if FileUpload = nil then
+    FileUpload := TFileUpload.Create
+  else
+    FileUpload.Create;
   FileUpload.Show;
 end;
 

@@ -8,7 +8,7 @@ uses
 type
   TAdvancedTabs = class(TExtTabPanel)
   private
-    TabIndex : integer;
+    TabIndex, Tabs : integer;
     procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
   public
     constructor Create;
@@ -28,7 +28,10 @@ procedure TAdvancedTabs.AddTab; begin // Ajax
     IconCls  := 'tabs';
     Html     := 'Tab Body ' + IntToStr(TabIndex) + '<br/><br/>blahblah';
     Closable := true;
-    if SelfSession.IsAjax then Show;
+    if SelfSession.IsAjax then begin
+      Show;
+      inc(Tabs);
+    end;
     Free;
   end;
   // Tabs.ActiveTabNumber := TabIndex-1;
@@ -60,7 +63,11 @@ begin
   Height          := 150;
   Defaults        := JSObject('autoScroll:true');
   EnableTabScroll := true;
-  for I := 1 to 7 do AddTab;
+  if Tabs = 0 then
+    Tabs := 7
+  else
+    TabIndex := 0;
+  for I := 1 to Tabs do AddTab;
   SelfSession.AddShowSourceButton(Buttons, 'AdvancedTabs');
 end;
 
