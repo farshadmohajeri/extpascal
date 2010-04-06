@@ -691,7 +691,7 @@ end;
 procedure TExtThread.SetPaths; begin
   inherited;
 {$IFDEF CacheFly}
-  ExtPath       := 'http://extjs.cachefly.net/ext-3.1.1';
+  ExtPath       := 'http://extjs.cachefly.net/ext-3.2.0';
 {$ELSE}
   ExtPath       := '/ext';
 {$ENDIF}
