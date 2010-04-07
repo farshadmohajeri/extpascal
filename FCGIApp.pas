@@ -209,7 +209,7 @@ threadvar
 implementation
 
 uses
-  StrUtils, Math, ExtPascal;
+  StrUtils, Math;
 
 type
   // FastCGI header
