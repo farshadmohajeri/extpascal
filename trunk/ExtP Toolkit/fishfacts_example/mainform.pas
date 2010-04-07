@@ -110,8 +110,9 @@ begin
     SortInfo := JSObject('field:"Species_No", direction:"ASC"');
     end;
 
-  RowSelect := TExtGridRowSelectionModel.Create(JSObject('singleSelect:true'));
-//  RowSelect.SingleSelect := True;  //done this way creates invalid JS
+//  RowSelect := TExtGridRowSelectionModel.Create(JSObject('singleSelect:true'));
+  RowSelect := TExtGridRowSelectionModel.Create;
+  RowSelect.SingleSelect := True; 
 
   inherited;
 {$IFDEF UseRuntime}

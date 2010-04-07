@@ -636,6 +636,7 @@ begin
                   Matches[0] := Arg;
                 end;
               Matches[1] := Unique(FixIdent(Matches[1]), Args);
+              //if (MetName = 'Create') and (Matches[1] = 'Config') then break;
               if (State = InEvents) and SameText(Matches[1], 'This') then
                 Matches[0] := CurClass.Name;
               Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
@@ -1306,8 +1307,11 @@ begin
                 if Return = '' then begin // Write constructors
                   if AltCreate then // ExtJS fault
                     writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
-                  else
+                  else begin
+                    if (Params.Count = 1) and (TParam(Params.Objects[0]).Name = 'Config') and (TParam(Params.Objects[0]).Typ = 'TExtObject') then
+                      writeln(Pas, Tab, 'if Config = nil then CreateVar(JSClassName + ''({});'') else');
                     writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''');');
+                  end;
                   writeln(Pas, Tab, 'InitDefaults;');
                 end
                 else begin // Write class and instance methods
