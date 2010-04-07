@@ -59,7 +59,8 @@ unit ExtPascal;
 interface
 
 uses
-  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF}, Classes, ExtPascalUtils;
+  {$IFNDEF WebServer}FCGIApp{$ELSE}IdExtHTTPServer{$ENDIF},
+  Classes, ExtPascalUtils;
 
 type
   TArrayOfString  = array of string;
