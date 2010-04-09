@@ -636,7 +636,6 @@ begin
                   Matches[0] := Arg;
                 end;
               Matches[1] := Unique(FixIdent(Matches[1]), Args);
-              //if (MetName = 'Create') and (Matches[1] = 'Config') then break;
               if (State = InEvents) and SameText(Matches[1], 'This') then
                 Matches[0] := CurClass.Name;
               Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
