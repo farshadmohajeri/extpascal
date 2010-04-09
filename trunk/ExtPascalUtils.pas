@@ -487,7 +487,7 @@ begin
     pSqrBegin   := PosEx('[', Res, P);
     pSqrEnd     := PosEx(']', Res, P);
     pFunction   := PosEx('function', Res, P);
-    pRegex      := PosEx('regex', Res, P);
+    pRegex      := PosEx('regex:', Res, P);
     // process what is found first
     P := MinValueOf([pBlockBegin, pBlockEnd, pPropBegin, pPropEnd, pStatEnd, {pFuncBegin,} pSqrBegin, pSqrEnd,
                      pString, pOpEqual, pOpPlus, pOpMinus, pOpTime, {pOpDivide,} pFunction, pRegex]);
