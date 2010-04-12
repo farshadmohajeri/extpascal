@@ -23,20 +23,19 @@ uses
   Classes;
 
 type
-  TFmFileNames = array of string;
-
   TFormConverterBase = class
   private
     FIndentInc        : Integer;       {Indent this many spaces per nesting level}
     FCfgFileName      : string;        {Converter's configuration file}
     FCustCfgFileName  : string;        {User's custom configuration file}
-    FFmFileNames      : TFmFileNames;  {Form design files to convert}
-    FPrjFileName      : string;        {Pascal program file to create}
+    FFmFileNames      : TStringList;   {Form design files to convert}
+    FProgFileName     : string;        {Pascal program file to create}
     FGeneratorName    : string;        {Name of program using converter class}
     FGeneratorVersion : string;        {Version of program using converter class}
     FErrMsg           : string;        {Any error message from conversion}
 
   protected
+     {Methods for working with form files}
     function IsObject(const InStr : string) : Boolean;
     function GetObjName(const InStr       : string;
                           var IsInherited : Boolean) : string;
@@ -45,15 +44,19 @@ type
     function GetFmPropName(const InStr : string) : string;
     function GetFmPropVal(const InStr : string) : string;
     function CopyAndTrimToLF(var PropVal : string) : string;
-    procedure ParseProp(const PropSpec    : string;
-                          var DesignProp  : string;
-                          var InvertVal   : Boolean;
-                          var PropType    : string;
-                          var PropDefault : string);
     procedure ReadFormLine(var FmF   : TextFile;
                            var InStr : string);
+
+     {Methods for working with config files}
+    procedure ParsePropDef(const PropSpec    : string;
+                             var DesignProp  : string;
+                             var InvertVal   : Boolean;
+                             var PropType    : string;
+                             var PropDefault : string);
+    function StripPropDef(const ValStr : string) : string;
     function InputFilesOkay : Boolean;
 
+     {Methods for creating output files}
     function CreateOutputFile(  var OutF            : TextFile;
                               const FileName        : string;
                                     UseNullIfExists : Boolean) : Boolean;
@@ -64,34 +67,44 @@ type
     property IndentInc : Integer read FIndentInc write FIndentInc;
     property CfgFileName : string read FCfgFileName write FCfgFileName;
     property CustCfgFileName : string read FCustCfgFileName write FCustCfgFileName;
-    property FmFileNames : TFmFileNames read FFmFileNames write FFmFileNames;
-    property PrjFileName : string read FPrjFileName write FPrjFileName;
+    property FmFileNames : TStringList read FFmFileNames write FFmFileNames;
+    property ProgFileName : string read FProgFileName write FProgFileName;
     property GeneratorName : string read FGeneratorName write FGeneratorName;
     property GeneratorVersion : string read FGeneratorVersion write FGeneratorVersion;
     property ErrMsg : string read FErrMsg write FErrMsg;
 
     constructor Create;
+    destructor Destroy; override;
     function GetFormFiles(const ProjFileName    : string;
-                            var FormFileNames   : TFmFileNames;
+                                FormFileNames   : TStringList;
                             var ProjSrcFileName : string) : Boolean;
   end;
 
 
-const
+const  {Various file extensions}
   CfgFileExt        = '.ini';    {Extension for file with same name as program
                                    containing component and property mappings}
-  DelProjSrcFileExt = '.dpr';    {Delphi project source code file extension
+  DelProjSrcFileExt = '.dpr';    {Delphi project source code file
                                    ("program" file)}
-  LazProjSrcFileExt = '.lpr';    {Lazarus project source code file extension
+  LazProjSrcFileExt = '.lpr';    {Lazarus project source code file
                                    ("program" file)}
-  LazProjInfFileExt = '.lpi';    {Lazarus project information flle extension
+  DelOptionsFileExt = '.dof';    {Delphi project options file}
+  LazProjInfFileExt = '.lpi';    {Lazarus project information flle
                                    (an XML file)}
-  PasFileExt        = '.pas';    {Pascal source code file extension}
-  PasAltFileExt     = '.pp';     {Pascal source code alternate file extension
+  PasFileExt        = '.pas';    {Pascal source code file}
+  PasAltFileExt     = '.pp';     {Pascal source code alternate file
                                    occasionally used for some reason with Laz}
-  IncFileExt        = '.inc';    {Pascal source code include file extension}                                 
-  DelFormFileExt    = '.dfm';    {Delphi form design file extension}
-  LazFormFileExt    = '.lfm';    {Lazarus form design file extension}
+  IncFileExt        = '.inc';    {Pascal source code include file}                                 
+  DelFormFileExt    = '.dfm';    {Delphi form design file}
+  LazFormFileExt    = '.lfm';    {Lazarus form design file}
+
+
+ {Standalone helper functions}
+function ExtractFileNameWithoutExt(const FileName : string) : string;
+
+function ExpandFileNameWithCase(const FileName : string) : string;
+
+function StripLastDir(const FilePath : string) : string;
 
 
 implementation
@@ -100,11 +113,19 @@ constructor TFormConverterBase.Create;
 begin
   inherited;
   IndentInc := 2;
+  FFmFileNames := TStringList.Create;
+end;
+
+
+destructor TFormConverterBase.Destroy;
+begin
+  FFmFileNames.Free;
+  inherited;
 end;
 
 
 function TFormConverterBase.GetFormFiles(const ProjFileName    : string;
-                                           var FormFileNames   : TFmFileNames;
+                                               FormFileNames   : TStringList;
                                            var ProjSrcFileName : string) : Boolean;
  {Open project file and look for form units to convert.}
 var
@@ -131,6 +152,7 @@ begin
       end;
     end;
 
+  ProjSrcFileName := '';
   FileExt := ExtractFileExt(ProjFileName);
   if SameText(FileExt, DelProjSrcFileExt) then {Delphi project src file?}
     begin
@@ -149,9 +171,7 @@ begin
       else if InUses and (Pos(''' {', InStr) > 0) and
               (Pos(':', InStr) = 0) then {Found form unit?}
         begin  {Note checking to make sure not Application: CoClass}
-        SetLength(FormFileNames, High(FormFileNames)+2);
-        FormFileNames[High(FormFileNames)] :=
-         Copy(InStr, Pos('''', InStr)+1, MaxInt);
+        FormFileNames.Add(Copy(InStr, Pos('''', InStr)+1, MaxInt));
           {Add everything to list (file name + form object name
             in comment) - will fix up later}
         end
@@ -163,12 +183,12 @@ begin
           InStr := Trim(Copy(InStr, 1, Pos(');', InStr)-1));
         InStr := '{' + InStr + '}';  {Look for this to find main form}
         MainFmNum := 0;
-        for FmNum := 0 to High(FormFileNames) do
+        for FmNum := 0 to FormFileNames.Count-1 do
           begin
           if Pos(InStr, UpperCase(FormFileNames[FmNum])) > 0 then
             MainFmNum := FmNum;  {Found main form}
           FormFileNames[FmNum] :=  {Strip out object name and change ext}
-            ExtractFilePath(ProjFileName) + 
+           ExtractFilePath(ProjFileName) + 
            ChangeFileExt(Copy(FormFileNames[FmNum], 1,
                               Pos('''', FormFileNames[FmNum])-1),
                          DelFormFileExt);
@@ -212,9 +232,7 @@ begin
                 SameText(ExtractFileExt(InStr), PasAltFileExt)) and
                FileExists(ChangeFileExt(InStr, LazFormFileExt)) then
               begin  {Pascal unit with form design file, so add to list}
-              SetLength(FormFileNames, High(FormFileNames)+2);
-              FormFileNames[High(FormFileNames)] :=
-               ChangeFileExt(InStr, LazFormFileExt);
+              FormFileNames.Add(ChangeFileExt(InStr, LazFormFileExt));
               end
             else if SameText(ExtractFileExt(InStr), DelProjSrcFileExt) or
                     SameText(ExtractFileExt(InStr), LazProjSrcFileExt) then
@@ -229,6 +247,7 @@ end;  {GetFormFiles}
 
 
 function TFormConverterBase.IsObject(const InStr : string) : Boolean;
+ {Return True if string is an object declaration.}
 begin
   Result := SameText(Copy(InStr, 1, 7), 'object ') or
             SameText(Copy(InStr, 1, 10), 'inherited ');
@@ -237,6 +256,8 @@ end;
 
 function TFormConverterBase.GetObjName(const InStr       : string;
                                          var IsInherited : Boolean) : string;
+ {Return object name from object declaration and
+   whether object is inherited.}
 begin
   if SameText(Copy(InStr, 1, 7), 'object ') then
     begin
@@ -252,33 +273,35 @@ end;
 
 
 function TFormConverterBase.GetClassName(const InStr : string) : string;
+ {Return class name from object declaration.}
 begin
   Result := Trim(Copy(InStr, Pos(':', InStr)+1, MaxInt));
 end;
 
 
 function TFormConverterBase.IsEnd(const InStr : string) : Boolean;
+ {Return True if string is end of object declaration.}
 begin
   Result := SameText(InStr, 'end');
 end;
 
 
 function TFormConverterBase.GetFmPropName(const InStr : string) : string;
- {Extract form property name from input string.}
+ {Extract form property name from string.}
 begin
   Result := Trim(Copy(InStr, 1, Pos('=', InStr)-1));
 end;
 
 
 function TFormConverterBase.GetFmPropVal(const InStr : string) : string;
- {Extract form property value from input string.}
+ {Extract form property value from string.}
 begin
   Result := Trim(Copy(InStr, Pos('=', InStr)+1, MaxInt));
 end;
 
 
 function TFormConverterBase.CopyAndTrimToLF(var PropVal : string) : string;
- {Return substring up to first line feed or end of string and
+ {Return substring up to first line feed or end of string,
    deleting through first line feed or end of string.}
 var
   LFPos : Integer;
@@ -291,34 +314,10 @@ begin
 end;
 
 
-procedure TFormConverterBase.ParseProp(const PropSpec    : string;
-                                         var DesignProp  : string;
-                                         var InvertVal   : Boolean;
-                                         var PropType    : string;
-                                         var PropDefault : string);
-var
-  TempStr : string;
-begin
-  TempStr := Trim(Copy(PropSpec, Pos(':', PropSpec)+1, MaxInt));
-  DesignProp := Trim(Copy(TempStr, 1, Pos(':', TempStr)-1));
-  InvertVal := False;
-  if Copy(DesignProp, 1, 1) = '!' then  {Reverse meaning of property?}
-    begin
-    DesignProp := Copy(DesignProp, 2, MaxInt);
-    InvertVal := True;
-    end;
-  PropType := Trim(Copy(TempStr, Pos(':', TempStr)+1, MaxInt));
-  PropDefault := '';
-  if Pos(':', PropType) > 0 then  {Has default value?}
-    begin
-    PropDefault := Trim(Copy(PropType, Pos(':', PropType)+1, MaxInt)); 
-    PropType := Trim(Copy(PropType, 1, Pos(':', PropType)-1));
-    end;
-end;  {ParseProp}
-
-
 procedure TFormConverterBase.ReadFormLine(var FmF   : TextFile;
                                           var InStr : string);
+ {Read line from form. If a multi-line property, read
+   additional lines and concatenate.}
 var
   FmPropName     : string;
   FmPropVal      : string;
@@ -386,11 +385,93 @@ begin
         end;
     until DataDone;
     InStr := FmPropName + '=' + FmPropVal;
-    end;
+    end
+
+  else if (Copy(FmPropVal, 1, 1) = '<') or 
+          (Copy(FmPropVal, 1, 1) = '{') then
+    begin  {Not sure what to do with this kind of potentially multi-line 
+             value, so just read to end of value and concatenate lines}
+    FmPropVal := Copy(FmPropVal, 2, MaxInt);
+    if (Copy(FmPropVal, Length(FmPropVal), 1) = '>') or 
+       (Copy(FmPropVal, Length(FmPropVal), 1) = '}') then  {Only one line?}
+      FmPropVal := Copy(FmPropVal, 1, Length(FmPropVal)-1)
+    else  {Value spans more than one line}
+      begin
+      DataDone := False;
+      repeat
+        ReadLn(FmF, InStr);
+        InStr := Trim(InStr);
+        if InStr <> '' then
+          begin
+          if (Copy(InStr, Length(InStr), 1) = '>') or
+             (Copy(InStr, Length(InStr), 1) = '}') then  {End of value?}
+            begin
+            InStr := Copy(InStr, 1, Length(InStr)-1);
+            DataDone := True;
+            end;
+          if FmPropVal <> '' then
+            FmPropVal := FmPropVal + #10;  {Separate lines with line feed}
+          FmPropVal := FmPropVal + InStr;  
+          end;
+      until DataDone;
+      end;
+    InStr := FmPropName + '=' + FmPropVal;
+    end;       
 end;  {ReadFormLine}
 
 
+procedure TFormConverterBase.ParsePropDef(const PropSpec    : string;
+                                            var DesignProp  : string;
+                                            var InvertVal   : Boolean;
+                                            var PropType    : string;
+                                            var PropDefault : string);
+ {If property is for a design control, parse the extra definition
+   information following the mapped-to property name.}
+var
+  TempStr : string;
+begin
+  if Pos(':', PropSpec) = 0 then
+    begin
+    DesignProp := '';
+    InvertVal := False;
+    PropType := '';
+    PropDefault := '';
+    Exit;
+    end;
+  TempStr := Trim(Copy(PropSpec, Pos(':', PropSpec)+1, MaxInt));
+  DesignProp := Trim(Copy(TempStr, 1, Pos(':', TempStr)-1));
+  InvertVal := False;
+  if Copy(DesignProp, 1, 1) = '!' then  {Reverse meaning of property?}
+    begin
+    DesignProp := Copy(DesignProp, 2, MaxInt);
+    InvertVal := True;
+    end;
+  PropType := Trim(Copy(TempStr, Pos(':', TempStr)+1, MaxInt));
+  PropDefault := '';
+  if Pos(':', PropType) > 0 then  {Has default value?}
+    begin
+    PropDefault := Trim(Copy(PropType, Pos(':', PropType)+1, MaxInt)); 
+    PropType := Trim(Copy(PropType, 1, Pos(':', PropType)-1));
+    end;
+end;  {ParsePropDef}
+
+
+function TFormConverterBase.StripPropDef(const ValStr : string) : string;
+ {If property is for a design control, strip the extra definition
+   information and return only the mapped-to property name.}
+var
+  ColonPos : Integer;
+begin
+  ColonPos := Pos(':', ValStr);
+  if ColonPos = 0 then
+    Result := ValStr
+  else
+    Result := Trim(Copy(ValStr, 1, Pred(ColonPos)));
+end;  {StripPropDef}
+
+
 function TFormConverterBase.InputFilesOkay : Boolean;
+ {Return True if input files exist; otherwise, set ErrMsg.}
 var
   FormNum : Integer;
 begin
@@ -414,13 +495,13 @@ begin
     Exit;
     end;
   
-  if Length(FmFileNames) = 0 then
+  if FmFileNames.Count = 0 then
     begin
     ErrMsg := 'No form files have been specified.';
     Exit;
     end;
 
-  for FormNum := 0 to High(FmFileNames) do
+  for FormNum := 0 to FmFileNames.Count-1 do
     begin
     if FmFileNames[FormNum] = '' then
       begin
@@ -477,8 +558,50 @@ end;
 
 
 function TFormConverterBase.IndentStr(LevelNum : Integer) : string;
+ {Return number of spaces to indent for indicated nesting level.}
 begin
   Result := StringOfChar(' ', IndentInc*LevelNum);
+end;
+
+
+
+ {Standalone helper functions}
+function ExtractFileNameWithoutExt(const FileName : string) : string;
+ {Return file name base without its extension.}
+begin
+  Result := ExtractFileName(FileName);
+  Result := Copy(Result, 1, Length(Result)-Length(ExtractFileExt(Result)));
+end;
+
+
+function ExpandFileNameWithCase(const FileName : string) : string;
+ {Return file name expanded and with correct case.}
+{$IFNDEF FPC}
+var
+  MatchFound : TFilenameCaseMatch;
+begin
+  Result := ExpandFileNameCase(FileName, MatchFound);
+{$ELSE}
+begin
+  Result := ExpandFileName(FileName);
+{$ENDIF}
+end;
+
+
+function StripLastDir(const FilePath : string) : string;
+ {Strip last directory name from file path.}
+var
+  CharPos : Integer;
+begin
+  Result := FilePath;
+  for CharPos := Length(Result)-1 downto 1 do
+    begin
+    if Copy(Result, CharPos, 1) = PathDelim then
+      begin
+      Result := Copy(Result, 1, CharPos);
+      Exit;
+      end;
+    end;
 end;
 
 
