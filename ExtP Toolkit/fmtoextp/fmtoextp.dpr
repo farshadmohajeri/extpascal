@@ -27,24 +27,14 @@ uses
 
 const
   ConverterName    = 'FmToExtP';
-  ConverterVersion = '0.1.6';
-  NameSuffix       = '_ext';
+  ConverterVersion = '0.1.7';
 
 var
   CfgFileName      : string;
-  CustCfgFileName  : string;
-  FmFileNames      : TFmFileNames;
-  ProjSrcFileName  : string;
-  Options          : TFmToExtPOptions;
-  AddSuffixToNames : Boolean;
-  ReformatErrMsg   : Boolean;
-  ParamNum         : Integer;
-  FileExt          : string;
-{$IFNDEF FPC}
-  MatchFound       : TFilenameCaseMatch;
-{$ENDIF}
-  ProjFileName     : string;
   Converter        : TFormConverterExtPascal;
+  CmdParams        : array of string;
+  ParamNum         : Integer;
+  ProjInFileName   : string;
 
 const
   FpcErrLastLine = 'Fatal: Form conversion aborted';
@@ -69,24 +59,30 @@ begin
     WriteLn(ConverterName, ', version ', ConverterVersion,
             ' - converts Delphi or Lazarus form files to ExtPascal.');
     WriteLn;
-    WriteLn('Usage: ', LowerCase(ConverterName), ' [mainform|projectfile] [otherforms] [programfile] [switches]');
-    WriteLn('(where form is .dfm or .lfm, project is .dpr or .lpi, program is .dpr or .lpr)');
+    WriteLn('Usage: ', LowerCase(ConverterName), ' [projectfile|mainform] [otherforms] [programfile] [switches]');
+    WriteLn(' (where input project is .dpr or .lpi, input forms are .dfm or .lfm,');
+    WriteLn('  and output program is .dpr or .lpr)');
     WriteLn;
     WriteLn('Switches:');
-    WriteLn('  -c= Use custom configuration file in addition to default.');
-    WriteLn('  -e  Add "', NameSuffix, '" to names of all converted files.');
-    WriteLn('  -r  Reformat any error message so Lazarus will display it.');
+    WriteLn('  -c=  Specify custom configuration file to use in addition to standard file.');
+    WriteLn('  -e   Add "', DefExtPNameSuffix, '" to names of all converted files.');
+    WriteLn('  -e=  Specify suffix to add to names of all converted files.');
+    WriteLn('  -m=  Specify maximum idle minutes for session threads (default ', DefExtPMaxIdleMinutes, ').');
+    Writeln('  -p=  Specify application''s TCP/IP port number (default ', DefExtPPortNum, ').');
+    WriteLn('  -r   Reformat any error message so Lazarus will display it.');
+    WriteLn('  -t=  Specify app''s title for browser title bar (default is program name).');
+    WriteLn('  -u   Update previously converted Pascal form units'' class declarations.');
     WriteLn;
     WriteLn('Examples:');
     WriteLn('  ', LowerCase(ConverterName), ' hellomain.dfm helloabout.dfm myproj\hello.dpr -- creates hello.dpr,');
     WriteLn('    appthread.pas, hellomain.pas, hellomain.inc, helloabout.pas and');
     WriteLn('    helloabout.inc in myproj folder from hellomain.dfm and helloabout.dfm.');
     WriteLn;
-    WriteLn('  ', LowerCase(ConverterName), ' hello.lpi -e -- creates hello', NameSuffix, '.lpr, etc. from project .lfm forms');
-    WriteLn('    in same folder, adding "', NameSuffix, '" to file names to make them unique.');
+    WriteLn('  ', LowerCase(ConverterName), ' hello.lpi -e -- creates hello', DefExtPNameSuffix, '.lpr, etc. from project .lfm forms');
+    WriteLn('    in same folder, adding "', DefExtPNameSuffix, '" to file names to make them unique.');
     WriteLn;
     WriteLn('Notes:');
-    WriteLn('  ', ConverterName, ' will look for its configuration data in:');
+    WriteLn('  ', ConverterName, ' will look for its standard configuration data in:');
     WriteLn('    ', CfgFileName);
     WriteLn;
     WriteLn('  The generated Pascal files require open-source ExtPascal units to compile.'); 
@@ -94,130 +90,32 @@ begin
     end;
 
   Converter := TFormConverterExtPascal.Create;
-  SetLength(FmFileNames, 0);
-  ProjSrcFileName := '';
-  Options := [];
-  AddSuffixToNames := False;
-  ReformatErrMsg := False;
-  CustCfgFileName := '';
-  ProjFileName := '';
 
-   {Get names of input form file(s) and Pascal output file from command line}
-  for ParamNum := 1 to ParamCount do
+   {Get names of input form files and Pascal output file from command line}
+  SetLength(CmdParams, ParamCount+1);
+  for ParamNum := 0 to ParamCount do
+    CmdParams[ParamNum] := ParamStr(ParamNum);
+  if not Converter.ParseCmdLine(CmdParams, ProjInFileName) then
     begin
-    if Copy(ParamStr(ParamNum), 1, 1) = '-' then  {Switch on command line?}
-      begin
-      if ParamStr(ParamNum) = '-e' then
-        begin
-        AddSuffixToNames := True;
-        Include(Options, opFmToExtP_AddSuffixToName);
-        end
-      else if ParamStr(ParamNum) = '-r' then
-        begin
-        ReformatErrMsg := True;
-        Include(Options, opFmToExtP_ReformatForLaz);
-        end
-      else if Copy(ParamStr(ParamNum), 1, 3) = '-c=' then
-        CustCfgFileName := Copy(ParamStr(ParamNum), 4, MaxInt);
-      end
-
-    else  {File name on command line}
-      begin
-      FileExt := ExtractFileExt(ParamStr(ParamNum));
-      if SameText(FileExt, DelFormFileExt) or 
-         SameText(FileExt, LazFormFileExt) then  {Form design file?}
-        begin
-        SetLength(FmFileNames, High(FmFileNames)+2);
-{$IFNDEF FPC}
-        FmFileNames[High(FmFileNames)] :=
-         ExpandFileNameCase(ParamStr(ParamNum), MatchFound);
-{$ELSE}
-        FmFileNames[High(FmFileNames)] :=
-         ExpandFileName(ParamStr(ParamNum));
-{$ENDIF}
-        end
-
-      else if SameText(FileExt, LazProjSrcFileExt) then  {Project output file?}
-        ProjSrcFileName := ParamStr(ParamNum)
-
-      else if SameText(FileExt, DelProjSrcFileExt) and
-              (Length(FmFileNames) > 0) then  {Project output, not input file?}
-        ProjSrcFileName := ParamStr(ParamNum)
-
-      else if SameText(FileExt, DelProjSrcFileExt) or {Delphi project src file?}
-              SameText(FileExt, LazProjInfFileExt) then {Laz project info file?}
-        begin
-        ProjFileName := ParamStr(ParamNum);
-        if not Converter.GetFormFiles(ProjFileName, FmFileNames, 
-                                      ProjSrcFileName) then
-          begin
-          if ReformatErrMsg then
-            Write(FpcErrLastLine, ' - ');
-          WriteLn(Converter.ErrMsg);
-          Converter.Free;
-          Halt;
-          end;
-        end;
-      end;  {File name on command line}
-    end;  {for ParamNum}
-    
-  if High(FmFileNames) < 0 then
-    begin
-    if ReformatErrMsg then
+    if opFmToExtP_ReformatForLaz in Converter.Options then
       Write(FpcErrLastLine, ' - ');
-    WriteLn('Error: No project or form input file specified.');
+    WriteLn(Converter.ErrMsg);
     Converter.Free;
     Halt;
     end;
-    
-   {Base project source code file name on main form file name or Lazarus
-     project info file name if not specified on command line or encountered
-     in Lazarus project info file.}
-  if ProjSrcFileName = '' then
-    begin
-    if ProjFileName = '' then
-      begin
-      ProjSrcFileName :=
-       Copy(FmFileNames[0], 1, 
-            Length(FmFileNames[0]) - Length(ExtractFileExt(FmFileNames[0])));
-      if AddSuffixToNames then
-        ProjSrcFileName := ProjSrcFileName + NameSuffix;
-      ProjSrcFileName := ProjSrcFileName + DelProjSrcFileExt;
-      end
-    else
-      begin
-      ProjSrcFileName := 
-       Copy(ProjFileName, 1, 
-            Length(ProjFileName) - Length(ExtractFileExt(ProjFileName)));
-      if AddSuffixToNames then
-        ProjSrcFileName := ProjSrcFileName + NameSuffix;
-      ProjSrcFileName := ProjSrcFileName + LazProjSrcFileExt; 
-      end;
-    end
-  else
-    begin
-    if AddSuffixToNames then
-      ProjSrcFileName := 
-       Copy(ProjSrcFileName, 1, 
-            Length(ProjSrcFileName) - Length(ExtractFileExt(ProjSrcFileName))) +
-       NameSuffix + ExtractFileExt(ProjSrcFileName);
-    end;
-  
+      
   Converter.CfgFileName := CfgFileName;
-  Converter.CustCfgFileName := CustCfgFileName;
-  Converter.FmFileNames := FmFileNames;
-  Converter.PrjFileName := ProjSrcFileName;
-  Converter.Options := Options;
-  Converter.NameSuffix := NameSuffix;
   Converter.GeneratorName := ConverterName;
   Converter.GeneratorVersion := ConverterVersion;
   if Converter.ConvertForms then
     begin
-    WriteLn('Converted by ', ConverterName, ': ', ProjSrcFileName);
+    WriteLn('Conversion successful to ', 
+            ExcludeTrailingPathDelimiter(
+             ExtractFilePath(Converter.ProgFileName)));
     end
   else
     begin
-    if ReformatErrMsg then
+    if opFmToExtP_ReformatForLaz in Converter.Options then
       Write(FpcErrLastLine, ' - ');
     WriteLn(Converter.ErrMsg);
     end;

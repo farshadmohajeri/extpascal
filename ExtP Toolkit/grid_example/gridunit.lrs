@@ -1,5 +1,3 @@
-{ This is an automatically generated lazarus resource file }
-
 LazarusResources.Add('TGridWindow','FORMDATA',[
   'TPF0'#11'TGridWindow'#10'GridWindow'#4'Left'#3'3'#1#6'Height'#3#144#1#3'Top'
   +#3#172#0#5'Width'#3#138#2#6'Border'#8#5'Plain'#9#5'Title'#6#12'Grid Example'

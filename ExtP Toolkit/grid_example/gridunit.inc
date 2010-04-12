@@ -4,44 +4,45 @@
   OnEsc := JSFunction('');
   Border := False;
   Plain := True;
-  Title := 'Grid Example';
+  Title := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Grid Example');
   Layout := lyAbsolute;
 
   EditGrid := TExtGridEditorGridPanel.Create;
   with EditGrid.AddTo(Items) do
     begin
-    Id := 'EditGrid';
+    Id := 'GridWindow_EditGrid';
     X := 24;
     Height := 304;
     Y := 24;
     Width := 602;
-    AutoExpandColumn := 'CommonCol';
+    AutoExpandColumn := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('GridWindow_CommonCol');
     ClicksToEdit := 1;
     Frame := True;
-    Title := 'Edit Plants?';
+    Title := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Edit Plants?');
+    Store := TExtDataStore.Create;
     with TExtGridColumn.AddTo(Columns) do
       begin
-      Id := 'CommonCol';
+      Id := 'GridWindow_CommonCol';
       Width := 220;
       end;
     with TExtGridColumn.AddTo(Columns) do
       begin
-      Id := 'LightCol';
+      Id := 'GridWindow_LightCol';
       Width := 130;
       end;
     with TExtGridColumn.AddTo(Columns) do
       begin
-      Id := 'PriceCol';
+      Id := 'GridWindow_PriceCol';
       Width := 70;
       end;
     with TExtGridColumn.AddTo(Columns) do
       begin
-      Id := 'AvailDateCol';
+      Id := 'GridWindow_AvailDateCol';
       Width := 95;
       end;
     with TExtGridColumn.AddTo(Columns) do
       begin
-      Id := 'IndoorCol';
+      Id := 'GridWindow_IndoorCol';
       Width := 55;
       end;
     end;
@@ -51,8 +52,8 @@
     Editor := CommonCol;
     with CommonCol do
      begin
-    DataIndex := 'common';
-    Header := 'Common Name';
+    DataIndex := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('common');
+    Header := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Common Name');
      end;
     end;
   with TExtGridColumn(EditGrid.Columns[1]) do
@@ -61,8 +62,8 @@
     Editor := LightCol;
     with LightCol do
      begin
-    DataIndex := 'light';
-    Header := 'Light';
+    DataIndex := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('light');
+    Header := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Light');
     StoreArray := JSArray(
      '"Shade", ' +
      '"Mostly Shady", ' +
@@ -78,8 +79,8 @@
     Editor := PriceCol;
     with PriceCol do
      begin
-    DataIndex := 'price';
-    Header := 'Price';
+    DataIndex := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('price');
+    Header := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Price');
      end;
     end;
   with TExtGridColumn(EditGrid.Columns[3]) do
@@ -88,8 +89,8 @@
     Editor := AvailDateCol;
     with AvailDateCol do
      begin
-    DataIndex := 'availDate';
-    Header := 'Available';
+    DataIndex := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('availDate');
+    Header := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Available');
      end;
     end;
   with TExtGridColumn(EditGrid.Columns[4]) do
@@ -98,8 +99,8 @@
     Editor := IndoorCol;
     with IndoorCol do
      begin
-    DataIndex := 'indoor';
-    Header := 'Indoor?';
+    DataIndex := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('indoor');
+    Header := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Indoor?');
      end;
     end;
 

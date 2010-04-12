@@ -24,41 +24,64 @@ uses
   IniFiles,
   Fm2Base;
 
+const  {Defaults}
+  DefExtPPortNum        = 2014;
+  DefExtPMaxIdleMinutes = 30;
+  DefExtPNameSuffix     = '_ext';
+
 type
   TFmToExtPOption  = (opFmToExtP_AddSuffixToName,
-                      opFmToExtP_ReformatForLaz);
+                      opFmToExtP_ReformatForLaz,
+                      opFmToExtP_UpdatePasFiles);
   TFmToExtPOptions = set of TFmToExtPOption;
+
 
   TFormConverterExtPascal = class(TFormConverterBase)
   private
-    FPortNum        : Integer;  {Port for generated apps}
-    FMaxIdleMinutes : Integer;  {Number of idle minutes before app quits}
+    FAppTitle       : string;   {Title for application}
+    FPortNum        : Word;     {Port for generated apps}
+    FMaxIdleMinutes : Word;     {Number of idle minutes before app quits}
     FOptions        : TFmToExtPOptions;  {Conversion options}
     FNameSuffix     : string;   {Add to file names with AddSuffixToName option}
 
   protected
+     {Methods for working with form files}
     function ConvertValue(const ValStr       : string;
                           const FmPropName   : string;
+                          const FormObjName  : string;
                           const ExtClassName : string;
                           const ExtPropName  : string) : string;
     function GetAncestorName(const FormClassName : string) : string;
-    function GetExtPropName(const ValStr : string) : string;
+    function IsGridColumn(const FmClassName : string) : Boolean;
+
+     {Methods for working with config files}
     procedure ReadClassProps(    CfgF        : TMemIniFile;
                                  CustCfgF    : TMemIniFile;
                              var FmClassName : string;
                                  ClassProps  : TStringList);
-    function IsEventProp(const PropSpec : string) : Boolean;
-    function IsGridColumn(const FmClassName : string) : Boolean;
-    function Convert : Boolean;
+    function IsEventProp(const FmPropName : string;
+                         const PropSpec   : string) : Boolean;
+    function UpdatePasFile(const UnitFileName : string;
+                                 Declarations : TStringList) : Boolean;
+    procedure OutputFpcCfgFile;
+    procedure OutputAuxProjectFiles;
+
+    function DoConvert : Boolean;
 
   public
-    property PortNum : Integer read FPortNum write FPortNum;
-    property MaxIdleMinutes : Integer read FMaxIdleMinutes write FMaxIdleMinutes;
+    property AppTitle : string read FAppTitle write FAppTitle;
+    property PortNum : Word read FPortNum write FPortNum;
+    property MaxIdleMinutes : Word read FMaxIdleMinutes write FMaxIdleMinutes;
     property Options : TFmToExtPOptions read FOptions write FOptions;
     property NameSuffix : string read FNameSuffix write FNameSuffix;
 
     constructor Create;
     function ConvertForms : Boolean;
+    function AddSuffixToFileName(const FileName : string) : string;
+    function ParseCmdLine(    CmdParams      : array of string;
+                          var ProjInFileName : string) : Boolean; 
+    function GetUnmappedClasses(UnmappedClasses : TStringList;
+                                CfgClasses      : TStringList) : Boolean;
   end;
 
 
@@ -67,15 +90,24 @@ implementation
 constructor TFormConverterExtPascal.Create;
 begin
   inherited;
-  PortNum := 2014;
-  MaxIdleMinutes := 5;
+  AppTitle := '';  {If not set, use program name when generate code}
+  PortNum := DefExtPPortNum;
+  MaxIdleMinutes := DefExtPMaxIdleMinutes;
+  NameSuffix := DefExtPNameSuffix;
 end;
 
 function TFormConverterExtPascal.ConvertValue(const ValStr       : string;
                                               const FmPropName   : string;
+                                              const FormObjName  : string;
                                               const ExtClassName : string;
                                               const ExtPropName  : string) : string;
- {Convert form property value to ExtPascal property value.}
+ {Convert form property value to ExtPascal property value for
+   ExtPascal class and property.
+  ValStr is value from form.
+  FmPropName is form property whose value is being converted.
+  FormObjName is name of form object (not name of object on form).
+  ExtClassName and ExtPropName are ExtPascal class and property
+   being mapped to (from config file).}
 
 type
   THtmlColorRec = record
@@ -193,7 +225,9 @@ begin
 
      {See if quoted string needs to be converted}
     if SameText(FmPropName, 'Font.Name') then
-      Result := '"font-family":"' + Copy(Result, 2, Length(Result)-2) + '"';
+      Result := '"font-family":"' + Copy(Result, 2, Length(Result)-2) + '"'
+    else if SameText(ExtPropName, 'AutoExpandColumn') then
+      Insert(FormObjName + '_', Result, 2);  {Column's unique Id}
     end
     
   else if Pos('color', LowerCase(FmPropName)) > 0 then  {Color property?}
@@ -220,7 +254,8 @@ begin
       begin
       if SameText(FmPropName, 'Font.Color') then
         Result := '"color":"' + Result + '"'
-      else if SameText(FmPropName, 'Color') then
+      else if SameText(FmPropName, 'Color') or  {VCL/LCL property?}
+              SameText(FmPropname, 'BackgroundColor') then  {Design control?}
         Result := '"background-color":"' + Result + '"';
       end;
     end
@@ -258,7 +293,7 @@ begin
     end
 
   else if SameText(ExtPropName, 'ActiveTab') then
-    Result := '''' + ValStr + ''''
+    Result := '''' + FormObjName + '_' + ValStr + ''''  {TExtPanel's unique Id}
      {Convert to string}
 
   else if Copy(ValStr, 1, 1) = '[' then  {Set?}
@@ -306,15 +341,15 @@ begin
 end;  {GetAncestorName}
 
 
-function TFormConverterExtPascal.GetExtPropName(const ValStr : string) : string;
-var
-  ColonPos : Integer;
+function TFormConverterExtPascal.IsGridColumn(const FmClassName : string) : Boolean;
+ {Return True if class is a grid design control class or 
+   a mapped-from Orpheus class.}
 begin
-  ColonPos := Pos(':', ValStr);
-  if ColonPos = 0 then
-    ColonPos := Succ(Length(ValStr));
-  Result := Trim(Copy(ValStr, 1, Pred(ColonPos)));
-end;  {GetExtPropName}
+  Result := ((Length(FmClassName) > 5) and
+             SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid')) or
+            SameText(Copy(FmClassName, 1, 6), 'TOvcTC') or
+            SameText(Copy(FmClassName, 1, 6), 'TO32TC');
+end;
 
 
 procedure TFormConverterExtPascal.ReadClassProps(    CfgF        : TMemIniFile;
@@ -328,17 +363,17 @@ procedure TFormConverterExtPascal.ReadClassProps(    CfgF        : TMemIniFile;
    as well as substitute similar standard classes for custom classes
    and/or override some of the standard properties.}
 var
-  SubClassName : string;
-  PropIdx      : Integer;
+  SubstClassName : string;
+  PropIdx        : Integer;
 begin
   if Assigned(CustCfgF) then  {First look for class def in custom config file?}
     begin
-    SubClassName := CustCfgF.ReadString(FmClassName, 'Class', '');
-    if SubClassName <> '' then  {Class defined in custom config file?}
+    SubstClassName := CustCfgF.ReadString(FmClassName, 'Class', '');
+    if SubstClassName <> '' then  {Class defined in custom config file?}
       begin
-      if CfgF.ValueExists(SubClassName, 'Class') then  {And in standard?}
+      if CfgF.ValueExists(SubstClassName, 'Class') then  {And in standard?}
         begin
-        CfgF.ReadSectionValues(SubClassName, ClassProps);
+        CfgF.ReadSectionValues(SubstClassName, ClassProps);
         for PropIdx := 0 to ClassProps.Count-1 do
           begin  {Check if any props overridden in custom config file}
           if (not SameText(ClassProps.Names[PropIdx], 'Class')) and
@@ -350,7 +385,7 @@ begin
                Workaround here is just to assign key-value pair with blank 
                value directly to string in list.}
           end;
-        FmClassName := SubClassName;  {Replace with class to use}
+        FmClassName := SubstClassName;  {Replace with class to use}
         end
       else  {Not defined in standard config file, so use custom class def}
         CustCfgF.ReadSectionValues(FmClassName, ClassProps);
@@ -363,7 +398,9 @@ begin
 end;  {ReadClassProps}
 
 
-function TFormConverterExtPascal.IsEventProp(const PropSpec : string) : Boolean;
+function TFormConverterExtPascal.IsEventProp(const FmPropName : string;
+                                             const PropSpec   : string) : Boolean;
+ {Return True if property is an event.}
 var
   DesignProp  : string;
   InvertVal   : Boolean;
@@ -371,25 +408,379 @@ var
   PropDefault : string;
 begin
   Result := False;
-  ParseProp(PropSpec, DesignProp, InvertVal, PropType, PropDefault);
-  if (Length(PropType) > 5) and
-     SameText('Event', Copy(PropType, Length(PropType)-4, 5)) then
-    Result := True;
+  if SameText(Copy(FmPropName, 1, 2), 'On') then
+    Result := True  {Assume normal VCL/LCL property in form}
+  else
+    begin  {Check if design property, whose type ends with "Event"}
+    ParsePropDef(PropSpec, DesignProp, InvertVal, PropType, PropDefault);
+    if (Length(PropType) > 5) and
+       SameText('Event', Copy(PropType, Length(PropType)-4, 5)) then
+      Result := True;
+    end;
 end;  {IsEventProp}
 
 
-function TFormConverterExtPascal.IsGridColumn(const FmClassName : string) : Boolean;
+function TFormConverterExtPascal.UpdatePasFile(const UnitFileName : string;
+                                                     Declarations : TStringList) : Boolean;
+ {Update previously converted Pascal form unit's class declaration
+   with any new components or event handlers from input form.
+  Note: For now assuming the declaration does not contain lines
+   excluded via conditionals or multi-line comments.}
+var
+  HasChanged  : Boolean;
+  InF         : TextFile;
+  OutF        : TextFile;
+  OutFileName : string;
+  FoundBreak  : Boolean;
+  InStr       : string;
+  WrkStr      : string;
+  Idx         : Integer;
+  ColonPos    : Integer;
+  
+  function GetStrippedLine : string;
+  begin
+    Result := Trim(InStr);
+    if Copy(Result, 1, 2) = '//' then  {Line commented out?}
+      Result := ''
+    else if (Copy(Result, 1, 1) = '{') and
+            (Pos('}', Result) > 0) then  {Line contains comment?}
+      Result := Copy(Result, Pos('}', Result)+1, MaxInt)  {Remove comment}
+    else if (Copy(Result, 1, 2) = '(*') and
+            (Pos('*)', Result) > 0) then  {Line contains comment?}
+      Result := Copy(Result, Pos('*)', Result)+2, MaxInt);  {Remove comment}
+    Result := StringReplace(Result, ' ', '', [rfReplaceAll]);  {Remove spaces}
+  end;
+  
 begin
-  Result := ((Length(FmClassName) > 5) and
-             SameText(Copy(FmClassName, Length(FmClassName)-4, 5), '_Grid')) or
-            SameText(Copy(FmClassName, 1, 6), 'TOvcTC') or
-            SameText(Copy(FmClassName, 1, 6), 'TO32TC');
-end;
+  Result := False;
+  HasChanged := False;
+  if not FileExists(UnitFileName) then
+    Exit;
+  AssignFile(InF, UnitFileName);
+  Reset(InF);
+  OutFileName := ChangeFileExt(UnitFileName, '.extp_cvt.tmp');
+  AssignFile(OutF, OutFileName);
+  Rewrite(OutF);
+  
+  try
+     {Look for class declaration}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      WrkStr := GetStrippedLine;
+      if SameText(Copy(WrkStr, 1, Length(Declarations[0])), Declarations[0]) then
+        begin
+        FoundBreak := True;
+        Break;
+        end;
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Look for end of component field declarations. Assume for now that
+       this is end of class declaration, first method declaration, 
+       or start of private etc. section.}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WrkStr := GetStrippedLine;
+      if WrkStr <> '' then
+        begin
+        if (Copy(WrkStr, 1, 4) = 'end;') or
+           SameText(Copy(WrkStr, 1, 8), 'function') or
+           SameText(Copy(WrkStr, 1, 9), 'procedure') or
+           (Pos(';', WrkStr) = 0) then
+          begin
+          FoundBreak := True;
+          Break;
+          end;
+        Idx := Declarations.IndexOf(Copy(WrkStr, 1, Pos(';', WrkStr)));
+        if Idx >= 0 then
+          Declarations.Delete(Idx);
+        end;
+      WriteLn(OutF, InStr);
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Add any component fields that were not found in class declaration}
+    for Idx := 1 to Declarations.Count-1 do
+      begin
+      ColonPos := Pos(':', Declarations[Idx]);
+      if ColonPos > 0 then
+        begin
+        WriteLn(OutF, '    ', 
+                Copy(Declarations[Idx], 1, ColonPos-1),
+                ' : ', Copy(Declarations[Idx], ColonPos+1, MaxInt));
+        HasChanged := True;
+        end;
+      end;
+  
+    if SameText(Copy(WrkStr, 1, 8), 'function') or
+       SameText(Copy(WrkStr, 1, 9), 'procedure') then
+      begin  {Continue looking for end of method declarations}
+      while not Eof(InF) do
+        begin
+        if FoundBreak then
+          FoundBreak := False  {Process last-read method declaration}
+        else
+          ReadLn(InF, InStr);
+        WrkStr := GetStrippedLine;
+        if WrkStr <> '' then
+          begin
+          if (Copy(WrkStr, 1, 4) = 'end;') or
+             (Pos(';', WrkStr) = 0) then
+            begin
+            FoundBreak := True;
+            Break;
+            end;
+          Idx := Declarations.IndexOf(Copy(WrkStr, 1, Pos(';', WrkStr)));
+          if Idx >= 0 then
+            Declarations.Delete(Idx);
+          end;
+        WriteLn(OutF, InStr);
+        end;
+      if not FoundBreak then
+        Exit;
+      end;
+      
+     {Add any event handlers that were not found in class declaration}
+    for Idx := 1 to Declarations.Count-1 do
+      begin
+      if Pos(':', Declarations[Idx]) = 0 then
+        begin
+        WriteLn(OutF, '    procedure ', Copy(Declarations[Idx], 10, MaxInt));
+        HasChanged := True;
+        end;
+      end;
+    WriteLn(OutF, InStr);
+
+     {Look for end of main body of code}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WrkStr := GetStrippedLine;
+      if SameText(Copy(WrkStr, 1, 4), 'end.') or
+         SameText(Copy(WrkStr, 1, 14), 'initialization') or
+         SameText(Copy(WrkStr, 1, 12), 'finalization') then
+        begin
+        FoundBreak := True;
+        Break;
+        end;
+      WriteLn(OutF, InStr);
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Output stub event handlers that were added to class declaration}
+    for Idx := 1 to Declarations.Count-1 do
+      begin
+      if Pos(':', Declarations[Idx]) = 0 then
+        begin
+        WriteLn(OutF, 'procedure ', Declarations.Names[0], '.',
+                      Copy(Declarations[Idx], 10, MaxInt));
+        WriteLn(OutF, 'begin');
+        WriteLn(OutF, 'end;');
+        WriteLn(OutF);
+        HasChanged := True;
+        end;
+      end;
+    WriteLn(OutF, InStr);
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      end;  
+    Result := True;
+    
+  finally
+    CloseFile(InF);
+    CloseFile(OutF);
+    if (not Result) or (not HasChanged) then  {Exited above or nothing added?}
+      DeleteFile(OutFileName)
+    else
+      begin
+      Result := RenameFile(UnitFileName, 
+                           ChangeFileExt(UnitFileName, '.extp_cvt.bak'));
+      if Result then  {Successfully renamed old file?}
+        begin
+        Result := RenameFile(OutFileName, UnitFileName);
+        if Result then  {Successfully renamed new file?}
+          DeleteFile(ChangeFileExt(UnitFileName, '.extp_cvt.bak'));
+        end;
+      end;
+  end;
+end;  {UpdatePasFile}
 
 
-function TFormConverterExtPascal.Convert : Boolean;
+procedure TFormConverterExtPascal.OutputFpcCfgFile;
+  {If converter is run from Laz IDE, call this method to create 
+    a little FPC config file. This file a way to signal to FPC 
+    to compile with runtime units, not design control units.}
+var
+  OutF : TextFile;
+begin
+  if not CreateOutputFile(
+          OutF, ExtractFilePath(ProgFileName) + 'extpascal.cfg', True) then
+    Exit;
+  WriteLn(OutF, 
+          '#  Tell FPC to compile with ExtPascal runtime units, rather');
+  WriteLn(OutF, 
+          '#   than ExtP_Design_Ctrls unit that Lazarus IDE sees.');
+  WriteLn(OutF, 
+          '-dUseRuntime');
+  WriteLn(OutF);
+  WriteLn(OutF, 
+          '#  You can put other FPC switches in this file, although it''s');
+  WriteLn(OutF,
+          '#   probably better to put them in the .lpi file. However, don''t');
+  WriteLn(OutF,
+          '#   put the above define in the .lpi file or it will confuse');
+  WriteLn(OutF,
+          '#   Lazarus when working with the ExtPascal design controls.');
+  WriteLn(OutF);
+  CloseFile(OutF);
+end;  {OutputFpcCfgFile}
+
+
+procedure TFormConverterExtPascal.OutputAuxProjectFiles;
+ {Create minimal Lazarus project info file and, on Windows
+   if converted project has Delphi program file, a minimal
+   Delphi project options file.}
+var
+  ExtPascalPath : string;
+  OutFileName   : string;
+  OutF          : TextFile;
+  FormNum       : Integer;
+  UnitFileName  : string;
+begin
+  ExtPascalPath := ExtractFilePath(ExpandFileName(ParamStr(0)));
+   {Note ParamStr(0) may not be expanded on non-Windows}
+{$IFDEF DARWIN}
+  if Pos('.app/', ExtPascalPath) > 0 then  {Assume inside app bundle?}
+    ExtPascalPath := StripLastDir(StripLastDir(StripLastDir(ExtPascalPath)));
+{$ENDIF}
+  ExtPascalPath := StripLastDir(StripLastDir(ExtPascalPath));
+   {Assume ExtPascal source is two levels up from converter}
+   
+{$IFDEF MSWINDOWS}
+  if SameText(ExtractFileExt(ProgFileName), DelProjSrcFileExt) then
+    begin  {Create stub Delphi options file}
+    OutFileName := 
+     ChangeFileExt(AddSuffixToFileName(ProgFileName), DelOptionsFileExt);
+    if not CreateOutputFile(OutF, OutFileName, True) then
+      Exit;
+    WriteLn(OutF, '[Compiler]');
+    WriteLn(OutF, 'J=1');
+    WriteLn(OutF, 'Q=1');
+    WriteLn(OutF, 'R=1');
+    WriteLn(OutF, '[Directories]');
+    WriteLn(OutF, 'SearchPath=', ExtPascalPath);
+    WriteLn(OutF, 'Conditionals=DEBUGJS');
+    CloseFile(OutF);
+    end;
+{$ENDIF}
+
+  OutFileName := 
+   ChangeFileExt(AddSuffixToFileName(ProgFileName), LazProjInfFileExt);
+  if not CreateOutputFile(OutF, OutFileName, True) then
+    Exit;
+    
+  WriteLn(OutF, '<?xml version="1.0"?>');
+  WriteLn(OutF, '<CONFIG>');
+  WriteLn(OutF, '  <ProjectOptions>');
+  WriteLn(OutF, '    <Version Value="7"/>');
+  WriteLn(OutF, '    <General>');
+  WriteLn(OutF, '      <Flags>');
+  WriteLn(OutF, '        <MainUnitHasCreateFormStatements Value="False"/>');
+  WriteLn(OutF, '        <MainUnitHasTitleStatement Value="False"/>');
+  WriteLn(OutF, '        <LRSInOutputDirectory Value="False"/>');
+  WriteLn(OutF, '      </Flags>');
+  WriteLn(OutF, '      <MainUnit Value="0"/>');
+  WriteLn(OutF, '      <TargetFileExt Value=""/>');
+  WriteLn(OutF, '      <UseAppBundle Value="False"/>');
+  WriteLn(OutF, '      <ActiveEditorIndexAtStart Value="0"/>');
+  WriteLn(OutF, '    </General>');
+  WriteLn(OutF, '    <RunParams>');
+  WriteLn(OutF, '      <local>');
+  WriteLn(OutF, '        <FormatVersion Value="1"/>');
+  WriteLn(OutF, '        <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T ''Lazarus Run Output'' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>');
+  WriteLn(OutF, '      </local>');
+  WriteLn(OutF, '    </RunParams>');
+  WriteLn(OutF, '    <Units Count="', FmFileNames.Count+1, '">');
+  WriteLn(OutF, '      <Unit0>');
+  WriteLn(OutF, '        <Filename Value="', ExtractFileName(AddSuffixToFileName(ProgFileName)), '"/>');
+  WriteLn(OutF, '        <IsPartOfProject Value="True"/>');
+  WriteLn(OutF, '        <UnitName Value="', ExtractFileNameWithoutExt(AddSuffixToFileName(ProgFileName)), '"/>');
+  WriteLn(OutF, '        <CursorPos X="1" Y="1"/>');
+  WriteLn(OutF, '        <TopLine Value="1"/>');
+  WriteLn(OutF, '        <EditorIndex Value="0"/>');
+  WriteLn(OutF, '        <UsageCount Value="20"/>');
+  WriteLn(OutF, '        <Loaded Value="True"/>');
+  WriteLn(OutF, '        <SyntaxHighlighter Value="Delphi"/>');
+  WriteLn(OutF, '      </Unit0>');
+
+  for FormNum := 0 to FmFileNames.Count-1 do  {Add converted forms units}
+    begin
+    UnitFileName := 
+     ExtractFilePath(ProgFileName) + 
+     ExtractFileNameWithoutExt(AddSuffixToFileName(FmFileNames[FormNum])) + 
+     PasAltFileExt;  {See if alternate extension used}
+    if not FileExists(UnitFileName) then  {Okay to assume normal extension?}
+      UnitFileName := ChangeFileExt(UnitFileName, PasFileExt);
+    WriteLn(OutF, '      <Unit', FormNum+1, '>');
+    WriteLn(OutF, '        <Filename Value="', ExtractFileName(UnitFileName), '"/>');
+    WriteLn(OutF, '        <IsPartOfProject Value="True"/>');
+    WriteLn(OutF, '        <UnitName Value="', ExtractFileNameWithoutExt(UnitFileName), '"/>');
+    WriteLn(OutF, '        <CursorPos X="1" Y="1"/>');
+    WriteLn(OutF, '        <TopLine Value="1"/>');
+    WriteLn(OutF, '        <EditorIndex Value="', FormNum+1, '"/>');
+    WriteLn(OutF, '        <UsageCount Value="20"/>');
+    WriteLn(OutF, '        <Loaded Value="True"/>');
+    WriteLn(OutF, '        <SyntaxHighlighter Value="Delphi"/>');
+    WriteLn(OutF, '      </Unit', FormNum+1, '>');
+    end;
+
+  WriteLn(OutF, '    </Units>');
+  WriteLn(OutF, '  </ProjectOptions>');
+  WriteLn(OutF, '  <CompilerOptions>');
+  WriteLn(OutF, '    <Version Value="8"/>');
+  WriteLn(OutF, '    <SearchPaths>');
+  WriteLn(OutF, '      <OtherUnitFiles Value="', ExtPascalPath, '"/>');
+  WriteLn(OutF, '      <LCLWidgetType Value="nogui"/>');
+  WriteLn(OutF, '    </SearchPaths>');
+  WriteLn(OutF, '    <Parsing>');
+  WriteLn(OutF, '      <SyntaxOptions>');
+  WriteLn(OutF, '        <SyntaxMode Value="Delphi"/>');
+  WriteLn(OutF, '        <CStyleOperator Value="False"/>');
+  WriteLn(OutF, '        <AllowLabel Value="False"/>');
+  WriteLn(OutF, '        <CPPInline Value="False"/>');
+  WriteLn(OutF, '        <CStyleMacros Value="True"/>');
+  WriteLn(OutF, '      </SyntaxOptions>');
+  WriteLn(OutF, '    </Parsing>');
+  WriteLn(OutF, '    <CodeGeneration>');
+  WriteLn(OutF, '      <Checks>');
+  WriteLn(OutF, '        <RangeChecks Value="True"/>');
+  WriteLn(OutF, '        <OverflowChecks Value="True"/>');
+  WriteLn(OutF, '      </Checks>');
+  WriteLn(OutF, '    </CodeGeneration>');
+  WriteLn(OutF, '    <Other>');
+  WriteLn(OutF, '      <CustomOptions Value="-dDEBUGJS"/>');
+  WriteLn(OutF, '    </Other>');
+  WriteLn(OutF, '  </CompilerOptions>');
+  WriteLn(OutF, '</CONFIG>');
+
+  CloseFile(OutF);
+end;  {OutputAuxProjectFiles}
+
+
+function TFormConverterExtPascal.DoConvert : Boolean;
  {Using mappings in CfgFileName, converts FmFileNames form file(s) to
-   PrjFileName ("program" file) and units based on FmFileNames. 
+   ProgFileName ("program" file) and units based on FmFileNames. 
    If error, returns False and error message in ErrMsg property.
   If GeneratorName is non-blank, GeneratorName and GeneratorVersion
    are indicated in comments at the top of output code file for 
@@ -424,10 +815,12 @@ var
   CustProps         : TStringList;
   GridColIndexes    : TStringList;
   JsLibs            : TStringList;
+  Declarations      : TStringList;
   UnitName          : string;
   UnitFileName      : string;
   IncFileName       : string;
   IncIsOkay         : Boolean;
+  PasIsOkay         : Boolean;
   IsDfm             : Boolean;
   FormHeight        : Integer;
   FormWidth         : Integer;
@@ -440,11 +833,14 @@ var
   ExtPropName       : string;
   CheckDefaults     : Boolean;
   StyleProps        : string;
+  BodyStyleProps    : string;
   DefPropIdx        : Integer;
   DefPropStr        : string;
   IgnoreObj         : array [1..MaxNestedObjs] of Boolean;
+  VertAdjust        : array [1..MaxNestedObjs] of Integer;
   ItemStrCnt        : Integer;
   GridColIdx        : Integer;
+  LineBreak         : Boolean;
   ColWidth          : string;
   TableName         : string;
   JsLibIdx          : Integer;
@@ -455,18 +851,15 @@ begin
   if not InputFilesOkay then
     Exit;
 
-   {Create Pascal program file}
-  if not CreateOutputFile(PasF, PrjFileName, True) then
-    Exit;
+  if not CreateOutputFile(PasF, AddSuffixToFileName(ProgFileName), True) then
+    Exit; 
 
-  TargetPath := ExtractFilePath(PrjFileName);
-  ProgName := ExtractFileName(PrjFileName);
-  ProgName := Copy(ProgName, 1,
-                   Length(ProgName) - Length(ExtractFileExt(ProgName)));
+   {Create Pascal program file}
+  TargetPath := ExtractFilePath(ProgFileName);
+  ProgName := ExtractFileNameWithoutExt(AddSuffixToFileName(ProgFileName));
 
   ThreadClassName := 'AppThread';
-  ThreadFileName := TargetPath + LowerCase(ThreadClassName);
-  ThreadFileName := ThreadFileName + PasFileExt;
+  ThreadFileName := TargetPath + LowerCase(ThreadClassName) + PasFileExt;
   ThreadClassName := 'T' + ThreadClassName;
 
   OutputDateTime(PasF);
@@ -491,18 +884,22 @@ begin
   WriteLn(PasF, '{$ENDIF}');
   WriteLn(PasF);
   WriteLn(PasF, 'const');
+  Write(PasF, '  AppTitle = ''');
+  if AppTitle = '' then
+    Write(PasF, ProgName)
+  else
+    Write(PasF, AppTitle);
+  WriteLn(PasF, ''';');
   WriteLn(PasF, '  Port = ', PortNum, ';');
   WriteLn(PasF, '  MaxIdleMinutes = ', MaxIdleMinutes, ';');
   WriteLn(PasF);
   WriteLn(PasF, 'begin');
   WriteLn(PasF, '{$IFNDEF WebServer}');
-  WriteLn(PasF, '  Application := TFCGIApplication.Create(''',
-                ProgName, ''', ', ThreadClassName, 
-                ', Port, MaxIdleMinutes);');
+  WriteLn(PasF, '  Application := TFCGIApplication.Create(AppTitle, ',
+                ThreadClassName, ', Port, MaxIdleMinutes);');
   WriteLn(PasF, '{$ELSE}');
-  WriteLn(PasF, '  Application := TIdExtApplication.Create(''',
-                ProgName, ''', ', ThreadClassName, 
-                ', 80, MaxIdleMinutes);');
+  WriteLn(PasF, '  Application := TIdExtApplication.Create(AppTitle, ',
+                ThreadClassName, ', 80, MaxIdleMinutes);');
   WriteLn(PasF, '{$ENDIF}');
   WriteLn(PasF, '  Application.Run;');
   WriteLn(PasF, 'end.');
@@ -513,7 +910,7 @@ begin
      a new thread file is needed}
   ThrdFileExists := FileExists(ThreadFileName);
   ThrdIsOkay := ThrdFileExists;
-  for FormNum := 0 to High(FmFileNames) do
+  for FormNum := 0 to FmFileNames.Count-1 do
     begin
     if ThrdIsOkay and
        (FileAge(ThreadFileName) < FileAge(FmFileNames[FormNum])) then
@@ -530,15 +927,12 @@ begin
   WriteLn(ThrdF);
   WriteLn(ThrdF, 'uses');
   WriteLn(ThrdF, '  ExtPascal,');
-  for UsesNum := 0 to High(FmFileNames) do
+  for UsesNum := 0 to FmFileNames.Count-1 do
     begin
-    UsesName := ExtractFileName(FmFileNames[UsesNum]);
-    UsesName := Copy(UsesName, 1,
-                     Length(UsesName) - Length(ExtractFileExt(UsesName))); 
-    if opFmToExtP_AddSuffixToName in Options then
-      UsesName := UsesName + NameSuffix;
+    UsesName := 
+     ExtractFileNameWithoutExt(AddSuffixToFileName(FmFileNames[UsesNum]));
     Write(ThrdF, '  ', UsesName);
-    if UsesNum < High(FmFileNames) then
+    if UsesNum < FmFileNames.Count-1 then
       WriteLn(ThrdF, ',')
     else
       WriteLn(ThrdF, ';'); 
@@ -547,7 +941,7 @@ begin
   WriteLn(ThrdF, 'type');
   WriteLn(ThrdF, '  ', ThreadClassName, ' = class(TExtThread)');
   WriteLn(ThrdF, '  public');
-  for UsesNum := 0 to High(FmFileNames) do
+  for UsesNum := 0 to FmFileNames.Count-1 do
     begin
     AssignFile(FmF, FmFileNames[UsesNum]);
     Reset(FmF);
@@ -576,30 +970,37 @@ begin
   CustProps := TStringList.Create;
   GridColIndexes := TStringList.Create;
   JsLibs := TStringList.Create;
+  Declarations := TStringList.Create;
 
 
    {Now generate Pascal form units that create ExtPascal windows (forms)}
-  for FormNum := 0 to High(FmFileNames) do
+  for FormNum := 0 to FmFileNames.Count-1 do
     begin
      {Create Pascal form unit file}
-    UnitName := ExtractFileName(FmFileNames[FormNum]);
-    UnitName := Copy(UnitName, 1,
-                     Length(UnitName) - Length(ExtractFileExt(UnitName)));
-    if opFmToExtP_AddSuffixToName in Options then
-      UnitName := UnitName + NameSuffix;
+    UnitName := 
+     ExtractFileNameWithoutExt(AddSuffixToFileName(FmFileNames[FormNum]));
     UnitFileName := TargetPath + UnitName + PasAltFileExt;  {See if alt used}
     if not FileExists(UnitFileName) then  {Okay to assume normal extension?}
       UnitFileName := ChangeFileExt(UnitFileName, PasFileExt);
-    IncFileName := TargetPath + UnitName + IncFileExt;
+    PasIsOkay := not FileExists(UnitFileName);  {True=will be creating file}
     if not CreateOutputFile(PasF, UnitFileName, True) then
       Exit;
+
+    IncFileName := TargetPath + UnitName + IncFileExt;
     if not FileExists(IncFileName) then
       IncIsOkay := False
-    else  {If form hasn't been modified, don't generate .inc file}
-      IncIsOkay := FileAge(IncFileName) >= FileAge(FmFileNames[FormNum]);
+    else  {If form hasn't been modified and config file(s) not updated,
+            don't generate .inc file}
+      IncIsOkay := (FileAge(IncFileName) >= FileAge(FmFileNames[FormNum])) and
+                   (FileAge(IncFileName) >= FileAge(CfgFileName)) and
+                   ((CustCfgF = nil) or
+                    (FileAge(IncFileName) >= FileAge(CustCfgFileName)));
     if not CreateOutputFile(IncF, IncFileName, IncIsOkay) then
       Exit;
       
+    PasIsOkay := PasIsOkay or IncIsOkay;
+     {If True, don't need to update Pascal unit file's declaration and handlers}
+
     WriteLn(PasF, 'unit ', UnitName, ';');
     WriteLn(PasF);
     WriteLn(PasF, 'interface');
@@ -618,6 +1019,7 @@ begin
     FormHeight := 0;
     FormWidth := 0;
     ObjLevel := 0;
+    Declarations.Clear;
     while not Eof(FmF) do  
       begin
       ReadFormLine(FmF, InStr);
@@ -635,16 +1037,23 @@ begin
           if Assigned(CustCfgF) then
             CustCfgF.ReadSectionValues(FormClassName, CustProps);
           if FormIsInherited then  {Add to uses?}
-            Write(PasF, ', ', CustProps.Values['UnitName']);
+            Write(PasF, ', ', AddSuffixToFileName(CustProps.Values['UnitName']));
           WriteLn(PasF, ';');  {Finish uses}
           WriteLn(PasF);
           WriteLn(PasF);
           WriteLn(PasF, 'type');
           Write(PasF, '  ', FormClassName, ' = class(');
           if CustProps.Values['Class'] = '' then
-            WriteLn(PasF, 'TExtWindow)')
+            begin
+            WriteLn(PasF, 'TExtWindow)');
+            Declarations.Add(FormClassName + '=class(TExtWindow)');
+            end
           else
+            begin
             WriteLn(PasF, CustProps.Values['Class'], ')');
+            Declarations.Add(FormClassName + 
+                             '=class(' + CustProps.Values['Class'] + ')');
+            end;
           end
         else if not ObjIsInherited then  {Okay to declare object?}
           begin
@@ -653,6 +1062,7 @@ begin
           if ExtClassName <> '' then  {Object's class is mapped?}
             begin
             WriteLn(PasF, '    ', ObjName, ' : ', ExtClassName, ';'); 
+            Declarations.Add(ObjName + ':' + ExtClassName + ';');
             if (ClassProps.IndexOfName('SetLibrary') >= 0) and  {Ux library?}
                (JsLibs.IndexOfName(ExtClassName) < 0) then
               JsLibs.Add(ExtClassName + '=' + ClassProps.Values['SetLibrary']);
@@ -721,19 +1131,28 @@ begin
         begin
         FmPropName := GetFmPropName(InStr);
         FmPropVal := GetFmPropVal(InStr);
-        if (SameText(Copy(FmPropName, 1, 2), 'On')) or
-           (IsEventProp(ClassProps.Values[FmPropName])) then  {Event property?}
-          begin
-          ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);
+        if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
+          begin  {Event property}
+          ExtPropName := StripPropDef(ClassProps.Values[FmPropName]);
           if ExtPropName <> '' then  {Is event mapped?}
-            begin
+            begin  {Add event handler declaration to form class}
             Write(PasF, '    procedure ', ObjName);
             if SameText(Copy(FmPropName, 1, 2), 'On') then
-              Write(PasF, Copy(FmPropName, 3, MaxInt))
+              begin
+              Write(PasF, Copy(FmPropName, 3, MaxInt));
+              Declarations.Add('procedure' + 
+                               ObjName + Copy(FmPropName, 3, MaxInt) + ';');
+              end
             else
+              begin
               Write(PasF, FmPropName);
+              Declarations.Add('procedure' + ObjName + FmPropName + ';');
+              end;
             WriteLn(PasF, ';');
 
+             {Also add published event handler declaration to thread class.
+               Note preceding with form object name to make method name 
+               unique across forms.}
             Write(ThrdF, '    procedure ', FormObjName, '_', ObjName);
             if SameText(Copy(FmPropName, 1, 2), 'On') then
               Write(ThrdF, Copy(FmPropName, 3, MaxInt))
@@ -760,15 +1179,12 @@ begin
     Write(PasF, '  ', Copy(ThreadClassName, 2, MaxInt));
     if FormNum = 0 then  {Main form?}
       begin
-      for UsesNum := 1 to High(FmFileNames) do
+      for UsesNum := 1 to FmFileNames.Count-1 do
         begin
-        UsesName := ExtractFileName(FmFileNames[UsesNum]);
-        UsesName := Copy(UsesName, 1,
-                         Length(UsesName) - Length(ExtractFileExt(UsesName))); 
-        if opFmToExtP_AddSuffixToName in Options then
-          UsesName := UsesName + NameSuffix;
+        UsesName := 
+         ExtractFileNameWithoutExt(AddSuffixToFileName(FmFileNames[UsesNum]));
         if (not FormIsInherited) or
-           (not SameText(UsesName, CustProps.Values['UnitName'])) then
+           (not SameText(UsesName, AddSuffixToFileName(CustProps.Values['UnitName']))) then
           begin
           WriteLn(PasF, ',');
           Write(PasF, '  ', UsesName);
@@ -790,6 +1206,7 @@ begin
     ObjLevel := 0;
     CheckDefaults := False;
     StyleProps := '';
+    BodyStyleProps := '';
     while not Eof(FmF) do  
       begin
       ReadFormLine(FmF, InStr);
@@ -804,6 +1221,12 @@ begin
           WriteLn(IncF, IndentStr(ObjLevel),
                   'JSCode(''style:{', StyleProps, '}'');');
           StyleProps := '';
+          end;
+        if BodyStyleProps <> '' then
+          begin
+          WriteLn(IncF, IndentStr(ObjLevel),
+                  'JSCode(''bodyStyle:{', BodyStyleProps, '}'');');
+          BodyStyleProps := '';
           end;
         CheckDefaults := False;
         for DefPropIdx := 0 to DefaultProps.Count-1 do  {Default properties}
@@ -837,6 +1260,7 @@ begin
         if (ExtClassName <> '') and  {Object's class is mapped?}
            IsGridColumn(FmClassName) then  {And it's a grid cell editor?}
           begin  {Column editor control column model already created with grid}
+          VertAdjust[ObjLevel] := 0;
           if GridColIndexes.Values[ObjName] = '' then  {Not part of a grid?}
             begin
             IgnoreObj[ObjLevel] := True;
@@ -869,11 +1293,15 @@ begin
         else if ExtClassName <> '' then  {Object's class is mapped?}
           begin
           IgnoreObj[ObjLevel] := False;
+          VertAdjust[ObjLevel] := 0;
           ExtClassName := ClassProps.Values['Class'];
           if ObjLevel > 1 then
             WriteLn(IncF);  {For readability}
 
-          if ObjLevel > 1 then  {Object on form?}
+          if ObjLevel = 1 then  {Is form?}
+            WriteLn(IncF, IndentStr(ObjLevel), 
+                          'Id := ''', FormObjName, ''';')
+          else  {Object on form}            
             begin
             if not ObjIsInherited then  {Not created in ancestor?}
               WriteLn(IncF, IndentStr(ObjLevel-1), ObjName, 
@@ -881,10 +1309,10 @@ begin
             WriteLn(IncF, IndentStr(ObjLevel-1), 
                           'with ', ObjName, '.AddTo(Items) do');
             WriteLn(IncF, IndentStr(ObjLevel), 'begin');
+            WriteLn(IncF, IndentStr(ObjLevel),  {Make object's ID unique} 
+                          'Id := ''', FormObjName + '_' + ObjName, ''';');
             end;
 
-          WriteLn(IncF, IndentStr(ObjLevel), 
-                        'Id := ''', ObjName, ''';');
 
           if SameText(ExtClassName, 'TExtGridEditorGridPanel') and
             ((not SameText(FmClassName, 'TExtGridEditorGridPanel')) and
@@ -897,7 +1325,7 @@ begin
             WriteLn(IncF, IndentStr(ObjLevel+1),
                           'begin');
             WriteLn(IncF, IndentStr(ObjLevel+1),
-                          'Id := ''', ObjName, '_Col1'';');
+                          'Id := ''', FormObjName + '_' + ObjName, '_Col1'';');
             WriteLn(IncF, IndentStr(ObjLevel+1),
                           'Editor := TExtFormTextField.Create;');
             WriteLn(IncF, IndentStr(ObjLevel+1),
@@ -942,7 +1370,7 @@ begin
             WriteLn(IncF);
             ItemStrCnt := 0;
             repeat
-              InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '');
+              InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '', '');
               for GridColIdx := 0 to GridColIndexes.Count-1 do
                 begin
                 if (Pos('=' + TableName,
@@ -989,31 +1417,29 @@ begin
       else  {Found property}
         begin
         FmPropName := GetFmPropName(InStr);
+        if SameText(FmPropName, 'Font.Color') or
+           SameText(FmPropName, 'Font.Height') or
+           SameText(FmPropName, 'Font.Name') or
+           SameText(FmPropName, 'Font.Style') then
+          FmPropName := 'Font'; {Not individually mapped, so temporarily change}
         FmPropVal := GetFmPropVal(InStr);
 
         ExtPropName := '';
         if (ClassProps.IndexOfName(FmPropName) < 0) or  {Not mapped at all in class?}
-           (GetExtPropName(ClassProps.Values[FmPropName]) <> '') then  {Or non-blank mapping?}
+           (StripPropDef(ClassProps.Values[FmPropName]) <> '') then  {Or non-blank mapping?}
           begin  {Okay to output property if mapped}
-          if SameText(FmPropName, 'Font.Color') or
-             SameText(FmPropName, 'Font.Height') or
-             SameText(FmPropName, 'Font.Name') or
-             SameText(FmPropName, 'Font.Style') then
-            ExtPropName := 'Style'  {Map individual font props to Style}
-          else
-            begin
-            if SameText(ClassProps.Values['IsControl'], 'True') then
-              ExtPropName := ControlProps.Values[FmPropName];  {Try ancestor's}
-            if ExtPropName = '' then
-              ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);  {Use class's}  
-            end;
+          if SameText(ClassProps.Values['IsControl'], 'True') then
+            ExtPropName := ControlProps.Values[FmPropName];  {Try ancestor's}
+          if ExtPropName = '' then
+            ExtPropName := StripPropDef(ClassProps.Values[FmPropName]);  {Use class's}  
           end;
+        FmPropName := GetFmPropName(InStr);  {Restore in case changed above}
+  
 
         if ExtPropName <> '' then  {Is property mapped?}
           begin
-          if (SameText(Copy(FmPropName, 1, 2), 'On')) or
-             (IsEventProp(ClassProps.Values[FmPropName])) then {Event property?}
-            begin
+          if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
+            begin  {Event property}
             Write(IncF, IndentStr(ObjLevel),
                         'On(''', ExtPropName, ''', Ajax(CurrentThread.',
                         FormObjName, '_', ObjName);
@@ -1036,7 +1462,7 @@ begin
               WriteLn(IncF, IndentStr(ObjLevel),
                       ExtPropName, ' := JSArray(');
               repeat
-                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '');
+                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '', '');
                 if ItemStrCnt > 0 then
                   WriteLn(IncF, ', '' +');
                 Write(IncF, IndentStr(ObjLevel), 
@@ -1048,14 +1474,20 @@ begin
             else if SameText(ExtClassName, 'TExtFormTextArea') or
                     SameText(ExtClassName, 'TExtFormHtmlEditor') then
               begin
+              LineBreak := False;
               Write(IncF, IndentStr(ObjLevel),
                     ExtPropName, ' := ');
               repeat
-                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '');
+                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '', '');
                 if ItemStrCnt > 0 then
                   begin
                   if SameText(ExtClassName, 'TExtFormTextArea') then
-                    WriteLn(IncF, ' + ''\n'' +')  {Start new line in code/text}
+                    begin
+                    Write(IncF, ' +');
+                    if LineBreak then
+                      Write(IncF, ' ''\n'' + ');  {Start new line in text}
+                    WriteLn(IncF);  {Start new line in code}
+                    end
                   else
                     WriteLn(IncF, ' +');  {Start new line only in code}
                      {Note assuming HTML shouldn't have line breaks unless
@@ -1063,6 +1495,9 @@ begin
                   Write(IncF, IndentStr(ObjLevel), ' ');
                   end;
                 Write(IncF, InStr);
+                LineBreak := Copy(InStr, Length(InStr)-1, 2) <> ' ''';
+                 {If line ends with space, assume it should be wrapped.
+                  //TODO: Set to True if WordWrap is False.}
                 Inc(ItemStrCnt);
               until FmPropVal = '';
               WriteLn(IncF, ';');
@@ -1070,7 +1505,7 @@ begin
             else if SameText(ExtClassName, 'TExtFormRadioGroup') then
               begin
               repeat
-                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '');
+                InStr := ConvertValue(CopyAndTrimToLF(FmPropVal), '', '', '', '');
                 WriteLn(IncF, IndentStr(ObjLevel),
                               'with TExtFormRadio.AddTo(Items) do');
                 WriteLn(IncF, IndentStr(ObjLevel+1),
@@ -1087,7 +1522,7 @@ begin
 
           else if SameText(ExtPropName, 'Style') then
             begin
-            FmPropVal := ConvertValue(FmPropVal, FmPropName,
+            FmPropVal := ConvertValue(FmPropVal, FmPropName, FormObjName,
                                       ExtClassName, ExtPropName);
             if FmPropVal <> '' then
               begin
@@ -1097,19 +1532,49 @@ begin
               end;
             end
 
+          else if SameText(ExtPropName, 'BodyStyle') then
+            begin
+            FmPropVal := ConvertValue(FmPropVal, FmPropName, FormObjName,
+                                      ExtClassName, ExtPropName);
+            if FmPropVal <> '' then
+              begin
+              if BodyStyleProps <> '' then
+                BodyStyleProps := BodyStyleProps + ',';
+              BodyStyleProps := BodyStyleProps + FmPropVal;
+              end;
+            end
+
           else  {Normal property}
             begin
-            FmPropVal := ConvertValue(FmPropVal, FmPropName,
+            FmPropVal := ConvertValue(FmPropVal, FmPropName, FormObjName,
                                       ExtClassName, ExtPropName);
             if FmPropVal <> '' then
               begin
               if Copy(FmPropVal, 1, 1) = '''' then
                 FmPropVal := 
-                 '{$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}(' + FmPropVal + ')';
+                 '{$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}(' + FmPropVal + ')'
+              else if SameText(ExtPropName, 'Y') and
+                      (ObjLevel > 1) and
+                      (VertAdjust[ObjLevel-1] <> 0) then  {Need to adjust Y?}
+                begin
+                if VertAdjust[ObjLevel-1] > 0 then
+                  FmPropVal := FmPropVal + ' + '
+                else
+                  FmPropVal := FmPropVal + ' - ';
+                FmPropVal := FmPropVal + IntToStr(Abs(VertAdjust[ObjLevel-1]));
+                end;
+
               WriteLn(IncF, IndentStr(ObjLevel), 
                             ExtPropName, ' := ', FmPropVal, ';');
+
+              if SameText(FmClassName, 'TGroupBox') and
+                 SameText(ExtPropName, 'Title') then
+                VertAdjust[ObjLevel] := -15;
+                 {Clunky workaround for ExtJS positioning child controls
+                   relative to top of TExtPanel if no Title, but from 
+                   bottom of title otherwise if present.}
               end;
-            end;
+            end;  {Normal property}
 
           DefPropIdx :=
            DefaultProps.IndexOfName(FmClassName + '.' + ExtPropName);
@@ -1137,7 +1602,7 @@ begin
               WriteLn(IncF, IndentStr(ObjLevel+1),
                             'begin');
               WriteLn(IncF, IndentStr(ObjLevel+1),
-                            'Id := ''', InStr, ''';');
+                            'Id := ''', FormObjName + '_' + InStr, ''';');
               WriteLn(IncF, IndentStr(ObjLevel+1),
                             'Width := ', ColWidth, ';');
               WriteLn(IncF, IndentStr(ObjLevel+1),
@@ -1189,10 +1654,9 @@ begin
         begin
         FmPropName := GetFmPropName(InStr);
         FmPropVal := GetFmPropVal(InStr);
-        if (SameText(Copy(FmPropName, 1, 2), 'On')) or
-           (IsEventProp(ClassProps.Values[FmPropName])) then  {Event property?}
-          begin
-          ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);
+        if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
+          begin  {Event property}
+          ExtPropName := StripPropDef(ClassProps.Values[FmPropName]);
           if ExtPropName <> '' then  {Is event mapped?}
             begin
             Write(PasF, 'procedure ', FormClassName, '.', ObjName);
@@ -1213,6 +1677,11 @@ begin
     CloseFile(PasF);
     CloseFile(IncF);
     CloseFile(FmF);
+
+    if (opFmToExtP_UpdatePasFiles in Options) and (not PasIsOkay) then
+      begin
+      UpdatePasFile(UnitFileName, Declarations);
+      end;
 
     end;  {for FormNum}
 
@@ -1239,7 +1708,7 @@ begin
   WriteLn(ThrdF);
 
    {Now generate published thread handlers that call form event handlers} 
-  for FormNum := 0 to High(FmFileNames) do
+  for FormNum := 0 to FmFileNames.Count-1 do
     begin
     AssignFile(FmF, FmFileNames[FormNum]);
     Reset(FmF);
@@ -1279,10 +1748,9 @@ begin
         begin
         FmPropName := GetFmPropName(InStr);
         FmPropVal := GetFmPropVal(InStr);
-        if (SameText(Copy(FmPropName, 1, 2), 'On')) or
-           (IsEventProp(ClassProps.Values[FmPropName])) then  {Event property?}
-          begin
-          ExtPropName := GetExtPropName(ClassProps.Values[FmPropName]);
+        if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
+          begin  {Event property}
+          ExtPropName := StripPropDef(ClassProps.Values[FmPropName]);
           if ExtPropName <> '' then  {Is event mapped?}
             begin
             Write(ThrdF, 'procedure ', ThreadClassName, '.', 
@@ -1306,6 +1774,7 @@ begin
           end;
         end;
       end;  {while not Eof}
+    CloseFile(FmF);
     end;  {for FormNum}
 
   WriteLn(ThrdF, 'end.');
@@ -1319,49 +1788,212 @@ begin
   CustProps.Free;
   GridColIndexes.Free;
   JsLibs.Free;
+  Declarations.Free;
 
 
   if opFmToExtP_ReformatForLaz in Options then
-    begin
-      {If run from Laz IDE, create little custom config file. This is a way to
-        signal to FPC to compile with runtime unit, not design controls unit.}
-    if not CreateOutputFile(IncF, TargetPath + 'extpascal.cfg', True) then
-      Exit;
-    WriteLn(IncF, 
-            '#  Tell FPC to compile with ExtPascal runtime units, rather');
-    WriteLn(IncF, 
-            '#   than ExtP_Design_Ctrls unit that Lazarus IDE sees.');
-    WriteLn(IncF, 
-            '-dUseRuntime');
-    WriteLn(IncF);
-    WriteLn(IncF, 
-            '#  You can put other FPC switches in this file, although it''s');
-    WriteLn(IncF,
-            '#   probably better to put them in the .lpi file. However, don''t');
-    WriteLn(IncF,
-            '#   put the above define in the .lpi file or it will confuse');
-    WriteLn(IncF,
-            '#   Lazarus when working with the ExtPascal design controls.');
-    WriteLn(IncF);
-    CloseFile(IncF);
-    end;
+    OutputFpcCfgFile;
+
+  OutputAuxProjectFiles;
 
   ErrMsg := '';
   Result := True;
 
-end;  {Convert}
+end;  {DoConvert}
 
 
 function TFormConverterExtPascal.ConvertForms : Boolean;
+ {Public method that calls actual converter method.
+  Trap any exceptions that occur in converter method here.}
 begin
   Result := False;
   ErrMsg := 'Unexpected conversion error';
   try
-    Result := Convert;
+    Result := DoConvert;
   except on E: Exception do
     ErrMsg := ErrMsg + #13#10 + E.Message;
   end;
 end;  {ConvertForms}
+
+
+function TFormConverterExtPascal.AddSuffixToFileName(const FileName : string) : string;
+ {Insert suffix at end of file name base.}
+begin
+  Result := FileName;
+  if opFmToExtP_AddSuffixToName in Options then
+    Result := ExtractFilePath(Result) +
+              ExtractFileNameWithoutExt(Result) + NameSuffix + 
+              ExtractFileExt(Result); 
+end;  {AddSuffixToFileName}
+
+
+function TFormConverterExtPascal.ParseCmdLine(    CmdParams      : array of string;
+                                              var ProjInFileName : string) : Boolean;
+ {Parse command line strings and assign to converter properties. 
+   Also return ProjInFileName if input project was specified.}
+var
+  ProgOutFileName : string;
+  ParamNum        : Integer;
+  FileExt         : string;
+begin 
+  Result := False;
+  ProjInFileName := '';
+  ProgOutFileName := '';
+  for ParamNum := 1 to High(CmdParams) do
+    begin
+    if Copy(CmdParams[ParamNum], 1, 1) = '-' then  {Switch on command line?}
+      begin
+      if (CmdParams[ParamNum] = '-e') or 
+         (Copy(CmdParams[ParamNum], 1, 3) = '-e=') then
+        begin
+        Options := Options + [opFmToExtP_AddSuffixToName];
+        if Length(CmdParams[ParamNum]) > 2 then
+          NameSuffix := 
+           AnsiDequotedStr(Copy(CmdParams[ParamNum], 4, MaxInt), '"');
+        end
+      else if CmdParams[ParamNum] = '-r' then
+        Options := Options + [opFmToExtP_ReformatForLaz]
+      else if Copy(CmdParams[ParamNum], 1, 3) = '-c=' then
+        CustCfgFileName := 
+         ExpandFileNameWithCase(
+          AnsiDequotedStr(Copy(CmdParams[ParamNum], 4, MaxInt), '"'))
+      else if Copy(CmdParams[ParamNum], 1, 3) = '-m=' then
+        MaxIdleMinutes := StrToIntDef(Copy(CmdParams[ParamNum], 4, MaxInt),
+                                      MaxIdleMinutes)
+      else if Copy(CmdParams[ParamNum], 1, 3) = '-p=' then
+        PortNum := StrToIntDef(Copy(CmdParams[ParamNum], 4, MaxInt), PortNum)
+      else if Copy(CmdParams[ParamNum], 1, 3) = '-t=' then
+        AppTitle := AnsiDequotedStr(Copy(CmdParams[ParamNum], 4, MaxInt), '"')
+      else if CmdParams[ParamNum] = '-u' then
+        Options := Options + [opFmToExtP_UpdatePasFiles];
+      end
+
+    else  {File name on command line}
+      begin
+      FileExt := ExtractFileExt(CmdParams[ParamNum]);
+      if SameText(FileExt, DelFormFileExt) or 
+         SameText(FileExt, LazFormFileExt) then  {Form design file?}
+        FmFileNames.Add(ExpandFileNameWithCase(CmdParams[ParamNum]))
+
+      else if SameText(FileExt, LazProjSrcFileExt) then  {Project output file?}
+        ProgOutFileName := ExpandFileNameWithCase(CmdParams[ParamNum])
+
+      else if SameText(FileExt, DelProjSrcFileExt) and
+              (FmFileNames.Count > 0) then  {Project output, not input file?}
+        ProgOutFileName := ExpandFileNameWithCase(CmdParams[ParamNum])
+
+      else if SameText(FileExt, DelProjSrcFileExt) or {Delphi project src file?}
+              SameText(FileExt, LazProjInfFileExt) then {Laz project info file?}
+        begin
+        ProjInFileName := ExpandFileNameWithCase(CmdParams[ParamNum]);
+        if not GetFormFiles(ProjInFileName, FmFileNames, ProgOutFileName) then
+          Exit;
+        end;
+      end;  {File name on command line}
+    end;  {for ParamNum}
+
+  if FmFileNames.Count = 0 then
+    begin
+    ErrMsg := 'Error: No project or form input file specified.';
+    Exit;
+    end;
+
+   {Base name of project source code file to create on main form file name 
+     or Lazarus project info file name if not specified on command line or 
+     encountered in Lazarus project info file.}
+  ProgFileName := ProgOutFileName;
+  if ProgFileName = '' then
+    begin
+    if ProjInFileName = '' then  {Base on main form file name?}
+      ProgFileName := ChangeFileExt(FmFileNames[0], DelProjSrcFileExt)
+    else
+      ProgFileName := ChangeFileExt(ProjInFileName, LazProjSrcFileExt);
+    end;
+
+  Result := True;
+end;  {ParseCmdLine}
+
+
+function TFormConverterExtPascal.GetUnmappedClasses(UnmappedClasses : TStringList;
+                                                    CfgClasses      : TStringList) : Boolean;
+ {Return list of classes used in forms that are not mapped 
+   in standard config file and list of classes from config
+   file that unmapped classes can be mapped to.}
+var
+  CfgF           : TMemIniFile;
+  ClassProps     : TStringList;
+  FormNum        : Integer;
+  FmF            : TextFile;
+  InStr          : string;
+  ObjLevel       : Integer;
+  ObjIsInherited : Boolean;
+  FmClassName    : string;
+  ClassNum       : Integer;
+begin
+  Result := False;
+  if not InputFilesOkay then
+    Exit;
+
+   {Load configuration file}
+  CfgF := TMemIniFile.Create(CfgFileName);
+  ClassProps := TStringList.Create;
+
+  UnmappedClasses.Clear;
+  UnmappedClasses.Sorted := True;
+  UnmappedClasses.Duplicates := dupIgnore;
+  UnmappedClasses.CaseSensitive := False;
+  
+  try
+    for FormNum := 0 to FmFileNames.Count-1 do
+      begin
+      AssignFile(FmF, FmFileNames[FormNum]);
+      Reset(FmF);
+
+      ObjLevel := 0;
+      while not Eof(FmF) do  
+        begin
+        ReadFormLine(FmF, InStr);
+        if IsObject(InStr) then  {Found object?}
+          begin
+          Inc(ObjLevel);
+          GetObjName(InStr, ObjIsInherited);
+          FmClassName := GetClassName(InStr);
+          if ObjLevel = 1 then  {Is form?}
+            begin
+            if ObjIsInherited then  {Inherited form?}
+              UnmappedClasses.AddObject(FmClassName, TObject(1)); {Flag form}
+            end
+          else  {Object on form}
+            begin
+            if not CfgF.ValueExists(FmClassName, 'Class') then
+              begin
+              if CfgF.ValueExists(FmClassName, 'NotMapped') then
+                UnmappedClasses.Add(FmClassName) {Ignored class}
+              else
+                UnmappedClasses.AddObject(FmClassName, TObject(2)); {Flag class}
+              end;
+            end;
+          end
+        else if IsEnd(InStr) then
+          Dec(ObjLevel);
+        end;
+      CloseFile(FmF);
+      end;
+      
+    CfgF.ReadSections(CfgClasses);
+    for ClassNum := CfgClasses.Count-1 downto 0 do
+      begin 
+      if (CfgF.ReadString(CfgClasses.Strings[ClassNum], 'IdePackage', '') <> '') or
+         (not CfgF.ValueExists(CfgClasses.Strings[ClassNum], 'Class')) then
+        CfgClasses.Delete(ClassNum);
+      end;
+
+  finally
+    CfgF.Free;
+    ClassProps.Free;
+  end;
+  Result := True;
+end;  {GetUnmappedClasses}
 
 
 end.
