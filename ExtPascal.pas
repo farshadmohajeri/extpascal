@@ -189,8 +189,9 @@ type
     function Ajax(MethodName : string; Params : array of const; IsEvent : boolean = false) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; overload;
+    function AjaxExtFunction(Method : TExtProcedure; Params : array of TExtFunction) : TExtFunction; overload;
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
+    function AjaxGetValues(Method : TExtProcedure; Params : array of TExtObject) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function MethodURI(Method : TExtProcedure; Params: array of const): string; overload;
@@ -286,7 +287,7 @@ const
 implementation
 
 uses
-  SysUtils, StrUtils, Math, Ext, ExtUtil, ExtGrid;
+  SysUtils, StrUtils, Math, Ext, ExtUtil, ExtGrid, ExtForm;
 
 threadvar
   InJSFunction : boolean;
@@ -1623,13 +1624,39 @@ var
   MetName, ObjName : string;
 begin
   Result := FindMethod(Method, MetName, ObjName);
-  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params +
-    IfThen(ObjName = '', '', ',Obj:' + ObjName) + '},success:AjaxSuccess,failure:AjaxFailure});');
+  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:"Ajax=1&"+' +
+    Params + '+"' + {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
+    '"' + IfThen(ObjName = '', '', ',Obj:' + ObjName) + ',success:AjaxSuccess,failure:AjaxFailure});');
+(*  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params +
+    IfThen(ObjName = '', '', ',Obj:' + ObjName) + '},success:AjaxSuccess,failure:AjaxFailure});');*)
 end;
 
 // Ajax with JSFunction as params
-function TExtObject.Ajax(Method : TExtProcedure; Params : TExtFunction) : TExtFunction; begin
-  Result := Ajax(Method, TExtObject(Params).ExtractJSCommand);
+function TExtObject.AjaxExtFunction(Method : TExtProcedure; Params : array of TExtFunction) : TExtFunction;
+var
+  I : integer;
+  S : string;
+begin
+  S := '';
+  for I := 0 to high(Params) do begin
+    S := S + TExtObject(Params[I]).ExtractJSCommand;
+    if I <> high(Params) then S := S + '+"&"+';
+  end;
+  Result := Ajax(Method, S);
+end;
+
+function TExtObject.AjaxGetValues(Method : TExtProcedure; Params : array of TExtObject) : TExtFunction;
+var
+  I : integer;
+  S : string;
+begin
+  S := '';
+  for I := 0 to high(Params) do begin
+    TExtFormBasicForm(TExtFormFormPanel(Params[I]).GetForm).GetValues(true);
+    S := S + TExtObject(Params[I]).ExtractJSCommand;
+    if I <> high(Params) then S := S + '+"&"+';
+  end;
+  Result := Ajax(Method, S);
 end;
 
 function TExtObject.AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const): TExtFunction;
@@ -1715,7 +1742,8 @@ begin
 end;
 
 procedure TExtObject.AjaxCode(MethodName : string; RawParams : string; Params : array of const); begin
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"Ajax=1&' + IfThen(RawParams='', '', RawParams + '&') + FormatParams(Methodname, Params) +
+  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"Ajax=1&' +
+    IfThen(RawParams='', '', RawParams + '&') + FormatParams(MethodName, Params) +
     {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
