@@ -120,6 +120,7 @@ type
     procedure HandleEvent; virtual;
   end;
 
+  {$M+}
   {
   Ancestor of all classes and components of Ext JS framework.
   Each TExtObject has the capability to self-translate to JavaScript during the program execution.
@@ -191,7 +192,7 @@ type
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function AjaxExtFunction(Method : TExtProcedure; Params : array of TExtFunction) : TExtFunction; overload;
     function AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
-    function AjaxGetValues(Method : TExtProcedure; Params : array of TExtObject) : TExtFunction;
+    function AjaxForms(Method : TExtProcedure; Forms : array of TExtObject) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
     function MethodURI(Method : TExtProcedure; Params: array of const): string; overload;
@@ -202,6 +203,7 @@ type
     function LinesToPixels(Lines : integer) : integer;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
   end;
+  {$M-}
 
   {
   Basic class descending of TExtObject that defines a JavaScript function. All functions and procedures of Ext JS framework are converted to Pascal functions
@@ -1645,16 +1647,16 @@ begin
   Result := Ajax(Method, S);
 end;
 
-function TExtObject.AjaxGetValues(Method : TExtProcedure; Params : array of TExtObject) : TExtFunction;
+function TExtObject.AjaxForms(Method : TExtProcedure; Forms : array of TExtObject) : TExtFunction;
 var
   I : integer;
   S : string;
 begin
   S := '';
-  for I := 0 to high(Params) do begin
-    TExtFormBasicForm(TExtFormFormPanel(Params[I]).GetForm).GetValues(true);
-    S := S + TExtObject(Params[I]).ExtractJSCommand;
-    if I <> high(Params) then S := S + '+"&"+';
+  for I := 0 to high(Forms) do begin
+    TExtFormBasicForm(TExtFormFormPanel(Forms[I]).GetForm).GetValues(true);
+    S := S + TExtObject(Forms[I]).ExtractJSCommand;
+    if I <> high(Forms) then S := S + '+"&"+';
   end;
   Result := Ajax(Method, S);
 end;
