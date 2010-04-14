@@ -514,7 +514,7 @@ begin
       if Cookies <> nil then Cookies.DelimitedText := URLDecode(Param[1])
     end
     else
-      RequestHeader.Values[Param[0]] := {$IFDEF MSWINDOWS}UTF8Decode{$ENDIF}(Param[1]);
+      RequestHeader.Values[Param[0]] := {$IFDEF MSWINDOWS}UTF8ToAnsi{$ENDIF}(Param[1]);
   end;
 end;
 
@@ -527,7 +527,7 @@ class function TFCGIThread.URLDecode(Encoded : string) : string;
 var
   I : integer;
 begin
-  Result := {$IFDEF MSWINDOWS}UTF8Decode{$ENDIF}(Encoded);
+  Result := {$IFDEF MSWINDOWS}UTF8ToAnsi{$ENDIF}(Encoded);
   I := pos('%', Result);
   while I <> 0 do begin
     Result[I] := chr(StrToIntDef('$' + copy(Result, I+1, 2), 32));
@@ -1050,7 +1050,7 @@ begin
   if IsDownload or (IsUpload and (Browser = brIE)) then
     Result := Response
   else
-    Result := {$IFDEF MSWINDOWS}UTF8Encode{$ENDIF}(Response);
+    Result := {$IFDEF MSWINDOWS}AnsiToUTF8{$ENDIF}(Response);
 end;
 
 {$IFDEF HAS_CONFIG}
