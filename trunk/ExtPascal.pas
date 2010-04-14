@@ -1654,7 +1654,12 @@ var
 begin
   S := '';
   for I := 0 to high(Forms) do begin
-    TExtFormBasicForm(TExtFormFormPanel(Forms[I]).GetForm).GetValues(true);
+    if Forms[I] is TExtFormField then begin
+      S := S + '"' + TExtFormField(Forms[I]).ID + '="+';
+      TExtFormField(Forms[I]).GetValue;
+    end
+    else
+      TExtFormBasicForm(TExtFormFormPanel(Forms[I]).GetForm).GetValues(true);
     S := S + TExtObject(Forms[I]).ExtractJSCommand;
     if I <> high(Forms) then S := S + '+"&"+';
   end;
