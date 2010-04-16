@@ -1,7 +1,6 @@
 #labels Featured,New
-  * An iPhone example by Phil Hess. Sources 
-[http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.zip
-here]
+  * An iPhone example by Phil Hess. 
+[http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.zip Sources here]
 
 
 [http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.jpg]
