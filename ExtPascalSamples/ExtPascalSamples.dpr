@@ -6,8 +6,15 @@ program ExtPascalSamples;
 {$IFEND}
 
 uses
+  {$IFNDEF WebServer}
+  FCGIApp,
+  {$ELSE}
+   {$IFNDEF MSWINDOWS}
+   CThreads,
+   {$ENDIF}
+  IdExtHTTPServer,
+  {$ENDIF}
   SysUtils, Classes,
-  {$IFNDEF WebServer}FCGIApp,{$ELSE}IdExtHTTPServer,{$ENDIF}
   {$IFDEF DEFAULT}Services,{$ENDIF} ExtPascalUtils, Session;
 
 {$IFDEF DEFAULT}
