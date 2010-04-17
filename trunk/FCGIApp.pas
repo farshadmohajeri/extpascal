@@ -1024,7 +1024,7 @@ begin
   if not IsUpload then Response := '';
   FIsDownload := false;
   if Browser = brUnknown then
-    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
+    FBrowser := DetermineBrowser(RequestHeader['HTTP_USER_AGENT']);
   if BeforeHandleRequest then
     try
       if PathInfo = '' then

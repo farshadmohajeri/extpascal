@@ -31,9 +31,17 @@ type
 {$IFEND}
 
 type
-  TBrowser      = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror); // Internet Browsers
+  TBrowser      = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror, brMobileSafari); // Internet Browsers
   TCSSUnit      = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
   TExtProcedure = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
+
+
+{
+Determine browser from HTTP_USER_AGENT header string.
+@param UserAgentStr String returned by, for example, RequestHeader['HTTP_USER_AGENT'].
+@return TBrowser
+}
+function DetermineBrowser(const UserAgentStr : string) : TBrowser;
 
 {
 Mimics preg_match php function. Searches S for a match to delimiter strings given in Delims parameter
@@ -225,6 +233,19 @@ begin
   end;
 end;
 {$IFEND}
+
+function DetermineBrowser(const UserAgentStr : string) : TBrowser;
+begin
+//  WriteLn(UserAgentStr);
+  Result :=  TBrowser(RCaseOf(UserAgentStr, ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
+              {Note string order must match order in TBrowser enumeration above}
+  if Result = brSafari then  {Which Safari?}
+    begin
+    if (Pos('Mobile', UserAgentStr) > 0) and
+       (Pos('Apple', UserAgentStr) > 0) then
+      Result := brMobileSafari
+    end;
+end;
 
 function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
 var
