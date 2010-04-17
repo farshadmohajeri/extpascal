@@ -832,11 +832,6 @@ begin
       '<title>' + Application.Title + '</title>'^M^J +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=' + Charset + '" />'^M^J +
-      '<body><div id=body>'^M^J +
-      '<div id=loading style="position:absolute;font-family:verdana;top:40%;left:40%">'^M^J +
-      '<img src="' + ExtPath + '/resources/images/default/shared/loading-balls.gif"/>' +
-      ' Loading ' + Application.Title + '...</div>'^M^J +
-      '</div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J +
       '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
       '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
       '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DebugExtJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
@@ -845,6 +840,11 @@ begin
       IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
       GetStyle + Libraries +
       '</head>'^M^J +
+      '<body><div id=body>'^M^J +
+      '<div id=loading style="position:absolute;font-family:verdana;top:40%;left:40%">'^M^J +
+      '<img src="' + ExtPath + '/resources/images/default/shared/loading-balls.gif"/>' +
+      ' Loading ' + Application.Title + '...</div>'^M^J +
+      '</div><noscript>This web application requires JavaScript enabled</noscript></body>'^M^J +
       '<script>'^M^J +
       {$IFDEF DEBUGJS}BeautifyJS{$ENDIF}
       (IfThen(CustomJS = '', '', CustomJS + ^M^J) +
