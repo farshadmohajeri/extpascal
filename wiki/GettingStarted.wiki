@@ -132,3 +132,32 @@ http://localhost/cgi-bin/ExtPascalSamples
 11. See [http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html#FastCgiExternalServer FastCGI docs] for more info.
 
 12. I also recommend to activate the HTTP compression to boost the performance. See [http://extpascal.googlecode.com/files/ExtPascal-Advanced-Configuration-complete-eng-v4.pdf Advanced configuration].
+
+= Setting up for native FastCGI, Apache 2.2+ (Ubuntu linux server 9.10, 10.04) =
+01. Install [http://www.ubuntu.com Ubuntu server] (clean installation without Apache server)
+
+02. Install Apache server: 
+{{{ 
+sudo apt-get install apache2 
+}}}
+03. Install Apache FastCGI module: 
+{{{
+sudo apt-get install libapache2-mod-fastcgi
+}}}
+04. Declare the FastCGI application as external server, appending this line in /etc/apache2/apache2.conf:
+{{{
+FastCgiExternalServer /var/www/ExtPascalSamples –host somehost:2014 -idle-timeout 3
+}}}
+
+*CAUTION: Don't cut and paste lines from this wiki! This will cause Apache fails to start!!! The hifen character is not the same character (Google wiki uses the char 150 and the true hifen char is 45).* 
+
+05. Restart Apache so the changes take effect: 
+{{{
+sudo /etc/init.d/ apache2 restart
+}}}
+
+06. Start ExtpascalSamples application and in your browser call Samples using:
+{{{
+http://ubuntuserver/ExtPascalSamples
+}}}
+* Replace "ubuntuserver" with IP address or computer name of your Ubuntu server
