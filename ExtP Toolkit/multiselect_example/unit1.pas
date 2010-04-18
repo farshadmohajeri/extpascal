@@ -59,7 +59,7 @@ begin
 (*
    //Event set by converter (in .inc) doesn't pass any data, so add an event
    // that passes list box's selected items. Ignore converter's event below.
-  ExtButton1.On('click', Ajax(CurrentThread.ExtWindow1_ExtButton1Click,
+  ExtButton1.On('click', Ajax(ExtButton1Click,
                               ['Selected', ExtUxFormMultiSelect1.GetValue]));
 *)
 

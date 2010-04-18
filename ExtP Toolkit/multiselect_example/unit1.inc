@@ -2,24 +2,24 @@
   Height := 334;
   Width := 408;
   OnEsc := JSFunction('');
-  Title := 'MultiSelect Example';
+  Title := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('MultiSelect Example');
   Layout := lyAbsolute;
 
   ExtFormLabel2 := TExtFormLabel.Create;
   with ExtFormLabel2.AddTo(Items) do
     begin
-    Id := 'ExtFormLabel2';
+    Id := 'ExtWindow1_ExtFormLabel2';
     X := 136;
     Height := 31;
     Y := 256;
     Width := 233;
-    Text := 'Nothing selected yet';
+    Text := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Nothing selected yet');
     end;
 
   ExtPanel1 := TExtPanel.Create;
   with ExtPanel1.AddTo(Items) do
     begin
-    Id := 'ExtPanel1';
+    Id := 'ExtWindow1_ExtPanel1';
     X := 17;
     Height := 222;
     Y := 12;
@@ -29,18 +29,18 @@
     ExtFormLabel1 := TExtFormLabel.Create;
     with ExtFormLabel1.AddTo(Items) do
       begin
-      Id := 'ExtFormLabel1';
+      Id := 'ExtWindow1_ExtFormLabel1';
       X := 27;
       Height := 17;
       Y := 15;
       Width := 320;
-      Text := 'Select an item from the list and click Go';
+      Text := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Select an item from the list and click Go');
       end;
 
     ExtUxFormMultiSelect1 := TExtUxFormMultiSelect.Create;
     with ExtUxFormMultiSelect1.AddTo(Items) do
       begin
-      Id := 'ExtUxFormMultiSelect1';
+      Id := 'ExtWindow1_ExtUxFormMultiSelect1';
       X := 14;
       Height := 152;
       Y := 42;
@@ -72,13 +72,13 @@
   ExtButton1 := TExtButton.Create;
   with ExtButton1.AddTo(Items) do
     begin
-    Id := 'ExtButton1';
+    Id := 'ExtWindow1_ExtButton1';
     X := 40;
     Height := 27;
     Y := 252;
     Width := 76;
-    Text := 'Go';
-    On('click', Ajax(CurrentThread.ExtWindow1_ExtButton1Click));
+    Text := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Go');
+    On('click', Ajax(ExtButton1Click));
     TooltipType := 'title';
     end;
 
