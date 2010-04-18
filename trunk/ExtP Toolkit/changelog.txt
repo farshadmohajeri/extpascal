@@ -1,3 +1,12 @@
+Version 0.1.8, converter (18-Apr-2010 SVN):
+
+- Eliminated published event handlers from thread class and now using form
+  event handlers (now that published is default visibility).
+- Converter no longer creates a new appthread.pas when input forms change,
+  but rather updates it the way it now updates form .pas files with the
+  -u switch. This preserves edits that you've made to the thread unit.
+
+
 Version 0.1.7, converter (11-Apr-2010 SVN):
 
 - Much restructured and expanded command line converter.

@@ -1,20 +1,20 @@
   Id := 'AboutWindow';
-  Layout := lyAbsolute;
   Height := 287;
   Width := 358;
   Modal := True;
-  Title := 'About';
+  Title := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('About');
+  Layout := lyAbsolute;
 
   ExtButton1 := TExtButton.Create;
   with ExtButton1.AddTo(Items) do
     begin
-    Id := 'ExtButton1';
-    TooltipType := 'title';
+    Id := 'AboutWindow_ExtButton1';
     X := 128;
     Height := 33;
     Y := 168;
     Width := 103;
-    Text := 'Close';
-    On('click', Ajax(CurrentThread.AboutWindow_ExtButton1Click));
+    Text := {$IFNDEF MSWINDOWS}AnsiToUTF8{$ENDIF}('Close');
+    On('click', Ajax(ExtButton1Click));
+    TooltipType := 'title';
     end;
 

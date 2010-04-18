@@ -61,8 +61,12 @@ type
                                  ClassProps  : TStringList);
     function IsEventProp(const FmPropName : string;
                          const PropSpec   : string) : Boolean;
+    function GetStrippedPasLine(const InStr : string) : string;
     function UpdatePasFile(const UnitFileName : string;
                                  Declarations : TStringList) : Boolean;
+    function UpdateThreadFile(const ThrdFileName : string;
+                                    Declarations : TStringList;
+                                    JsLibs       : TStringList) : Boolean;
     procedure OutputFpcCfgFile;
     procedure OutputAuxProjectFiles;
 
@@ -420,12 +424,35 @@ begin
 end;  {IsEventProp}
 
 
+function TFormConverterExtPascal.GetStrippedPasLine(const InStr : string) : string;
+begin
+  Result := Trim(InStr);
+  if Copy(Result, 1, 2) = '//' then  {Line commented out?}
+    Result := '';
+  if (Copy(Result, 1, 1) = '{') and
+     (Pos('}', Result) > 0) then  {Line starts with comment?}
+    Result := Copy(Result, Pos('}', Result)+1, MaxInt);  {Remove comment}
+  if (Copy(Result, 1, 2) = '(*') and
+     (Pos('*)', Result) > 0) then  {Line starts with comment?}
+    Result := Copy(Result, Pos('*)', Result)+2, MaxInt);  {Remove comment}
+  if Pos('{', Result) > 0 then  {Line has trailing comment?}
+    Result := Copy(Result, 1, Pos('{', Result)-1);
+  if Pos('(*', Result) > 0 then  {Line has trailing comment?}
+    Result := Copy(Result, 1, Pos('(*', Result)-1);
+  if Pos('//', Result) > 0 then  {Line has trailing comment?}
+    Result := Copy(Result, 1, Pos('//', Result)-1);
+  Result := StringReplace(Result, ' ', '', [rfReplaceAll]);  {Remove spaces}
+end;
+
+  
 function TFormConverterExtPascal.UpdatePasFile(const UnitFileName : string;
                                                      Declarations : TStringList) : Boolean;
  {Update previously converted Pascal form unit's class declaration
    with any new components or event handlers from input form.
-  Note: For now assuming the declaration does not contain lines
-   excluded via conditionals or multi-line comments.}
+  Note: For now assuming the class declaration does not contain
+   lines excluded via conditionals or multi-line comments.
+   This is not a true Pascal parser - if it can't find what it's 
+   looking for, user can add new things manually.}
 var
   HasChanged  : Boolean;
   InF         : TextFile;
@@ -436,20 +463,6 @@ var
   WrkStr      : string;
   Idx         : Integer;
   ColonPos    : Integer;
-  
-  function GetStrippedLine : string;
-  begin
-    Result := Trim(InStr);
-    if Copy(Result, 1, 2) = '//' then  {Line commented out?}
-      Result := ''
-    else if (Copy(Result, 1, 1) = '{') and
-            (Pos('}', Result) > 0) then  {Line contains comment?}
-      Result := Copy(Result, Pos('}', Result)+1, MaxInt)  {Remove comment}
-    else if (Copy(Result, 1, 2) = '(*') and
-            (Pos('*)', Result) > 0) then  {Line contains comment?}
-      Result := Copy(Result, Pos('*)', Result)+2, MaxInt);  {Remove comment}
-    Result := StringReplace(Result, ' ', '', [rfReplaceAll]);  {Remove spaces}
-  end;
   
 begin
   Result := False;
@@ -463,13 +476,13 @@ begin
   Rewrite(OutF);
   
   try
-     {Look for class declaration}
+     {Look for form class declaration}
     FoundBreak := False;
     while not Eof(InF) do
       begin
       ReadLn(InF, InStr);
       WriteLn(OutF, InStr);
-      WrkStr := GetStrippedLine;
+      WrkStr := GetStrippedPasLine(InStr);
       if SameText(Copy(WrkStr, 1, Length(Declarations[0])), Declarations[0]) then
         begin
         FoundBreak := True;
@@ -486,7 +499,7 @@ begin
     while not Eof(InF) do
       begin
       ReadLn(InF, InStr);
-      WrkStr := GetStrippedLine;
+      WrkStr := GetStrippedPasLine(InStr);
       if WrkStr <> '' then
         begin
         if (Copy(WrkStr, 1, 4) = 'end;') or
@@ -528,7 +541,7 @@ begin
           FoundBreak := False  {Process last-read method declaration}
         else
           ReadLn(InF, InStr);
-        WrkStr := GetStrippedLine;
+        WrkStr := GetStrippedPasLine(InStr);
         if WrkStr <> '' then
           begin
           if (Copy(WrkStr, 1, 4) = 'end;') or
@@ -538,7 +551,7 @@ begin
             Break;
             end;
           Idx := Declarations.IndexOf(Copy(WrkStr, 1, Pos(';', WrkStr)));
-          if Idx >= 0 then
+          if Idx >= 0 then  {Don't need to add this component?}
             Declarations.Delete(Idx);
           end;
         WriteLn(OutF, InStr);
@@ -563,7 +576,7 @@ begin
     while not Eof(InF) do
       begin
       ReadLn(InF, InStr);
-      WrkStr := GetStrippedLine;
+      WrkStr := GetStrippedPasLine(InStr);
       if SameText(Copy(WrkStr, 1, 4), 'end.') or
          SameText(Copy(WrkStr, 1, 14), 'initialization') or
          SameText(Copy(WrkStr, 1, 12), 'finalization') then
@@ -590,7 +603,7 @@ begin
         end;
       end;
     WriteLn(OutF, InStr);
-    while not Eof(InF) do
+    while not Eof(InF) do  {Finish file}
       begin
       ReadLn(InF, InStr);
       WriteLn(OutF, InStr);
@@ -615,6 +628,257 @@ begin
       end;
   end;
 end;  {UpdatePasFile}
+
+
+function TFormConverterExtPascal.UpdateThreadFile(const ThrdFileName : string;
+                                                        Declarations : TStringList;
+                                                        JsLibs       : TStringList) : Boolean;
+ {Update previously converted Pascal thread unit's interface section's
+   uses statement with any new forms, class declaration with any new 
+   form objects, and add any new SetLibrary calls.
+  Note: For now assuming the uses statement and class declaration does
+   not contain lines excluded via conditionals or multi-line comments.
+   This is not a true Pascal parser - if it can't find what it's looking 
+   for, user can add new things manually.}
+var
+  HasChanged  : Boolean;
+  InF         : TextFile;
+  OutF        : TextFile;
+  OutFileName : string;
+  UnitNames   : TStringList;
+  UnitNum     : Integer;
+  FoundBreak  : Boolean;
+  InStr       : string;
+  WrkStr      : string;
+  SemiPos     : Integer;
+  Idx         : Integer;
+  ColonPos    : Integer;
+  
+begin
+  Result := False;
+  HasChanged := False;
+  if not FileExists(ThrdFileName) then
+    Exit;
+  AssignFile(InF, ThrdFileName);
+  Reset(InF);
+  OutFileName := ChangeFileExt(ThrdFileName, '.extp_cvt.tmp');
+  AssignFile(OutF, OutFileName);
+  Rewrite(OutF);
+
+  UnitNames := TStringList.Create;
+  for UnitNum := 0 to FmFileNames.Count-1 do
+    UnitNames.Add( 
+     ExtractFileNameWithoutExt(AddSuffixToFileName(FmFileNames[UnitNum])));
+
+  try
+     {Look for interface uses}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      WrkStr := GetStrippedPasLine(InStr);
+      if SameText(WrkStr, 'uses') then  {Note must be on its own line}
+        begin
+        FoundBreak := True;
+        Break;
+        end;
+      end;
+    if not FoundBreak then
+      Exit;
+      
+     {Add any units not listed in uses}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WrkStr := GetStrippedPasLine(InStr);
+      if WrkStr = '' then
+        WriteLn(OutF, InStr)
+      else
+        begin
+        UnitNum := UnitNames.IndexOf(Copy(WrkStr, 1, Length(WrkStr)-1));
+        if UnitNum >= 0 then  {Not a new unit?}
+          UnitNames.Delete(UnitNum);
+        SemiPos := Pos(';', WrkStr);
+        if SemiPos = 0 then  {Not last unit in uses?}
+          WriteLn(OutF, InStr)
+        else
+          begin
+          if UnitNames.Count = 0 then  {No units to add?}
+            WriteLn(OutF, InStr)
+          else
+            begin
+            WriteLn(OutF, Copy(InStr, 1, Pos(';', InStr)-1), ',',
+                          Copy(InStr, Pos(';', InStr)+1, MaxInt));
+            for UnitNum := 0 to UnitNames.Count-1 do
+              begin
+              Write(OutF, '  ', UnitNames[UnitNum]);
+              if UnitNum < UnitNames.Count-1 then
+                WriteLn(OutF, ',')
+              else
+                WriteLn(OutF, ';');
+              HasChanged := True;
+              end;
+            end;
+          FoundBreak := True;
+          Break;
+          end;
+        end;
+      end;
+    if not FoundBreak then
+      Exit;
+
+     {Look for thread class declaration}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      WrkStr := GetStrippedPasLine(InStr);
+      if SameText(WrkStr, 'TAppThread=class(TExtThread)') then
+        begin
+        FoundBreak := True;
+        Break;
+        end;
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Look for public section of thread class where form objects go}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      WrkStr := GetStrippedPasLine(InStr);
+      if SameText(WrkStr, 'public') then
+        begin
+        FoundBreak := True;
+        Break;
+        end;
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Look for end of public field declarations. Assume for now that
+       this is first method declaration or start of another section.}
+    FoundBreak := False;
+    while not Eof(InF) do
+      begin
+      ReadLn(InF, InStr);
+      WrkStr := GetStrippedPasLine(InStr);
+      if WrkStr <> '' then
+        begin
+        if SameText(Copy(WrkStr, 1, 8), 'function') or
+           SameText(Copy(WrkStr, 1, 9), 'procedure') or
+           (Pos(';', WrkStr) = 0) then
+          begin
+          FoundBreak := True;
+          Break;
+          end;
+        Idx := Declarations.IndexOf(WrkStr);
+        if Idx >= 0 then  {Don't need to add this form object?}
+          Declarations.Delete(Idx);
+        end;
+      WriteLn(OutF, InStr);
+      end;
+    if not FoundBreak then
+      Exit;
+    
+     {Add any form objects that were not found in thread class}
+    for Idx := 0 to Declarations.Count-1 do
+      begin
+      ColonPos := Pos(':', Declarations[Idx]);
+      WriteLn(OutF, '    ', 
+              Copy(Declarations[Idx], 1, ColonPos-1),
+              ' : ', Copy(Declarations[Idx], ColonPos+1, MaxInt));
+      HasChanged := True;
+      end;
+    WriteLn(OutF, InStr);
+
+    if JsLibs.Count > 0 then
+      begin
+       {Look for Home method implementation}
+      FoundBreak := False;
+      while not Eof(InF) do
+        begin
+        ReadLn(InF, InStr);
+        WriteLn(OutF, InStr);
+        WrkStr := GetStrippedPasLine(InStr);
+        if SameText(WrkStr, 'procedureTAppThread.Home;') then
+          begin
+          FoundBreak := True;
+          Break;
+          end;
+        end;
+      if not FoundBreak then
+        Exit;
+    
+       {Add any new JS libraries}
+      FoundBreak := False;
+      while not Eof(Inf) do
+        begin
+        ReadLn(InF, InStr);
+        WrkStr := GetStrippedPasLine(InStr);
+        if SameText(Copy(WrkStr, 1, 11), 'SetLibrary(') then
+          begin
+          WriteLn(OutF, InStr);
+          for Idx := 0 to JsLibs.Count-1 do
+            begin
+            if Pos(JsLibs.ValueFromIndex[Idx], InStr) > 0 then
+              begin
+              JsLibs.Delete(Idx);
+              Break;
+              end;
+            end;
+          end
+        else if (WrkStr <> '') and (not SameText(WrkStr, 'begin')) then
+          begin  {Assume SetLibrary calls come first in Home - if not, will
+                   insert extra calls, but no harm and user can remove}
+          for Idx := 0 to JsLibs.Count-1 do
+            begin
+            WriteLn(OutF, '  SetLibrary(ExtPath + ' +
+                          JsLibs.ValueFromIndex[Idx], ');');
+            HasChanged := True;
+            end;
+          WriteLn(OutF, InStr);
+          FoundBreak := True;
+          Break;
+          end
+        else
+          WriteLn(OutF, InStr);
+        end;
+      if not FoundBreak then
+        Exit;
+      end;  {if JsLibs.Count > 0}
+
+    while not Eof(InF) do  {Finish file}
+      begin
+      ReadLn(InF, InStr);
+      WriteLn(OutF, InStr);
+      end;  
+    Result := True;
+    
+  finally
+    UnitNames.Free;
+    CloseFile(InF);
+    CloseFile(OutF);
+    if (not Result) or (not HasChanged) then  {Exited above or nothing added?}
+      DeleteFile(OutFileName)
+    else
+      begin
+      Result := RenameFile(ThrdFileName, 
+                           ChangeFileExt(ThrdFileName, '.extp_cvt.bak'));
+      if Result then  {Successfully renamed old file?}
+        begin
+        Result := RenameFile(OutFileName, ThrdFileName);
+        if Result then  {Successfully renamed new file?}
+          DeleteFile(ChangeFileExt(ThrdFileName, '.extp_cvt.bak'));
+        end;
+      end;
+  end;
+end;  {UpdateThreadFile}
 
 
 procedure TFormConverterExtPascal.OutputFpcCfgFile;
@@ -815,7 +1079,8 @@ var
   CustProps         : TStringList;
   GridColIndexes    : TStringList;
   JsLibs            : TStringList;
-  Declarations      : TStringList;
+  FormDecl          : TStringList;
+  ThrdDecl          : TStringList;
   UnitName          : string;
   UnitFileName      : string;
   IncFileName       : string;
@@ -906,19 +1171,9 @@ begin
   CloseFile(PasF);
 
 
-   {Check to see if any form files have been modified, meaning
-     a new thread file is needed}
-  ThrdFileExists := FileExists(ThreadFileName);
-  ThrdIsOkay := ThrdFileExists;
-  for FormNum := 0 to FmFileNames.Count-1 do
-    begin
-    if ThrdIsOkay and
-       (FileAge(ThreadFileName) < FileAge(FmFileNames[FormNum])) then
-      ThrdIsOkay := False;
-    end;
-
    {Create Pascal thread unit file}
-  if not CreateOutputFile(ThrdF, ThreadFileName, ThrdIsOkay) then
+  ThrdFileExists := FileExists(ThreadFileName);
+  if not CreateOutputFile(ThrdF, ThreadFileName, True) then
     Exit;
 
   WriteLn(ThrdF, 'unit ', Copy(ThreadClassName, 2, MaxInt), ';');
@@ -927,6 +1182,7 @@ begin
   WriteLn(ThrdF);
   WriteLn(ThrdF, 'uses');
   WriteLn(ThrdF, '  ExtPascal,');
+  WriteLn(ThrdF, '  ExtPascalUtils,');
   for UsesNum := 0 to FmFileNames.Count-1 do
     begin
     UsesName := 
@@ -941,6 +1197,7 @@ begin
   WriteLn(ThrdF, 'type');
   WriteLn(ThrdF, '  ', ThreadClassName, ' = class(TExtThread)');
   WriteLn(ThrdF, '  public');
+  ThrdDecl := TStringList.Create;
   for UsesNum := 0 to FmFileNames.Count-1 do
     begin
     AssignFile(FmF, FmFileNames[UsesNum]);
@@ -949,15 +1206,37 @@ begin
     FormObjName := GetObjName(InStr, FormIsInherited);
     FormClassName := GetClassName(InStr);
     WriteLn(ThrdF, '    ', FormObjName, ' : ', FormClassName, ';');
+    ThrdDecl.Add(FormObjName + ':' + FormClassName + ';');
     CloseFile(FmF);
     end;
   WriteLn(ThrdF, '  published');
   WriteLn(ThrdF, '    procedure Home; override;');
+  WriteLn(ThrdF, '  end;');
+  WriteLn(ThrdF);
+  WriteLn(ThrdF, 'function CurrentThread : ', ThreadClassName, ';');
+  WriteLn(ThrdF);
+  WriteLn(ThrdF);
+  WriteLn(ThrdF, 'implementation');
+  WriteLn(ThrdF);
+  WriteLn(ThrdF, 'uses');
+  WriteLn(ThrdF, '{$IFNDEF WebServer}');
+  WriteLn(ThrdF, '  FCGIApp;');
+  WriteLn(ThrdF, '{$ELSE}');
+  WriteLn(ThrdF, '  IdExtHTTPServer;');
+  WriteLn(ThrdF, '{$ENDIF}');
+  WriteLn(ThrdF);
+  WriteLn(ThrdF, 'function CurrentThread : ', ThreadClassName, ';');
+  WriteLn(ThrdF, 'begin');
+  WriteLn(ThrdF, '  Result := ', ThreadClassName, '(CurrentFCGIThread);');
+  WriteLn(ThrdF, 'end;');
+  WriteLn(ThrdF);
+  WriteLn(ThrdF);
 
 
-   {Load configuration file}
+   {Load standard configuration file}
   CfgF := TMemIniFile.Create(CfgFileName);
 
+   {If set, load custom configuration file}
   if CustCfgFileName = '' then
     CustCfgF := nil
   else
@@ -970,10 +1249,11 @@ begin
   CustProps := TStringList.Create;
   GridColIndexes := TStringList.Create;
   JsLibs := TStringList.Create;
-  Declarations := TStringList.Create;
+  FormDecl := TStringList.Create;
 
 
    {Now generate Pascal form units that create ExtPascal windows (forms)}
+  ThrdIsOkay := not ThrdFileExists;  {True = creating file}
   for FormNum := 0 to FmFileNames.Count-1 do
     begin
      {Create Pascal form unit file}
@@ -982,7 +1262,7 @@ begin
     UnitFileName := TargetPath + UnitName + PasAltFileExt;  {See if alt used}
     if not FileExists(UnitFileName) then  {Okay to assume normal extension?}
       UnitFileName := ChangeFileExt(UnitFileName, PasFileExt);
-    PasIsOkay := not FileExists(UnitFileName);  {True=will be creating file}
+    PasIsOkay := not FileExists(UnitFileName);  {True = will be creating file}
     if not CreateOutputFile(PasF, UnitFileName, True) then
       Exit;
 
@@ -1000,6 +1280,9 @@ begin
       
     PasIsOkay := PasIsOkay or IncIsOkay;
      {If True, don't need to update Pascal unit file's declaration and handlers}
+    if ThrdFileExists and (not IncIsOkay) then
+      ThrdIsOkay := False;
+     {If remains True, don't need to update thread file's uses and declaration}
 
     WriteLn(PasF, 'unit ', UnitName, ';');
     WriteLn(PasF);
@@ -1019,7 +1302,7 @@ begin
     FormHeight := 0;
     FormWidth := 0;
     ObjLevel := 0;
-    Declarations.Clear;
+    FormDecl.Clear;
     while not Eof(FmF) do  
       begin
       ReadFormLine(FmF, InStr);
@@ -1046,13 +1329,13 @@ begin
           if CustProps.Values['Class'] = '' then
             begin
             WriteLn(PasF, 'TExtWindow)');
-            Declarations.Add(FormClassName + '=class(TExtWindow)');
+            FormDecl.Add(FormClassName + '=class(TExtWindow)');
             end
           else
             begin
             WriteLn(PasF, CustProps.Values['Class'], ')');
-            Declarations.Add(FormClassName + 
-                             '=class(' + CustProps.Values['Class'] + ')');
+            FormDecl.Add(FormClassName + 
+                         '=class(' + CustProps.Values['Class'] + ')');
             end;
           end
         else if not ObjIsInherited then  {Okay to declare object?}
@@ -1062,7 +1345,7 @@ begin
           if ExtClassName <> '' then  {Object's class is mapped?}
             begin
             WriteLn(PasF, '    ', ObjName, ' : ', ExtClassName, ';'); 
-            Declarations.Add(ObjName + ':' + ExtClassName + ';');
+            FormDecl.Add(ObjName + ':' + ExtClassName + ';');
             if (ClassProps.IndexOfName('SetLibrary') >= 0) and  {Ux library?}
                (JsLibs.IndexOfName(ExtClassName) < 0) then
               JsLibs.Add(ExtClassName + '=' + ClassProps.Values['SetLibrary']);
@@ -1140,25 +1423,15 @@ begin
             if SameText(Copy(FmPropName, 1, 2), 'On') then
               begin
               Write(PasF, Copy(FmPropName, 3, MaxInt));
-              Declarations.Add('procedure' + 
-                               ObjName + Copy(FmPropName, 3, MaxInt) + ';');
+              FormDecl.Add('procedure' + 
+                           ObjName + Copy(FmPropName, 3, MaxInt) + ';');
               end
             else
               begin
               Write(PasF, FmPropName);
-              Declarations.Add('procedure' + ObjName + FmPropName + ';');
+              FormDecl.Add('procedure' + ObjName + FmPropName + ';');
               end;
             WriteLn(PasF, ';');
-
-             {Also add published event handler declaration to thread class.
-               Note preceding with form object name to make method name 
-               unique across forms.}
-            Write(ThrdF, '    procedure ', FormObjName, '_', ObjName);
-            if SameText(Copy(FmPropName, 1, 2), 'On') then
-              Write(ThrdF, Copy(FmPropName, 3, MaxInt))
-            else
-              Write(ThrdF, FmPropName);
-            WriteLn(ThrdF, ';');
             end;
           end;
         end;
@@ -1309,8 +1582,9 @@ begin
             WriteLn(IncF, IndentStr(ObjLevel-1), 
                           'with ', ObjName, '.AddTo(Items) do');
             WriteLn(IncF, IndentStr(ObjLevel), 'begin');
-            WriteLn(IncF, IndentStr(ObjLevel),  {Make object's ID unique} 
+            WriteLn(IncF, IndentStr(ObjLevel),
                           'Id := ''', FormObjName + '_' + ObjName, ''';');
+                           {Make object's ID unique across forms}
             end;
 
 
@@ -1441,8 +1715,7 @@ begin
           if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
             begin  {Event property}
             Write(IncF, IndentStr(ObjLevel),
-                        'On(''', ExtPropName, ''', Ajax(CurrentThread.',
-                        FormObjName, '_', ObjName);
+                        'On(''', ExtPropName, ''', Ajax(', ObjName);
             if SameText(Copy(FmPropName, 1, 2), 'On') then
               Write(IncF, Copy(FmPropName, 3, MaxInt))
             else
@@ -1679,106 +1952,40 @@ begin
     CloseFile(FmF);
 
     if (opFmToExtP_UpdatePasFiles in Options) and (not PasIsOkay) then
-      begin
-      UpdatePasFile(UnitFileName, Declarations);
-      end;
+      UpdatePasFile(UnitFileName, FormDecl);
 
     end;  {for FormNum}
 
 
-  WriteLn(ThrdF, '  end;');
-  WriteLn(ThrdF);
-  WriteLn(ThrdF, 'function CurrentThread : ', ThreadClassName, ';');
-  WriteLn(ThrdF);
-  WriteLn(ThrdF);
-  WriteLn(ThrdF, 'implementation');
-  WriteLn(ThrdF);
-  WriteLn(ThrdF, 'uses');
-  WriteLn(ThrdF, '{$IFNDEF WebServer}');
-  WriteLn(ThrdF, '  FCGIApp;');
-  WriteLn(ThrdF, '{$ELSE}');
-  WriteLn(ThrdF, '  IdExtHTTPServer;');
-  WriteLn(ThrdF, '{$ENDIF}');
-  WriteLn(ThrdF);
-  WriteLn(ThrdF, 'function CurrentThread : ', ThreadClassName, ';');
+   {Now that all form objects have been scanned, can output SetLibrary
+     for any JS classes that are not in standard ExtJS .js file}
+  AssignFile(FmF, FmFileNames[0]);
+  Reset(FmF);
+  ReadFormLine(FmF, InStr);
+  CloseFile(FmF);
+  FormObjName := GetObjName(InStr, FormIsInherited);
+  FormClassName := GetClassName(InStr);
+  WriteLn(ThrdF, 'procedure ', ThreadClassName, '.Home;');
   WriteLn(ThrdF, 'begin');
-  WriteLn(ThrdF, '  Result := ', ThreadClassName, '(CurrentFCGIThread);');
+  for JsLibIdx := 0 to JsLibs.Count-1 do
+    WriteLn(ThrdF, '  SetLibrary(ExtPath + ' +
+                   JsLibs.ValueFromIndex[JsLibIdx], ');');
+  WriteLn(ThrdF, '  ', FormObjName, ' := ', FormClassName, '.Create;');
+  WriteLn(ThrdF, '  ', FormObjName, '.Show;');
   WriteLn(ThrdF, 'end;');
   WriteLn(ThrdF);
   WriteLn(ThrdF);
-
-   {Now generate published thread handlers that call form event handlers} 
-  for FormNum := 0 to FmFileNames.Count-1 do
-    begin
-    AssignFile(FmF, FmFileNames[FormNum]);
-    Reset(FmF);
-    ObjLevel := 0;
-    while not Eof(FmF) do  
-      begin
-      ReadFormLine(FmF, InStr);
-      if IsObject(InStr) then  {Found object?}
-        begin
-        Inc(ObjLevel);
-        ObjName := GetObjName(InStr, ObjIsInherited);
-        FmClassName := GetClassName(InStr);
-        if ObjLevel = 1 then  {Is form?}
-          begin
-          FormObjName := ObjName;
-          FormClassName := FmClassName;
-          FmClassName := GetAncestorName(FormClassName);
-          if FormNum = 0 then
-            begin
-            WriteLn(ThrdF, 'procedure ', ThreadClassName, '.Home;');
-            WriteLn(ThrdF, 'begin');
-            for JsLibIdx := 0 to JsLibs.Count-1 do
-              WriteLn(ThrdF, '  SetLibrary(ExtPath + ' +
-                             JsLibs.ValueFromIndex[JsLibIdx], ');');
-            WriteLn(ThrdF, '  ', FormObjName, ' := ', FormClassName, '.Create;');
-            WriteLn(ThrdF, '  ', FormObjName, '.Show;');
-            WriteLn(ThrdF, 'end;');
-            WriteLn(ThrdF);
-            WriteLn(ThrdF);
-            end;
-          end;
-        ReadClassProps(CfgF, CustCfgF, FmClassName, ClassProps);
-        end
-      else if IsEnd(InStr) then  {Found end of object?}
-        Dec(ObjLevel)
-      else  {Found property}
-        begin
-        FmPropName := GetFmPropName(InStr);
-        FmPropVal := GetFmPropVal(InStr);
-        if IsEventProp(FmPropName, ClassProps.Values[FmPropName]) then
-          begin  {Event property}
-          ExtPropName := StripPropDef(ClassProps.Values[FmPropName]);
-          if ExtPropName <> '' then  {Is event mapped?}
-            begin
-            Write(ThrdF, 'procedure ', ThreadClassName, '.', 
-                         FormObjName, '_', ObjName);
-            if SameText(Copy(FmPropName, 1, 2), 'On') then
-              Write(ThrdF, Copy(FmPropName, 3, MaxInt))
-            else
-              Write(ThrdF, FmPropName);
-            WriteLn(ThrdF, ';');
-            WriteLn(ThrdF, 'begin');
-            Write(ThrdF, '  ', FormObjName, '.', ObjName);
-            if SameText(Copy(FmPropName, 1, 2), 'On') then
-              Write(ThrdF, Copy(FmPropName, 3, MaxInt))
-            else
-              Write(ThrdF, FmPropName);
-            WriteLn(ThrdF, ';');
-            WriteLn(ThrdF, 'end;');
-            WriteLn(ThrdF);
-            WriteLn(ThrdF);
-            end;
-          end;
-        end;
-      end;  {while not Eof}
-    CloseFile(FmF);
-    end;  {for FormNum}
-
   WriteLn(ThrdF, 'end.');
   CloseFile(ThrdF);
+  
+  if ((opFmToExtP_UpdatePasFiles in Options) or
+      (opFmToExtP_ReformatForLaz in Options)) and 
+     (not ThrdIsOkay) then
+    UpdateThreadFile(ThreadFileName, ThrdDecl, JsLibs);
+     {Note that we're updating previously created thread unit even
+       if UpdatePasFiles option is not selected. We need updating to be
+       done automatically when run from IDE and don't want to specify
+       update switch since IDE maintains form units itself.}
 
   CfgF.Free;
   CustCfgF.Free;
@@ -1788,7 +1995,8 @@ begin
   CustProps.Free;
   GridColIndexes.Free;
   JsLibs.Free;
-  Declarations.Free;
+  FormDecl.Free;
+  ThrdDecl.Free;
 
 
   if opFmToExtP_ReformatForLaz in Options then

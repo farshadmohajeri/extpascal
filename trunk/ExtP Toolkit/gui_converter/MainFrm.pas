@@ -20,7 +20,7 @@ uses
 
 const
   ProgName          = 'FormsToExtPascal';
-  ProgVers          = '0.1.7';     {Keep in sync with command-line converter}
+  ProgVers          = '0.1.8';     {Keep in sync with command-line converter}
   CmdLineFolderName = 'fmtoextp';  {Command-line converter's folder}
   CmdLineCvtName    = 'fmtoextp';  {Command-line converter's executable name}
   CfgFileName       = CmdLineCvtName + CfgFileExt;  {Standard config file}
@@ -68,7 +68,14 @@ type
     procedure SaveBtnClick(Sender: TObject);
     procedure ClearBtnClick(Sender: TObject);
     procedure ConvertBtnClick(Sender: TObject);    
-
+  private
+    ScriptExt       : string;
+    ScriptTerm      : string;
+    Converter       : TFormConverterExtPascal;
+    ProjInFileName  : string;  {Input "project" file}
+    FmFileNames     : TStringList;
+    CustCfgFileName : string;
+    ProgOutFileName : string;  {Output "program" file}
     function QuoteAndReplaceHome(const FilePath       : string;
                                        LetShellExpand : Boolean) : string;
     function GetCfgFileName : string;
@@ -82,15 +89,7 @@ type
     function SaveScriptFile(const FilePath : string;
                               var ErrMsg   : string) : Boolean;
     function FormIsComplete : Boolean;
-  private
-    ScriptExt       : string;
-    ScriptTerm      : string;
   public
-    Converter       : TFormConverterExtPascal;
-    ProjInFileName  : string;  {Input "project" file}
-    FmFileNames     : TStringList;
-    CustCfgFileName : string;
-    ProgOutFileName : string;  {Output "program" file}
   end;
 
 var
