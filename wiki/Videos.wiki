@@ -1,3 +1,4 @@
 #labels Featured,New
-  * [http://web.me.com/macpgmr/ExtPascal/ExtPascal_Video1a.mov Video 1]
-  * [http://web.me.com/macpgmr/ExtPascal/ExtPascal_Video1b.mov Video 2]
+  * [http://web.me.com/macpgmr/ExtPascal/ExtPascal_Video1a.mov Intro to converting forms to ExtPascal]
+  * [http://web.me.com/macpgmr/ExtPascal/ExtPascal_Video1b.mov Running a converted ExtPascal form]
+  * [http://web.me.com/macpgmr/ExtPascal/ExtPascal_Video2.mov Optimizing a Web app for iPhone]
