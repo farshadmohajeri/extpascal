@@ -77,18 +77,18 @@ begin
     RenderTo    := 'body';
     AutoWidth   := true;
     Frame       := true;
-    if (Browser <> brChrome) and (Browser <> brSafari) and (Browser <> brMobileSafari) then
-      Layout    := lyColumn;  // Webkit doesn't support Column layout correctly
     Collapsible := true;
+    if not(Browser in [brChrome, brSafari, brMobileSafari]) then
+      Layout := lyColumn;  // Webkit doesn't support Column layout correctly
     AddShowSourceButton(TBarArray, 'ExtPascalSamples.dpr', '', 'Show Main Program');
     TExtToolbarSeparator.AddTo(TBarArray);
     AddShowSourceButton(TBarArray, 'Session');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
-        Title := Name;
-        Frame := true;
         if Layout <> lyColumn then
           Width := 380;
+        Title := Name;
+        Frame := true;
         HTM   := '<table><td><a href=' + MethodURI(Proc) + ' target=blank>';
         if pos('.png', Image) = 0 then
           Html := HTM + '<img src=' + ExtPath + '/examples/shared/screens/' + Image + '.gif /></a></td><td>' + Desc + '</td></table>'
