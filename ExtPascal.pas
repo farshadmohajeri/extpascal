@@ -278,6 +278,7 @@ type
   THash = TExtObject; // doc fault Ext 3.1
   TXMLElement = TExtObject; // doc fault Ext 3.1
   TExtListView = TExtObject; // doc fault Ext 3.1
+  TExtSlider = TExtObject; // doc fault Ext 3.2
 //DOM-IGNORE-END*)
 
 const
