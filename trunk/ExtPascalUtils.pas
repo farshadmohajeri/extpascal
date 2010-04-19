@@ -35,7 +35,6 @@ type
   TCSSUnit      = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
   TExtProcedure = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
 
-
 {
 Determine browser from HTTP_USER_AGENT header string.
 @param UserAgentStr String returned by, for example, RequestHeader['HTTP_USER_AGENT'].
