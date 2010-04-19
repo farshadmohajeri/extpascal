@@ -830,7 +830,7 @@ begin
       '<?xml version=1.0?><!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN">'^M^J'<html xmlns=http://www.w3org/1999/xthml>') + ^M^J +
       '<head>'^M^J +
       '<title>' + Application.Title + '</title>'^M^J +
-      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + {$IFDEF VER2_3_1}ShortString{$ENDIF}(Application.Icon) + '"/>'^M^J) +
+      IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + Application.Icon + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=' + Charset + '" />'^M^J +
       '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
       '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +

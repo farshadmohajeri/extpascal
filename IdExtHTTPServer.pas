@@ -588,15 +588,18 @@ begin
     FParams.DelimitedText := FCurrentRequest.UnParsedParams;
   end;
   if Browser = brUnknown then
-    FBrowser := TBrowser(RCaseOf(RequestHeader['HTTP_USER_AGENT'], ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
+    FBrowser := DetermineBrowser(RequestHeader['HTTP_USER_AGENT']);
   if BeforeHandleRequest then
     if PathInfo = '' then
       Home
     else begin
-      MethodCode := MethodAddress(PathInfo);
+      if (Query['Obj'] = '') or (Query['IsEvent'] = '1') then
+        PageMethod.Data := Self
+      else
+        PageMethod.Data := FindObject(Query['Obj']);
+      MethodCode := TObject(PageMethod.Data).MethodAddress(PathInfo);
       if MethodCode <> nil then begin
         PageMethod.Code := MethodCode;
-        PageMethod.Data := Self;
         try
           MethodCall(PageMethod); // Call published method
         except
