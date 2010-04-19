@@ -234,17 +234,13 @@ begin
 end;
 {$IFEND}
 
-function DetermineBrowser(const UserAgentStr : string) : TBrowser;
-begin
-//  WriteLn(UserAgentStr);
-  Result :=  TBrowser(RCaseOf(UserAgentStr, ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
-              {Note string order must match order in TBrowser enumeration above}
-  if Result = brSafari then  {Which Safari?}
-    begin
-    if (Pos('Mobile', UserAgentStr) > 0) and
-       (Pos('Apple', UserAgentStr) > 0) then
-      Result := brMobileSafari
-    end;
+function DetermineBrowser(const UserAgentStr : string) : TBrowser; begin
+  Result := TBrowser(RCaseOf(UserAgentStr, ['MSIE', 'Firefox', 'Chrome', 'Safari', 'Opera', 'Konqueror'])+1);
+  // Note string order must match order in TBrowser enumeration above
+  if (Result = brSafari) and // Which Safari?
+     (Pos('Mobile', UserAgentStr) > 0) and
+     (Pos('Apple', UserAgentStr) > 0) then
+    Result := brMobileSafari
 end;
 
 function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
