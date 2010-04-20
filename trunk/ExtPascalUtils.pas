@@ -91,7 +91,7 @@ because otherwise it is impossible to display multiline text in a TExtFormTextAr
 @param UseBR If true uses replace ^M^J to <br/> else to \n
 @return a well formatted JS string
 }
-function StrToJS(const S : string; UseBR : boolean = true) : string;
+function StrToJS(const S : string; UseBR : boolean = false) : string;
 
 {
 Finds S string in Cases array, returning its index or -1 if not found. Good to use in Pascal "case" command. Similar to AnsiIndexText.
@@ -317,7 +317,7 @@ begin
   until I = 0;
 end;
 
-function StrToJS(const S : string; UseBR : boolean = true) : string;
+function StrToJS(const S : string; UseBR : boolean = false) : string;
 var
   I, J : integer;
   BR   : string;
