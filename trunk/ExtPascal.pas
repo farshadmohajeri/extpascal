@@ -484,9 +484,8 @@ Shows an error message in browser session using Ext JS style.
 @example <code>ErrorMessage('Context not found.<br/>This Window will be reloaded to fix this issue.', 'window.location.reload()');</code>
 }
 procedure TExtThread.ErrorMessage(Msg : string; Action : string = ''); begin
-  Msg := AnsiReplaceStr(AnsiReplaceStr(Msg, ^J, '<br/>'), '"', '''');
-  JSCode('Ext.Msg.show({title:"Error",msg:"' + AnsiReplaceStr(AnsiReplaceStr(Msg, ^M, '<br/>'), ^J, '<br/>') +
-    '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' + IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
+  JSCode('Ext.Msg.show({title:"Error",msg:' + StrToJS(Msg, true) + ',icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
+    IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
 end;
 
 {
