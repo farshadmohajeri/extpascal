@@ -485,8 +485,8 @@ Shows an error message in browser session using Ext JS style.
 }
 procedure TExtThread.ErrorMessage(Msg : string; Action : string = ''); begin
   Msg := AnsiReplaceStr(AnsiReplaceStr(Msg, ^J, '<br/>'), '"', '''');
-  JSCode('Ext.Msg.show({title:"Error",msg:"' + Msg + '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' +
-    IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
+  JSCode('Ext.Msg.show({title:"Error",msg:"' + AnsiReplaceStr(AnsiReplaceStr(Msg, ^M, '<br/>'), ^J, '<br/>') +
+    '",icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK' + IfThen(Action = '', '', ',fn:function(){' + Action + '}') + '});');
 end;
 
 {
