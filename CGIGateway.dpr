@@ -72,7 +72,6 @@ uses
 const
   Host : string = '127.0.0.1'; // Host IP address, default is '127.0.0.1' (localhost)
   Port : word   = 2014;        // Socket port to comunicate with FastCGI application. Change this if necessary.
-  IISDelim      = '`';         // For IIS bug
   {$IFDEF HAS_CONFIG}
   ConfigSection = 'FCGI';      // Configuration section to be read
   {$ENDIF}
@@ -208,12 +207,13 @@ var
 begin
   with Socket do begin
     Request := '';
-    if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then
+    if GetEnvironmentVariable('REQUEST_METHOD') = 'POST' then begin
+      I := StrToInt(GetEnvironmentVariable('CONTENT_LENGTH'));
       repeat
         Read(R);
-        if R = IISDelim then break; // for IIS bug
         Request := Request + R;
-      until EOF(Input);
+      until (Length(Request) >= I) or EOF(Input) ;
+    end;
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
     SendString(#1#1#0#1#0#8#0#0#0#1#0#0#0#0#0#0 +  // FCGI begin request
@@ -390,7 +390,7 @@ begin
       if Socket.Error = 0 then
         TalkFCGI(EnvVariables)
       else
-        Log('CGI GATEWAY ERROR: Unable to access application '+ FCGIApp +' at '+ Host + ':' + IntToStr(Port));
+        Log('CGI GATEWAY ERROR: Unable to access application '+ FCGIApp +' at '+ Host + ':' + IntToStr(Port) + ', Error: ' + IntToStr(Socket.Error));
     end
     else
       Log('CGI GATEWAY ERROR: '+ FCGIApp +' is not found or has no execute permission.');
