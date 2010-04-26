@@ -21,7 +21,8 @@ procedure TFileUpload.Process; begin
   // process your file here, by example loading a database table with it
   // or reject it using by example: Response := '{success:false,message:"The file is invalid"}';
   with SelfSession do
-    if FileExists(FileUploadedFullName) then DeleteFile(FileUploadedFullName);
+    if FileExists(FileUploadedFullName) then
+      DeleteFile(FileUploadedFullName);
 end;
 
 constructor TFileUpload.Create;
@@ -49,7 +50,6 @@ begin
       Text := 'Upload';
       SubmitAction := TExtFormActionSubmit.Create;
       with SubmitAction do begin
-//        if pos('IIS', SelfSession.WebServer) <> 0 then Params := 'IIS=' + IISDelim; // IIS bug
         Url       := MethodURI(Process); // Post upload process
         WaitMsg   := 'Uploading your file...';
         WaitTitle := 'Wait please';
