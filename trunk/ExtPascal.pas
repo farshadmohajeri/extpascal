@@ -1627,7 +1627,7 @@ var
 begin
   Result := FindMethod(Method, MetName, ObjName);
   JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:"Ajax=1&"+' +
-    Params + '+"' + {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
+    Params + '+"' + 
     '"' + IfThen(ObjName = '', '', ',Obj:' + ObjName) + ',success:AjaxSuccess,failure:AjaxFailure});');
 (*  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params +
     IfThen(ObjName = '', '', ',Obj:' + ObjName) + '},success:AjaxSuccess,failure:AjaxFailure});');*)
@@ -1751,7 +1751,6 @@ end;
 procedure TExtObject.AjaxCode(MethodName : string; RawParams : string; Params : array of const); begin
   JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"Ajax=1&' +
     IfThen(RawParams='', '', RawParams + '&') + FormatParams(MethodName, Params) +
-    {$IFNDEF WebServer}IISDelim+{$ENDIF} // For IIS bug
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
 

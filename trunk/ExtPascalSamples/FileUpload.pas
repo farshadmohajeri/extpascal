@@ -49,7 +49,7 @@ begin
       Text := 'Upload';
       SubmitAction := TExtFormActionSubmit.Create;
       with SubmitAction do begin
-        if pos('IIS', SelfSession.WebServer) <> 0 then Params := 'IIS=' + IISDelim; // IIS bug
+//        if pos('IIS', SelfSession.WebServer) <> 0 then Params := 'IIS=' + IISDelim; // IIS bug
         Url       := MethodURI(Process); // Post upload process
         WaitMsg   := 'Uploading your file...';
         WaitTitle := 'Wait please';

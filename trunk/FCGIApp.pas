@@ -931,7 +931,6 @@ begin
                           break;
                       end
                       else begin
-                        if pos(IISDelim, FRequest) = length(FRequest) then delete(FRequest, length(fRequest), 1); // IIS bug
                         CurrentFCGIThread.FIsUpload := FIsUpload;
                         CurrentFCGIThread.Response  := Response;
                         Response        := CurrentFCGIThread.HandleRequest(FRequest);
