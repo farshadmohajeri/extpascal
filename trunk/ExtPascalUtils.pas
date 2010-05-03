@@ -14,7 +14,7 @@ uses
   Classes, TypInfo;
 
 const
-  ExtPascalVersion = '0.9.8';
+  ExtPascalVersion = '0.9.9';
 
 {$IF not Defined(FPC) and (RTLVersion <= 17)}
 type
