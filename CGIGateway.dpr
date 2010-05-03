@@ -212,7 +212,7 @@ begin
       repeat
         Read(R);
         Request := Request + R;
-      until (Length(Request) >= I) or EOF(Input) ;
+      until (Length(Request) >= I) or EOF(Input);
     end;
     Tam := length(Request);
     if Request <> '' then Request := Request + #1#5#0#1#0#0#0#0;
