@@ -492,13 +492,11 @@ begin
     pOpPlus     := PosEx('+', Res, P);
     pOpMinus    := PosEx('-', Res, P);
     pOpTime     := PosEx('*', Res, P);
-    //pOpDivide   := PosEx('/', Res, P);
     pBlockBegin := PosEx('{', Res, P);
     pBlockEnd   := PosEx('}', Res, P);
     pPropBegin  := PosEx(':', Res, P);
     pPropEnd    := PosEx(',', Res, P);
     pStatEnd    := PosEx(';', Res, P);
-    //pFuncBegin  := PosEx('(', Res, P);
     pSqrBegin   := PosEx('[', Res, P);
     pSqrEnd     := PosEx(']', Res, P);
     pFunction   := PosEx('function', Res, P);
@@ -620,17 +618,6 @@ begin
               dec(Lvl);
               inc(P, AddNewLine(P, SpaceIdents(Lvl)));
             end;
-        (*'(' : begin // function declaration begin
-          // check whether it contains string inside
-          { TODO : currently this is a quick hack! beware! should be fixed soon! }
-          if res[p+1] = '"' then continue;
-          if inProp then begin // proceed only within property
-            // skip function without sub block
-            i := PosEx(')', res, p+1);
-            p := PosEx('{', res, p+1);
-            p := IfThen((p > 0) and (p < i), p-1, i);
-          end;
-        end; *)
         ':' : begin // property value begin
           if Res[P+1] <> ' ' then begin // separate name:value with a space
             insert(' ', Res, P+1);
@@ -747,6 +734,5 @@ function JSDateToDateTime(JSDate : string) : TDateTime; begin
   Result := EncodeDateTime(StrToInt(copy(JSDate, 12, 4)), AnsiIndexStr(copy(JSDate, 5, 3), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) +1,
     StrToInt(copy(JSDate, 9, 2)), StrToInt(copy(JSDate, 17, 2)), StrToInt(copy(JSDate, 20, 2)), StrToInt(copy(JSDate, 23, 2)), 0);
 end;
-
 
 end.
