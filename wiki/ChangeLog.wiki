@@ -1,8 +1,32 @@
 #labels Featured
-===0.9.8 in SVN===
+===0.9.8 Ext JS 3.2.1 support, 03-may-2010===
 
-  * New ExtJS 3.1.0 support
-  * New setup (under-construction)  
+  * New ExtJS 3.2.1, 3.2.0, 3.1.1 and 3.1.0 support
+  * New ExtP Toolkit
+  * New Fusion Charts support
+  * New pre-built wrapper units for ExtJS, ExtToPascal is not necessary
+  * New methods AjaxExtFunction and AjaxForms
+  * New brMobileSafari browser type
+  * New ExtPascalSamples refactored
+  * New DebugExtJS define
+  * New WebServer property
+  * New StyleExtObject property in ExtComponent
+  * New JSDateToDateTime function
+  * New LineToPixels method
+  * New TExtThread.SetCSS method
+  * Updated Cachefly support
+  * Changed Codepress is now directly below httdocs
+  * Fixes on 64K limit, it is over
+  * Fixes for MS-IIS (DataStore.Load and FileUpload) 
+  * Fixes for Embedded WebServer (Ajax calls, FileUpload and Garbage Collector)
+  * Fixes for D2009/2010
+  * Fixes in ErrorMessages
+  * Fixes on FPC compatibility
+  * Fixes in CGIGateway, was removing spaces in the input
+  * Fixes in BeautifyJS
+  * Fixes in StrToJS
+  * Fixes in ExtToPascal
+  * Many other fixes
 
 ===0.9.7, Draw2D initial support, 07-out-2009===
 
