@@ -524,7 +524,7 @@ begin
               P := SplitHTMLString(P, PosEx('"', Res, P+1))
             else // just skip the string
               P := PosEx('"', Res, P+1);
-        '=', '+', '*', '/': begin // neat the math operator
+        '=', '*', '/': begin // neat the math operator
           insert(' ', Res, P);   inc(P);
           if Res[P+1] = '=' then inc(P); // double equals
           insert(' ', Res, P+1); inc(P);

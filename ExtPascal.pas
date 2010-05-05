@@ -104,6 +104,7 @@ type
     constructor Create(NewSocket : integer); override;
     procedure SetPaths; override;
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
+    procedure JSSleep(MiliSeconds : integer);
     procedure SetStyle(pStyle : string = '');
     procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
     procedure SetCSS(pCSS : string; Check : boolean = true);
@@ -187,6 +188,7 @@ type
     function JSString(Method : TExtFunction) : string; overload;
     function JSMethod(Method : TExtFunction) : string;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
+    procedure JSSleep(MiliSeconds: integer);
     function Ajax(MethodName : string; Params : array of const; IsEvent : boolean = false) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure) : TExtFunction; overload;
     function Ajax(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
@@ -625,6 +627,14 @@ begin
     Result := PrevCommand;
 end;
 
+procedure TExtThread.JSSleep(MiliSeconds : integer); begin
+  JSCode('sleep(' + IntToStr(MiliSeconds) + ');')
+end;
+
+procedure TExtObject.JSSleep(MiliSeconds : integer); begin
+  JSCode('sleep(' + IntToStr(MiliSeconds) + ');')
+end;
+
 function TExtObject.MethodURI(Method : TExtProcedure; Params : array of const) : string; begin
   Result := MethodURI(Method);
   if length(Params) <> 0 then begin
@@ -860,6 +870,7 @@ begin
       {$ELSE}
       'function AjaxSuccess(response){try{eval(response.responseText);}catch(err){AjaxError(err.message+"<br/>Use DebugJS define to enhance debugging<br/>"+response.responseText);}};' +
       {$ENDIF}
+      'function sleep(ms){var start=new Date().getTime();for(var i=0;i<1e7;i++)if((new Date().getTime()-start)>ms)break;};'+
       'function AjaxFailure(){AjaxError("Server unavailable, try later.");};' +
       'Download=Ext.DomHelper.append(document.body,{tag:"iframe",cls:"x-hidden"});' +
       Response) + '});'^M^J +
