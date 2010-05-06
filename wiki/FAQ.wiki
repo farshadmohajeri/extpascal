@@ -16,6 +16,9 @@ If the error occurs in a normal response (non-Ajax) Firefox shows a blank page, 
 
 For more resources to catch errors install Firebug. 
  
+===How to catch Ajax errors?===
+Override TExtThread.OnError method 
+
 ===How to send all fields from several forms to server using Ajax?===
 For example: 
 {{{
