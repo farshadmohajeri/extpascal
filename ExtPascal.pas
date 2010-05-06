@@ -1207,7 +1207,7 @@ begin
     P := P + 'Obj=' + ObjName;
   end;
   if P <> '' then P := '?' + P;
-  Result := JSFunction('Download.src="' + CurrentFCGIThread.MethodURI(Method) + P + '";')
+  Result := JSFunction('Download.src="' + CurrentFCGIThread.MethodURI(MetName) + P + '";')
 end;
 
 function TExtObject.RequestDownload(Method : TExtProcedure) : TExtFunction; begin
