@@ -1638,7 +1638,7 @@ var
 begin
   Result := FindMethod(Method, MetName, ObjName);
   JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:"Ajax=1&"+' +
-    Params + IfThen(ObjName = '', '', ',Obj:' + ObjName) + ',success:AjaxSuccess,failure:AjaxFailure});');
+    Params + IfThen(ObjName = '', '', '+"&Obj=' + ObjName + '"') + ',success:AjaxSuccess,failure:AjaxFailure});');
 (*  JSCode('Ext.Ajax.request({url:"' + MethodURI(MetName) + '",params:{Ajax:1,' + Params +
     IfThen(ObjName = '', '', ',Obj:' + ObjName) + '},success:AjaxSuccess,failure:AjaxFailure});');*)
 end;
