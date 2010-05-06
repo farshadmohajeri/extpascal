@@ -17,7 +17,22 @@ If the error occurs in a normal response (non-Ajax) Firefox shows a blank page, 
 For more resources to catch errors install Firebug. 
  
 ===How to catch Ajax errors?===
-Override TExtThread.OnError method 
+Override TExtThread.OnError method.
+
+==How to use the refresh button of the browser?===
+
+In the beginning of Home method use:
+
+{{{
+procedure TMySession.Home; begin
+  if not NewThread then begin <<< The Refresh button was pressed?
+    Refresh;                  <<< Accept Browser Refresh freeing ExtPascal Objects
+    NonExtObjects.Free;       <<< Free non ExtPascal Objects
+  end;
+  NonExtObjects := TNonExtObjects.Create; <<<< Create non ExtPascal Objects
+  [: : :More code: : : : :]
+end; 
+}}}
 
 ===How to send all fields from several forms to server using Ajax?===
 For example: 
