@@ -27,9 +27,9 @@
  * 0.9.5. Wrap Ext JS 2.2.1 and some Ext JS User Extensions (Ext.ux)
  * 0.9.6. Wrap Ext JS 3.0
  * 0.9.7. Wrap Draw2D
- * 0.9.8. ExtPascalUML first release
+ * 0.9.8. Wrap Ext JS 3.2.1
  * 0.9.9. Convert all Ext JS demos to ExtPascal
  * 1.0. Release
  * 1.1. Use JSON from [http://www.screencast.com/users/JackSlocum/folders/Default/media/f7450651-778b-4bbc-9fc4-4e921a7a2705 Ext JS 3.1 GUI Designer]
- * 2.0. ExtPascalUML (Form Designer, Source Editor, Compiler (FPC/Delphi) integration and remote deployment)
- * 3.0. ExtPascalUML (Debugger and help on-line)
+ * 2.0. Blaise (Form Designer, Source Editor, Compiler (FPC/Delphi) integration and remote deployment)
+ * 3.0. Blaise (Debugger and help on-line)
