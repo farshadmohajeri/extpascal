@@ -3,655 +3,192 @@ unit IdExtHTTPServer;
 interface
 
 uses
-  Classes, IdCustomHTTPServer, IdHTTPServer, IdContext, ExtPascalUtils;
+  {$IFNDEF MSWINDOWS}cthreads,{$ENDIF}
+  Classes, IdCustomHTTPServer, IdHTTPServer, ExtPascalClasses, ExtPascalUtils;
 
 type
-  TIdExtHTTPServer = class;
-  {$M+}
-  TIdExtSession = class(TIdHTTPSession)
+  TIdWebSession = class(TCustomWebSession)
   private
-    FCurrentRequest   : TIdHTTPRequestInfo;
-    FCurrentResponse  : TIdHTTPResponseInfo;
-    FNewThread        : boolean;
-    FParams,
-    FGarbageCollector : TStringList;
-    FBrowser          : TBrowser;
-    FFileUploaded,
-    FFileUploadedFullName,
-    FUploadMark       : string;
-    function GetPathInfo: string;
-    function GetRequestHeader(HeaderName: string): string;
-    function GetQuery(const ParamName: string): string;
-    function GetQueryAsDouble(const ParamName: string): double;
-    function GetQueryAsInteger(const ParamName: string): integer;
-    function GetQueryAsTDateTime(const ParamName: string) : TDateTime;
-    function GetQueryAsBoolean(const ParamName: string): boolean;
-    function GetCookie(const CookieName: string): string;
-    procedure WriteUpload(CT, Buffer : string; AResponseInfo: TIdHTTPResponseInfo);
-    function GetWebServer: string;
+    procedure SetCustomResponseHeaders;
   protected
-    // Methods to be implemented in your app
-    FIsAjax, FIsUpload, FIsDownload : boolean;
-    UploadPath : string;
-    function BeforeHandleRequest : boolean; virtual;
-    procedure AfterHandleRequest; virtual;
-    procedure OnError(Msg, Method, Params : string); virtual;
-    procedure OnNotFoundError; virtual;
-    procedure DownloadContentType(Name : string); virtual;
-    procedure SetPaths; virtual; abstract;
+    function CanCallAfterHandleRequest : Boolean; override;
+    function CanHandleUrlPath : Boolean; override;
+    procedure DoLogout; override;
+    procedure DoSetCookie(const Name, ValueRaw : string); override;
+    class function GetCurrentWebSession : TCustomWebSession; override;
+    function GetDocumentRoot : string; override;
+    function GetRequestHeader(const Name : string) : string; override;
+    function GetWebServer : string; override;
+    procedure SendResponse(const Msg : string); override;
+    function TryToServeFile : Boolean; override;
+    function UploadBlockType(const Buffer : AnsiString; var MarkPos : Integer) : TUploadBlockType; override;
+    function UploadNeedUnknownBlock : Boolean; override;
   public
-    Response,
-    ContentType : string; // HTTP content-type header, default is 'text/html'
-    MaxUploadSize : integer;
-    constructor Create(NewSocket : integer); reintroduce; virtual; abstract;
-    constructor CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); override;
-    destructor Destroy; override;
-    procedure HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
-    procedure AddToGarbage(const Name: string; Obj: TObject);
-    procedure DeleteFromGarbage(Obj: TObject); overload;
-    procedure DeleteFromGarbage(Name: string); overload;
-    function FindObject(Name: string): TObject;
-    function ExistsReference(Name: string): boolean;
-    function MethodURI(AMethodName: string): string; overload;
-    function MethodURI(AMethodName : TExtProcedure) : string; overload;
-    procedure Alert(Msg : string); virtual;
-    procedure DownloadBuffer(Name, Buffer : AnsiString; pContentType : string = '');
-    property PathInfo: string read GetPathInfo;
-    property Query[const ParamName: string]: string read GetQuery;
-    property QueryAsBoolean[const ParamName : string] : boolean read GetQueryAsBoolean; // Returns HTTP query info parameters as a boolean
-    property QueryAsInteger[const ParamName : string] : integer read GetQueryAsInteger; // Returns HTTP query info parameters as an integer
-    property QueryAsDouble[const ParamName : string] : double read GetQueryAsDouble; // Returns HTTP query info parameters as a double
-    property QueryAsTDateTime[const ParamName : string] : TDateTime read GetQueryAsTDateTime; // Returns HTTP query info parameters as a TDateTime
-    property Queries : TStringList read FParams; // Returns all HTTP queries as list to ease searching
-    property RequestHeader[HeaderName: string]: string read GetRequestHeader;
-    property Cookie[const CookieName: string]: string read GetCookie;
-    property NewThread : boolean read FNewThread write FNewThread;
-    property IsAjax : boolean read FIsAjax; // Tests if execution is occurring in an AJAX request
-    property IsUpload : boolean read FIsUpload;
-    property IsDownload : boolean read FIsDownload;
-    property Browser : TBrowser read FBrowser;
-    property FileUploaded : string read FFileUploaded;
-    property FileUploadedFullName : string read FFileUploadedFullName;
-    property WebServer : string read GetWebServer;
-  published
-    procedure Home; virtual; abstract;
-    procedure Logout; virtual;
+    constructor Create(AOwner : TObject); override;
   end;
-  {$M-}
-  TIdExtSessionClass = class of TIdExtSession;
-  TIdExtSessionList = class(TIdHTTPDefaultSessionList)
+
+  TWebSession = class(TIdWebSession);
+
+  TIdWebApplication = class(TCustomWebApplication)
   private
-    FOwner: TIdExtHTTPServer;
+    FServer: TIdHTTPServer;
   public
-    constructor Create(const AOwner: TIdExtHTTPServer); reintroduce;
-    function CreateSession(const RemoteIP, SessionID: String): TIdHTTPSession; override;
+    constructor Create(ATitle : string; ASessionClass : TCustomWebSessionClass; APort : word = 80;
+                       AMaxIdleMinutes : word = 30; AMaxConns : integer = 1000); reintroduce;
+    procedure DoRun; override;
   end;
-
-  TIdExtHTTPServer = class(TIdHTTPServer)
-  private
-    FExtSessionClass: TIdExtSessionClass;
-  protected
-    procedure InitComponent; override;
-    procedure CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
-  public
-    constructor Create(const AExtSessionClass: TIdExtSessionClass); reintroduce;
-  published
-    property ExtSessionClass: TIdExtSessionClass read FExtSessionClass write FExtSessionClass;
-  end;
-
-  TIdExtApplication = class
-  private
-    FServer: TIdExtHTTPServer;
-    FIcon : string;
-  public
-    Title: string;
-    constructor Create(ATitle : string; ASessionClass : TIdExtSessionClass; APort : word = 80; AMaxIdleMinutes : word = 30; AMaxConns : integer = 1000);
-    procedure Run;
-    property Icon: string read FIcon write FIcon;
-  end;
-
-  TMimeExtension = record
-    Ext: string;
-    MimeType: string;
-  end;
-
-const
-  MIMEExtensions: array[1..176] of TMimeExtension = (
-    (Ext: '.gif'; MimeType: 'image/gif'),
-    (Ext: '.jpg'; MimeType: 'image/jpeg'),
-    (Ext: '.jpeg'; MimeType: 'image/jpeg'),
-    (Ext: '.html'; MimeType: 'text/html'),
-    (Ext: '.htm'; MimeType: 'text/html'),
-    (Ext: '.css'; MimeType: 'text/css'),
-    (Ext: '.js'; MimeType: 'text/javascript'),
-    (Ext: '.txt'; MimeType: 'text/plain'),
-    (Ext: '.xls'; MimeType: 'application/excel'),
-    (Ext: '.rtf'; MimeType: 'text/richtext'),
-    (Ext: '.wq1'; MimeType: 'application/x-lotus'),
-    (Ext: '.wk1'; MimeType: 'application/x-lotus'),
-    (Ext: '.raf'; MimeType: 'application/raf'),
-    (Ext: '.png'; MimeType: 'image/x-png'),
-    (Ext: '.c'; MimeType: 'text/plain'),
-    (Ext: '.c++'; MimeType: 'text/plain'),
-    (Ext: '.pl'; MimeType: 'text/plain'),
-    (Ext: '.cc'; MimeType: 'text/plain'),
-    (Ext: '.h'; MimeType: 'text/plain'),
-    (Ext: '.talk'; MimeType: 'text/x-speech'),
-    (Ext: '.xbm'; MimeType: 'image/x-xbitmap'),
-    (Ext: '.xpm'; MimeType: 'image/x-xpixmap'),
-    (Ext: '.ief'; MimeType: 'image/ief'),
-    (Ext: '.jpe'; MimeType: 'image/jpeg'),
-    (Ext: '.tiff'; MimeType: 'image/tiff'),
-    (Ext: '.tif'; MimeType: 'image/tiff'),
-    (Ext: '.rgb'; MimeType: 'image/rgb'),
-    (Ext: '.g3f'; MimeType: 'image/g3fax'),
-    (Ext: '.xwd'; MimeType: 'image/x-xwindowdump'),
-    (Ext: '.pict'; MimeType: 'image/x-pict'),
-    (Ext: '.ppm'; MimeType: 'image/x-portable-pixmap'),
-    (Ext: '.pgm'; MimeType: 'image/x-portable-graymap'),
-    (Ext: '.pbm'; MimeType: 'image/x-portable-bitmap'),
-    (Ext: '.pnm'; MimeType: 'image/x-portable-anymap'),
-    (Ext: '.bmp'; MimeType: 'image/x-ms-bmp'),
-    (Ext: '.ras'; MimeType: 'image/x-cmu-raster'),
-    (Ext: '.pcd'; MimeType: 'image/x-photo-cd'),
-    (Ext: '.cgm'; MimeType: 'image/cgm'),
-    (Ext: '.mil'; MimeType: 'image/x-cals'),
-    (Ext: '.cal'; MimeType: 'image/x-cals'),
-    (Ext: '.fif'; MimeType: 'image/fif'),
-    (Ext: '.dsf'; MimeType: 'image/x-mgx-dsf'),
-    (Ext: '.cmx'; MimeType: 'image/x-cmx'),
-    (Ext: '.wi'; MimeType: 'image/wavelet'),
-    (Ext: '.dwg'; MimeType: 'image/vnd.dwg'),
-    (Ext: '.dxf'; MimeType: 'image/vnd.dxf'),
-    (Ext: '.svf'; MimeType: 'image/vnd.svf'),
-    (Ext: '.au'; MimeType: 'audio/basic'),
-    (Ext: '.snd'; MimeType: 'audio/basic'),
-    (Ext: '.aif'; MimeType: 'audio/x-aiff'),
-    (Ext: '.aiff'; MimeType: 'audio/x-aiff'),
-    (Ext: '.aifc'; MimeType: 'audio/x-aiff'),
-    (Ext: '.wav'; MimeType: 'audio/x-wav'),
-    (Ext: '.mpa'; MimeType: 'audio/x-mpeg'),
-    (Ext: '.abs'; MimeType: 'audio/x-mpeg'),
-    (Ext: '.mpega'; MimeType: 'audio/x-mpeg'),
-    (Ext: '.mp2a'; MimeType: 'audio/x-mpeg-2'),
-    (Ext: '.mpa2'; MimeType: 'audio/x-mpeg-2'),
-    (Ext: '.es'; MimeType: 'audio/echospeech'),
-    (Ext: '.vox'; MimeType: 'audio/voxware'),
-    (Ext: '.lcc'; MimeType: 'application/fastman'),
-    (Ext: '.ra'; MimeType: 'application/x-pn-realaudio'),
-    (Ext: '.ram'; MimeType: 'application/x-pn-realaudio'),
-    (Ext: '.mmid'; MimeType: 'x-music/x-midi'),
-    (Ext: '.skp'; MimeType: 'application/vnd.koan'),
-    (Ext: '.talk'; MimeType: 'text/x-speech'),
-    (Ext: '.mpeg'; MimeType: 'video/mpeg'),
-    (Ext: '.mpg'; MimeType: 'video/mpeg'),
-    (Ext: '.mpe'; MimeType: 'video/mpeg'),
-    (Ext: '.mpv2'; MimeType: 'video/mpeg-2'),
-    (Ext: '.mp2v'; MimeType: 'video/mpeg-2'),
-    (Ext: '.qt'; MimeType: 'video/quicktime'),
-    (Ext: '.mov'; MimeType: 'video/quicktime'),
-    (Ext: '.avi'; MimeType: 'video/x-msvideo'),
-    (Ext: '.movie'; MimeType: 'video/x-sgi-movie'),
-    (Ext: '.vdo'; MimeType: 'video/vdo'),
-    (Ext: '.viv'; MimeType: 'video/vnd.vivo'),
-    (Ext: '.pac'; MimeType: 'application/x-ns-proxy-autoconfig'),
-    (Ext: '.ai'; MimeType: 'application/postscript'),
-    (Ext: '.eps'; MimeType: 'application/postscript'),
-    (Ext: '.ps'; MimeType: 'application/postscript'),
-    (Ext: '.rtf'; MimeType: 'application/rtf'),
-    (Ext: '.pdf'; MimeType: 'application/pdf'),
-    (Ext: '.mif'; MimeType: 'application/vnd.mif'),
-    (Ext: '.t'; MimeType: 'application/x-troff'),
-    (Ext: '.tr'; MimeType: 'application/x-troff'),
-    (Ext: '.roff'; MimeType: 'application/x-troff'),
-    (Ext: '.man'; MimeType: 'application/x-troff-man'),
-    (Ext: '.me'; MimeType: 'application/x-troff-me'),
-    (Ext: '.ms'; MimeType: 'application/x-troff-ms'),
-    (Ext: '.latex'; MimeType: 'application/x-latex'),
-    (Ext: '.tex'; MimeType: 'application/x-tex'),
-    (Ext: '.texinfo'; MimeType: 'application/x-texinfo'),
-    (Ext: '.texi'; MimeType: 'application/x-texinfo'),
-    (Ext: '.dvi'; MimeType: 'application/x-dvi'),
-    (Ext: '.doc'; MimeType: 'application/msword'),
-    (Ext: '.oda'; MimeType: 'application/oda'),
-    (Ext: '.evy'; MimeType: 'application/envoy'),
-    (Ext: '.gtar'; MimeType: 'application/x-gtar'),
-    (Ext: '.tar'; MimeType: 'application/x-tar'),
-    (Ext: '.ustar'; MimeType: 'application/x-ustar'),
-    (Ext: '.bcpio'; MimeType: 'application/x-bcpio'),
-    (Ext: '.cpio'; MimeType: 'application/x-cpio'),
-    (Ext: '.shar'; MimeType: 'application/x-shar'),
-    (Ext: '.zip'; MimeType: 'application/zip'),
-    (Ext: '.hqx'; MimeType: 'application/mac-binhex40'),
-    (Ext: '.sit'; MimeType: 'application/x-stuffit'),
-    (Ext: '.sea'; MimeType: 'application/x-stuffit'),
-    (Ext: '.fif'; MimeType: 'application/fractals'),
-    (Ext: '.bin'; MimeType: 'application/octet-stream'),
-    (Ext: '.uu'; MimeType: 'application/octet-stream'),
-    (Ext: '.exe'; MimeType: 'application/octet-stream'),
-    (Ext: '.src'; MimeType: 'application/x-wais-source'),
-    (Ext: '.wsrc'; MimeType: 'application/x-wais-source'),
-    (Ext: '.hdf'; MimeType: 'application/hdf'),
-    (Ext: '.ls'; MimeType: 'text/javascript'),
-    (Ext: '.mocha'; MimeType: 'text/javascript'),
-    (Ext: '.vbs'; MimeType: 'text/vbscript'),
-    (Ext: '.sh'; MimeType: 'application/x-sh'),
-    (Ext: '.csh'; MimeType: 'application/x-csh'),
-    (Ext: '.pl'; MimeType: 'application/x-perl'),
-    (Ext: '.tcl'; MimeType: 'application/x-tcl'),
-    (Ext: '.spl'; MimeType: 'application/futuresplash'),
-    (Ext: '.mbd'; MimeType: 'application/mbedlet'),
-    (Ext: '.swf'; MimeType: 'application/x-director'),
-    (Ext: '.pps'; MimeType: 'application/mspowerpoint'),
-    (Ext: '.asp'; MimeType: 'application/x-asap'),
-    (Ext: '.asn'; MimeType: 'application/astound'),
-    (Ext: '.axs'; MimeType: 'application/x-olescript'),
-    (Ext: '.ods'; MimeType: 'application/x-oleobject'),
-    (Ext: '.opp'; MimeType: 'x-form/x-openscape'),
-    (Ext: '.wba'; MimeType: 'application/x-webbasic'),
-    (Ext: '.frm'; MimeType: 'application/x-alpha-form'),
-    (Ext: '.wfx'; MimeType: 'x-script/x-wfxclient'),
-    (Ext: '.pcn'; MimeType: 'application/x-pcn'),
-    (Ext: '.ppt'; MimeType: 'application/vnd.ms-powerpoint'),
-    (Ext: '.svd'; MimeType: 'application/vnd.svd'),
-    (Ext: '.ins'; MimeType: 'application/x-net-install'),
-    (Ext: '.ccv'; MimeType: 'application/ccv'),
-    (Ext: '.vts'; MimeType: 'workbook/formulaone'),
-    (Ext: '.wrl'; MimeType: 'x-world/x-vrml'),
-    (Ext: '.vrml'; MimeType: 'x-world/x-vrml'),
-    (Ext: '.vrw'; MimeType: 'x-world/x-vream'),
-    (Ext: '.p3d'; MimeType: 'application/x-p3d'),
-    (Ext: '.svr'; MimeType: 'x-world/x-svr'),
-    (Ext: '.wvr'; MimeType: 'x-world/x-wvr'),
-    (Ext: '.3dmf'; MimeType: 'x-world/x-3dmf'),
-    (Ext: '.ma'; MimeType: 'application/mathematica'),
-    (Ext: '.msh'; MimeType: 'x-model/x-mesh'),
-    (Ext: '.v5d'; MimeType: 'application/vis5d'),
-    (Ext: '.igs'; MimeType: 'application/iges'),
-    (Ext: '.dwf'; MimeType: 'drawing/x-dwf'),
-    (Ext: '.showcase'; MimeType: 'application/x-showcase'),
-    (Ext: '.slides'; MimeType: 'application/x-showcase'),
-    (Ext: '.sc'; MimeType: 'application/x-showcase'),
-    (Ext: '.sho'; MimeType: 'application/x-showcase'),
-    (Ext: '.show'; MimeType: 'application/x-showcase'),
-    (Ext: '.ins'; MimeType: 'application/x-insight'),
-    (Ext: '.insight'; MimeType: 'application/x-insight'),
-    (Ext: '.ano'; MimeType: 'application/x-annotator'),
-    (Ext: '.dir'; MimeType: 'application/x-dirview'),
-    (Ext: '.lic'; MimeType: 'application/x-enterlicense'),
-    (Ext: '.faxmgr'; MimeType: 'application/x-fax-manager'),
-    (Ext: '.faxmgrjob'; MimeType: 'application/x-fax-manager-job'),
-    (Ext: '.icnbk'; MimeType: 'application/x-iconbook'),
-    (Ext: '.wb'; MimeType: 'application/x-inpview'),
-    (Ext: '.inst'; MimeType: 'application/x-install'),
-    (Ext: '.mail'; MimeType: 'application/x-mailfolder'),
-    (Ext: '.pp'; MimeType: 'application/x-ppages'),
-    (Ext: '.ppages'; MimeType: 'application/x-ppages'),
-    (Ext: '.sgi-lpr'; MimeType: 'application/x-sgi-lpr'),
-    (Ext: '.tardist'; MimeType: 'application/x-tardist'),
-    (Ext: '.ztardist'; MimeType: 'application/x-ztardist'),
-    (Ext: '.wkz'; MimeType: 'application/x-wingz'),
-    (Ext: '.xml'; MimeType: 'application/xml'),
-    (Ext: '.iv'; MimeType: 'graphics/x-inventor'));
-
-function FileType2MimeType(const AFileName: string): string;
 
 var
-  Application: TIdExtApplication;
+  Application : TIdWebApplication; // Indy web application object
 
 threadvar
-  CurrentFCGIThread : TIdExtSession;
+  CurrentWebSession : TIdWebSession; // current Indy web session object
+
+function CreateWebApplication(const ATitle: string; ASessionClass: TCustomWebSessionClass; APort: Word = 80;
+                              AMaxIdleMinutes : Word = 30; AShutdownAfterLastThreadDown : Boolean = False;
+                              AMaxConns : Integer = 1000): TIdWebApplication;
 
 implementation
 
 uses
-  {$IFDEF MSWINDOWS}Windows, Messages,{$ENDIF} StrUtils, SysUtils, IdGlobal, IdGlobalProtocols, ExtPascal;
+  {$IFDEF MSWINDOWS}Windows, Messages,{$ENDIF} StrUtils, SysUtils,
+  IdGlobal, IdGlobalProtocols, IdCookie, IdContext;
 
-function FileType2MimeType(const AFileName: string): string;
-var
-  FileExt: string;
-  I: Integer;
+function CreateWebApplication(const ATitle : string; ASessionClass:  TCustomWebSessionClass; APort: Word = 80;
+                              AMaxIdleMinutes : Word = 30; AShutdownAfterLastThreadDown : Boolean = False;
+                              AMaxConns : Integer = 1000) : TIdWebApplication;
 begin
-  Result := 'text/html';
-  FileExt := ExtractFileExt(AFileName);
-  for I := Low(MIMEExtensions) to High(MIMEExtensions) do
-    if SameText(MIMEExtensions[I].Ext, FileExt) then begin
-      Result := MIMEExtensions[I].MimeType;
-      Break;
-    end;
+  Result := TIdWebApplication.Create(ATitle, ASessionClass, APort, AMaxIdleMinutes, AMaxConns);
 end;
 
-{ TIdExtHTTPServer }
+type
+  TIdWebHTTPServer = class(TIdHTTPServer)
+  protected
+    procedure InitComponent; override;
+    procedure CommandGet(AContext : TIdContext; ARequestInfo : TIdHTTPRequestInfo; AResponseInfo : TIdHTTPResponseInfo);
+  end;
 
-constructor TIdExtHTTPServer.Create(const AExtSessionClass: TIdExtSessionClass); begin
-  ExtSessionClass := AExtSessionClass;
-  inherited Create(nil);
-end;
+  TIdWebHTTPSessionList = class(TIdHTTPDefaultSessionList)
+  private
+    FOwner : TIdWebHTTPServer;
+  public
+    constructor Create(const AOwner : TIdWebHTTPServer); reintroduce;
+    function CreateSession(const RemoteIP, SessionID : string) : TIdHTTPSession; override;
+  end;
 
-procedure TIdExtSession.WriteUpload(CT, Buffer : string; AResponseInfo: TIdHTTPResponseInfo);
-var
-  I, J, Tam : integer;
-  F : file;
-begin
-  FIsUpload := true;
-  J := pos('=', CT);
-  FUploadMark := '--' + copy(CT, J+1, length(CT));
-  I := pos(FUploadMark, Buffer);
-  I := posex('filename="', Buffer, I);
-  J := posex('"', Buffer, I+10);
-  FFileUploaded := ExtractFileName(copy(Buffer, I+10, J-I-10));
-  if FFileUploaded <> '' then begin
-    I := posex(^M^J^M^J, Buffer, I) + 4;
-    J := posex(FUploadMark, Buffer, I);
-    if J = 0 then
-      Response := '{success:false,file:"' + FileUploaded + '"}'
-    else begin // unique block
-      if MaxUploadSize <> 0 then begin
-        FFileUploadedFullName := '.' + UploadPath + '/' + FFileUploaded;
-        Assign(F, FileUploadedFullName);
-        Rewrite(F, 1);
-        Tam := J - I - 2;
-        if Tam <= MaxUploadSize then
-          Blockwrite(F, Buffer[I], Tam);
-        Close(F);
-      end;
-      Response := '{success:true,file:"' + FileUploaded + '"}';
-    end;
-  end
-  else
-    Response := '{success:false,message:"File not informed"}';
-  FCurrentResponse := AResponseInfo;
-  FCurrentResponse.ContentText := Response;
-end;
+  TIdWebHTTPSession = class(TIdHTTPSession)
+  private
+    FCurrentRequest   : TIdHTTPRequestInfo;
+    FCurrentResponse  : TIdHTTPResponseInfo;
+    FSession : TIdWebSession;
+    procedure ParseCookies(IdCookies : TIdServerCookies);
+  public
+    constructor CreateInitialized(AOwner : TIdHTTPCustomSessionList; const SessionID, RemoteIP : string); override;
+    destructor Destroy; override;
+    procedure HandleRequest(ARequest : TIdHTTPRequestInfo; AResponse : TIdHTTPResponseInfo);
+  end;
 
-procedure TIdExtHTTPServer.CommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); begin
-  if pos('multipart/form-data', ARequestInfo.ContentType) <> 0 then
-    TIdExtSession(ARequestInfo.Session).WriteUpload(ARequestInfo.ContentType, ARequestInfo.UnparsedParams, AResponseInfo);
-  TIdExtSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
-end;
+{ TIdWebHTTPSessionList }
 
-procedure TIdExtHTTPServer.InitComponent; begin
-  inherited;
-  SessionState := True;
-  AutoStartSession := True;
-  SessionList.Free;
-  FSessionList := TIdExtSessionList.Create(Self);
-end;
-
-{ TIdExtSessionList }
-
-constructor TIdExtSessionList.Create(const AOwner: TIdExtHTTPServer); begin
+constructor TIdWebHTTPSessionList.Create(const AOwner : TIdWebHTTPServer); begin
   FOwner := AOwner;
   inherited Create(AOwner);
 end;
 
-function TIdExtSessionList.CreateSession(const RemoteIP, SessionID: String): TIdHTTPSession; begin
-  Result := FOwner.ExtSessionClass.CreateInitialized(Self, SessionID, RemoteIP);
+function TIdWebHTTPSessionList.CreateSession(const RemoteIP, SessionID : string) : TIdHTTPSession; begin
+  Result := TIdWebHTTPSession.CreateInitialized(Self, SessionID, RemoteIP);
   SessionList.Add(Result);
 end;
 
-{ TIdExtSession }
+{ TIdWebHTTPServer }
 
-procedure TIdExtSession.AddToGarbage(const Name: string; Obj: TObject); begin
-  FGarbageCollector.AddObject(AnsiReplaceStr(Name, IdentDelim, ''), Obj);
+procedure TIdWebHTTPServer.CommandGet(AContext : TIdContext; ARequestInfo :  TIdHTTPRequestInfo; AResponseInfo : TIdHTTPResponseInfo);
+var
+  I : Integer;
+begin
+  if pos('multipart/form-data', ARequestInfo.ContentType) <> 0 then
+    with TIdWebHTTPSession(ARequestInfo.Session) do begin
+      I := 0;
+      FSession.UploadPrepare(ARequestInfo.ContentType, ARequestInfo.UnparsedParams, I);
+      FSession.UploadWriteFile(ARequestInfo.UnparsedParams, I);
+      FCurrentResponse := AResponseInfo;
+      FCurrentResponse.ContentText := FSession.Response;
+    end;
+  TIdWebHTTPSession(ARequestInfo.Session).HandleRequest(ARequestInfo, AResponseInfo);
 end;
 
-procedure TIdExtSession.AfterHandleRequest; begin end;
-
-function TIdExtSession.BeforeHandleRequest: boolean; begin
-  Result := True;
-end;
-
-constructor TIdExtSession.CreateInitialized(AOwner: TIdHTTPCustomSessionList; const SessionID, RemoteIP: String); begin
+procedure TIdWebHTTPServer.InitComponent; begin
   inherited;
-  SetPaths;
-  FNewThread := False;
-  FGarbageCollector := TStringList.Create;
-  FGarbageCollector.Sorted := True;
-  FParams := TStringList.Create;
-  FParams.StrictDelimiter := true;
-  FParams.Delimiter       := '&';
+  SessionState := True;
+  AutoStartSession := True;
+  SessionList.Free;
+  FSessionList := TIdWebHTTPSessionList.Create(Self);
 end;
 
-procedure TIdExtSession.DeleteFromGarbage(Obj: TObject);
-var
-  I: Integer;
-begin
-  I := FGarbageCollector.IndexOfObject(Obj);
-  if I >= 0 then TExtObject(FGarbageCollector.Objects[I]).IsChild := true;
+{ TIdWebHTTPSession }
+
+constructor TIdWebHTTPSession.CreateInitialized(AOwner : TIdHTTPCustomSessionList; const SessionID, RemoteIP : string); begin
+  inherited;
+  FSession := TIdWebSession(Application.SessionClass.Create(Self));
+  FSession.FApplication := Application;
+  FSession.AfterNewSession;
 end;
 
-procedure TIdExtSession.DeleteFromGarbage(Name: string);
-var
-  I: Integer;
-begin
-  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, ''));
-  if I >= 0 then TExtObject(FGarbageCollector.Objects[I]).IsChild := true;
-end;
-
-function TIdExtSession.FindObject(Name: string): TObject;
-var
-  I: Integer;
-begin
-  I := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, ''));
-  if I >= 0 then
-    Result := FGarbageCollector.Objects[I]
-  else
-    Result := nil;
-end;
-
-function TIdExtSession.ExistsReference(Name : string) : boolean; begin
-  Result := FGarbageCollector.IndexOf(AnsiReplaceStr(Name, IdentDelim, '')) <> -1;
-end;
-
-destructor TIdExtSession.Destroy;
-var
-  I: Integer;
-begin
-  with FGarbageCollector do begin
-    for I := Count-1 downto 0 do
-      try
-        if (Objects[I] <> nil) and not TExtObject(Objects[I]).IsChild then TExtObject(Objects[I]).Free;
-      except end;
-    Free;
-  end;
-  FGarbageCollector := nil;
-  FreeAndNil(FParams);
+destructor TIdWebHTTPSession.Destroy; begin
+  FSession.Free;
   inherited;
 end;
 
-procedure TIdExtSession.DownloadBuffer(Name, Buffer: AnsiString; pContentType: string); begin
-  if pContentType = '' then
-    DownloadContentType(Name)
-  else
-    ContentType := pContentType;
-  FCurrentResponse.CustomHeaders.Values['content-disposition'] := 'attachment;filename="' + ExtractFileName(Name) + '"';
-  Response    := Buffer;
-  FIsDownload := true;
-end;
-
-procedure TIdExtSession.DownloadContentType(Name: string); begin end;
-
-function TIdExtSession.GetCookie(const CookieName: string): string;
-var
-  FCookieIndex : Integer;
-begin
-  FCookieIndex := FCurrentRequest.Cookies.GetCookieIndex(0, CookieName);
-  if FCookieIndex >= 0 then
-    Result := FCurrentRequest.Cookies[FCookieIndex].CookieText;
-end;
-
-function TIdExtSession.GetPathInfo: string; begin
-  Result := FCurrentRequest.Document;
-  if (Result <> '') and (Result[1] = '/') then
-    Delete(Result, 1, 1);
-end;
-
-function TIdExtSession.GetQuery(const ParamName: string): string; begin
-  Result := FParams.Values[ParamName];
-end;
-
-function TIdExtSession.GetQueryAsBoolean(const ParamName: string): boolean; begin
-  Result := Query[ParamName] = 'true';
-end;
-
-function TIdExtSession.GetQueryAsDouble(const ParamName: string): double; begin
-  Result := StrToFloatDef(Query[ParamName], 0)
-end;
-
-function TIdExtSession.GetQueryAsInteger(const ParamName: string): integer; begin
-  Result := StrToIntDef(Query[ParamName], 0)
-end;
-
-function TIdExtSession.GetQueryAsTDateTime(const ParamName: string): TDateTime; begin
-  Result := StrToFloatDef(Query[ParamName], 0)
-end;
-
-function TIdExtSession.GetRequestHeader(HeaderName: string): string; begin
-  if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
-  HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
-  try
-    Result := FCurrentRequest.RawHeaders.Values[HeaderName];
-    if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
-  except end;
-end;
-
-function TIdExtSession.GetWebServer: string; begin
-  Result := 'Embedded'
-end;
-
-procedure TIdExtSession.HandleRequest(ARequest: TIdHTTPRequestInfo; AResponse: TIdHTTPResponseInfo);
-
-  function CheckIfFileIsModified(FileName: string): Boolean;
-  const
-    FCompareDateFmt = 'yyyymmddhhnnss';
-  var
-    FFileDateTime: TDateTime;
-  begin
-    Result := True;
-    if (ARequest.RawHeaders.Values['if-Modified-Since'] <> '') then begin
-      FFileDateTime := FileDateToDateTime(FileAge(FileName));
-      Result := not SameText(FormatDateTime(FCompareDateFmt, FFileDateTime),
-        FormatDateTime(FCompareDateFmt, StrInternetToDateTime(ARequest.RawHeaders.Values['if-Modified-Since'])));
-    end;
-  end;
-
-  function TryToServeFile: boolean;
-  var
-    FileName: string;
-    FileDateTime: TDateTime;
-  begin
-    FileName := ExtractFilePath(ParamStr(0));
-    FileName := StringReplace(FileName, ExtractFileDrive(FileName), '', []);
-    if (Length(ARequest.Document) > 1) and (ARequest.Document[1]in ['/', '\']) then
-      FileName := FileName + Copy(ARequest.Document, 2, MaxInt)
-    else
-      FileName := FileName + ARequest.Document;
-    FileName := ExpandFilename(FileName);
-    if FileExists(FileName) then begin
-      Result := True;
-      if CheckIfFileIsModified(FileName) then begin
-        AResponse.ContentStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
-        AResponse.FreeContentStream := True;
-        AResponse.ContentLength := AResponse.ContentStream.Size;
-        FileDateTime := FileDateToDateTime(FileAge(FileName));
-        AResponse.LastModified := FileDateTime;
-        AResponse.ContentType  := FileType2MimeType(FileName);
-      end
-      else
-        AResponse.ResponseNo := 304; // Not Modified, use cache version
-    end
-    else begin
-      AResponse.ResponseNo := 404; // Not found
-      Result := false;
-    end;
-  end;
-
-type
-  MethodCall = procedure of object;
-var
-  PageMethod : TMethod;
-  MethodCode : pointer;
-begin
-  CurrentFCGIThread := Self;
+procedure TIdWebHTTPSession.HandleRequest(ARequest : TIdHTTPRequestInfo; AResponse : TIdHTTPResponseInfo); begin
+  CurrentWebSession := FSession;
   FCurrentRequest   := ARequest;
   FCurrentResponse  := AResponse;
-  if ARequest.Cookies.GetCookieIndex(0, 'FCGIThread') = -1 then
-    with AResponse.Cookies.Add do begin
-      CookieName := 'FCGIThread';
-      Value      := SessionID;
-      ARequest.Cookies.AddSrcCookie(CookieText);
-    end;
-  if not IsUpload then begin
-    AResponse.ContentType := 'text/html';
-    Response := '';
-    FParams.DelimitedText := FCurrentRequest.UnParsedParams;
+  ParseCookies(ARequest.Cookies);
+  if FSession.Cookie['FCGIThread'] = '' then
+    FSession.SetCookie('FCGIThread', SessionID);
+  if not FSession.IsUpload then begin
+    FSession.ContentType := 'text/html';
+    FSession.Response := '';
+    FSession.FCustomResponseHeaders.Clear;
+    FSession.SetQueryText(FCurrentRequest.UnParsedParams, False);
   end;
-  if Browser = brUnknown then
-    FBrowser := DetermineBrowser(RequestHeader['HTTP_USER_AGENT']);
-  if BeforeHandleRequest then
-    if PathInfo = '' then
-      Home
-    else begin
-      if (Query['Obj'] = '') or (Query['IsEvent'] = '1') then
-        PageMethod.Data := Self
-      else
-        PageMethod.Data := FindObject(Query['Obj']);
-      MethodCode := TObject(PageMethod.Data).MethodAddress(PathInfo);
-      if MethodCode <> nil then begin
-        PageMethod.Code := MethodCode;
-        try
-          MethodCall(PageMethod); // Call published method
-        except
-          on E : Exception do OnError(E.Message, PathInfo, FCurrentRequest.UnParsedParams)
-        end;
-      end
-      else
-        if not TryToServeFile then OnNotFoundError;
-    end;
-  if not IsUpload then begin
-    AfterHandleRequest;
-    if not Assigned(AResponse.ContentStream) and (Response <> '') and (AResponse.ResponseNo <> 304) then
-      FCurrentResponse.ContentText := Response;
+  with FSession do begin
+    FPathInfo := FCurrentRequest.Document;
+    if (FPathInfo <> '') and (FPathInfo[1] = '/') then Delete(FPathInfo, 1, 1);
+    FScriptName := Query['SCRIPT_NAME'];
+    if (FScriptName = '') or (FScriptName[Length(FScriptName)] <> '/') then FScriptName := FScriptName + '/';
   end;
-  FIsDownload := false;
-  FIsUpload   := false;
+  FSession.HandleRequest(FCurrentRequest.UnParsedParams);
+  if not FSession.IsUpload then begin
+    TIdWebSession(FSession).SetCustomResponseHeaders;
+    if not Assigned(AResponse.ContentStream) and (FSession.Response <> '') and (AResponse.ResponseNo <> 304) then
+      FCurrentResponse.ContentText := FSession.Response;
+  end;
+  FCurrentResponse.ContentType := FSession.ContentType;
+  FSession.IsDownload := false;
+  FSession.IsUpload   := false;
 end;
 
-procedure TIdExtSession.Logout; begin
-  Response := 'window.close();';
-  FLastTimeStamp := 0;
+procedure TIdWebHTTPSession.ParseCookies(IdCookies : TIdServerCookies);
+var
+  I: Integer;
+begin
+  with FSession do begin
+    FCookies.Clear;
+    for I := 0 to IdCookies.Count - 1 do
+      with IdCookies[I] do
+        FCookies.Values[CookieName] := CookieText;
+  end;
 end;
 
-function TIdExtSession.MethodURI(AMethodName : string) : string; begin
-  if AMethodName[1] <> '/' then AMethodName := '/' + AMethodName;
-  Result := Query['SCRIPT_NAME'] + AMethodName;
-end;
+{ TIdWebApplication }
 
-function TIdExtSession.MethodURI(AMethodName : TExtProcedure) : string; begin
-  Result := CurrentFCGIThread.MethodName(@AMethodName);
-  if Result <> '' then Result := MethodURI(Result);
-end;
-
-procedure TIdExtSession.OnError(Msg, Method, Params: string); begin
-  Response := 'alert("' + Msg + '\non Method: ' + Method + '\nParams: ' + Params + '");'
-end;
-
-procedure TIdExtSession.OnNotFoundError; begin
-  Response := 'alert("Method: ''' + PathInfo + ''' not found");';
-end;
-
-procedure TIdExtSession.Alert(Msg: string); begin
-  Response := 'alert("' + Msg + '");'
-end;
-
-{ TIdExtApplication }
-
-constructor TIdExtApplication.Create(ATitle: string; ASessionClass: TIdExtSessionClass; APort, AMaxIdleMinutes: word; AMaxConns: integer); begin
-  inherited Create;
-  Title := ATitle;
-  FServer := TIdExtHTTPServer.Create(ASessionClass);
-  with FServer do begin
+constructor TIdWebApplication.Create(ATitle : string; ASessionClass : TCustomWebSessionClass;
+                                     APort, AMaxIdleMinutes : word; AMaxConns : integer); begin
+  inherited Create(ATitle, ASessionClass, APort, AMaxIdleMinutes, AMaxConns);
+  Assert(Assigned(ASessionClass) and ASessionClass.InheritsFrom(TIdWebSession));
+  FServer := TIdWebHTTPServer.Create(nil);
+  with TIdWebHTTPServer(FServer) do begin
     OnCommandGet   := CommandGet;
     SessionTimeOut := AMaxIdleMinutes;
     MaxConnections := AMaxConns;
@@ -667,15 +204,15 @@ constructor TIdExtApplication.Create(ATitle: string; ASessionClass: TIdExtSessio
   end;
 end;
 
-procedure TIdExtApplication.Run;
+procedure TIdWebApplication.DoRun;
 {$IFDEF MSWINDOWS}
 var
   Msg : TMsg;
   Unicode : boolean;
 {$ENDIF}
 begin
-  FServer.Startup;
-  while true do
+  TIdWebHTTPServer(FServer).Startup;
+  while not Terminated do
     {$IFDEF MSWINDOWS}
     if PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE) then begin
       Unicode := (Msg.hwnd <> 0) and IsWindowUnicode(Msg.hwnd);
@@ -693,6 +230,136 @@ begin
     else
     {$ENDIF}
       sleep(10);
+end;
+
+{ TIdWebSession }
+
+constructor TIdWebSession.Create(AOwner : TObject); begin
+  inherited Create(AOwner);
+  FOwner := AOwner as TIdWebHTTPSession;
+end;
+
+function TIdWebSession.CanCallAfterHandleRequest : Boolean; begin
+  Result := not IsUpload;
+end;
+
+function TIdWebSession.CanHandleUrlPath : Boolean; begin
+  Result := True;
+end;
+
+procedure TIdWebSession.DoLogout; begin
+  inherited;
+  TIdWebHTTPSession(FOwner).FLastTimeStamp := 0;
+end;
+
+procedure TIdWebSession.DoSetCookie(const Name, ValueRaw : string); begin
+  with TIdWebHTTPSession(FOwner) do begin
+    with FCurrentResponse.Cookies.Add do begin
+      CookieName := 'FCGIThread';
+      CookieText := ValueRaw;
+    end;
+    FCurrentRequest.Cookies.AddSrcCookie(ValueRaw);
+  end;
+end;
+
+class function TIdWebSession.GetCurrentWebSession : TCustomWebSession; begin
+  Result := CurrentWebSession;
+end;
+
+function TIdWebSession.GetDocumentRoot : string; begin
+  Result := '.';
+end;
+
+function TIdWebSession.GetRequestHeader(const Name : string): string;
+var
+  HeaderName : string;
+begin
+  HeaderName := Name;
+  if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
+  HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
+  with TIdWebHTTPSession(FOwner) do
+    try
+      Result := FCurrentRequest.RawHeaders.Values[HeaderName];
+      if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
+    except
+    end;
+end;
+
+function TIdWebSession.GetWebServer : string; begin
+  Result := 'Embedded'; // or maybe 'Embedded Indy' ?
+end;
+
+procedure TIdWebSession.SendResponse(const Msg : string); begin
+  with TIdWebHTTPSession(FOwner).FCurrentResponse do begin
+    ContentText := Msg;
+    WriteContent;
+  end;
+end;
+
+procedure TIdWebSession.SetCustomResponseHeaders;
+var
+  i: Integer;
+begin
+  for i := 0 to FCustomResponseHeaders.Count - 1 do
+    with TIdWebHTTPSession(FOwner).FCurrentResponse.CustomHeaders do
+      Values[FCustomResponseHeaders.Names[i]] := FCustomResponseHeaders.ValueFromIndex[i];
+end;
+
+function TIdWebSession.TryToServeFile : Boolean;
+
+  function CheckIfFileIsModified(FileName : string) : Boolean;
+  const
+    FCompareDateFmt = 'yyyymmddhhnnss';
+  var
+    FFileDateTime: TDateTime;
+  begin
+    Result := True;
+    with TIdWebHTTPSession(FOwner).FCurrentRequest.RawHeaders do
+      if (Values['if-Modified-Since'] <> '') then begin
+        FFileDateTime := FileDateToDateTime(FileAge(FileName));
+        Result := not SameText(FormatDateTime(FCompareDateFmt, FFileDateTime),
+          FormatDateTime(FCompareDateFmt, StrInternetToDateTime(Values['if-Modified-Since'])));
+      end;
+  end;
+
+var
+  FileName : string;
+  FileDateTime : TDateTime;
+begin
+  FileName := ExtractFilePath(ParamStr(0));
+  FileName := StringReplace(FileName, ExtractFileDrive(FileName), '', []);
+  with TIdWebHTTPSession(FOwner).FCurrentRequest do
+    if (Length(Document) > 1) and (Document[1]in ['/', '\']) then
+      FileName := FileName + Copy(Document, 2, MaxInt)
+    else
+      FileName := FileName + Document;
+  FileName := ExpandFilename(FileName);
+  with TIdWebHTTPSession(FOwner).FCurrentResponse do
+    if FileExists(FileName) then begin
+      Result := True;
+      if CheckIfFileIsModified(FileName) then begin
+        ContentStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+        FreeContentStream := True;
+        ContentLength := ContentStream.Size;
+        FileDateTime := FileDateToDateTime(FileAge(FileName));
+        LastModified := FileDateTime;
+        Self.ContentType := DownloadContentType(FileName, 'text/html');
+      end
+      else
+        ResponseNo := 304; // Not Modified, use cache version
+    end
+    else begin
+      ResponseNo := 404; // Not found
+      Result := False;
+    end;
+end;
+
+function TIdWebSession.UploadBlockType(const Buffer : AnsiString; var MarkPos : Integer) : TUploadBlockType; begin
+  Result := ubtBegin;
+end;
+
+function TIdWebSession.UploadNeedUnknownBlock : Boolean; begin
+  Result := False;
 end;
 
 end.

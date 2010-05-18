@@ -45,7 +45,7 @@ uses
   {$IFNDEF WebServer}FCGIApp;{$ELSE}IdExtHTTPServer;{$ENDIF}
 
 function SelfSession : TSession; begin
-  Result := TSession(CurrentFCGIThread);
+  Result := TSession(CurrentWebSession);
 end;
 
 procedure TSession.Home;

@@ -30,9 +30,16 @@ type
 {$IFEND}
 
 type
-  TBrowser      = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror, brMobileSafari); // Internet Browsers
-  TCSSUnit      = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
-  TExtProcedure = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
+  TBrowser         = (brUnknown, brIE, brFirefox, brChrome, brSafari, brOpera, brKonqueror, brMobileSafari); // Internet Browsers
+  TCSSUnit         = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
+  TExtProcedure    = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
+  TUploadBlockType = (ubtUnknown, ubtBegin, ubtMiddle, ubtEnd);
+
+procedure StrToTStrings(const S : string; List : TStrings);
+
+function URLDecode(const Encoded : string): string;
+
+function URLEncode(const Decoded : string): string;
 
 {
 Determine browser from HTTP_USER_AGENT header string.
@@ -148,6 +155,22 @@ function BeautifyCSS(const AStyle : string) : string;
 function LengthRegExp(Rex : string; CountAll : Boolean = true) : integer;
 
 function JSDateToDateTime(JSDate : string) : TDateTime;
+
+function IsNumber(S : string) : boolean;
+
+{
+Encrypts a string using a simple and quick method, but not trivial.
+@param Value String to be encrypted.
+@return String encrypted.
+}
+function Encrypt(Value : string) : string;
+
+{
+Decrypts a string that was previously crypted using the function <link Encrypt>.
+@param Value String to be decrypted.
+@return String decrypted.
+}
+function Decrypt(Value : string) : string;
 
 implementation
 
@@ -733,6 +756,103 @@ end;
 function JSDateToDateTime(JSDate : string) : TDateTime; begin
   Result := EncodeDateTime(StrToInt(copy(JSDate, 12, 4)), AnsiIndexStr(copy(JSDate, 5, 3), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']) +1,
     StrToInt(copy(JSDate, 9, 2)), StrToInt(copy(JSDate, 17, 2)), StrToInt(copy(JSDate, 20, 2)), StrToInt(copy(JSDate, 23, 2)), 0);
+end;
+
+function IsNumber(S : string) : boolean;
+var
+  C : integer;
+  D : double;
+begin
+  val(S, D, C);
+  Result := C = 0;
+end;
+
+function Encrypt(Value : string) : string;
+var
+  I, F1, F2, T : integer;
+  B : byte;
+  NValue : string;
+begin
+  Randomize;
+  B := Random(256);
+  NValue := char(B);
+  F1 := 1; F2 := 2;
+  for I := 1 to length(Value) do begin
+    T := F2;
+    inc(F2, F1);
+    F1 := T;
+    NValue := NValue + char(ord(Value[I]) + (B*F2));
+  end;
+  Result := '';
+  for I := 1 to Length(NValue) do
+    Result := Result + IntToHex(byte(NValue[I]), 2);
+end;
+
+function Decrypt(Value : string) : string;
+var
+  I, F1, F2, T : integer;
+  B : byte;
+  NValue : string;
+begin
+  Result := '';
+  if Value = '' then exit;
+  NValue := '';
+  for I := 0 to (length(Value)-1) div 2 do
+    NValue := NValue + char(StrToInt('$' + copy(Value, I*2+1, 2)));
+  B := ord(NValue[1]);
+  F1 := 1; F2 := 2;
+  for I := 2 to length(NValue) do begin
+    T := F2;
+    inc(F2, F1);
+    F1 := T;
+    Result := Result + char(ord(NValue[I]) - (B*F2))
+  end;
+end;
+
+procedure StrToTStrings(const S : string; List : TStrings);
+var
+  I: Integer;
+begin
+  List.DelimitedText := S;
+  for I := 0 to List.Count - 1 do
+    List[I] := Trim(List[I]);
+end;
+
+{
+Decodes a URL encoded string to a normal string
+@param Encoded URL encoded string to convert
+@return A decoded string
+}
+function URLDecode(const Encoded : string) : string;
+var
+  I : integer;
+begin
+  Result := {$IFDEF MSWINDOWS}UTF8ToAnsi{$ENDIF}(Encoded);
+  I := pos('%', Result);
+  while I <> 0 do begin
+    Result[I] := chr(StrToIntDef('$' + copy(Result, I+1, 2), 32));
+    Delete(Result, I+1, 2);
+    I := pos('%', Result);
+  end;
+end;
+
+{
+Encodes a string to fit in URL encoding form
+@param Decoded Normal string to convert
+@return An URL encoded string
+}
+function URLEncode(const Decoded : string) : string;
+const
+  Allowed = ['A'..'Z','a'..'z', '*', '@', '.', '_', '-', '0'..'9', '$', '!', '''', '(', ')'];
+var
+  I : integer;
+begin
+  Result := '';
+  for I := 1 to length(Decoded) do
+    if Decoded[I] in Allowed then
+      Result := Result + Decoded[I]
+    else
+      Result := Result + '%' + IntToHex(ord(Decoded[I]), 2);
 end;
 
 end.

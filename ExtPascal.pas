@@ -73,26 +73,28 @@ type
   as: theme, charset, language, Ajax, error messages using Ext look, JS libraries and CSS.
   The <color red>"Self-translating"</color> is implemented in this class in <link TExtObject.JSCode, JSCode> method.
   }
-  TExtThread = class({$IFNDEF WebServer}TFCGIThread{$ELSE}TIdExtSession{$ENDIF})
+  TExtThread = class(TWebSession)
   private
     Style, Libraries, CustomJS, FLanguage : string;
     JSReturns : TStringList;
     Sequence  : cardinal;
-    RequiresReload : boolean;
     procedure RelocateVar(JS, JSName : string; I : integer);
     function GetStyle: string;
   protected
     procedure RemoveJS(const JS : string);
     function BeforeHandleRequest : boolean; override;
     procedure AfterHandleRequest; override;
+    procedure AfterNewSession; override;
     {$IFDEF HAS_CONFIG}
-    procedure AfterThreadConstruction; override;
+    procedure DoReconfig; override;
     procedure ReadConfig;
     {$ENDIF}
-    procedure OnError(Msg, Method, Params : string); override;
+    procedure GarbageDestroy(Garbage: TObject); override;
+    function GarbageFixName(const Name: string): string; override;
+    procedure OnError(const Msg, Method, Params : string); override;
     function GetSequence : string;
+    function GetUrlHandlerObject: TObject; override;
     function JSConcat(PrevCommand, NextCommand : string) : string;
-    procedure DownloadContentType(Name : string); override;
   public
     HTMLQuirksMode : boolean; // Defines the (X)HTML DocType. True to Transitional (Quirks mode) or false to Strict. Default is false.
     Theme     : string; // Sets or gets Ext JS installed theme, default '' that is Ext Blue theme
@@ -101,8 +103,8 @@ type
     ExtBuild  : string; // Custom <extlink http://www.extjs.com/products/extjs/build/>ExtJS build</extlink>. Default is ext-all.
     Charset   : string; // Charset for html contenttype default utf-8, another option iso-8859-1
     property Language : string read FLanguage write FLanguage; // Actual language for this session, reads HTTP_ACCEPT_LANGUAGE header
-    constructor Create(NewSocket : integer); override;
-    procedure SetPaths; override;
+    constructor Create(AOwner: TObject); override;
+    procedure InitDefaultValues; override;
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
     procedure JSSleep(MiliSeconds : integer);
     procedure SetStyle(pStyle : string = '');
@@ -112,12 +114,8 @@ type
     procedure SetCustomJS(JS : string = '');
     procedure ErrorMessage(Msg : string; Action : string = ''); overload;
     procedure ErrorMessage(Msg : string; Action : TExtFunction); overload;
-    procedure Alert(Msg : string); override;
-    procedure DownloadFile(Name : string; pContentType : string = '');
+    procedure Alert(const Msg : string); override;
   published
-    {$IFDEF HAS_CONFIG}
-    procedure Reconfig; override;
-    {$ENDIF}
     procedure HandleEvent; virtual;
   end;
 
@@ -134,11 +132,11 @@ type
     function  GetJSCommand : string;
     procedure SetJSCommand(const Value : string);
     function  PopJSCommand : string;
-    function FormatParams(MethodName : string; Params: array of const): string;
+    function FormatParams(MethodName : string; Params : array of const): string;
     procedure AjaxCode(MethodName, RawParams : string; Params : array of const);
     function Ajax(Method : TExtProcedure; Params : string) : TExtFunction; overload;
     function AddJSReturn(Expression : string; MethodsValues : array of const): string;
-    function FindMethod(Method: TExtProcedure; var PascalName, ObjName: string): TExtFunction;
+    function FindMethod(Method : TExtProcedure; var PascalName, ObjName : string) : TExtFunction;
   protected
     FJSName    : string;  // Internal JavaScript name generated automatically by <link TExtObject.CreateJSName, CreateJSName>
     Created    : boolean; // Tests if object already created
@@ -160,7 +158,7 @@ type
     procedure CreateVarAlt(JS : string);
     procedure CreateJSName;
     procedure InitDefaults; virtual;
-    procedure HandleEvent(const AEvtName: string); virtual;
+    procedure HandleEvent(const AEvtName : string); virtual;
     property JSCommand : string read GetJSCommand write SetJSCommand; // Last commands written in Response
   public
     IsChild : boolean;
@@ -181,10 +179,10 @@ type
     function JSFunction(Params, Body : string) : TExtFunction; overload;
     procedure JSFunction(Name, Params, Body : string); overload;
     function JSFunction(Body : string) : TExtFunction; overload;
-    function JSFunction(Method: TExtProcedure; Silent : boolean = false) : TExtFunction; overload;
+    function JSFunction(Method : TExtProcedure; Silent : boolean = false) : TExtFunction; overload;
     function JSExpression(Expression : string; MethodsValues : array of const) : integer; overload;
     function JSExpression(Method : TExtFunction) : integer; overload;
-    function JSString(Expression: string; MethodsValues: array of const): string; overload;
+    function JSString(Expression : string; MethodsValues : array of const) : string; overload;
     function JSString(Method : TExtFunction) : string; overload;
     function JSMethod(Method : TExtFunction) : string;
     procedure JSCode(JS : string; pJSName : string = ''; pOwner : string = '');
@@ -197,10 +195,10 @@ type
     function AjaxForms(Method : TExtProcedure; Forms : array of TExtObject) : TExtFunction;
     function RequestDownload(Method : TExtProcedure) : TExtFunction; overload;
     function RequestDownload(Method : TExtProcedure; Params : array of const) : TExtFunction; overload;
-    function MethodURI(Method : TExtProcedure; Params: array of const): string; overload;
+    function MethodURI(Method : TExtProcedure; Params : array of const) : string; overload;
     function MethodURI(Method : TExtProcedure) : string; overload;
     function MethodURI(MethodName : string; Params : array of const) : string; overload;
-    function MethodURI(MethodName : string): string; overload;
+    function MethodURI(MethodName : string) : string; overload;
     function CharsToPixels(Chars : integer) : integer;
     function LinesToPixels(Lines : integer) : integer;
     property JSName : string read FJSName; // JS variable name to this object, it's created automatically when the object is created
@@ -299,49 +297,11 @@ threadvar
 
 { TExtThread }
 
-procedure TExtThread.DownloadContentType(Name : string); begin
-  case CaseOf(ExtractFileExt(Name), ['.txt', '.pdf', '.csv', '.zip', '.wav', '.wma',
-                                     '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pps', '.pptx', '.ppsx',
-                                     '.wmv', '.mpg', '.mpeg', '.mp1', '.mp2', '.mp3', '.mpv', '.mp4', '.qt', '.mov',
-                                     '.odt', '.odp', '.ods', '.odg', '.odb',
-                                     '.htm', '.html']) of
-    0 : ContentType := 'text/plain';
-    1 : ContentType := 'application/pdf';
-    2 : ContentType := 'text/csv';
-    3 : ContentType := 'application/zip';
-    4 : ContentType := 'audio/x-wav';
-    5 : ContentType := 'audio/x-ms-wma';
-    6, 7 : ContentType := 'application/msword';
-    8, 9 : ContentType := 'application/vnd.ms-excel';
-    10..13 : ContentType := 'application/vnd.ms-powerpoint';
-    14 : ContentType := 'video/x-ms-wmv';
-    15..20 : ContentType := 'video/mpeg';
-    21 : ContentType := 'video/mp4';
-    22, 23 : ContentType := 'video/quicktime';
-    24 : ContentType := 'application/vnd.oasis.opendocument.text';
-    25 : ContentType := 'application/vnd.oasis.opendocument.presentation';
-    26 : ContentType := 'application/vnd.oasis.opendocument.spreadsheet';
-    27 : ContentType := 'application/vnd.oasis.opendocument.graphics';
-    28 : ContentType := 'application/vnd.oasis.opendocument.database';
-    29, 30 : ContentType := 'text/html';
+procedure TExtThread.GarbageDestroy(Garbage : TObject); begin
+  if Garbage is TExtObject then
+    TExtObject(Garbage).Free
   else
-    ContentType := 'application/octet-stream';
-  end;
-end;
-
-procedure TExtThread.DownloadFile(Name : string; pContentType : string = '');
-var
-  F : file;
-  Buffer : AnsiString;
-begin
-  if FileExists(Name) then begin
-    Assign(F, Name);
-    Reset(F, 1);
-    SetLength(Buffer, FileSize(F));
-    BlockRead(F, Buffer[1], FileSize(F));
-    Close(F);
-    DownloadBuffer(Name, Buffer, pContentType);
-  end;
+    inherited;
 end;
 
 {
@@ -478,6 +438,14 @@ function TExtThread.GetStyle : string; begin
     Result := '<style>' + {$IFDEF DEBUGJS}BeautifyCSS(Style){$ELSE}Style{$ENDIF} + '</style>'^M^J;
 end;
 
+// Returns a object which will be used to handle the page method. We will call it's published method based on PathInfo.
+function TExtThread.GetUrlHandlerObject: TObject; begin
+  if (Query['Obj'] = '') or (Query['IsEvent'] = '1') then
+    Result := inherited GetUrlHandlerObject
+  else
+    Result := GarbageFind(Query['Obj']);
+end;
+
 {
 Shows an error message in browser session using Ext JS style.
 @param Msg Message text, can to use HTML to formating text.
@@ -500,6 +468,10 @@ procedure TExtThread.ErrorMessage(Msg : string; Action : TExtFunction); begin
   ErrorMessage(Msg, Action.ExtractJSCommand);
 end;
 
+function TExtThread.GarbageFixName(const Name: string): string; begin
+  Result := AnsiReplaceStr(Name, IdentDelim, '');
+end;
+
 {
 Occurs when an exception is raised during the execution of method that handles the request (PATH_INFO).
 Display error message with exception message, method name and method params.
@@ -508,14 +480,18 @@ Display error message with exception message, method name and method params.
 @param Params Method params list
 @exception TAccessViolation If current request is AJAX the session can be fixed reloading the page.
 }
-procedure TExtThread.OnError(Msg, Method, Params : string); begin
+procedure TExtThread.OnError(const Msg, Method, Params : string);
+var
+  FMsg: string;
+begin
   Response := '';
-  if IsAjax and (pos('Access violation', Msg) <> 0) then
-    Msg := Msg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
-  ErrorMessage(Msg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params:<br/>' + AnsiReplaceStr(Params, '&', '<br/>')));
+  FMsg := Msg;
+  if IsAjax and (pos('Access violation', FMsg) <> 0) then
+    FMsg := FMsg + '<br/><b>Reloading this page (F5) perhaps fix this error.</b>';
+  ErrorMessage(FMsg + '<br/>Method: ' + IfThen(Method = '', 'Home', Method) + IfThen(Params = '', '', '<br/>Params:<br/>' + AnsiReplaceStr(Params, '&', '<br/>')));
 end;
 
-procedure TExtThread.Alert(Msg : string); begin
+procedure TExtThread.Alert(const Msg : string); begin
   ErrorMessage(Msg)
 end;
 
@@ -547,7 +523,7 @@ begin
   if JS[length(JS)] = ';' then begin // Command
     I := pos('.', JS);
     J := pos(IdentDelim, JS);
-    if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not ExistsReference(copy(JS, J-1, I-J+1)) then
+    if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not GarbageExists(copy(JS, J-1, I-J+1)) then
       raise Exception.Create('Public property or Method: ''' + JSClassName + '.' + copy(JS, I+1, FirstDelimiter('=(', JS, I)-I-1) + ''' requires explicit ''var'' declaration.');
     I := length(Response) + 1
   end
@@ -648,15 +624,15 @@ var
   MetName, ObjName : string;
 begin
   FindMethod(Method, MetName, ObjName);
-  Result := CurrentFCGIThread.MethodURI(MetName) + IfThen(ObjName = '', '', '?Obj=' + ObjName);
+  Result := CurrentWebSession.MethodURI(MetName) + IfThen(ObjName = '', '', '?Obj=' + ObjName);
 end;
 
 function TExtObject.MethodURI(MethodName : string; Params : array of const) : string; begin
-  Result := CurrentFCGIThread.MethodURI(MethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(MethodName, Params))
+  Result := CurrentWebSession.MethodURI(MethodName) + IfThen(length(Params) = 0, '', '?' + FormatParams(MethodName, Params))
 end;
 
 function TExtObject.MethodURI(MethodName : string): string; begin
-  Result := CurrentFCGIThread.MethodURI(MethodName)
+  Result := CurrentWebSession.MethodURI(MethodName)
 end;
 
 {
@@ -683,7 +659,7 @@ begin
         FLanguage := copy(FLanguage, 1, 2)
     end;
   end;
-  FIsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or FIsUpload;
+  IsAjax := (RequestHeader['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest') or IsUpload;
   if IsAjax then begin
     if Cookie['FCGIThread'] = '' then begin
       ErrorMessage('This web application requires Cookies enabled to AJAX works.');
@@ -702,10 +678,10 @@ begin
 end;
 
 // Override this method to change ExtPath, ImagePath, ExtBuild and Charset default values
-procedure TExtThread.SetPaths; begin
+procedure TExtThread.InitDefaultValues; begin
   inherited;
 {$IFDEF CacheFly}
-  ExtPath       := 'http://extjs.cachefly.net/ext-3.2.0';
+  ExtPath       := 'http://extjs.cachefly.net/ext-3.2.1';
 {$ELSE}
   ExtPath       := '/ext';
 {$ENDIF}
@@ -713,16 +689,22 @@ procedure TExtThread.SetPaths; begin
   ExtBuild      := 'ext-all';
   Charset       := 'utf-8'; // 'iso-8859-1'
   UpLoadPath    := '/uploads';
-  MaxUploadSize := MAXLONGINT;
 end;
 
 {
-Creates a new thread to handle a new socket request
-@param NewSocket Socket handle
+Creates a session to handle a new requests
+@param AOwner You do not need to know this :)
 }
-constructor TExtThread.Create(NewSocket : integer); begin
+constructor TExtThread.Create(AOwner: TObject); begin
   inherited;
-  SetPaths;
+end;
+
+// config will be read once, only on new client thread construction
+procedure TExtThread.AfterNewSession; begin
+  inherited;
+  {$IFDEF HAS_CONFIG}
+  ReadConfig;
+  {$ENDIF}
 end;
 
 {$IFDEF HAS_CONFIG}
@@ -739,38 +721,25 @@ procedure TExtThread.ReadConfig; begin
     end;
 end;
 
-// config will be read once, only on new client thread construction
-procedure TExtThread.AfterThreadConstruction; begin
-  inherited;
-  ReadConfig;
-end;
-
 // Re-read config file if password is right
-procedure TExtThread.Reconfig;
+procedure TExtThread.DoReconfig;
 {$IFDEF DEBUGJS}
 var
   I : integer;
 {$ENDIF}
 begin
-  with Application do
-    if Query['password'] = Password then
-      if HasConfig then begin
-        Reconfig; // reload config file
-        ReadConfig;
-        {$IFDEF DEBUGJS}
-        // show applied configuration values (only during debugging)
-        with TStringList.Create do begin
-          LoadFromFile(Config.FileName);
-          Response := 'RECONFIG: Application is reconfigured with the following values:<p>';
-          for I := 0 to Count-1 do
-            Response := Response + Strings[I] + '<br>';
-          SendResponse(Response);
-          Free;
-        end;
-        {$ELSE}
-        SendResponse('RECONFIG: Application configurations are being re-read and reapplied');
-        {$ENDIF}
-      end;
+  ReadConfig;
+  {$IFDEF DEBUGJS}
+  // show applied configuration values (only during debugging)
+  with TStringList.Create do begin
+    LoadFromFile(Config.FileName);
+    Response := 'RECONFIG: Application is reconfigured with the following values:<p>';
+    for I := 0 to Count-1 do
+      Response := Response + Strings[I] + '<br>';
+    SendResponse(Response);
+    Free;
+  end;
+  {$ENDIF}
 end;
 {$ENDIF}
 
@@ -780,7 +749,7 @@ var
   Obj : TExtObject;
 begin
   if Query['IsEvent'] = '1' then begin
-    Obj := TExtObject(FindObject(Query['Obj']));
+    Obj := TExtObject(GarbageFind(Query['Obj']));
     if not Assigned(Obj) then
       OnError('Object not found in session list. It could be timed out, refresh page and try again', 'HandleEvent', '')
     else
@@ -826,7 +795,7 @@ procedure TExtThread.AfterHandleRequest;
 var
   I, J : integer;
 begin
-  if IsDownLoad or IsUpLoad then exit;  
+  if IsDownLoad or IsUpLoad then exit;
   I := pos('/*', Response);
   while I <> 0 do begin // Extracts comments
     J := PosEx('*/', Response, I);
@@ -905,8 +874,8 @@ constructor TExtObjectList.Create(pOwner : TExtObject = nil; pAttribute : string
   Attribute := pAttribute;
   Owner     := pOwner;
   Created   := true;
-  if CurrentFCGIThread <> nil then
-    JSName := 'O' + IdentDelim + TExtThread(CurrentFCGIThread).GetSequence + IdentDelim;
+  if CurrentWebSession <> nil then
+    JSName := 'O' + IdentDelim + TExtThread(CurrentWebSession).GetSequence + IdentDelim;
 end;
 
 {
@@ -933,27 +902,27 @@ var
 begin
   if length(FObjects) = 0 then
     if Owner <> nil then begin
-      if pos('/*' + Owner.JSName + '*/', CurrentFCGIThread.Response) <> 0 then
+      if pos('/*' + Owner.JSName + '*/', CurrentWebSession.Response) <> 0 then
         Owner.JSCode(Attribute + ':[/*' + JSName + '*/]', Owner.JSName)
     end
     else
-      with TExtThread(CurrentFCGIThread) do begin
+      with TExtThread(CurrentWebSession) do begin
         JSCode(DeclareJS + JSName + '=[/*' + JSName + '*/];');
-        AddToGarbage(JSName, nil);
+        GarbageAdd(JSName, nil);
       end;
   SetLength(FObjects, length(FObjects) + 1);
   FObjects[high(FObjects)] := Obj;
-  Response := CurrentFCGIThread.Response;
+  Response := CurrentWebSession.Response;
   if Owner <> nil then
     OwnerName := Owner.JSName
   else
     OwnerName := '';
   if not Obj.Created or (pos(JSName, Response) = 0) then begin
-    if TExtThread(CurrentFCGIThread).IsAjax and (OwnerName <> '') then
+    if TExtThread(CurrentWebSession).IsAjax and (OwnerName <> '') then
       if not Obj.Created then
         if pos(JSName, Response) = 0 then begin
           ListAdd := DeclareJS + Obj.JSName + '=' + OwnerName + '.add(%s);';
-          CurrentFCGIThread.AddToGarbage(Obj.JSName, nil);
+          TExtThread(CurrentWebSession).GarbageAdd(Obj.JSName, nil);
         end
         else
           ListAdd := '%s'
@@ -998,7 +967,7 @@ end;
 
 // Set an unique <link TExtObject.JSName, JSName> using <link TExtThread.GetSequence, GetSequence>
 procedure TExtObject.CreateJSName; begin
-  FJSName := 'O' + IdentDelim + TExtThread(CurrentFCGIThread).GetSequence + IdentDelim;
+  FJSName := 'O' + IdentDelim + TExtThread(CurrentWebSession).GetSequence + IdentDelim;
 end;
 
 {
@@ -1045,7 +1014,7 @@ O1.title = 'new title';
 </code>
 }
 function TExtObject.ConfigAvailable(JSName : string) : boolean; begin
-  Result := pos('/*' + JSName + '*/', TExtThread(CurrentFCGIThread).Response) <> 0;
+  Result := pos('/*' + JSName + '*/', TExtThread(CurrentWebSession).Response) <> 0;
 end;
 
 {
@@ -1056,7 +1025,7 @@ and to generate <link TExtObject.JSCode, JS code>
 }
 procedure TExtObject.CreateVar(JS : string); begin
   CreateJSName;
-  CurrentFCGIThread.AddToGarbage(JSName, Self);
+  TExtThread(CurrentWebSession).GarbageAdd(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
   JSCode(CommandDelim + DeclareJS + JSName + IfThen(JS[1] = '(', '= ', '=new ') + JS);
@@ -1069,7 +1038,7 @@ Alternate create constructor, it is an ExtJS fault
 }
 procedure TExtObject.CreateVarAlt(JS : string); begin
   CreateJSName;
-  CurrentFCGIThread.AddToGarbage(JSName, Self);
+  TExtThread(CurrentWebSession).GarbageAdd(JSName, Self);
   insert('/*' + JSName + '*/', JS, length(JS)-IfThen(pos('});', JS) <> 0, 2, 1));
   Created := true;
   JSCode(CommandDelim + DeclareJS + JSName + '= ' + JS);
@@ -1083,7 +1052,7 @@ end;
 
 // <link TFCGIThread.DeleteFromGarbage, Removes object from Garbage Collector> if is not in a Garbage Collector call
 procedure TExtObject.DeleteFromGarbage; begin
-  if CurrentFCGIThread <> nil then CurrentFCGIThread.DeleteFromGarbage(Self);
+  if CurrentWebSession <> nil then TExtThread(CurrentWebSession).GarbageDelete(Self);
 end;
 
 // Calls Ext JS <b>destroy()</b> method if it exists else calls the JS <b>delete</b> command
@@ -1196,7 +1165,7 @@ begin
   end;
 end;
 
-function TExtObject.RequestDownload(Method : TExtProcedure; Params: array of const): TExtFunction;
+function TExtObject.RequestDownload(Method : TExtProcedure; Params : array of const): TExtFunction;
 var
   P, MetName, ObjName : string;
 begin
@@ -1207,7 +1176,7 @@ begin
     P := P + 'Obj=' + ObjName;
   end;
   if P <> '' then P := '?' + P;
-  Result := JSFunction('Download.src="' + CurrentFCGIThread.MethodURI(MetName) + P + '";')
+  Result := JSFunction('Download.src="' + CurrentWebSession.MethodURI(MetName) + P + '";')
 end;
 
 function TExtObject.RequestDownload(Method : TExtProcedure) : TExtFunction; begin
@@ -1230,7 +1199,7 @@ begin
       if (JSCommand <> '') and (pJSName <> '') and not IsParent(pJSName) then begin
         JSC := JSCommand;
         JSCommand := '';
-        JSCommand := TExtThread(CurrentFCGIThread).JSConcat(JSC, JS);
+        JSCommand := TExtThread(CurrentWebSession).JSConcat(JSC, JS);
         exit;
       end;
       if not(pos(IdentDelim + '.get', FJSCommand) in [4..9]) then FJSCommand := '';
@@ -1241,7 +1210,7 @@ begin
       lJSName := JSName
     else
       lJSName := pJSName;
-    TExtThread(CurrentFCGIThread).JSCode(JS, pJSName, lJSName, pOwner);
+    TExtThread(CurrentWebSession).JSCode(JS, pJSName, lJSName, pOwner);
   end;
 end;
 
@@ -1261,7 +1230,7 @@ end;
 // Inits a JS Object with a <link TExtFunction>
 constructor TExtObject.Init(Method : TExtFunction); begin
   CreateJSName;
-  CurrentFCGIThread.AddToGarbage(JSName, nil);
+  TExtThread(CurrentWebSession).GarbageAdd(JSName, nil);
   Created := true;
   JSCode(CommandDelim + DeclareJS + JSName + '=' + Method.ExtractJSCommand + ';');
 end;
@@ -1269,7 +1238,7 @@ end;
 // Inits a JS Object with a JS command
 constructor TExtObject.Init(Command : string); begin
   CreateJSName;
-  CurrentFCGIThread.AddToGarbage(JSName, Self);
+  TExtThread(CurrentWebSession).GarbageAdd(JSName, Self);
   Created := true;
   JSCode(CommandDelim + DeclareJS + JSName + '=' + Command + ';');
 end;
@@ -1321,7 +1290,7 @@ var
   Command : string;
   I : integer;
 begin
-  with TExtThread(CurrentFCGIThread) do begin
+  with TExtThread(CurrentWebSession) do begin
     Result := '-$7' + GetSequence + '7';
     for I := 0 to high(MethodsValues) do
       with MethodsValues[I] do
@@ -1466,7 +1435,7 @@ var
 begin
   InJSFunction := true;
   Result := TExtFunction(Self);
-  with TExtThread(CurrentFCGIThread) do begin
+  with TExtThread(CurrentWebSession) do begin
     CurrentResponse := Response;
     Response := '';
     Method;
@@ -1676,14 +1645,14 @@ begin
   Result := Ajax(Method, S);
 end;
 
-function TExtObject.AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const): TExtFunction;
+function TExtObject.AjaxSelection(Method : TExtProcedure; SelectionModel : TExtObject; Attribute, TargetQuery : string; Params : array of const) : TExtFunction;
 var
   CurrentResponse : string;
   MetName, ObjName : string;
 begin
   InJSFunction := true;
   Result := TExtFunction(Self);
-  with TExtThread(CurrentFCGIThread) do begin
+  with TExtThread(CurrentWebSession) do begin
     CurrentResponse := Response;
     Response := '';
     with TExtGridRowSelectionModel(SelectionModel) do begin
@@ -1759,7 +1728,7 @@ begin
 end;
 
 procedure TExtObject.AjaxCode(MethodName : string; RawParams : string; Params : array of const); begin
-  JSCode('Ext.Ajax.request({url:"' + CurrentFCGIThread.MethodURI(MethodName) + '",params:"Ajax=1&' +
+  JSCode('Ext.Ajax.request({url:"' + CurrentWebSession.MethodURI(MethodName) + '",params:"Ajax=1&' +
     IfThen(RawParams='', '', RawParams + '&') + FormatParams(MethodName, Params) +
     '",success:AjaxSuccess,failure:AjaxFailure});');
 end;
@@ -1818,7 +1787,7 @@ Extracts <link TExtObject.JSCommand, JSCommand> from Response and resets JSComma
 }
 function TExtObject.ExtractJSCommand : string; begin
   Result := PopJSCommand;
-  TExtThread(CurrentFCGIThread).RemoveJS(Result);
+  TExtThread(CurrentWebSession).RemoveJS(Result);
   SetLength(Result, length(Result)-1);
 end;
 
@@ -1855,13 +1824,13 @@ begin
             Command := TExtObject(VObject).PopJSCommand;
             if (Command <> '') and A[I+1].VBoolean then begin
               Result := Result + WriteFunction(Command);
-              TExtThread(CurrentFCGIThread).RemoveJS(Command);
+              TExtThread(CurrentWebSession).RemoveJS(Command);
             end
             else begin
               JSName := TExtObject(VObject).JSName;
               if InJSFunction and (pos(JSName, Command) = 1) then begin
                 Result := Result + copy(Command, 1, length(Command)-1);
-                TExtThread(CurrentFCGIThread).RemoveJS(Command);
+                TExtThread(CurrentWebSession).RemoveJS(Command);
               end
               else
                 Result := Result + JSName;
@@ -1945,22 +1914,22 @@ end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
 function TExtObject.ParamAsInteger(ParamName : string) : integer; begin
-  Result := StrToIntDef(CurrentFCGIThread.Query[ParamName], 0);
+  Result := StrToIntDef(CurrentWebSession.Query[ParamName], 0);
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
 function TExtObject.ParamAsDouble(ParamName : string) : double; begin
-  Result := StrToFloatDef(CurrentFCGIThread.Query[ParamName], 0);
+  Result := StrToFloatDef(CurrentWebSession.Query[ParamName], 0);
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
 function TExtObject.ParamAsBoolean(ParamName : string) : boolean; begin
-  Result := CurrentFCGIThread.Query[ParamName] = 'true';
+  Result := CurrentWebSession.Query[ParamName] = 'true';
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
 function TExtObject.ParamAsString(ParamName : string) : string; begin
-  Result := CurrentFCGIThread.Query[ParamName];
+  Result := CurrentWebSession.Query[ParamName];
 end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
@@ -1970,7 +1939,7 @@ end;
 
 // Aux function used internaly by ExtToPascal to override HandleEvent method
 function TExtObject.ParamAsObject(ParamName : string) : TExtObject; begin
-  Result := TExtObject(CurrentFCGIThread.FindObject(CurrentFCGIThread.Query[ParamName]));
+  Result := TExtObject(TExtThread(CurrentWebSession).GarbageFind(CurrentWebSession.Query[ParamName]));
 end;
 
 begin
