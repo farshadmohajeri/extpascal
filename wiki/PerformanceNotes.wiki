@@ -1,4 +1,3 @@
-#labels Featured
 =Performance Notes on ExtPascal Samples.=
 
 ==Environment Description==
