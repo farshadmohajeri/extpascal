@@ -6,14 +6,7 @@ program ExtPascalSamples;
 {$IFEND}
 
 uses
-  {$IFNDEF WebServer}
-  FCGIApp,
-  {$ELSE}
-   {$IFNDEF MSWINDOWS}
-   CThreads,
-   {$ENDIF}
-  IdExtHTTPServer,
-  {$ENDIF}
+  {$IFNDEF WebServer}FCGIApp,{$ELSE}IdExtHTTPServer,{$ENDIF}
   SysUtils, Classes,
   {$IFDEF DEFAULT}Services,{$ENDIF} ExtPascalUtils, Session;
 
@@ -31,7 +24,6 @@ end;
 
 const
   ServerName = 'ExtPascalSamples';
-  Port       = 2014;
 
 begin
   DateSeparator := '/'; ShortDateFormat := 'd/M/yyyy';
@@ -46,7 +38,7 @@ begin
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion, TSession, Port);
+      Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession);
       Application.Icon := 'ExtPascal.ico';
       if Exists then
         Run([TServiceThread.Create(true)])
@@ -57,11 +49,7 @@ begin
     on E : Exception do ReportEventLog(EventError, 1, E.Message);
   end;
 {$ELSE}
-  {$IFNDEF WebServer}
-  Application := TFCGIApplication.Create(ServerName + ' ' + ExtPascalVersion, TSession, Port);
-  {$ELSE}
-  Application := TIdExtApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSession, 80, 5);
-  {$ENDIF}
+  Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession);
   Application.Icon := 'ExtPascal.ico';
   Application.Run;
 {$ENDIF}
