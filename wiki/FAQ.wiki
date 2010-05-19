@@ -97,6 +97,8 @@ There is this scenario in ExtPascalSamples.
 http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi/ShowAdvancedTabs
 Simply use an Ajax method and in it write.
 
+{{{
 TExtButton.AddTo(MyWindow.Items);
 TExtBlaBla.AddTo(MyWindow.Items);
 etc...
+}}}
