@@ -19,7 +19,7 @@ For more resources to catch errors install Firebug.
 ===How to catch Ajax errors?===
 Override TExtThread.OnError method.
 
-==How to use the refresh button of the browser?===
+===How to use the refresh button of the browser?===
 
 In the beginning of Home method use:
 
@@ -59,3 +59,34 @@ ExtPascal has a specific method to do this, *Shutdown* method. This method requi
 {{{
 http://localhost/cgi-bin/ExtPascalSamples3/shutdown?password=extpascal
 }}}
+
+===How fix errors with this message?===
+
+{{{
+**************************************************
+Config Option: store:OAB
+is refering a previous request,
+it's not allowed in AJAX request or JS handler.
+Use equivalent Public Property or Method instead.
+**************************************************
+}}}
+
+This means that you were using a *Config Option* in Ajax, and this *is not allowed*! In the case "Store".
+
+In ExtJS you can not use a Config Option in Ajax. 
+
+See the ExtJS documentation, there are distinctions between Config, public properties, public methods and events. 
+
+Config options are as *constructor parameters* in Pascal and can not be used after the creation of an object. 
+
+ExtPascal try to convert a Config option in a Public Method when possible.
+ 
+For example for the Config "Title" are the method "SetTitle" and "GetTitle" and you should use them in Ajax instead of the "Title", 
+but ExtPascal have some intelligence, and in this case it accepts to use Title in Ajax. Converting automatically Title := 'bla'; to SetTitle('bla');
+BUT for "Store" there is the method GetStore *but not* the method "SetStore". 
+So the assignment Store := DataStore; is not permitted in Ajax.
+Then you MUST read the documentation and search the method that could do the same role. 
+In this case "Reconfigure" method should be used.
+
+ExtPascal is not VCL/LCL based, it is ExtJS, so start reading the online documentation of ExtJS is very important. 
+ExtPascal just try to pascalize ExtJS. But, it never means that ExtJS's rules can be violated nor ignored, despite a bit intelligent within ExtPascal. So, understanding ExtJS as a GUI framework is a must before using ExtPascal. Even so, ExtPascal users must also understand RIA development i.e. Ajax, browser-server interaction, asynchronous communication, etc. Common Delphi knowledge which is very much desktop based app is not quite helpful in this regard.
