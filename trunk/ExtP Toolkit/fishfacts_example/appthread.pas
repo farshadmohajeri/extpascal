@@ -16,7 +16,6 @@ type
 
 function CurrentThread : TAppThread;
 
-
 implementation
 
 uses
@@ -28,15 +27,13 @@ uses
 
 function CurrentThread : TAppThread;
 begin
-  Result := TAppThread(CurrentFCGIThread);
+  Result := TAppThread(CurrentWebSession);
 end;
-
 
 procedure TAppThread.Home;
 begin
   EditWindow := TEditWindow.Create;
   EditWindow.Show;
 end;
-
 
 end.
