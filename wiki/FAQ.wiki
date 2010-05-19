@@ -90,3 +90,13 @@ In this case "Reconfigure" method should be used.
 
 ExtPascal is not VCL/LCL based, it is ExtJS, so start reading the online documentation of ExtJS is very important. 
 ExtPascal just try to pascalize ExtJS. But, it never means that ExtJS's rules can be violated nor ignored, despite a bit intelligent within ExtPascal. So, understanding ExtJS as a GUI framework is a must before using ExtPascal. Even so, ExtPascal users must also understand RIA development i.e. Ajax, browser-server interaction, asynchronous communication, etc. Common Delphi knowledge which is very much desktop based app is not quite helpful in this regard.
+
+===How create controls at runtime?===
+
+There is this scenario in ExtPascalSamples.
+http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi/ShowAdvancedTabs
+Simply use an Ajax method and in it write.
+
+TExtButton.AddTo(MyWindow.Items);
+TExtBlaBla.AddTo(MyWindow.Items);
+etc...
