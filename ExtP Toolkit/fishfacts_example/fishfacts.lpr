@@ -1,33 +1,12 @@
 program fishfacts;
 
 uses
-{$IFNDEF WebServer}
-  FCGIApp,
-{$ELSE}
- {$IFNDEF MSWINDOWS}
-  CThreads,
- {$ENDIF}
-  IdExtHTTPServer,
-{$ENDIF}
+  {$IFNDEF WebServer}FCGIApp,{$ELSE}IdExtHTTPServer,{$ENDIF}
   AppThread, mainform;
 
-{$IFNDEF FPC}
- {$IFNDEF WebServer}
-  {$APPTYPE CONSOLE}
- {$ENDIF}
-{$ENDIF}
-
-const
-  Port = 2014;
-  MaxIdleMinutes = 5;
-
-
 begin
-{$IFNDEF WebServer}
-  Application := TFCGIApplication.Create('MyApp', TAppThread, Port, MaxIdleMinutes);
-{$ELSE}
-  Application := TIdExtApplication.Create('MyApp', TAppThread, 80, MaxIdleMinutes);
-{$ENDIF}
+  Application := CreateWebApplication('Fish Facts Demo', TAppThread);
+  Application.Icon := 'ExtPascal.ico';
   Application.Run;
 end.
 
