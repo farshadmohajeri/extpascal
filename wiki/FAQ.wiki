@@ -103,3 +103,16 @@ TExtButton.AddTo(MyWindow.Items);
 TExtBlaBla.AddTo(MyWindow.Items);
 etc...
 }}}
+
+===Errata on ExtPascal-Advanced-Configuration doc===
+
+DocumentRoot "c:/Apache" in httpd-ssl.conf is wrong.
+
+It should be: DocumentRoot ""c:/apache/www/"
+
+As httpd.conf: 
+{{{
+fastcgiexternalserver "c:/apache/www/webadmin" -host localhost:2015 -idle-timeout 3
+}}}
+
+CAUTION: Copy and pasting the conf from the PDF won't work - due to line wraps.
