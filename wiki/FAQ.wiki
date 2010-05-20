@@ -60,7 +60,7 @@ ExtPascal has a specific method to do this, *Shutdown* method. This method requi
 http://localhost/cgi-bin/ExtPascalSamples3/shutdown?password=extpascal
 }}}
 
-===How fix errors with this message?===
+===How to fix errors with this message?===
 
 {{{
 **************************************************
@@ -91,7 +91,7 @@ In this case "Reconfigure" method should be used.
 ExtPascal is not VCL/LCL based, it is ExtJS, so start reading the online documentation of ExtJS is very important. 
 ExtPascal just try to pascalize ExtJS. But, it never means that ExtJS's rules can be violated nor ignored, despite a bit intelligent within ExtPascal. So, understanding ExtJS as a GUI framework is a must before using ExtPascal. Even so, ExtPascal users must also understand RIA development i.e. Ajax, browser-server interaction, asynchronous communication, etc. Common Delphi knowledge which is very much desktop based app is not quite helpful in this regard.
 
-===How create controls at runtime?===
+===How to create controls at runtime?===
 
 There is this scenario in ExtPascalSamples.
 http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi/ShowAdvancedTabs.
@@ -103,6 +103,36 @@ TExtButton.AddTo(MyWindow.Items);
 TExtBlaBla.AddTo(MyWindow.Items);
 etc...
 }}}
+
+===How to adapt an ExtPascal app to iPhone?===
+
+Here's a screenshot of a Web app that adapts itself to the iPhone Simulator's screen size:
+
+http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.jpg
+
+By designing or changing the page dimensions at runtime to be 320 pixels wide and including this tag in the page's <head> tag:
+
+<meta name="viewport" content="width=320; initial-scale=1.0; maximum- scale=1.0; user-scalable=0;"/>
+
+the page automatically expands to fit the screen's width exactly and prevents the user from slewing side to side. (That's the way special iPhone-oriented apps are usually done. See i.wund.com for an example.)
+
+The only thing going to the iPhone with this app is HTML and JavaScript. The server app is Pascal, using ExtPascal. What you see in this screenshot is a TExtWindow.
+
+You can make other adjustments for the iPhone too - just detect it by looking at the HTTP_USER_AGENT header that the browser sends to the server, which looks like something like this:
+
+Mozilla/5.0 (iPod; U; CPU iPhone OS 3_1_3 like Mac OS X; en-us)
+AppleWebKit/528.18 (KHTML, like Gecko) Version/4.0 Mobile/7E18 Safari/
+528.16
+
+Just search this string for "iPhone".
+
+Source for this little Web app is here:
+
+http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.zip
+
+In creating this Web app I discovered that the Simulator's Safari can also access the host Mac's Apache server via "localhost". This means you can test a Web app without an actual iPhone OS device. And if your device is on your local network and your Mac has Web sharing turned on, the device can access the server via the Mac's IP on the network, for example http://10.0.1.4.
+
+-Phil-
 
 ===Errata on ExtPascal-Advanced-Configuration doc===
 
