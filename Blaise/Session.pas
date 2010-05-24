@@ -1,7 +1,20 @@
 unit Session;
 
 interface
+{
+AmyEditor
 
+1. Folding
+2. Bookmark
+3. LastChanges
+4. Split views
+5. Word Completion
+6. Themes
+7. Indentation
+8. Collaboration
+9. Templates
+10. Bundles
+}
 uses
   ExtPascal, IDE;
 
