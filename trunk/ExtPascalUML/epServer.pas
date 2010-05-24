@@ -1152,7 +1152,7 @@ end;
 
 procedure KillSession(Thr : TepThread); begin
   try
-    Thr.Terminate;
+    //Thr.Terminate;
   except
   end;
 end;

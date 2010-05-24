@@ -152,7 +152,7 @@ end;
 
 procedure TepScheduler.Execute; begin
   // Wait for Prevalence start
-  while not Terminated and Browser.Suspended do Sleep(200);
+  while not Terminated (*and Browser.Suspended *)do Sleep(200);
   Prevalence.BeginThread;
   try
     IsRunningStateMachine := True;  // threadvar defined in epObjectList, disables security checks

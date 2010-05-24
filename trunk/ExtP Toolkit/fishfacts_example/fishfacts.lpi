@@ -11,12 +11,12 @@
       <MainUnit Value="0"/>
       <TargetFileExt Value=""/>
       <UseAppBundle Value="False"/>
-      <ActiveEditorIndexAtStart Value="0"/>
+      <ActiveWindowIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
-      <ProjectVersion Value=""/>
       <Language Value=""/>
       <CharSet Value=""/>
+      <StringTable Comments="" CompanyName="" FileDescription="" FileVersion="0.0.0.0" InternalName="" LegalCopyright="" LegalTrademarks="" OriginalFilename="" ProductName="" ProductVersion=""/>
     </VersionInfo>
     <PublishOptions>
       <Version Value="2"/>
@@ -44,20 +44,22 @@
         <Filename Value="fishfacts.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="fishfacts"/>
-        <UsageCount Value="40"/>
         <SyntaxHighlighter Value="Delphi"/>
+        <UsageCount Value="40"/>
       </Unit0>
       <Unit1>
         <Filename Value="mainform.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="EditWindow"/>
         <UnitName Value="mainform"/>
-        <CursorPos X="11" Y="128"/>
-        <TopLine Value="120"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="120"/>
+        <CursorPos X="112" Y="152"/>
+        <SyntaxHighlighter Value="Delphi"/>
         <UsageCount Value="40"/>
         <Loaded Value="True"/>
-        <SyntaxHighlighter Value="Delphi"/>
       </Unit1>
     </Units>
     <JumpHistory Count="14" HistoryIndex="13">
