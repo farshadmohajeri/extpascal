@@ -15,7 +15,7 @@ type
 implementation
 
 uses
-  ExtPascalUtils, Session, ExtTree, ExtGrid;
+  Classes, ExtPascalUtils, Session, ExtTree, ExtMenu;
 
 procedure TIDE.BuildMenu;
 const
@@ -35,7 +35,7 @@ var
     Menu   : TExtMenuMenu;
   end;
 begin
-  Menu := TExtMenuMenu.Create;
+  //Menu := TExtMenuMenu.Create;
   for I := 1 to high(Menus) do begin
     Options.DelimitedText := Tasks[I];
     for J := 0 to Options.Count-1 do
@@ -53,8 +53,9 @@ begin
         Item.Text := Options[J];
       end;
   end;
-  with TaskMenu do begin
-    AddSeparator;
+  //with TaskMenu do
+  begin
+  //  AddSeparator;
     Item := TExtMenuItem.Create;
     with Item do begin
       Text    := 'Sair';
