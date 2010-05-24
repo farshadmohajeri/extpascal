@@ -1,0 +1,105 @@
+Version 0.1.8, converter (18-Apr-2010 SVN):
+
+- Eliminated published event handlers from thread class and now using form
+  event handlers (now that published is default visibility).
+- Converter no longer creates a new appthread.pas when input forms change,
+  but rather updates it the way it now updates form .pas files with the
+  -u switch. This preserves edits that you've made to the thread unit.
+
+
+Version 0.1.7, converter (11-Apr-2010 SVN):
+
+- Much restructured and expanded command line converter.
+- GUI frontend to converter.
+
+
+Version 0.1.6, converter (21-Mar-2010 SVN):
+
+- Restructured converter code into base class and main converter class.
+- Added basic support for converting Delphi/Lazarus forms that contain
+  Orpheus controls (table + several standalone).
+- Added support to converter for custom configuration file to supplement 
+  or override standard config file (fmtoextp.ini).
+- Added support to converter for "inherited" in Delphi .dfm files.
+- Added fixbiolife.pas that fixes Delphi biolife.xml so it can be used
+  with Ext JS XML reader and saves images to external .bmp files.
+
+
+Version 0.1.5, preliminary (14-Mar-2010 SVN):
+
+- Added support for background color and font to converter.
+- Added BackgroundColor and Font property to TExtFormLabel design control to
+  test color and font support.
+- Converter can now accept a Delphi .dpr as input and attempts to determine
+  project's forms from its uses statement.
+- Adds fishfacts_example project.
+
+
+Version 0.1.4 (13-Mar-2010 SVN):
+
+- Numerous fixes and improvements to converter, particularly with grid column
+  controls.
+- Added Html property to TExtFormLabel design control so you can set HTML in
+  IDE.
+- Improvement to event handling in multiselect_example project and combo
+  column in grid_example project.
+
+
+Version 0.1.3 (03-Jan-2010):
+
+- Moved toolkit subfolders one level down to be consistent with location
+  of "ExtP Toolkit" subfolder in ExtPascal SVN.
+- Support for rich-text TExtFormHtmlEditor in converter and as a design
+  control.
+- Turned off autosize behavior in TExtFormTextField, etc. design controls
+  in Lazarus.
+- Added support for Hint property in TExtButton design control.
+- Now that TExtButton is descended from TExtBoxComponent in Ext JS 3.0, 
+  eliminated workaround with invisible panel used to position button.
+- Added Maximizable, Resizable, etc. properties to TExtWindow design control.
+
+
+Version 0.1.2 (SVN):
+
+- Now using $ExeExt() macro in 'Execute before' Command so platform-specific
+  extension doesn't need to be specified with converter name.
+- Fixed two bugs related to forming file names with converter's -e switch.
+- Added ExtDirect and ExtUxForm to uses in converted app and ExtPascal app
+  units.
+- Support for TExtUxFormMultiSelect in converter and as a design control.
+- Support for automatic generation of SetLibrary calls with controls that
+  are not in ext-all.js (for example, TExtUxFormMultiSelect).
+- Added MultiSelect example app.
+- Added table of ExtPascal equivalents to VCL/LCL controls in documentation.
+- Support for TExtFormRadioGroup in converter and as a design control.
+- Added extp_grid package, with TExtGridEditorGridPanel and associated grid
+  column controls.
+- Added grid_example project.
+
+
+Version 0.1.1 (08-Oct-2009):
+
+- Eliminated use of ExtGlobal unit, which is no longer part of ExtPascal 0.9.7.
+- Documentation update: No longer need to patch Lazarus 0.9.28 or later to use 
+  design controls.
+- Turned off autosize behavior in TExtFormCheckbox design control in Lazarus.
+- Minor fix so extp_proj package will compile with FPC 2.3.1. 
+
+
+Version 0.1.0 (20-Sep-2009):
+
+- Added support for conditional compiling with embedded Web server.
+
+
+Version 0.0.9 (12-Sep-2009):
+
+- Added TExtFormNumberField, TExtFormDateField, TExtFormTimeField design
+  controls to ExtP_Ctrls package.
+- Converter now declares form variables in the app's thread class instead of
+  as global variables in the form units.
+- Support for ReadOnly property where appropriate (TExtFormTextField, etc.).
+- Fixed bugs related to conversion and/or defaults for Disabled, Hidden,
+  Border and Plain properties.
+- Additional preparation for future grid design controls (not yet distributed).
+- Revised and expanded ExtPToolkitStatus.html documentation.
+
