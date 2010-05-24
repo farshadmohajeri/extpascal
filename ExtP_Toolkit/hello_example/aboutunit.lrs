@@ -1,8 +1,0 @@
-{ This is an automatically generated lazarus resource file }
-
-LazarusResources.Add('TAboutWindow','FORMDATA',[
-  'TPF0'#12'TAboutWindow'#11'AboutWindow'#4'Left'#3'3'#1#6'Height'#3#253#0#3'To'
-  +'p'#3#172#0#5'Width'#3'^'#1#5'Modal'#9#5'Title'#6#5'About'#0#10'TExtButton'
-  +#10'ExtButton1'#4'Left'#3#128#0#6'Height'#2'!'#3'Top'#3#168#0#5'Width'#2'g'#8
-  +'MinWidth'#2'g'#4'Text'#6#5'Close'#5'Click'#7#15'ExtButton1Click'#0#0#0
-]);
