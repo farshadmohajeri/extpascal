@@ -1,3 +1,4 @@
+#labels Featured
 ==Introduction==
 
 The Ext JS community has produced various free extensions for Ext JS framework, increasing the Ext JS funcionality and power. This tutorial shows how importing these extensions into ExtPascal.
@@ -11,6 +12,7 @@ Some links to good extensions:
   * http://www.siteartwork.de/youtubeplayer/
   * http://www.siteartwork.de/wizardcomponent
   * http://e2cs.mm-mendez.com/?page_id=3&language=en
+  * http://technomedia.co.uk/SuperBoxSelect/examples3.html
 
   or googling: ext.ux
 
@@ -28,3 +30,4 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # Object Pascal new name, by example: Ext
    # Each property and
    # Each method 
+(TO CONTINUED...)
