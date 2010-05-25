@@ -51,7 +51,7 @@ ON Use Ansi Strings
 
 04. For FreePascal or MSEide use _*`-Smdghie50 -venwhi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
 
-05. Set the compiler "Search path" according. By example to C:\ExtPascal; C:\ExtPascal\ExtJSWrappers
+05. Set the compiler "Search path" according. By example to C:\ExtPascal; C:\ExtPascal\ExtJSWrapper
 {{{ 
 In Delphi browse: \Project\Options\Directories/Conditionals\Search path.
 In Lazarus browse: \Project\Project Options\Compiler Options\Paths\Other Unit Files.
