@@ -36,3 +36,4 @@
 
  * *Mophy Xiong*
   * ExtPascal refactoring and decoupling
+  * Garbage collector revised
