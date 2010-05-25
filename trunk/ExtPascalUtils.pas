@@ -27,6 +27,7 @@ type
     StrictDelimiter : boolean; // Missing property in FPC 2.2.2, Delphi 7 an older versions
     property DelimitedText : string read GetDelimitedText write SetDelimitedText; // Property override for FPC 2.2.2, Delphi 7 an older versions
   end;
+  TStrings = TStringList;
 {$IFEND}
 
 type
