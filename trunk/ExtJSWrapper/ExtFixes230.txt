@@ -1,0 +1,156 @@
+* For Ext JS 2.3.0 and older
+* USED FORMATS in ExtFixes230.txt
+*
+* Adding and updating properties:
+<class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
+*
+* Changing a property type to enumeration
+<class name>,<JavaScript property name>,<(enumerated list)>
+*
+* Adding and updating methods:
+<class name>,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
+*
+* For each method parameter:
+<parameter name>,<type>,<if is a optional parameter>
+*
+* Adding and updating events:
+<class name>,<JavaScript event name>,Event
+*
+* For each event parameter:
+<parameter name>,<type>
+*
+* Adding new classes:
+<class name>,<parent class name>,<unit name>,<JavaScript class name>
+*
+ExtComponent, region, string, false, true,
+ExtComponent, split, Boolean, false, true,
+ExtComponent, collapseMode, string, false, true,
+ExtComponent, minWidth, Integer, false, true,
+ExtComponent, maxWidth, Integer, false, true,
+ExtComponent, minSize, Integer, false, true,
+ExtComponent, maxSize, Integer, false, true,
+ExtComponent, margins, string, false, true,
+ExtComponent, cmargins, string, false, true,
+ExtComponent, closable, Boolean, false, true,
+ExtComponent, anchor, string, false, true,
+ExtComponent, el, string, false, true,
+ExtDataHttpProxy, Create, , true, false, conn, ExtDataConnection, false
+ExtDataHttpProxy, conn, ExtDataConnection, false, false,
+ExtGridColumnModel, renderer, String, false, true, FORCEADD
+*ExtDataField,, ExtData, Object
+*ExtDataField, name, string, false, true,
+*ExtDataField, mapping, string, false, true,
+*ExtDataField, type, string, false, true,
+*ExtDataField, sortTypes, string, false, true,
+*ExtDataField, sortDir, string, false, true,
+*ExtDataField, convert, ExtFunction, false, true,
+*ExtDataField, dateFormat, string, false, true,
+ExtDataJsonReader, Create,, true, false, Meta, ExtObject, true, RecordType, ExtDataRecord, true
+ExtDataRecord, Create,, true, false, Data, ExtObjectList, false
+ExtFormFormPanel, buttons, ExtObjectList, false, true,
+ExtContainer, items, ExtObjectList, false, true,
+ExtShowConfig,, Ext, Object
+ExtShowConfig, animEl, string, false, true,
+ExtShowConfig, buttons, ExtObject, false, true,
+ExtShowConfig, closable, Boolean, false, true, true
+ExtShowConfig, cls, string, false, true,
+ExtShowConfig, defaultTextHeight, Integer, false, true, 75
+ExtShowConfig, fn, ExtFunction, false, true,
+ExtShowConfig, scope, ExtObject, false, true,
+ExtShowConfig, icon, string, false, true,
+ExtShowConfig, iconCls, string, false, true,
+ExtShowConfig, maxWidth, Integer, false, true, 600
+ExtShowConfig, minWidth, Integer, false, true, 100
+ExtShowConfig, modal, Boolean, false, true, true
+ExtShowConfig, msg, string, false, true,
+ExtShowConfig, multiline, Boolean, false, true,
+ExtShowConfig, progress, Boolean, false, true,
+ExtShowConfig, progressText, string, false, true,
+ExtShowConfig, prompt, Boolean, false, true,
+ExtShowConfig, proxyDrag, Boolean, false, true,
+ExtShowConfig, title, string, false, true,
+ExtShowConfig, value, string, false, true,
+ExtShowConfig, wait, Boolean, false, true,
+ExtShowConfig, waitConfig, ExtProgressWaitConfig, false, true,
+ExtShowConfig, width, Integer, false, true,
+ExtMessageBoxSingleton, ERROR, string, true, false, 'ext-mb-error'
+ExtMessageBoxSingleton, INFO, string, true, false, 'ext-mb-info'
+ExtMessageBoxSingleton, QUESTION, string, true, false, 'ext-mb-question'
+ExtMessageBoxSingleton, WARNING, string, true, false, 'ext-mb-warning'
+ExtProgressWaitConfig,, Ext, Object
+ExtProgressWaitConfig, duration, Integer, false, true,
+ExtProgressWaitConfig, interval, Integer, false, true, 1000
+ExtProgressWaitConfig, increment, Integer, false, true, 10
+ExtProgressWaitConfig, fn, ExtFunction, false, true,
+ExtProgressWaitConfig, scope, ExtObject, false, true,
+ExtToolbar, items, ExtObjectList, false, true,
+ExtMenuMenu, items, ExtObjectList, false, true,
+ExtToolbarButton, menu, ExtUtilObservable, false, true,
+ExtMenuItem, menu, ExtMenuMenu, false, true,
+ExtGridGridPanel, loadMask, Boolean, false, true, FORCEADD
+ExtDataJsonStore, id, string, false, true,
+ExtDataJsonStore, root, string, false, true,
+ExtDataJsonStore, successProperty, string, false, true,
+ExtDataJsonStore, totalProperty, string, false, true,
+ExtFormCheckboxGroup, items, ExtObjectList, false, true,
+ExtWindow, bbar, ExtObjectList, false, true,
+ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
+ExtButton, Menushow, Event, This, ExtButton, Menu, ExtObject
+ExtButton, Menutriggerout, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
+ExtButton, Menutriggerover, Event, This, ExtButton, Menu, ExtObject, E, ExtEventObjectSingleton
+ExtContainer, Afterlayout, Event, This, ExtContainer, Layout, ExtObject
+ExtUxCodePress, ExtFormField, ExtForm, Ext.ux.CodePress
+ExtUxCodePress, autoComplete, Boolean, false, true, true
+ExtUxCodePress, autoResize, Boolean, false, true, true
+ExtUxCodePress, code, string, false, true,
+ExtUxCodePress, height, Integer, false, true,
+ExtUxCodePress, language, string, false, true, 'pascal'
+ExtUxCodePress, lineNumbers, Boolean, false, true, true
+ExtUxCodePress, path, string, false, true,
+ExtUxCodePress, readOnly, Boolean, false, true,
+ExtUxCodePress, sourceEl, string, false, true,
+ExtUxCodePress, trim, Boolean, false, true, true
+ExtUxCodePress, url, string, false, true,
+ExtUxCodePress, width, Integer, false, true,
+ExtUxCodePress, edit, void, false, false, obj, ExtObject, false, language, string, false
+ExtUxCodePress, setCode, void, false, false, code, string, false
+ExtUxCodePress, getCode, string, false, false
+ExtUxCodePress, getLanguage, string, false, false
+ExtUxCodePress, setValue, void, false, false, code, string, false
+ExtUxCodePress, getValue, string, false, false
+ExtUxCodePress, resize, void, false, false
+ExtUxCodePress, toggleAutoComplete, void, false, false
+ExtUxCodePress, toggleReadOnly, void, false, false
+ExtUxCodePress, toggleLineNumbers, void, false, false
+ExtUxCodePress, toggleEditor, void, false, false
+ExtContainer, layout, (lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCard, lyColumn, lyFit, lyForm, lyTable)
+ExtComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
+ExtComponent, xtype, (xtBox, xtButton, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtGrid, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtForm, xtCheckBox, xtCombo, xtDateField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtTextArea, xtTextField, xtTimeField, xtTrigger)
+ExtContainer, defaultType, (ExtComponentXType)
+ExtElement, defaultUnit, (CSSUnit)
+ExtGridColumnModel, align, (alInherit, alLeft, alRight, alCenter, alJustify)
+ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
+ExtFormFormPanel, buttonAlign, (ExtPanelButtonAlign)
+ExtFormFormPanel, labelAlign, (laLeft, laTop, laRight)
+ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
+ExtUxFormLovCombo, separator, string, false, true,
+ExtUxGridRecordForm, ExtUtilObservable, ExtForm, Ext.ux.grid.RecordForm
+ExtUxGridRecordForm, cancelIconCls, string, false, true, 'icon-cancel'
+ExtUxGridRecordForm, cancelText, string, false, true, 'Cancel'
+ExtUxGridRecordForm, columnCount, Integer, false, true, 1
+ExtUxGridRecordForm, dirtyRowCls, string, false, true, 'ux-grid3-dirty-row'
+ExtUxGridRecordForm, iconCls, string, false, true,
+ExtUxGridRecordForm, okIconCls, string, false, true, 'icon-ok'
+ExtUxGridRecordForm, okText, string, false, true, 'OK'
+ExtUxGridRecordForm, newRowCls, string, false, true, 'ux-grid3-new-row'
+ExtUxGridRecordForm, title, string, false, true,
+ExtUxGridRecordForm, showButtons, Boolean, false, true, true
+ExtUxGridRecordForm, ignoreFields, ExtObject, false, true,
+ExtUxGridRecordForm, readonlyFields, ExtObject, false, true,
+ExtUxGridRecordForm, disabledFields, ExtObject, false, true,
+ExtUxGridRecordForm, formConfig, ExtObject, false, true,
+ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, AnimEl, ExtElement, true
+ExtFormField, inputType, (itText, itButton, itCheckbox, itFile, itHidden, itImage, itPassword, itRadio, itReset, itSubmit)
+ExtStateProvider, on, void, false, false, EventName, string, false, Handler, ExtFunction, false
+ExtStateProvider, un, void, false, false, EventName, string, false, Handler, ExtFunction, false
+ExtFormFormPanel, fileUpload, Boolean, false, true,
