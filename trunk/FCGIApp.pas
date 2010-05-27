@@ -476,11 +476,15 @@ var
 begin
   Result := true;
   Application.AccessThreads.Enter;
-  I := Application.Threads.IndexOf(FSession.Cookie['FCGIThread']);
-  if I = -1 then begin
-    I := Application.Threads.IndexOf(FSession.Cookie[' FCGIThread']);
-    if I <> -1 then FSession.SetCookie('FCGIThread', FSession.Cookie[' FCGIThread']);
-  end;
+  Thread := FSession.Cookie['FCGIThread'];
+  if Thread = '' then begin
+    CreateGUID(GUID);
+    Thread := GUIDToString(GUID);
+    FSession.SetCookie('FCGIThread', Thread);
+    I := -1
+  end
+  else
+    I := Application.Threads.IndexOf(Thread);
   if I = -1 then begin
     FSession.NewThread := true;
     if Application.ReachedMaxConns then begin
@@ -488,9 +492,6 @@ begin
       Result := false;
     end
     else begin
-      CreateGUID(GUID);
-      Thread := GUIDToString(GUID);
-      FSession.SetCookie('FCGIThread', Thread);
       Application.Threads.AddObject(Thread, Self);
       FSession.AfterNewSession;
     end;
@@ -507,7 +508,6 @@ begin
       StrToTStrings(FRequestHeader.DelimitedText, _CurrentFCGIThread.FRequestHeader);
       StrToTStrings(FSession.FCookies.DelimitedText, _CurrentFCGIThread.FSession.FCookies);
       _CurrentFCGIThread.FSession.NewThread := false;
-      _CurrentFCGIThread.FSession.RequiresReload := false;
       _CurrentFCGIThread.FSession.FCustomResponseHeaders.Clear;
       _CurrentFCGIThread.FSession.ContentType := 'text/html';
       Application.Threads.AddObject('0', Self);
@@ -605,7 +605,7 @@ begin
                   break;
                 end;
               end;
-              inc(I, FCGIHeader.Len);
+              inc(I, FCGIHeader.Len + FCGIHeader.PadLen);
             end;
           end;
         end
@@ -877,7 +877,7 @@ procedure TFCGISession.DoLogout; begin
 end;
 
 procedure TFCGISession.DoSetCookie(const Name, ValueRaw : string); begin
-  CustomResponseHeaders['set-cookie'] := Name + '=' + ValueRaw;
+  CustomResponseHeaders['Set-Cookie'] := Name + '=' + ValueRaw;
 end;
 
 class function TFCGISession.GetCurrentWebSession : TCustomWebSession; begin
