@@ -277,12 +277,17 @@ begin
   HeaderName := Name;
   if pos('HTTP_', HeaderName) = 1 then HeaderName := copy(HeaderName, 6, MaxInt);
   HeaderName := AnsiReplaceStr(HeaderName, '_', '-');
-  with TIdWebHTTPSession(FOwner) do
-    try
-      Result := FCurrentRequest.RawHeaders.Values[HeaderName];
-      if Result = '' then Result := FCurrentRequest.CustomHeaders.Values[HeaderName];
-    except
-    end;
+  with TIdWebHTTPSession(FOwner) do 
+    if FCurrentRequest = nil then
+      Result := ''
+    else
+      if FCurrentRequest.RawHeaders = nil then
+        if FCurrentRequest.CustomHeaders = nil then
+          Result := ''
+        else
+          Result := FCurrentRequest.CustomHeaders.Values[HeaderName]
+      else
+        Result := FCurrentRequest.RawHeaders.Values[HeaderName];
 end;
 
 function TIdWebSession.GetWebServer : string; begin
@@ -316,7 +321,7 @@ function TIdWebSession.TryToServeFile : Boolean;
     Result := True;
     with TIdWebHTTPSession(FOwner).FCurrentRequest.RawHeaders do
       if (Values['if-Modified-Since'] <> '') then begin
-        FFileDateTime := FileDateToDateTime(FileAge(FileName));
+        FFileDateTime := GetGMTDateByName(FileName);
         Result := not SameText(FormatDateTime(FCompareDateFmt, FFileDateTime),
           FormatDateTime(FCompareDateFmt, StrInternetToDateTime(Values['if-Modified-Since'])));
       end;
@@ -341,7 +346,7 @@ begin
         ContentStream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
         FreeContentStream := True;
         ContentLength := ContentStream.Size;
-        FileDateTime := FileDateToDateTime(FileAge(FileName));
+        FileDateTime := GetGMTDateByName(FileName);
         LastModified := FileDateTime;
         Self.ContentType := DownloadContentType(FileName, 'text/html');
       end

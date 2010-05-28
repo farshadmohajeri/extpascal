@@ -465,7 +465,7 @@ Adds a TObject to the Session Garbage Collector
 }
 procedure TCustomWebSession.GarbageAdd(const Name : string; Obj : TObject);
 var
-  Garbage: PGarbage;
+  Garbage : PGarbage;
 begin
   New(Garbage);
   Garbage^.Garbage := Obj;
