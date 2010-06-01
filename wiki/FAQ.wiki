@@ -57,7 +57,7 @@ For example:
 
 ExtPascal has a specific method to do this, *Shutdown* method. This method requires a password: *extpascal*, that is hardcoded in ExtPascal source. To shutdown ExtPascalSamples3 by example use:
 {{{
-http://localhost/cgi-bin/ExtPascalSamples3/shutdown?password=extpascal
+http://localhost/cgi-bin/ExtPascalSamples/shutdown?password=extpascal
 }}}
 
 ===How to fix errors with this message?===
