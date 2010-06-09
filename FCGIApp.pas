@@ -543,6 +543,7 @@ begin
   _CurrentFCGIThread := Self;
   CurrentWebSession := FSession;
   FRequest := '';
+  Application.AccessThreads.Enter;
   try
     if Application.CanConnect(FSocket.GetHostAddress) then
       repeat
@@ -622,6 +623,7 @@ begin
       SendEndRequest;
     end;
   end;
+  Application.AccessThreads.Leave;
   FSocket.Free;
   if FGarbage then begin
     _CurrentFCGIThread.FLastAccess := 0;
