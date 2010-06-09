@@ -64,7 +64,6 @@ type
     FExeName      : string;
     Threads       : TStringList;
     FThreadsCount : integer;
-    AccessThreads : TCriticalSection;
     // Configurable options
     MaxIdleTime : TDateTime;
     WebServers  : TStringList;
@@ -74,6 +73,7 @@ type
   public
     GarbageNow : boolean; // Set to true to trigger the garbage colletor
     Shutdown   : boolean; // Set to true to shutdown the application after the last thread to end, default is false
+    AccessThreads : TCriticalSection;
     {$IFDEF HAS_CONFIG}
     procedure ReadConfig;
     function Reconfig(AReload : Boolean = true) : Boolean; override;
@@ -154,6 +154,7 @@ type
     function SetCurrentFCGIThread : boolean;
   public
     BrowserCache : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
+    AccessThread : TCriticalSection;
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
     property LastAccess : TDateTime read FLastAccess; // Last TDateTime access of this thread
@@ -231,11 +232,13 @@ constructor TFCGIThread.Create(NewSocket : integer); begin
   FSession := TFCGISession(Application.SessionClass.Create(Self));
   FSession.FApplication := Application;
   FSession.ContentType := 'text/html';
+  AccessThread := TCriticalSection.Create;
   inherited Create(false);
 end;
 
 // Destroys the TFCGIThread invoking the Thread Garbage Collector to free the associated objects
 destructor TFCGIThread.Destroy; begin
+  AccessThread.Free;
   FSession.Free;
   FRequestHeader.Free;
   dec(Application.FThreadsCount);
@@ -487,6 +490,7 @@ begin
     I := Application.Threads.IndexOf(Thread);
   if I = -1 then begin
     FSession.NewThread := true;
+    AccessThread.Enter;
     if Application.ReachedMaxConns then begin
       SendEndRequest(psOverloaded);
       Result := false;
@@ -502,6 +506,7 @@ begin
   end
   else begin
     _CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
+    _CurrentFCGIThread.AccessThread.Enter;
     CurrentWebSession := _CurrentFCGIThread.FSession;
     if _CurrentFCGIThread.ReturnValue = 1 then begin // Current thread is sleeping
       _CurrentFCGIThread.ReturnValue := 0; // Wakeup it
@@ -543,7 +548,6 @@ begin
   _CurrentFCGIThread := Self;
   CurrentWebSession := FSession;
   FRequest := '';
-  Application.AccessThreads.Enter;
   try
     if Application.CanConnect(FSocket.GetHostAddress) then
       repeat
@@ -623,7 +627,7 @@ begin
       SendEndRequest;
     end;
   end;
-  Application.AccessThreads.Leave;
+  _CurrentFCGIThread.AccessThread.Leave;
   FSocket.Free;
   if FGarbage then begin
     _CurrentFCGIThread.FLastAccess := 0;
