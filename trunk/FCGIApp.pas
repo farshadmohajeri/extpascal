@@ -165,7 +165,6 @@ type
     procedure Execute; override;
     procedure SendEndRequest(Status : TProtocolStatus = psRequestComplete);
     procedure SetResponseHeader(Header : AnsiString);
-    procedure Terminate; reintroduce;
   end;
 
 threadvar
@@ -251,11 +250,6 @@ Appends or cleans HTTP response header. The HTTP response header is sent using <
 }
 procedure TFCGIThread.SetResponseHeader(Header : AnsiString); begin
   FSession.FCustomResponseHeaders.Add(Header);
-end;
-
-procedure TFCGIThread.Terminate; begin
-  inherited;
-  _CurrentFCGIThread.ReturnValue := 1; // Current thread is sleeping
 end;
 
 {
@@ -479,50 +473,46 @@ var
 begin
   Result := true;
   Application.AccessThreads.Enter;
-  Thread := FSession.Cookie['FCGIThread'];
-  if Thread = '' then begin
-    CreateGUID(GUID);
-    Thread := GUIDToString(GUID);
-    FSession.SetCookie('FCGIThread', Thread);
-    I := -1
-  end
-  else
-    I := Application.Threads.IndexOf(Thread);
-  if I = -1 then begin
-    FSession.NewThread := true;
-    AccessThread.Enter;
-    if Application.ReachedMaxConns then begin
-      SendEndRequest(psOverloaded);
-      Result := false;
+  try
+    Thread := FSession.Cookie['FCGIThread'];
+    if Thread = '' then begin
+      CreateGUID(GUID);
+      Thread := GUIDToString(GUID);
+      FSession.SetCookie('FCGIThread', Thread);
+      I := -1
+    end
+    else
+      I := Application.Threads.IndexOf(Thread);
+    if I = -1 then begin
+      FSession.NewThread := true;
+      AccessThread.Enter;
+      if Application.ReachedMaxConns then begin
+        SendEndRequest(psOverloaded);
+        Result := false;
+      end
+      else begin
+        Application.Threads.AddObject(Thread, Self);
+        FSession.AfterNewSession;
+      end;
+      with FSession do begin
+        FScriptName := Self.FRequestHeader.Values['SCRIPT_NAME'];
+        if FScriptName[length(FScriptName)] <> '/' then FScriptName := FScriptName + '/';
+      end;
     end
     else begin
-      Application.Threads.AddObject(Thread, Self);
-      FSession.AfterNewSession;
-    end;
-    with FSession do begin
-      FScriptName := Self.FRequestHeader.Values['SCRIPT_NAME'];
-      if FScriptName[length(FScriptName)] <> '/' then FScriptName := FScriptName + '/';
-    end;
-  end
-  else begin
-    _CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
-    _CurrentFCGIThread.AccessThread.Enter;
-    CurrentWebSession := _CurrentFCGIThread.FSession;
-    if _CurrentFCGIThread.ReturnValue = 1 then begin // Current thread is sleeping
-      _CurrentFCGIThread.ReturnValue := 0; // Wakeup it
+      _CurrentFCGIThread := TFCGIThread(Application.Threads.Objects[I]);
+      _CurrentFCGIThread.AccessThread.Enter;
+      CurrentWebSession := _CurrentFCGIThread.FSession;
       StrToTStrings(FRequestHeader.DelimitedText, _CurrentFCGIThread.FRequestHeader);
       StrToTStrings(FSession.FCookies.DelimitedText, _CurrentFCGIThread.FSession.FCookies);
       _CurrentFCGIThread.FSession.NewThread := false;
       _CurrentFCGIThread.FSession.FCustomResponseHeaders.Clear;
       _CurrentFCGIThread.FSession.ContentType := 'text/html';
       Application.Threads.AddObject('0', Self);
-    end
-    else begin // Current thread is busy
-      Result := false;
-      SendEndRequest(psBusy);
     end;
+  finally
+    Application.AccessThreads.Leave;
   end;
-  Application.AccessThreads.Leave;
 end;
 
 {
@@ -779,9 +769,9 @@ begin
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
       AccessThreads.Enter;
       try
-        Thread.Free
+        Thread.Free;
+        Threads.Delete(I);
       except end;
-      Threads.Delete(I);
       AccessThreads.Leave;
     end;
   end;
