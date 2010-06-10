@@ -371,11 +371,13 @@ constructor TCustomWebSession.Create(AOwner : TObject); begin
 end;
 
 destructor TCustomWebSession.Destroy; begin
-  FQueries.Free;
-  FCustomResponseHeaders.Free;
-  FCookies.Free;
-  GarbageCollect(True);
-  FGarbageCollector.Free;
+  try
+    FQueries.Free;
+    FCustomResponseHeaders.Free;
+    FCookies.Free;
+    GarbageCollect(True);
+    FGarbageCollector.Free;
+  except end;
   inherited;
 end;
 
