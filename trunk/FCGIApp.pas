@@ -394,7 +394,7 @@ begin
     'H' : FRequestMethod := rmHead;
     'D' : FRequestMethod := rmDelete;
   end;
-  FSession.SetQueryText(FRequestHeader.Values['QUERY_STRING'], True);
+  FSession.SetQueryText(FRequestHeader.Values['QUERY_STRING'], True, False);
   FSession.IsUpload := false;
   CT := FSession.RequestHeader['CONTENT_TYPE'];
   if pos('multipart/form-data', CT) <> 0 then FSession.UploadPrepare(CT, Buffer, I);
@@ -638,7 +638,7 @@ The published method will use the Request as input and the Response as output.
 }
 function TFCGIThread.HandleRequest(pRequest : AnsiString) : AnsiString; begin
   if (FRequestMethod = rmPost) and (pos('=', pRequest) <> 0) then
-    FSession.SetQueryText(pRequest, True)
+    FSession.SetQueryText(pRequest, True, True)
   else
     FRequest := pRequest;
   if not FSession.IsUpload then FSession.Response := '';
