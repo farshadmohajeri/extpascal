@@ -71,7 +71,7 @@ type
     procedure SendResponse(const Msg : string); virtual; abstract;
     procedure SetCookie(const Name, Value : string; Expires : TDateTime = 0; const Domain : string = '';
                         const Path : string = ''; Secure : Boolean = False);
-    procedure SetQueryText(const AQueryStr : string; NeedDecode : Boolean);
+    procedure SetQueryText(const AQueryStr : string; NeedDecode, Append : Boolean);
     function TryToServeFile: Boolean; virtual;
     function UploadBlockType(const Buffer : AnsiString; var MarkPos : Integer) : TUploadBlockType; virtual; abstract;
     function UploadNeedUnknownBlock : Boolean; virtual; abstract;
@@ -696,11 +696,14 @@ procedure TCustomWebSession.SetCustomResponseHeaders(const Name, Value : string)
   FCustomResponseHeaders.Values[Name] := Value;
 end;
 
-procedure TCustomWebSession.SetQueryText(const AQueryStr : string; NeedDecode : Boolean);
+procedure TCustomWebSession.SetQueryText(const AQueryStr : string; NeedDecode, Append : Boolean);
 var
   I : Integer;
 begin
-  FQueries.DelimitedText := AQueryStr;
+  if Append then
+    FQueries.DelimitedText := FQueries.DelimitedText + '&' + AQueryStr
+  else
+    FQueries.DelimitedText := AQueryStr;
   if NeedDecode then
     for I := 0 to FQueries.Count - 1 do
       FQueries[I] := URLDecode(FQueries[I]);

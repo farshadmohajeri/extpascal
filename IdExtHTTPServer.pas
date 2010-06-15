@@ -150,7 +150,7 @@ procedure TIdWebHTTPSession.HandleRequest(ARequest : TIdHTTPRequestInfo; ARespon
     FSession.ContentType := 'text/html';
     FSession.Response := '';
     FSession.FCustomResponseHeaders.Clear;
-    FSession.SetQueryText(FCurrentRequest.UnParsedParams, False);
+    FSession.SetQueryText(FCurrentRequest.UnParsedParams, False, False);
   end;
   with FSession do begin
     FPathInfo := FCurrentRequest.Document;
