@@ -508,7 +508,6 @@ begin
       _CurrentFCGIThread.FSession.NewThread := false;
       _CurrentFCGIThread.FSession.FCustomResponseHeaders.Clear;
       _CurrentFCGIThread.FSession.ContentType := 'text/html';
-      Application.Threads.AddObject('0', Self);
     end;
   finally
     Application.AccessThreads.Leave;
@@ -659,13 +658,12 @@ var
 begin
   FConfig := nil;
   ConfigFile := ChangeFileExt(ParamStr(0), {$IFDEF MSWINDOWS}'.ini'{$ELSE}'.conf'{$ENDIF});
-  if FileExists(ConfigFile) then
-    try
-      FConfig := TINIFile.Create(ConfigFile);
-      // changing below options requires restart
-      FPort := Config.ReadInteger('FCGI', 'Port', Port);
-      FPassword := Config.ReadString('FCGI', 'Password', Password);
-    except end;
+  if FileExists(ConfigFile) then begin
+    FConfig := TINIFile.Create(ConfigFile);
+    // changing below options requires restart
+    FPort := Config.ReadInteger('FCGI', 'Port', Port);
+    FPassword := Config.ReadString('FCGI', 'Password', Password);
+  end;
 end;
 
 {
@@ -768,10 +766,8 @@ begin
     Thread := TFCGIThread(Threads.Objects[I]);
     if (Now - Thread.LastAccess) > MaxIdleTime then begin
       AccessThreads.Enter;
-      try
-        Thread.Free;
-        Threads.Delete(I);
-      except end;
+      Thread.Free;
+      Threads.Delete(I);
       AccessThreads.Leave;
     end;
   end;

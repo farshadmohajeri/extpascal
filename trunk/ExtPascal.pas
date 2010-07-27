@@ -298,10 +298,12 @@ threadvar
 { TExtThread }
 
 procedure TExtThread.GarbageDestroy(Garbage : TObject); begin
-  if Garbage is TExtObject then
-    TExtObject(Garbage).Free
-  else
-    inherited;
+  try
+    if Garbage is TExtObject then
+      TExtObject(Garbage).Free
+    else
+      inherited
+  except end;
 end;
 
 {
