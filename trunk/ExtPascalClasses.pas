@@ -56,7 +56,7 @@ type
     procedure GarbageCollect(Deep : Boolean = False);
     procedure GarbageDelete(Obj : TObject); overload;
     procedure GarbageDelete(const Name : string); overload;
-    procedure GarbageDestroy(Garbage : TObject); virtual;
+    procedure GarbageRemove(Obj : TObject);
     function GarbageExists(const Name : string): Boolean;
     function GarbageFind(const Name : string): TObject;
     function GarbageFixName(const Name : string) : string; virtual;
@@ -482,8 +482,7 @@ begin
     for I := Count - 1 downto 0 do begin
       FObject := Objects[I];
       if (FObject <> nil) and (Deep or not PGarbage(FObject)^.Persistent) then begin
-        GarbageDestroy(PGarbage(FObject)^.Garbage);
-        PGarbage(FObject)^.Garbage := nil;
+        if PGarbage(FObject)^.Garbage <> nil then PGarbage(FObject)^.Garbage.Free;
         Dispose(PGarbage(FObject));
         Objects[I] := nil;
       end;
@@ -496,11 +495,11 @@ Deletes a TObject from the Session Garbage Collector
 }
 procedure TCustomWebSession.GarbageDelete(Obj : TObject);
 var
-  I: Integer;
+  I : Integer;
 begin
   for I := 0 to FGarbageCollector.Count - 1 do
     if Assigned(FGarbageCollector.Objects[I]) and (PGarbage(FGarbageCollector.Objects[I])^.Garbage = Obj) then begin
-      if I >= 0 then PGarbage(FGarbageCollector.Objects[I])^.Persistent := True;
+      PGarbage(FGarbageCollector.Objects[I])^.Persistent := True;
       Exit;
     end;
 end;
@@ -511,15 +510,21 @@ Deletes a TObject from the Session Garbage Collector
 }
 procedure TCustomWebSession.GarbageDelete(const Name : string);
 var
-  I: Integer;
+  I : Integer;
 begin
   I := FGarbageCollector.IndexOf(GarbageFixName(Name));
   if I >= 0 then PGarbage(FGarbageCollector.Objects[I])^.Persistent := True;
 end;
 
-// Actually destroy a garbage when the Session Garbage Collector requires
-procedure TCustomWebSession.GarbageDestroy(Garbage : TObject); begin
-  Garbage.Free;
+procedure TCustomWebSession.GarbageRemove(Obj : TObject);
+var
+  I : Integer;
+begin
+  for I := 0 to FGarbageCollector.Count - 1 do
+    if Assigned(FGarbageCollector.Objects[I]) and (PGarbage(FGarbageCollector.Objects[I])^.Garbage = Obj) then begin
+      PGarbage(FGarbageCollector.Objects[I])^.Garbage := nil;
+      Exit;
+    end;
 end;
 
 {

@@ -89,7 +89,6 @@ type
     procedure DoReconfig; override;
     procedure ReadConfig;
     {$ENDIF}
-    procedure GarbageDestroy(Garbage: TObject); override;
     function GarbageFixName(const Name: string): string; override;
     procedure OnError(const Msg, Method, Params : string); override;
     function GetSequence : string;
@@ -296,15 +295,6 @@ threadvar
   InJSFunction : boolean;
 
 { TExtThread }
-
-procedure TExtThread.GarbageDestroy(Garbage : TObject); begin
-  try
-    if Garbage is TExtObject then
-      TExtObject(Garbage).Free
-    else
-      inherited
-  except end;
-end;
 
 {
 Removes identificated JS commands from response.
@@ -1065,10 +1055,8 @@ end;
 
 // <link TExtObject.DeleteFromGarbage, Removes object from Garbage Collector> and frees it
 destructor TExtObject.Destroy; begin
-  try
-    DeleteFromGarbage;
-    inherited;
-  except end;
+  if CurrentWebSession <> nil then TExtThread(CurrentWebSession).GarbageRemove(Self);
+  inherited;
 end;
 
 {
