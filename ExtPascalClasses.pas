@@ -371,13 +371,11 @@ constructor TCustomWebSession.Create(AOwner : TObject); begin
 end;
 
 destructor TCustomWebSession.Destroy; begin
-  try
-    FQueries.Free;
-    FCustomResponseHeaders.Free;
-    FCookies.Free;
-    GarbageCollect(True);
-    FGarbageCollector.Free;
-  except end;
+  FQueries.Free;
+  FCustomResponseHeaders.Free;
+  FCookies.Free;
+  GarbageCollect(True);
+  FGarbageCollector.Free;
   inherited;
 end;
 
@@ -481,16 +479,15 @@ var
   FObject : TObject;
 begin
   with FGarbageCollector do
-    for I := Count - 1 downto 0 do
-      try
-        FObject := Objects[I];
-        if (FObject <> nil) and (Deep or not PGarbage(FObject)^.Persistent) then begin
-          Objects[I] := nil;
-          GarbageDestroy(PGarbage(FObject)^.Garbage);
-          Dispose(PGarbage(FObject));
-        end;
-      except
+    for I := Count - 1 downto 0 do begin
+      FObject := Objects[I];
+      if (FObject <> nil) and (Deep or not PGarbage(FObject)^.Persistent) then begin
+        GarbageDestroy(PGarbage(FObject)^.Garbage);
+        PGarbage(FObject)^.Garbage := nil;
+        Dispose(PGarbage(FObject));
+        Objects[I] := nil;
       end;
+    end;
 end;
 
 {
