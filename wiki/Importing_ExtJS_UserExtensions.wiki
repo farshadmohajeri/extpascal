@@ -75,6 +75,11 @@ ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false,
 {{{
 ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
 }}}
+  # In folder ExtJSWrapper compile ExtToPascal.dpr
+  # Regenerate the ExtJS wrappers using ExToPascal
+{{{
+ExtToPascal <ExtJS docs path>
+}}}
   # In your ExtPascal application, in the method that will use this extension, add this line, by example:  
 {{{
 SetLibrary('/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
