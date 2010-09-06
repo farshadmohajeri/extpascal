@@ -32,7 +32,6 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # JavaScript class name: Ext.ux.form.LovCombo
     # Put then this line in ExtFixes.txt:
      * ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
-
    # Each property
     # Class name: ExtUxFormLovCombo
     # JavaScript property name: separator
@@ -44,7 +43,6 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
      * ExtUxFormLovCombo, separator, string, false, true,
     # If the property is a enumeration add this line too:
      * ExtUxFormLovCombo, separator, (spCenter, spNormal, spLeft, spRight)
-
    # Each method
     # Class name, by example: ExtUxGridRecordForm
     # JavaScript method name, use Create if is constructor: show
@@ -57,7 +55,6 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
       # if is a optional parameter: false
     # Put then this line in ExtFixes.txt:
      * ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, animEl, ExtElement, true
-
    # Each event
     # Class name: ExtButton
     # JavaScript event name: Menuhide
@@ -67,3 +64,5 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
       # Type: ExtButton
     # Put then this line in ExtFixes.txt:
      * ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
+  # In your ExtPascal application, in the method that will use this extension, add this line, by example:  
+     * SetLibrary(ExtPath + '/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
