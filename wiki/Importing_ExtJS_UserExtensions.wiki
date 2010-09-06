@@ -17,7 +17,7 @@ Some links to good extensions:
   or googling: ext.ux
 
 ==Steps==
-  # Copy the extension sources to folder *ux* below *ext* folder
+  # Copy the extension sources to folder *ux* below *htdocs* folder
   # (Optional) Rename the original sources (.js and .css files) appending "-debug" string to the file name. By example:
 {{{
 Ext.ux.form.LovCombo.js to Ext.ux.form.LovCombo-debug.js
@@ -77,5 +77,5 @@ ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
 }}}
   # In your ExtPascal application, in the method that will use this extension, add this line, by example:  
 {{{
-SetLibrary(ExtPath + '/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
+SetLibrary('/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
 }}}
