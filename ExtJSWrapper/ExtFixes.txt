@@ -1,6 +1,9 @@
 * For Ext JS 3.0 and later
 * USED FORMATS in ExtFixes.txt
 *
+* Adding new classes:
+<class name>,<parent class name>,<unit name>,<JavaScript class name>
+*
 * Adding and updating properties:
 <class name>,<JavaScript property name>,<type>,<if is a static property>,<if is a config option>,<default value or FORCEADD for alternate type properties>
 *
@@ -18,9 +21,6 @@
 *
 * For each event parameter:
 <parameter name>,<type>
-*
-* Adding new classes:
-<class name>,<parent class name>,<unit name>,<JavaScript class name>
 *
 ExtComponent, split, Boolean, false, true,
 ExtComponent, collapseMode, string, false, true,
