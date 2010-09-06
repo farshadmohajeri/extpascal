@@ -25,7 +25,7 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
 }}}
   # (Optional) Optimize the sources (.js and .css files) using this online [http://www.javascriptcompressor.com JavaScript Compressor]. The optimized sources will retain the original names without "-debug"
   # Read the extension docs and the original source to identify properties and methods
-  # Update the ExtFixes.txt file declaring:
+  # Update the ExtFixes.txt file, in ExtJSWrapper folder, declaring:
    # The component itself, inform:
     # Object Pascal new name, by example: ExtUxFormLovCombo
     # Parent class name or empty, by example: ExtFormComboBox
