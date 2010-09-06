@@ -31,7 +31,9 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # Unit name: ExtForm
     # JavaScript class name: Ext.ux.form.LovCombo
     # Put then this line in ExtFixes.txt:
-     * ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
+{{{
+ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
+}}}
    # Each property
     # Class name: ExtUxFormLovCombo
     # JavaScript property name: separator
@@ -40,9 +42,13 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # If is a config option: true
     # Default value or FORCEADD for alternate type properties: empty in this case
     # Put then this line in ExtFixes.txt:
-     * ExtUxFormLovCombo, separator, string, false, true,
+{{{
+ExtUxFormLovCombo, separator, string, false, true,
+}}}
     # If the property is a enumeration add this line too:
-     * ExtUxFormLovCombo, separator, (spCenter, spNormal, spLeft, spRight)
+{{{
+ExtUxFormLovCombo, separator, (spCenter, spNormal, spLeft, spRight)
+}}}
    # Each method
     # Class name, by example: ExtUxGridRecordForm
     # JavaScript method name, use Create if is constructor: show
@@ -54,7 +60,9 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
       # Parameter Object Pascal type: ExtDataRecord
       # if is a optional parameter: false
     # Put then this line in ExtFixes.txt:
-     * ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, animEl, ExtElement, true
+{{{
+ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, animEl, ExtElement, true
+}}}
    # Each event
     # Class name: ExtButton
     # JavaScript event name: Menuhide
@@ -63,6 +71,10 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
       # Parameter name: This
       # Type: ExtButton
     # Put then this line in ExtFixes.txt:
-     * ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
+{{{
+ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
+}}}
   # In your ExtPascal application, in the method that will use this extension, add this line, by example:  
-     * SetLibrary(ExtPath + '/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
+{{{
+SetLibrary(ExtPath + '/ux/Ext.ux.form.LovCombo', true{if has a CSS companion file});
+}}}
