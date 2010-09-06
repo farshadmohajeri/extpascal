@@ -27,7 +27,7 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
   # Update the ExtFixes.txt file declaring:
    # The component itself, inform:
     # Object Pascal new name, by example: ExtUxFormLovCombo
-    # Parent class name, by example: ExtFormComboBox
+    # Parent class name or empty, by example: ExtFormComboBox
     # Unit name: ExtForm
     # JavaScript class name: Ext.ux.form.LovCombo
     # Put then this line in ExtFixes.txt:
@@ -47,8 +47,8 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
 
    # Each method
     # Class name, by example: ExtUxGridRecordForm
-    # JavaScript method name: show
-    # Return type or void: void
+    # JavaScript method name, use Create if is constructor: show
+    # Return type or void or empty if a constructor: void
     # If is a static method: false
     # if is a overload method: false
      # For each method parameter
@@ -59,8 +59,11 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
      * ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, animEl, ExtElement, true
 
    # Each event
-    # Class name:
-    # JavaScript event name:
+    # Class name: ExtButton
+    # JavaScript event name: Menuhide
+    # The literal 'Event': Event
      # For each event parameter
-      # Parameter name:
-      # Type:
+      # Parameter name: This
+      # Type: ExtButton
+    # Put then this line in ExtFixes.txt:
+     * ExtButton, Menuhide, Event, This, ExtButton, Menu, ExtObject
