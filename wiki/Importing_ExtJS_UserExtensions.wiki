@@ -31,7 +31,7 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # Unit name: ExtForm
     # JavaScript class name: Ext.ux.form.LovCombo
     # Put then this line in ExtFixes.txt:
-      * ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
+     * ExtUxFormLovCombo, ExtFormComboBox, ExtForm, Ext.ux.form.LovCombo
 
    # Each property
     # Class name: ExtUxFormLovCombo
@@ -41,21 +41,26 @@ Ext.ux.form.LovCombo.css to Ext.ux.form.LovCombo-debug.css
     # If is a config option: true
     # Default value or FORCEADD for alternate type properties: empty in this case
     # Put then this line in ExtFixes.txt:
-      * ExtUxFormLovCombo, separator, string, false, true,
+     * ExtUxFormLovCombo, separator, string, false, true,
     # If the property is a enumeration add this line too:
-      * ExtUxFormLovCombo, separator, (spCenter, spNormal, spLeft, spRight)
+     * ExtUxFormLovCombo, separator, (spCenter, spNormal, spLeft, spRight)
 
    # Each method
-    # Class name: >,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
-*
-* For each method parameter:
-<parameter name>,<type>,<if is a optional parameter>
-*
-* Adding and updating events:
-<class name>,<JavaScript event name>,Event
-*
-* For each event parameter:
-<parameter name>,<type>
-*
-   # Each method 
-(TO CONTINUED...)
+    # Class name, by example: ExtUxGridRecordForm
+    # JavaScript method name: show
+    # Return type or void: void
+    # If is a static method: false
+    # if is a overload method: false
+     # For each method parameter
+      # Parameter name: DataRecord
+      # Parameter Object Pascal type: ExtDataRecord
+      # if is a optional parameter: false
+    # Put then this line in ExtFixes.txt:
+     * ExtUxGridRecordForm, show, void, false, false, DataRecord, ExtDataRecord, false, animEl, ExtElement, true
+
+   # Each event
+    # Class name:
+    # JavaScript event name:
+     # For each event parameter
+      # Parameter name:
+      # Type:
