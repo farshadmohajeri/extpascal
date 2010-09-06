@@ -30,7 +30,7 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="4">
+    <Units Count="5">
       <Unit0>
         <Filename Value="ExtPascalSamples.dpr"/>
         <IsPartOfProject Value="True"/>
@@ -38,7 +38,7 @@
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
-        <CursorPos X="115" Y="35"/>
+        <CursorPos X="32" Y="13"/>
         <UsageCount Value="22"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -55,7 +55,7 @@
       <Unit2>
         <Filename Value="../Indy/Core/IdSocketHandle.pas"/>
         <UnitName Value="IdSocketHandle"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="112"/>
         <CursorPos X="99" Y="142"/>
@@ -66,8 +66,7 @@
       <Unit3>
         <Filename Value="../ExtPascal.pas"/>
         <UnitName Value="ExtPascal"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="266"/>
         <CursorPos X="105" Y="286"/>
@@ -75,8 +74,21 @@
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="../../LLVM-Pascal/tests/tbf/tb0001.pp"/>
+        <UnitName Value="hello"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="6"/>
+        <SyntaxHighlighter Value="FreePascal"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Text"/>
+      </Unit4>
     </Units>
-    <JumpHistory Count="4" HistoryIndex="3">
+    <JumpHistory Count="6" HistoryIndex="5">
       <Position1>
         <Filename Value="ExtPascalSamples.dpr"/>
         <Caret Line="21" Column="56" TopLine="1"/>
@@ -93,6 +105,14 @@
         <Filename Value="../ExtPascal.pas"/>
         <Caret Line="1" Column="1" TopLine="1"/>
       </Position4>
+      <Position5>
+        <Filename Value="ExtPascalSamples.dpr"/>
+        <Caret Line="12" Column="5" TopLine="1"/>
+      </Position5>
+      <Position6>
+        <Filename Value="ExtPascalSamples.dpr"/>
+        <Caret Line="13" Column="25" TopLine="1"/>
+      </Position6>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
