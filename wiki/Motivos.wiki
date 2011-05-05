@@ -1,3 +1,4 @@
+#labels Featured
 Este projeto permite usar Web 2.0 (Ajax) em programas Delphi/FreePascal.
 
 Para isso após várias pesquisas resolvi usar o framework JavaScript:
