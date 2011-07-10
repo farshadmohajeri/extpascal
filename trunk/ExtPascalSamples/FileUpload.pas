@@ -15,7 +15,7 @@ type
 implementation
 
 uses
-  SysUtils, Session, ExtForm, ExtPascalUtils;
+  SysUtils, Session, ExtForm;
 
 procedure TFileUpload.Process; begin
   // process your file here, by example loading a database table with it

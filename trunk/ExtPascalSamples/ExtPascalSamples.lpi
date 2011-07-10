@@ -1,23 +1,65 @@
 <?xml version="1.0"?>
 <CONFIG>
   <ProjectOptions>
+    <Version Value="9"/>
     <PathDelim Value="\"/>
-    <Version Value="7"/>
     <General>
       <Flags>
         <MainUnitHasCreateFormStatements Value="False"/>
         <MainUnitHasTitleStatement Value="False"/>
       </Flags>
       <MainUnit Value="0"/>
-      <TargetFileExt Value=".exe"/>
       <UseXPManifest Value="True"/>
       <ActiveWindowIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <Language Value=""/>
       <CharSet Value=""/>
-      <StringTable Comments="" CompanyName="" FileDescription="" FileVersion="0.0.0.0" InternalName="" LegalCopyright="" LegalTrademarks="" OriginalFilename="" ProductName="" ProductVersion=""/>
+      <StringTable ProductVersion=""/>
     </VersionInfo>
+    <BuildModes Count="2" Active="Release">
+      <Item1 Name="Debug" Default="True"/>
+      <Item2 Name="Release">
+        <CompilerOptions>
+          <Version Value="10"/>
+          <PathDelim Value="\"/>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="..;..\ExtJSWrapper"/>
+            <UnitOutputDirectory Value="C:\Users\Wanderlan\Trabalho\ExtPascal\bin"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <SyntaxMode Value="Delphi"/>
+              <CStyleMacros Value="True"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <UseLineInfoUnit Value="False"/>
+              <StripSymbols Value="True"/>
+              <UseExternalDbgSyms Value="True"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+          </Linking>
+          <Other>
+            <ConfigFile>
+              <StopAfterErrCount Value="10"/>
+            </ConfigFile>
+            <CompilerMessages>
+              <UseMsgFile Value="True"/>
+            </CompilerMessages>
+            <CompilerPath Value="$(CompPath)"/>
+          </Other>
+        </CompilerOptions>
+      </Item2>
+    </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
       <IgnoreBinaries Value="False"/>
@@ -30,16 +72,15 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="7">
+    <Units Count="20">
       <Unit0>
         <Filename Value="ExtPascalSamples.dpr"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="25" Y="16"/>
-        <UsageCount Value="28"/>
+        <TopLine Value="29"/>
+        <CursorPos X="29" Y="39"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
@@ -68,6 +109,7 @@
         <TopLine Value="73"/>
         <CursorPos X="10" Y="95"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\lazarus\fpc\2.2.4\source\rtl\inc\wstringh.inc"/>
@@ -75,6 +117,7 @@
         <TopLine Value="2"/>
         <CursorPos X="10" Y="24"/>
         <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
         <Filename Value="ExtPascalUtils.pas"/>
@@ -94,62 +137,178 @@
         <UsageCount Value="10"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="..\ExtPascal.pas"/>
+        <UnitName Value="ExtPascal"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="110"/>
+        <CursorPos X="71" Y="110"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="..\FCGIApp.pas"/>
+        <UnitName Value="FCGIApp"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="12"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="Session.pas"/>
+        <UnitName Value="Session"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="107"/>
+        <CursorPos X="3" Y="107"/>
+        <UsageCount Value="12"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\ExtPascalUtils.pas"/>
+        <UnitName Value="ExtPascalUtils"/>
+        <EditorIndex Value="2"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="24" Y="9"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="..\ExtPascalUniGui\ExtPascalUtils.pas"/>
+        <UnitName Value="ExtPascalUtils"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="291"/>
+        <CursorPos X="22" Y="291"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="..\BlockSocket.pas"/>
+        <UnitName Value="BlockSocket"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="140"/>
+        <CursorPos X="21" Y="145"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="..\ExtJSWrapper\ExtUtil.pas"/>
+        <UnitName Value="ExtUtil"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="22" Y="5"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <UnitName Value="Ext"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="11" Y="9"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="..\Services.pas"/>
+        <UnitName Value="Services"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="374"/>
+        <CursorPos X="49" Y="388"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="FileUpload.pas"/>
+        <UnitName Value="FileUpload"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="29" Y="18"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="..\ExtJSWrapper\ExtDirect.pas"/>
+        <UnitName Value="ExtDirect"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="24" Y="13"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="ArrayGrid.pas"/>
+        <UnitName Value="ArrayGrid"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="104"/>
+        <CursorPos X="3" Y="128"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="LayoutWindow.pas"/>
+        <UnitName Value="LayoutWindow"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="15" Y="7"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit19>
     </Units>
-    <JumpHistory Count="6" HistoryIndex="5">
+    <JumpHistory Count="2" HistoryIndex="1">
       <Position1>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="74" Column="43" TopLine="46"/>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="286" Column="63" TopLine="286"/>
       </Position1>
       <Position2>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="927" Column="77" TopLine="626"/>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="324" Column="29" TopLine="310"/>
       </Position2>
-      <Position3>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position3>
-      <Position4>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="27" Column="104" TopLine="1"/>
-      </Position4>
-      <Position5>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="34" Column="118" TopLine="1"/>
-      </Position5>
-      <Position6>
-        <Filename Value="ExtPascalSamples.dpr"/>
-        <Caret Line="32" Column="58" TopLine="1"/>
-      </Position6>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="8"/>
+    <Version Value="10"/>
     <PathDelim Value="\"/>
     <SearchPaths>
-      <OtherUnitFiles Value="..\"/>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value=".."/>
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
         <SyntaxMode Value="Delphi"/>
         <CStyleMacros Value="True"/>
-        <UseAnsiStrings Value="True"/>
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
-      <SmartLinkUnit Value="True"/>
-      <SmallerCode Value="True"/>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
       <Optimizations>
-        <OptimizationLevel Value="3"/>
+        <OptimizationLevel Value="0"/>
       </Optimizations>
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <UseLineInfoUnit Value="False"/>
-        <StripSymbols Value="True"/>
+        <GenerateDebugInfo Value="True"/>
+        <GenerateDwarf Value="True"/>
+        <UseExternalDbgSyms Value="True"/>
       </Debugging>
-      <LinkSmart Value="True"/>
     </Linking>
     <Other>
+      <ConfigFile>
+        <StopAfterErrCount Value="10"/>
+      </ConfigFile>
+      <CompilerMessages>
+        <UseMsgFile Value="True"/>
+      </CompilerMessages>
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>
