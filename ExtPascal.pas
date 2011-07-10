@@ -107,7 +107,7 @@ type
     procedure JSCode(JS : string; JSClassName : string = ''; JSName : string = ''; Owner : string = '');
     procedure JSSleep(MiliSeconds : integer);
     procedure SetStyle(pStyle : string = '');
-    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
+    procedure SetLibrary(pLibrary : string = ''; CSS : boolean = false);
     procedure SetCSS(pCSS : string; Check : boolean = true);
     procedure SetIconCls(Cls : array of string);
     procedure SetCustomJS(JS : string = '');
@@ -316,12 +316,12 @@ If the WebServer is Apache tests if the library exists.
 Repeated libraries are ignored.
 @param pLibrary JS library without extension (.js), but with Path based on Web server document root.
 @param CSS pLibrary has a companion stylesheet (.css) with same path and name.
-@param HasDebug Library has a debug, non minified, version. Default is false.
+If defined DebugJS then uses Library with debug (non minified version).
 If pLibrary is '' then all user JS libraries to this session will be removed from response.
 @example <code>SetLibrary('');</code>
 @example <code>SetLibrary(<link ExtPath> + '/examples/tabs/TabCloseMenu');</code>
 }
-procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false; HasDebug : boolean = false);
+procedure TExtThread.SetLibrary(pLibrary : string = ''; CSS : boolean = false);
 var
   Root : string;
 begin
@@ -331,7 +331,7 @@ begin
     else begin
       Root := RequestHeader['DOCUMENT_ROOT'];
       if (Root = '') or ((Root <> '') and FileExists(Root + pLibrary + '.js')) then begin
-        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS}+ IfThen(HasDebug, '-debug', ''){$ENDIF} + '.js"></script>'^M^J;
+        Libraries := Libraries + '<script src="' + pLibrary{$IFDEF DEBUGJS} + '-debug'{$ENDIF} + '.js"></script>'^M^J;
         if CSS then begin
           if not FileExists(Root + pLibrary + '.css') then // Assume in /css like ux
             pLibrary := ExtractFilePath(pLibrary) + 'css/' + ExtractFileName(pLibrary);
@@ -512,7 +512,7 @@ procedure TExtThread.JSCode(JS : string; JSClassName : string = ''; JSName : str
 var
   I, J : integer;
 begin
-  if JS[length(JS)] = ';' then begin // Command
+  if (JS <> '') and (JS[length(JS)] = ';') then begin // Command
     I := pos('.', JS);
     J := pos(IdentDelim, JS);
     if (pos('Singleton', JSClassName) = 0) and (J > 0) and (J < I) and (pos(DeclareJS, JS) = 0) and not GarbageExists(copy(JS, J-1, I-J+1)) then
@@ -673,7 +673,7 @@ end;
 procedure TExtThread.InitDefaultValues; begin
   inherited;
 {$IFDEF CacheFly}
-  ExtPath       := 'http://extjs.cachefly.net/ext-3.2.1';
+  ExtPath       := 'http://extjs.cachefly.net/ext-4.0.2';
 {$ELSE}
   ExtPath       := '/ext';
 {$ENDIF}
@@ -803,14 +803,13 @@ begin
       '<title>' + Application.Title + '</title>'^M^J +
       IfThen(Application.Icon = '', '', '<link rel="shortcut icon" href="' + ImagePath + '/' + Application.Icon + '"/>'^M^J) +
       '<meta http-equiv="content-type" content="charset=' + Charset + '" />'^M^J +
-      '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + '.css" />'^M^J +
-      '<script src="' + ExtPath + '/adapter/ext/ext-base.js"></script>'^M^J +
+      IfThen(Browser = brIE, '<meta http-equiv="X-UA-Compatible" content="IE=8" />'^M^J, '') +
+      '<link rel=stylesheet href="' + ExtPath + '/resources/css/' + ExtBuild + IfThen(Theme = '', '', '-' + Theme) + '.css" />'^M^J +
       '<script src="' + ExtPath + '/' + ExtBuild + {$IFDEF DebugExtJS}'-debug'+{$ENDIF} '.js"></script>'^M^J +
       {$IFDEF DEBUGJS}'<script src="/codepress/Ext.ux.CodePress.js"></script>'^M^J +{$ENDIF}
-      IfThen(Theme = '', '', '<link rel=stylesheet href="' + ExtPath + '/resources/css/xtheme-' + Theme + '.css" />'^M^J) +
-      IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + SourcePath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
+      IfThen(FLanguage = 'en', '', '<script src="' + ExtPath + '/locale/ext-lang-' + FLanguage + '.js"></script>'^M^J) +
       GetStyle + Libraries +
-      '</head>'^M^J +
+      '</head>'^M^J'<p></p>'^M^J +
       '<body><div id=body>'^M^J +
       '<div id=loading style="position:absolute;font-family:verdana;top:40%;left:40%">'^M^J +
       '<img src="' + ExtPath + '/resources/images/default/shared/loading-balls.gif"/>' +
@@ -822,7 +821,7 @@ begin
       'Ext.onReady(function(){' +
       'Ext.get("loading").remove();' +
       'Ext.BLANK_IMAGE_URL="' + ExtPath + '/resources/images/default/s.gif";TextMetrics=Ext.util.TextMetrics.createInstance("body");'+
-      'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
+      'function AjaxError(m){Ext.Msg.show({title:"Ajax Error",multiline:true,msg:m,icon:Ext.Msg.ERROR,buttons:Ext.Msg.OK});};' +
       {$IFDEF DEBUGJS}
       'function AjaxSource(t,l,s){var w=new Ext.Window({title:"Ajax error: "+t+", Line: "+' + IfThen(Browser=brFirefox, '(l-%%)', '"Use Firefox to debug"') +
       ',width:600,height:400,modal:true,items:[new Ext.ux.CodePress({language:"javascript",readOnly:true,code:s})]});w.show();' +
@@ -879,7 +878,14 @@ constructor TExtObjectList.CreateSingleton(pAttribute : string); begin
 end;
 
 // Frees this list and all objects linked in it
-destructor TExtObjectList.Destroy; begin
+destructor TExtObjectList.Destroy;
+var
+  I : integer;
+begin
+  for I := high(FObjects) downto 0 do
+    try
+      FObjects[I].Free
+    except end;
   SetLength(FObjects, 0);
   inherited;
 end;
@@ -1338,7 +1344,8 @@ function TExtObject.JSMethod(Method : TExtFunction) : string; begin
   Result := Method.ExtractJSCommand;
 end;
 
-// Used internaly by the code generated by ExtToPascal. The generated code must overrides this method on extended classes where events can be handled
+// Used internaly by the code generated by ExtToPascal.
+// The generated code must overrides this method on extended classes where events can be handled
 procedure TExtObject.HandleEvent(const AEvtName: string); begin end;
 
 {
@@ -1828,7 +1835,7 @@ begin
           end
           else
             if Result = '' then
-              Result := 'null'
+              Result := '{}'
             else begin
               inc(I, 2);
               continue;
@@ -1837,7 +1844,7 @@ begin
         end;
         vtAnsiString: Result := Result + StrToJS(string(VAnsiString));
         vtString:     Result := Result + StrToJS(VString^);
-        vtWideString: Result := Result + StrToJS(string(VWideString));
+        vtWideString: Result := Result + StrToJS(WideString(VWideString));
         {$IFDEF UNICODE}
         vtUnicodeString: Result := Result + StrToJS(string(VUnicodeString));
         {$ENDIF}
