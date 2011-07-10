@@ -20,15 +20,25 @@ The main advantages are:
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for   Apache 2.2]. See details below. For setting FastCGI thru CGIGateway on Apache or IIS see details below too.
  * Download [http://extjs.com/products/extjs/download.php ExtJS 3.2.1]. 
  * Install ExtJS below Apache's Document Root (usually htdocs) at folder *ext*
- * For Windows install Delphi (7..2010) or FreePascal 2.4.0 with Lazarus 0.9.28+ or [http://sourceforge.net/projects/mseide-msegui MSEide 2.0+]. I used [http://www.turbomirror.com Turbo Delphi], FreePascal 2.2.4 and MSEide 2.0.
- * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.4.0 with Lazarus 0.9.28+ or MSEide 2.0+. I used FreePascal 2.2.4 and MSEide 2.0.
+ * For Windows install Delphi (7..2010) or FreePascal 2.4+ with Lazarus 0.9.30+ or [http://sourceforge.net/projects/mseide-msegui MSEide 2.0+]. I use Lazarus 0.9.31.
+ * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.4+ with Lazarus 0.9.30+. I use Lazarus 0.9.31.
  * Download [http://extpascal.googlecode.com/files/ExtPascal-0.9.8.zip ExtPascal 0.9.8] to a working directory, for example: C:\ExtPascal.
  * Copy *codepress* folder, which is in ExtPascal package, underneath the *htdocs* folder. 
 
 = First Steps =
 01. Open ExtPascalSamples.dpr source in ExtPascalSamples folder using your favorite ObjectPascal IDE.
 
-02. For Delphi set these Syntax options (menu \Project\Options\Compiler):
+02. For Lazarus set these Parsing options (menu \Project\Compiler Options\Parsing):
+{{{
+Syntax mode: 'Delphi'
+ON C++ Styled INLINE
+ON C Style macros
+OFF Constructor name must be init
+OFF Static Keyword in Objects
+ON Use Ansi Strings
+}}}
+
+03. For Delphi set these Syntax options (menu \Project\Options\Compiler):
 {{{
 OFF Strict var-strings
 OFF Complete boolean eval
@@ -39,22 +49,12 @@ ON Huge strings/Long strings by default
 ON Assignable typed constants
 }}}
 
-03. For Lazarus set these Parsing options (menu \Project\Compiler Options\Parsing):
-{{{
-Syntax mode: 'Delphi'
-ON C++ Styled INLINE
-ON C Style macros
-OFF Constructor name must be init
-OFF Static Keyword in Objects
-ON Use Ansi Strings
-}}}
-
-04. For FreePascal or MSEide use _*`-Smdghie50 -venwhi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
+04. For FreePascal use _*`-Smdghie50 -venwhi -l`*_  as compiler options. Append these options _*`-O2pPENTIUM4 -CXpPENTIUM4 -XXsi -CfSSE`*_  to release/final version.
 
 05. Set the compiler "Search path" according. By example to C:\ExtPascal; C:\ExtPascal\ExtJSWrapper
 {{{ 
-In Delphi browse: \Project\Options\Directories/Conditionals\Search path.
 In Lazarus browse: \Project\Project Options\Compiler Options\Paths\Other Unit Files.
+In Delphi browse: \Project\Options\Directories/Conditionals\Search path.
 }}}
 
 06. Compile ExtPascalSamples as example.
@@ -74,7 +74,7 @@ In Lazarus browse: \Project\Project Options\Compiler Options\Paths\Other Unit Fi
 the program, which states:
 
 {{{
-Application := TFCGIApplication.Create('ExtPascal Samples ' + ExtPascalVersion, TSamples, 2014, 5);
+Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession, 2014);
 }}}
 
 07. Compile.
@@ -162,7 +162,7 @@ FastCgiExternalServer /var/www/ExtPascalSamples –host somehost:2014 -idle-time
 sudo /etc/init.d/ apache2 restart
 }}}
 
-06. Start ExtpascalSamples application and in your browser call Samples using:
+06. Start ExtPascalSamples application and in your browser call Samples using:
 {{{
 http://ubuntuserver/ExtPascalSamples
 }}}
