@@ -35,6 +35,9 @@ type
   TCSSUnit         = (cssPX, cssPerc, cssEM, cssEX, cssIN, cssCM, cssMM, cssPT, cssPC, cssnone); // HTML CSS units
   TExtProcedure    = procedure of object; // Defines a procedure than can be called by a <link TExtObject.Ajax, AJAX> request
   TUploadBlockType = (ubtUnknown, ubtBegin, ubtMiddle, ubtEnd);
+  {$IFDEF DELPHI}
+  PtrInt = integer;
+  {$ENDIF}
 
 procedure StrToTStrings(const S : string; List : TStrings);
 
