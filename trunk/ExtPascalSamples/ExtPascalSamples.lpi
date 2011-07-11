@@ -72,15 +72,15 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="20">
+    <Units Count="21">
       <Unit0>
         <Filename Value="ExtPascalSamples.dpr"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="29"/>
-        <CursorPos X="29" Y="39"/>
-        <UsageCount Value="33"/>
+        <TopLine Value="1"/>
+        <CursorPos X="55" Y="11"/>
+        <UsageCount Value="35"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit0>
@@ -140,41 +140,45 @@
       <Unit7>
         <Filename Value="..\ExtPascal.pas"/>
         <UnitName Value="ExtPascal"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="110"/>
-        <CursorPos X="71" Y="110"/>
-        <UsageCount Value="12"/>
+        <TopLine Value="1287"/>
+        <CursorPos X="52" Y="1310"/>
+        <UsageCount Value="13"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\FCGIApp.pas"/>
         <UnitName Value="FCGIApp"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="1" Y="1"/>
+        <TopLine Value="15"/>
+        <CursorPos X="55" Y="34"/>
         <UsageCount Value="12"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
         <Filename Value="Session.pas"/>
         <UnitName Value="Session"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="107"/>
-        <CursorPos X="3" Y="107"/>
+        <TopLine Value="1"/>
+        <CursorPos X="7" Y="6"/>
         <UsageCount Value="12"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\ExtPascalUtils.pas"/>
         <UnitName Value="ExtPascalUtils"/>
-        <EditorIndex Value="2"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="24" Y="9"/>
-        <UsageCount Value="12"/>
+        <TopLine Value="20"/>
+        <CursorPos X="11" Y="40"/>
+        <UsageCount Value="13"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit10>
@@ -259,8 +263,19 @@
         <UsageCount Value="10"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit19>
+      <Unit20>
+        <Filename Value="..\ExtPascalClasses.pas"/>
+        <UnitName Value="ExtPascalClasses"/>
+        <EditorIndex Value="4"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="34"/>
+        <CursorPos X="1" Y="61"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit20>
     </Units>
-    <JumpHistory Count="2" HistoryIndex="1">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
         <Filename Value="..\ExtPascal.pas"/>
         <Caret Line="286" Column="63" TopLine="286"/>
@@ -269,6 +284,114 @@
         <Filename Value="..\ExtPascal.pas"/>
         <Caret Line="324" Column="29" TopLine="310"/>
       </Position2>
+      <Position3>
+        <Filename Value="..\ExtPascalUtils.pas"/>
+        <Caret Line="16" Column="17" TopLine="1"/>
+      </Position3>
+      <Position4>
+        <Filename Value="ExtPascalSamples.dpr"/>
+        <Caret Line="52" Column="90" TopLine="29"/>
+      </Position4>
+      <Position5>
+        <Filename Value="ExtPascalSamples.dpr"/>
+        <Caret Line="11" Column="55" TopLine="1"/>
+      </Position5>
+      <Position6>
+        <Filename Value="Session.pas"/>
+        <Caret Line="6" Column="7" TopLine="1"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="62" Column="26" TopLine="50"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="156" Column="98" TopLine="123"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="274" Column="70" TopLine="240"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="34" Column="23" TopLine="1"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="108" Column="3" TopLine="75"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="616" Column="75" TopLine="596"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="274" Column="62" TopLine="261"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\FCGIApp.pas"/>
+        <Caret Line="34" Column="55" TopLine="15"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="136" Column="26" TopLine="109"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="67" Column="1" TopLine="40"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="148" Column="49" TopLine="125"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="149" Column="49" TopLine="126"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1252" Column="31" TopLine="1229"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1276" Column="30" TopLine="1253"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1294" Column="68" TopLine="1271"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1883" Column="56" TopLine="1860"/>
+      </Position24>
+      <Position25>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1900" Column="56" TopLine="1877"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="498" Column="25" TopLine="475"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="738" Column="29" TopLine="715"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="1262" Column="129" TopLine="1239"/>
+      </Position29>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

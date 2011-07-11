@@ -38,7 +38,7 @@ begin
     else if Uninstall then
       writeln('Service uninstalled')
     else begin
-      Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession);
+      Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession, 2014);
       Application.Icon := 'ExtPascal.ico';
       if Exists then
         Run([TServiceThread.Create(true)])
@@ -49,7 +49,7 @@ begin
     on E : Exception do ReportEventLog(EventError, 1, E.Message);
   end;
 {$ELSE}
-  Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession);
+  Application := CreateWebApplication(ServerName + ' ' + ExtPascalVersion, TSession, 2014);
   Application.Icon := 'ExtPascal.ico';
   Application.Run;
 {$ENDIF}

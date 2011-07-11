@@ -105,7 +105,7 @@ function CreateWebApplication(const ATitle : string; ASessionClass : TCustomWebS
 implementation
 
 uses
-  StrUtils, Math;
+  Math;
 
 function CurrentFCGIThread : TFCGISession; begin
   Result := CurrentWebSession;
@@ -153,7 +153,7 @@ type
     function HandleRequest(pRequest : AnsiString) : AnsiString;
     function SetCurrentFCGIThread : boolean;
   public
-    BrowserCache : boolean; // If false generates 'cache-control:no-cache' in HTTP header, default is false
+    BrowserCache : boolean; // If false generates 'cache-control:no-cache' and 'pragma:no-cache' in HTTP header, default is false
     AccessThread : TCriticalSection;
     property Role : TRole read FRole; // FastCGI role for the current request
     property Request : string read FRequest; // Request body string
@@ -270,7 +270,10 @@ begin
   if pRecType = rtStdOut then begin
     if FRequestMethod = rmHead then S := '';
     FSession.CustomResponseHeaders['content-type'] := FSession.ContentType;
-    if not BrowserCache and not FSession.IsDownload then FSession.CustomResponseHeaders['cache-control'] := 'no-cache';
+    if not BrowserCache and not FSession.IsDownload then begin
+      FSession.CustomResponseHeaders['cache-control'] := 'no-cache';
+      FSession.CustomResponseHeaders['pragma']        := 'no-cache';
+    end;
     S := FSession.FCustomResponseHeaders.Text + ^M^J + S;
     FSession.FCustomResponseHeaders.Clear;
     FSession.ContentType := 'text/html';
@@ -610,7 +613,7 @@ begin
       Terminate;
   except
     on E : Exception do begin
-      Content := E.ClassName + ': ' + E.Message + ' at ' + IntToStr(integer(ExceptAddr));
+      Content := E.ClassName + ': ' + E.Message + ' at ' + IntToStr(PtrInt(ExceptAddr));
       SendResponse(Content);
       SendResponse(Content, rtStdErr);
       SendEndRequest;
