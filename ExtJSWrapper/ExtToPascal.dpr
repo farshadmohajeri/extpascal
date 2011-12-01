@@ -11,7 +11,7 @@ program ExtToPascal;
 {$J+}
 
 uses
-//  Ext,
+  Ext,
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 {.$DEFINE USES_PUBLISHED}
@@ -44,13 +44,14 @@ begin
       else
         Result := Result + Ident[I]
     else
-      if (I <> 1) and (I <> length(Ident)) and (Ident[I] in ['(', '[', '{', ')', ']', '}']) then
-        //break
+      if (I <> 1) and (I <> length(Ident)) and (Ident[I] in ['(', '[', '{', ')', ']', '}', '=']) then
+        break
       else
         if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
   if IsType then begin
     if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result;
     Result := AnsiReplaceText(Result, 'MethodConstructor', '');
+    Result := AnsiReplaceText(Result, 'cfghideMode', '');
   end
   else
     Result := FixReserved(Result);
@@ -331,23 +332,29 @@ destructor TParam.Destroy; begin
 end;
 
 constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); begin
-  Name     := FixIdent(pName);
-  JSName   := FixJSName(pName);
-  Params   := pParams;
-  Static   := pStatic;
-  Overload := pOverload;
-  if pReturn <> '' then Return := 'TExtFunction';
+  Name   := FixIdent(pName);
+  JSName := FixJSName(pName);
+  Params := pParams;
+  Static := pStatic;
+  Return := pReturn;
+  if pName = 'Create' then
+    Overload := false
+  else
+    Overload := pOverload;
 end;
 
 constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
 var
   I : integer;
 begin
-  Name     := pName;
-  JSName   := FixJSName(pJSName);
-  Params   := pParams;
-  Overload := pOverload;
-  if pReturn <> '' then Return := 'TExtFunction';
+  Name   := pName;
+  JSName := FixJSName(pJSName);
+  Params := pParams;
+  Return := pReturn;
+  if pName = 'Create' then
+    Overload := false
+  else
+    Overload := pOverload;
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
   Static := I <> 0;
@@ -381,12 +388,12 @@ begin
     for I := 0 to Params.Count-1 do
       with TParam(Params.Objects[I]) do
         if pos('/', Typ) <> 0 then begin
-          Overload := true;
+          Overload := Method.Name <> 'Create';
           Types := Explode('/', Typ);
           Typ   := FixType(Types[0]);
           for J := 1 to Types.Count-1 do
             if FixType(Types[J]) <> FixType(Types[J-1]) then // Discard Duplicates
-              DoOverloads(Cls, TMethod.Create(Method.JSName, Return, CreateOverloadParams(I, Types[J]), Static, true));
+              DoOverloads(Cls, TMethod.Create(Method.Name, Return, CreateOverloadParams(I, Types[J]), Static, Method.Name <> 'Create'));
           Types.Free;
         end;
 end;
@@ -444,7 +451,7 @@ var
   State : (Initial, InClass, InProperties, InMethods);
   PackName, Return, JSName : string;
   Matches, Args : TStringList;
-  IsEvent, Optional, Static  : boolean;
+  IsEvent, Optional, Static, Singleton  : boolean;
   Package : TUnit;
   I, Ci   : integer;
 begin
@@ -454,12 +461,20 @@ begin
     case State of
       Initial :
         if Extract(['span id=''', ''''], Line, Matches) then begin
+          if Before('@private', '*/', Line) or Before('@ignore', '*/', Line) then break;
+          if Before('@singleton', '*/', Line) then begin
+             Singleton := true;
+             Matches[0] := Matches[0] + 'Singleton';
+          end
+          else
+            Singleton := false;
           Ci := AllClasses.IndexOf(FixIdent(Matches[0], true));
           if Ci = -1 then
             CurClass := TClass.Create(Matches[0])
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
+          CurClass.Singleton := Singleton;
           continue;
         end
         else
@@ -485,10 +500,6 @@ begin
         if ((pos('@class', Line) = 0) and Extract(['@extends ', ' '], Line, Matches)) or
            ((pos('Ext.define(', Line) = 0) and Extract(['extend: ''', ''''], Line, Matches)) then
           CurClass.Parent := FixIdent(Matches[0], true);
-        if Before('@singleton', '*/', Line) then begin
-            CurClass.Singleton := true;
-            CurClass.Name      := CurClass.Name + 'Singleton';
-        end;
         State := InProperties;
         continue;
       end;
@@ -519,15 +530,15 @@ begin
           I := FirstDelimiter(' <>', PropTypes[0]);
           if I <> 0 then // doc fault
             PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
-          for I := 0 to PropTypes.Count-1 do begin
-            PropTypes[I] := FixType(PropTypes[I]);
+          for I := 0 to PropTypes.Count-1 do
             if I = 0 then begin
               CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
               CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
             end
             else
-              CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static, Config));
-          end;
+              if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
+                CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
+                                              TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
           //if Extract([PropName, ':', ','], Line, Matches) then begin
           if (Before('Default to',  '*/', LowerCase(Line)) and Extract(['Default to',  '.'], Line, Matches)) or
              (Before('Defaults to', '*/', LowerCase(Line)) and Extract(['Defaults to', '.'], Line, Matches)) then begin
@@ -571,14 +582,16 @@ begin
           else begin
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            if Before('@return', '*/', Line) and Extract(['@return {', '}'], Line, Matches, false) then
-              Return := FixIdent(Matches[0])
-            else
-              Return := '';
-            if (Return = '') and (pos(MetName, 'Constructor_.Create') <> 0) then begin
-              with CurClass do if Defaults or Arrays or Objects or Singleton then continue; // already have Create
+            if pos(MetName, 'ConstructorJS.Create.') <> 0 then begin
+              MetName := 'Create';
+              Return := ''
             end
             else
+              Return := 'TExtFunction';
+(*            if (Return = '') and (pos(MetName, 'ConstructorJS.Create') <> 0) then begin
+              with CurClass do if Defaults or Arrays or Objects or Singleton then continue; // already have Create
+            end
+            else *)
               if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
           end;
           Args := TStringList.Create;
@@ -848,7 +861,7 @@ begin
     end
     else
       T := Tab(2);
-    if Return = '' then
+    if Name = 'Create' then
       write(Pas, T, 'constructor ', pClassName, 'Create')
     else
       write(Pas, T, IfThen(Static, 'class ', ''), IfThen(Return = 'TVoid', 'procedure ', 'function '), pClassName, Name);
@@ -1108,7 +1121,8 @@ begin
       writeln(Pas, 'type');
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
-      writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
+        writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
+      writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;'^M^J'TExtSliderThumb = class(TExtObject);'^M^J'TExtUtilOffset = class(TExtObject);');
 (*      if Units[I] = 'Ext' then begin // Exception, this workaround resolve circular reference in Ext Unit
         writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J,
                      Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;');
