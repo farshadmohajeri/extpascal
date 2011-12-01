@@ -1,7 +1,7 @@
 {
-ExtToPascal is a parser that scans ExtJS documentation, in HTML format, and that creates a Object Pascal wrapper upon ExtJS classes and widgets
+ExtToPascal is a parser that scans Ext documentation, in HTML format, and that creates a Object Pascal wrapper upon Ext classes and widgets
 Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
-Date: apr-2008
+Date: apr-2008, dec-2011 (Ext JS 4.x)
 License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 program ExtToPascal;
@@ -11,11 +11,12 @@ program ExtToPascal;
 {$J+}
 
 uses
+//  Ext,
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 {.$DEFINE USES_PUBLISHED}
 
-var 
+var
   OutputDir : string;
 
 function FixReserved(S : string) : string;
@@ -48,7 +49,8 @@ begin
       else
         if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
   if IsType then begin
-    if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result
+    if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result;
+    Result := AnsiReplaceText(Result, 'MethodConstructor', '');
   end
   else
     Result := FixReserved(Result);
@@ -151,7 +153,6 @@ end;
 
 var
   AllClasses, Units : TStringList;
-  IsExtJS3 : boolean;
 
 constructor TUnit.Create(pName : string); begin
   Name    := FixIdent(pName);
@@ -175,7 +176,7 @@ begin
         J := AllClasses.IndexOf(Parent);
         if J <> -1 then begin
           UName := TClass(AllClasses.Objects[J]).UnitName;
-          if IsExtJS3 and (Self.Name = 'Ext') and (UName = 'ExtData') then continue; // remove circular reference
+          if (Self.Name = 'Ext') and (UName = 'ExtData') then continue; // remove circular reference
           if (UName <> UnitName) and (pos(', ' + UName + ',', Result + ',') = 0) then
             Result := Result + ', ' + UName
         end;
@@ -208,7 +209,7 @@ procedure TUnit.ReviewTypes;
             Typ := 'T' + Name + T
           else
             Typ := 'T' + Units[I] + T;
-          if IsExtJS3 and (Name = 'Ext') and (Units[I] = 'ExtData') then exit; // remove circular reference
+          if (Name = 'Ext') and (Units[I] = 'ExtData') then exit; // remove circular reference
           if (Name = 'Ext') and (Units[I] = 'ExtMenu') then exit; // remove circular reference
           if (Units[I] <> Name) and (pos(Units[I] + ',', UsesList + ',') = 0) then UsesList := UsesList + ', ' + Units[I];
           exit;
@@ -240,12 +241,7 @@ begin
     end;
 end;
 
-var
-  FClasses, TClasses : Integer;
-
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
-  Inc(FClasses);
-  Inc(TClasses);
   Name       := FixIdent(pName, true);
   SimpleName := Copy(pName, LastDelimiter('.', pName) + 1, MaxInt);
   JSName     := FixJSName(pName);
@@ -258,7 +254,6 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
 end;
 
 destructor TClass.Destroy; begin
-  Dec(FClasses);
   FreeStringList(Properties);
   FreeStringList(Methods);
   FreeStringList(Events);
@@ -436,21 +431,6 @@ function Unique(S : string; List : TStringList) : string; begin
   while List.IndexOf(Result) <> -1 do Result := Result + '_'
 end;
 
-function ClearHRef(S : string) : string;
-var
-  Match : TStringList;
-begin
-  if pos('<a', S) <> 0 then begin
-    IsExtJS3 := true;
-    Match := TStringList.Create;
-    Extract(['">', '</'], S, Match);
-    Result := Match[0];
-    Match.Free;
-  end
-  else
-    Result := S;
-end;
-
 procedure LoadElements(Line : string);
 const
   CurClass  : TClass      = nil;
@@ -459,74 +439,63 @@ const
   PropName  : string      = '';
   MetName   : string      = '';
   PropTypes : TStringList = nil;
-  Params    : TStringList = nil;
   Config    : boolean     = false;
 var
-  State : (Initial, InClass, InProperties, InMethods, InEvents);
-  PackName, Arg, Return, JSName, Param : string;
-  Matches, Args, EventsOrMethods : TStringList;
-  Static  : boolean;
+  State : (Initial, InClass, InProperties, InMethods);
+  PackName, Return, JSName : string;
+  Matches, Args : TStringList;
+  IsEvent, Optional, Static  : boolean;
   Package : TUnit;
-  I, J    : integer;
+  I, Ci   : integer;
 begin
   State := Initial;
   Matches := TStringList.Create;
   while true do begin
     case State of
       Initial :
-        if Extract(['<h1>Class', '</h1>'], Line, Matches) then begin
-          CurClass := TClass.Create(ClearHRef(Matches[0]));
-          State    := InClass;
-          continue;
-        end;
-      InClass :
-        if Extract(['Package:', '<td class="hd-info">', '</td>'], Line, Matches) then begin
-          if CurClass.Name = 'Ext' then begin // Pascal requires this exception: move Ext class to Unit class
-            PackName      := 'Ext';
-            CurClass.Name := 'TExt';
-          end
-          else begin
-            PackName := FixIdent(ClearHRef(Matches[1]));
-            if pos('Ext', PackName) <> 1 then PackName := 'Ext' + PackName;
-          end;
-          CurClass.UnitName := PackName;
-          I := Units.IndexOf(PackName);
-          if I = -1 then begin
-            Package := TUnit.Create(PackName);
-            Units.AddObject(PackName, Package)
-          end
+        if Extract(['span id=''', ''''], Line, Matches) then begin
+          Ci := AllClasses.IndexOf(FixIdent(Matches[0], true));
+          if Ci = -1 then
+            CurClass := TClass.Create(Matches[0])
           else
-            Package := TUnit(Units.Objects[I]);
+            CurClass := TClass(AllClasses.Objects[Ci]);
+          State := InClass;
+          continue;
+        end
+        else
+          break;
+      InClass : begin
+        PackName := 'Ext';
+        if CurClass.Name = 'Ext' then // Pascal requires this exception: move Ext class to Unit class
+          CurClass.Name := 'TExt';
+(*        else begin
+          PackName := FixIdent(copy(Matches[0], 1, LastDelimiter('-', Matches[0]) - 1));
+          if pos('Ext', PackName) <> 1 then PackName := 'Ext' + PackName;
+        end;*)
+        CurClass.UnitName := PackName;
+        I := Units.IndexOf(PackName);
+        if I = -1 then begin
+          Package := TUnit.Create(PackName);
+          Units.AddObject(PackName, Package)
+        end
+        else
+          Package := TUnit(Units.Objects[I]);
+        if Ci = -1 then
           Package.Classes.AddObject(PackName, CurClass);
-          if Extract(['Extends:</td><td class="hd-info"><a ', 'ext:cls="', '"'], Line, Matches) then
-            CurClass.Parent := FixIdent(Matches[1], true);
-          if pos('This class is a singleton', Line) <> 0 then begin
+        if ((pos('@class', Line) = 0) and Extract(['@extends ', ' '], Line, Matches)) or
+           ((pos('Ext.define(', Line) = 0) and Extract(['extend: ''', ''''], Line, Matches)) then
+          CurClass.Parent := FixIdent(Matches[0], true);
+        if Before('@singleton', '*/', Line) then begin
             CurClass.Singleton := true;
             CurClass.Name      := CurClass.Name + 'Singleton';
-          end;
-          Config := pos('<h2>Config Options</h2>', Line) <> 0;
-          if Config then begin
-            Line := copy(Line, pos('<h2>Config Options</h2>', Line), length(Line));
-            State := InProperties
-          end
-          else begin
-            Line := copy(Line, pos('<h2>', Line), length(Line));
-            if pos('This class has no public properties', Line) <> 0 then
-              if pos('This class has no public methods', Line) <> 0 then
-                if pos('This class has no public events', Line) <> 0 then
-                  break
-                else
-                  State := InEvents
-              else
-                State := InMethods
-            else
-              State := InProperties;
-          end;
-          continue;
         end;
-      InProperties :
-        if Extract(['<b>', '</b>', ':', '<div class="mdesc">'], Line, Matches) then begin
-          PropName := ClearHRef(Matches[0]);
+        State := InProperties;
+        continue;
+      end;
+      InProperties : begin
+        Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
+        if Config or Extract(['@property ', ' ', '@type {' , '}'], Line, Matches) then begin
+          PropName := IfThen(Config, Matches[1], Matches[0]);
           I := LastDelimiter('.', PropName);
           if (I <> 0) and (I <> length(PropName)) then begin
             PropName := copy(PropName, I+1, length(PropName));
@@ -535,7 +504,7 @@ begin
           else
             Static := false;
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
-          if Before('<static>', '"mdesc">', lowercase(Line)) then Static := true;
+          if Before('@static', '*/', lowercase(Line)) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(FixIdent(PropName), CurClass.Properties);
           if not Static then PropName[1] := LowerCase(PropName)[1];
@@ -543,136 +512,98 @@ begin
             State := InMethods;
             continue; // Discard duplicates
           end;
-          if PropName <> 'config' then begin
+          if Config then
+            PropTypes := Explode('/', Matches[0])
+          else
             PropTypes := Explode('/', Matches[2]);
-            I := FirstDelimiter(' <>', PropTypes[0]);
-            if I <> 0 then // doc fault
-              PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
-            for I := 0 to PropTypes.Count-1 do
-              if I = 0 then begin
-                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
-                CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-              end
-              else
-                CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static, Config));
+          I := FirstDelimiter(' <>', PropTypes[0]);
+          if I <> 0 then // doc fault
+            PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
+          for I := 0 to PropTypes.Count-1 do begin
+            PropTypes[I] := FixType(PropTypes[I]);
+            if I = 0 then begin
+              CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
+              CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+            end
+            else
+              CurClass.Properties.AddObject(FixIdent(PropName + PropTypes[I]), TProp.Create(PropName + PropTypes[I], PropName, PropTypes[I], Static, Config));
           end;
-          if (Before('(default to',  '"mdesc">', Line) and Extract(['(default to',  ')'], Line, Matches)) or
-             (Before('(defaults to', '"mdesc">', Line) and Extract(['(defaults to', ')'], Line, Matches)) then begin
+          //if Extract([PropName, ':', ','], Line, Matches) then begin
+          if (Before('Default to',  '*/', LowerCase(Line)) and Extract(['Default to',  '.'], Line, Matches)) or
+             (Before('Defaults to', '*/', LowerCase(Line)) and Extract(['Defaults to', '.'], Line, Matches)) then begin
             SetDefault(CurProp, Matches[0], Matches);
             if (CurProp.Default <> '') and not CurClass.Defaults then begin
               CurClass.Defaults := true;
               CurClass.AddCreate;
             end;
           end;
-          if (PropTypes <> nil) and (PropName <> 'config') and Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
-            if Matches[0][1] = '<' then
-              with CurClass.Properties do
-                for I := 0 to PropTypes.Count-1 do begin
-                  J := IndexOf(FixIdent(PropName + IfThen(I = 0, '', PropTypes[I])));  
-                  Objects[j].Free;
-                  Delete(J); // delete inherited properties
-                end;
-            FreeAndNil(PropTypes);
-          end;
-          if Before('<h2>Public Properties</h2>', '<div class="mdesc">', Line) then Config := false;
-          if Before('<h2>Public Methods</h2>', '<div class="mdesc">', Line) then begin
-            for I := 0 to CurClass.Properties.Count-1 do
-              with TProp(CurClass.Properties.Objects[I]) do
-                if not Static then
-                  if Typ = 'TExtObjectList' then begin
-                    CurClass.Arrays := true;
-                    CurClass.AddCreate;
-                  end
-                  else
-                    if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then begin
-                      CurClass.Objects := true;
-                      CurClass.AddCreate;
-                    end;
-            State := InMethods;
-          end;
+          FreeAndNil(PropTypes);
           continue;
         end;
-      InMethods, InEvents :
-        if Extract(['<b>', '</b>', ')', '<div class="mdesc">'], Line, Matches) then begin
-          JSName := ClearHRef(Matches[0]);
+        for I := 0 to CurClass.Properties.Count-1 do
+          with TProp(CurClass.Properties.Objects[I]) do
+            if not Static then
+              if Typ = 'TExtObjectList' then begin
+                CurClass.Arrays := true;
+                CurClass.AddCreate;
+              end
+              else
+                if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then begin
+                  CurClass.Objects := true;
+                  CurClass.AddCreate;
+                end;
+        State := InMethods;
+        continue;
+      end;
+      InMethods : begin
+        IsEvent := Extract(['-event-', ''''], Line, Matches);
+        if IsEvent or Extract(['-method-', ''''], Line, Matches) then begin
+          if Before('@private', '*/', Line) or Before('@protected', '*/', Line) then continue;
+          JSName := Matches[0];
           if JSName = '' then continue; // Doc fault
           if JSName = 'create' then begin
             CurClass.AltCreate := true;
             continue;
           end;
-          if State = InEvents then begin
-            MetName := Unique(Unique('On' + FixIdent(JSName), CurClass.Properties), CurClass.Methods);
-            Params  := Explode(',', Matches[1]);
-          end
+          Static := Before('@static', '*/', Line);
+          if IsEvent then
+            MetName := Unique(Unique('On' + FixIdent(JSName), CurClass.Properties), CurClass.Methods)
           else begin
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
             MetName := Unique(MetName, CurClass.Methods);
-            Return  := FixIdent(Matches[2]);
-            if Return = '' then begin
-              MetName := 'Create';
+            if Before('@return', '*/', Line) and Extract(['@return {', '}'], Line, Matches, false) then
+              Return := FixIdent(Matches[0])
+            else
+              Return := '';
+            if (Return = '') and (pos(MetName, 'Constructor_.Create') <> 0) then begin
               with CurClass do if Defaults or Arrays or Objects or Singleton then continue; // already have Create
             end
             else
               if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
-            Params := Explode(',', Matches[1]);
           end;
           Args := TStringList.Create;
-          for I := 0 to Params.Count-1 do begin
-            Param := Params[I];
-            if Extract(['<code>', ' ', '</code>'], Param, Matches) then begin
-              if Matches[1] = '' then Matches[1] := Matches[0][1]; // doc fault
-              if pos('etc', Matches[1]) = 1 then begin // variable parameter list
-                Matches[0] := 'TExtObjectList';
-                Arg := Args[0];
-                Arg[length(Arg)] := 's';
-                Matches[1] := Arg;
-                for J := 0 to Args.Count-1 do Args.Objects[J].Free;
-                Args.Clear;
-              end
-              else
-                if not IsValidIdent(Matches[1]) and (Matches[1][1] = '{') then begin // documentation fault
-                  Arg := copy(Matches[1], 2, length(Matches[1])-2);
-                  Matches[1] := Matches[0];
-                  Matches[0] := Arg;
-                end;
-              Matches[1] := Unique(FixIdent(Matches[1]), Args);
-              if (State = InEvents) and SameText(Matches[1], 'This') then
-                Matches[0] := CurClass.Name;
-              Args.AddObject(Matches[1], TParam.Create(Matches[1], FixType(Matches[0]),
-                ((JSName = 'un') and (I = 2)) or // Doc fault
-                (Matches[1] = 'Config') or ((pos('>[', Params[I]) <> 0) and (Matches[0] <> 'TExtObjecList'))));
-            end;
+          while Before('@param', '*/', Line) do begin
+            Extract(['@param', '{', '} ', ' ', ' '], Line, Matches);
+            Optional := (pos('[', Matches[2]) = 1) or (pos('(optional)', LowerCase(Matches[3])) <> 0);
+            Matches[2] := Unique(FixIdent(Matches[2]), Args);
+            if IsEvent and SameText(Matches[2], 'This') then
+              Matches[1] := CurClass.Name;
+            Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
           end;
-          Params.Free;
           CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
-          if State = InEvents then
+          if IsEvent then
             CurClass.Events.AddObject(CurMethod.Name, CurMethod)
           else
             DoOverloads(CurClass, CurMethod);
-          if Extract(['<td class="msource">', '</td>'], Line, Matches) then begin
-            if Matches[0][1] = '<' then begin
-              if State = InEvents then
-                EventsOrMethods := CurClass.Events
-              else
-                EventsOrMethods := CurClass.Methods;
-              with EventsOrMethods do begin
-                I := IndexOf(MetName);
-                while I <> -1 do begin
-                  Objects[i].Free;
-                  Delete(I);
-                  I := IndexOf(MetName); // delete method inherited and overloads
-                end;
-              end;
-            end;
-          end;
-          if Before('<static>', '"mdesc">', lowercase(Line)) then CurMethod.Static := true;
-          if Before('<h2>Public Events</h2>', '"mdesc">', Line) then State := InEvents;
+          CurMethod.Static := Static;
           continue;
         end;
+        break;
+      end;
     end;
-    break;
   end;
-  AllClasses.AddObject(CurClass.Name, CurClass);
+  if (CurClass <> nil) and (AllClasses.IndexOf(CurClass.Name) = -1) then
+    AllClasses.AddObject(CurClass.Name, CurClass);
   Matches.Free;
 end;
 
@@ -699,7 +630,7 @@ var
   Html : text;
   L, Line : string;
 begin
-  writeln(FileName);
+  writeln(copy(FileName, LastDelimiter('/', FileName) + 1, 100));
   assign(Html, FileName);
   reset(Html);
   Line := '';
@@ -719,7 +650,7 @@ var
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  FixesFile := 'ExtFixes' + IfThen(IsExtJS3, '', '230') + '.txt';
+  FixesFile := 'ExtFixes.txt';
   writeln('Loading custom fixes...');
   writeln('  > ' + FixesFile);
   if FileExists(FixesFile) then begin
@@ -828,10 +759,8 @@ begin
     until SeekEOF(Fixes);
     close(Fixes);
   end
-  else begin
-    writeln(FixesFile + ' file not found. Generation aborted.'^M^J'Press enter.');
-    readln;
-  end;
+  else
+    writeln(FixesFile + ' file not found.');
 end;
 
 procedure FixEvents;
@@ -953,7 +882,7 @@ begin
         end;
       writeln(Pas);
     end;
-    // Write Enumerateds
+    // Write Enumerations
     HasEnum := false;
     for I := 0 to Properties.Count-1 do
       with TProp(Properties.Objects[I]) do
@@ -1169,35 +1098,25 @@ begin
       rewrite(Pas);
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
-      writeln(Pas, '// from "', paramstr(1), '" detected as ExtJS v.', IfThen(IsExtJS3, '3', '2'), ^M^J);
+      writeln(Pas, '// from "', paramstr(1), ^M^J);
       writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal, ExtPascalUtils', UsesList, ';'^M^J);
       if Name = 'Ext' then begin
         writeln(Pas, 'const');
-        if IsExtJS3 then begin
-          writeln(Pas, Tab, 'IsExtJS3 = true;');
-          writeln(Pas, Tab, 'SourcePath = ''/src'';'^M^J);
-        end
-        else begin
-          writeln(Pas, Tab, 'IsExtJS3 = false;');
-          writeln(Pas, Tab, 'SourcePath = ''/source'';'^M^J);
-        end;
+        writeln(Pas, Tab, 'SourcePath = ''/src'';'^M^J);
       end;
       {$IFDEF USES_PUBLISHED}writeln(Pas, '{$M+}');{$ENDIF}
       writeln(Pas, 'type');
       Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
-        writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
-      if Units[I] = 'Ext' then begin // Exception, this workaround resolve circular reference in Ext Unit
+      writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
+(*      if Units[I] = 'Ext' then begin // Exception, this workaround resolve circular reference in Ext Unit
         writeln(Pas, Tab, 'TExtFormField = TExtBoxComponent;'^M^J, Tab, 'TExtMenuCheckItem = TExtComponent;'^M^J,
                      Tab, 'TExtDdDragSource = TExtObject;'^M^J, Tab, 'TExtDdDD = TExtObject;');
-        if IsExtJS3 then
-          writeln(Pas, Tab, 'TExtMenuMenu = TExtContainer;'^M^J, Tab, 'TExtDirectProvider = TExtUtilObservable;'^M^J,
-                       Tab, 'TExtDataStore = TExtUtilObservable;'^M^J, Tab, 'TExtDataConnection = TExtUtilObservable;'^M^J,
-                       Tab, 'TExtDataRecord = TExtObject;')
-        else
-          writeln(Pas, Tab, 'TExtMenuMenu = TExtUtilObservable;');
+        writeln(Pas, Tab, 'TExtMenuMenu = TExtContainer;'^M^J, Tab, 'TExtDirectProvider = TExtUtilObservable;'^M^J,
+                     Tab, 'TExtDataStore = TExtUtilObservable;'^M^J, Tab, 'TExtDataConnection = TExtUtilObservable;'^M^J,
+                     Tab, 'TExtDataRecord = TExtObject;')
       end;
-      writeln(Pas);
+*)      writeln(Pas);
       for J := 0 to Classes.Count-1 do
         WriteClassType(TClass(Classes.Objects[J]));
       DeclareSingletons(TUnit(Units.Objects[I]));
@@ -1365,7 +1284,7 @@ var
   T : TDateTime;
   I : integer;
 begin
-  if FindFirst(ADir + '/Ext.*.html', faAnyFile, F) = 0 then begin
+  if FindFirst(ADir + '/*.html', faAnyFile, F) = 0 then begin
     T := now;
     AllClasses := TStringList.Create;
     try
@@ -1373,10 +1292,10 @@ begin
       Units := TStringList.Create;
       try
         Units.Sorted := true;
-        writeln('ExtToPascal - ExtJS docs to Pascal units wrapper, version ', ExtPascalVersion);
-        writeln('(c) 2008-2010 by Wanderlan Santos dos Anjos, BSD license');
+        writeln('ExtToPascal - Ext JS docs to Pascal units wrapper, version ', ExtPascalVersion);
+        writeln('(c) 2008-2011 by Wanderlan Santos dos Anjos, BSD license');
         writeln('http://extpascal.googlecode.com/'^M^J);
-        writeln('Reading ExtJS HTML files...');
+        writeln('Reading Ext JS HTML files...');
         I := 0;
         repeat
           write('  > ');
@@ -1385,23 +1304,20 @@ begin
         until FindNext(F) <> 0;
         FindClose(F);
         writeln(I, ' HTML files found.');
-        writeln('ExtJS version ', IfThen(IsExtJS3, '3.x', '2.x'), ' detected.');
         writeln('Fixing event prototypes...');
         FixEvents;
         LoadFixes;
-        writeln('Writing unit files...');
+        writeln('Writing unit file(s)...');
         WriteUnits;
         writeln(AllClasses.Count, ' ExtJS classes wrapped.');
-        writeln(Units.Count, ' unit files generated.');
+        writeln(Units.Count, ' unit file(s) generated.');
         writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
-        writeln('Done! Press Enter.');
+        writeln('Done. Press Enter.');
       finally
         FreeStringList(Units);
       end;
     finally
       FreeStringList(AllClasses);
-      Writeln('Unfreed classes count: ', FClasses, '/', TClasses);
-      Writeln('Unfreed params count: ', FCParams, '/', TCParams);
       Flush(Output);
     end
     end
