@@ -234,6 +234,7 @@ type
   THTMLElement = class(TExtObject);
   TStyleSheet = class(TExtObject);
   TRegExp = type string;
+  TTextNode = class(TExtObject);
   TCSSRule = class(TExtObject);
   TXMLDocument = class(TExtObject);
   TNodeList = class(TExtObjectList);
@@ -267,9 +268,6 @@ type
   TAnything = TExtObject; // doc fault
   TNodeLists = class(TExtObjectList); // doc fault
   TArrays = TExtObjectList; // doc fault
-  TExtDirectExceptionEvent = TEvent; // doc fault Ext 3.0
-  TExtDirectEvent = TEvent; // doc fault Ext 3.0
-  TExtDirectTransaction = TExtObject; // doc fault Ext 3.0
   TDOMElement = TExtObject; // doc fault Ext 3.0
   TRecord = TExtObject; // Ext 3.0 RC2
   TNull = TExtObject; // Ext 3.0 RC2
