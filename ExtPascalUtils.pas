@@ -279,11 +279,9 @@ begin
   J := 1;
   for I := 0 to high(Delims) do begin
     J := PosEx(Delims[I], S, J);
+    if J = 0 then exit;
     Points[I] := J;
-    if J = 0 then
-      exit
-    else
-      inc(J, length(Delims[I]));
+    inc(J, length(Delims[I]));
   end;
   for I := 0 to high(Delims)-1 do begin
     J := Points[I] + length(Delims[I]);
