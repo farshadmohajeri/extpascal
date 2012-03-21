@@ -1,4 +1,7 @@
 #labels Featured,New
+[http://http://code.google.com/p/kitto http://wiki.kitto.googlecode.com/git/kitto_logo_200.png] *framework by Nando Dessena*
+
+[http://http://code.google.com/p/kitto http://wiki.kitto.googlecode.com/git/TasKitto.png]
   * [http://www.unigui.com uniGUI framework] by Farshad, [http://prime.fmsoft.net/demo/mdemo.dll demos here].
   * An iPhone example by Phil Hess. 
 [http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1.zip Sources here]
