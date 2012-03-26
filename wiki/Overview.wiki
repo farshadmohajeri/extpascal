@@ -10,7 +10,7 @@
 04. The *FastCGI* multithread environment. It implements FastCGI protocol using TCP/IP sockets and statefull, keep-alive, multithread web application behaviour.
 
 
-[http://extpascal.call.inf.br/extpascal.png]
+[https://extpascal.googlecode.com/files/ExtPascal.png]
 
 
 01. The *Parser* read the HTML documentation of Ext JS;
@@ -40,7 +40,7 @@ Indeed the Parser can be adapted to read the documentation of another JavaScript
 =ExtPascal has one optional fifth component:=
 The *CGIGateway* used to run an ExtPascal application on a Web Server that not provides FastCGI protocol but that provides CGI.
 
-[http://extpascal.call.inf.br/cgigateway.png]
+[https://extpascal.googlecode.com/files/CGIGateway.png]
 
 01. Browser requests a FCGI app through CGI gateway (for example ExtPascalSamples.cgi). 
 
@@ -57,6 +57,6 @@ through CGI standard protocol.
 
 =And ExtPascal has one experimental sixth component:=
 
-[http://extpascal.call.inf.br/webserverembedded.png]
+[https://extpascal.googlecode.com/files/WebServerEmbedded.png]
 
 Read WebServer_Embedded for more details.
