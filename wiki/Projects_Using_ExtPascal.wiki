@@ -9,7 +9,7 @@
 
 [http://web.me.com/macpgmr/ExtPascal/UnicodeLookup1_simulator.jpg]
  
-  * My second project using ExtPascal: [http://code.google.com/p/extpascal/downloads/detail?name=SGI.zip (Incident Management System, module: Change Request]. This example uses [http://www.fusioncharts.com/widgets/Gallery.asp FusionWidgets] (Gantt and Angular Gauges).
+  * My second project using ExtPascal: [http://code.google.com/p/extpascal/downloads/detail?name=SGI.zip  Incident Management System, module: Change Request]. This example uses [http://www.fusioncharts.com/widgets/Gallery.asp FusionWidgets] (Gantt and Angular Gauges).
   * Farshad's [http://prime.fmsoft.net/out/dbdemo.dll Fish facts demo]. [http://extpascal.googlegroups.com/web/fishfacts_example_20100312.zip?gda=nqKdR1AAAAAHXQ9ZEtz1gOpjR5eIa3efCFAkj91iW9RO0vyonRENPxbyVrDoD5ytZzqdeX10uwmydimo-E4VCKBhBGDizNJybcVT3VtYGKLco-_l-8AzjQ&gsc=JyVlmgsAAACd7wymbCyyyZLYVBtoSZBU Sources of a similar project].
   * Web application for Indonesian government. It is being used national wide by about 100-200 active users per day with about 20-30 concurrent users. Outdated and deprecated [http://extpascal.googlegroups.com/web/d3tkjdt-ext300.zip?gda=WYKqDUQAAAAHXQ9ZEtz1gOpjR5eIa3efUJHofg5RsnrWnzpQPct_EWJcmF1pWIBdANYrUFnETdlV6u9SiETdg0Q2ffAyHU-dzc4BZkLnSFWX59nr5BxGqA&gsc=JyVlmgsAAACd7wymbCyyyZLYVBtoSZBU sources here], another similar but [http://extpascal.googlegroups.com/web/DemoWeb.zip?gda=Wtb48D0AAADNJ9AlYUgIUf3uzQNzYk7aaN3nSqrFBtDya8v0IFvw7CmruJp9V5QFFU5rk8OfudnlNv--OykrTYJH3lVGu2Z5 demo project]
 
