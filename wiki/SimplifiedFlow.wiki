@@ -1,2 +1,2 @@
-#labels Deprecated
+#labels Featured
 [https://extpascal.googlecode.com/files/ExtPascalSimplifiedFlow.gif]
