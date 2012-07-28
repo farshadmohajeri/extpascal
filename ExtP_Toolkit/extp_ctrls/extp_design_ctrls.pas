@@ -466,7 +466,7 @@ type
 
 
 {$IFDEF LCL}
-  TCustomExtTabPanel = class(TCustomNotebook)
+  TCustomExtTabPanel = class(TCustomTabControl)
 {$ELSE}
   TCustomExtTabPanel = class(TPageControl)
 {$ENDIF}
