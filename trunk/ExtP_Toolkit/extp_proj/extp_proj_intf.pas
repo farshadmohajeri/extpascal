@@ -180,8 +180,8 @@ begin
    {Note that in order to reference TProject, need Project unit in uses.
      This requires path to IDE, CodeTools and SynEdit units in package file.}
   TProject(AProject).UseAppBundle := False;
-  TProject(AProject).Resources.XPManifest.UseManifest := False;
-  TProject(AProject).Resources.ProjectIcon.SetStream(nil);
+  TProject(AProject).ProjResources.XPManifest.UseManifest := False;
+  TProject(AProject).ProjResources.ProjectIcon.SetStream(nil);
 
    {Set path to ExtPascal units - assume it's two levels up from
      control package.}
@@ -193,7 +193,7 @@ begin
      Note that Laz IDE might warn about a missing "nogui" folder
      when close compiler options dialog if this widgetset has not
      been built yet.}
-  AProject.LazCompilerOptions.LCLWidgetType := 'nogui';
+  TProject(AProject).CompilerOptions.BuildMode.MacroValues.Values['LCLWidgetType'] := 'nogui';
 
    {This config file will be created by converter and signals to FPC to
      compile with ExtPascal runtime units, not Extp_Design_Ctrls unit.}

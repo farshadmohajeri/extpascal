@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <CONFIG>
-  <Package Version="3">
+  <Package Version="4">
     <Name Value="ExtP_Proj"/>
-    <AddToProjectUsesSection Value="False"/>
     <Author Value="Phil Hess"/>
     <CompilerOptions>
-      <Version Value="8"/>
+      <Version Value="11"/>
       <SearchPaths>
-        <OtherUnitFiles Value="$LazarusDir()/units/$(TargetCPU)-$(TargetOS)/;$LazarusDir()/components/codetools/units/$(TargetCPU)-$(TargetOS)/;$LazarusDir()/components/synedit/units/$(TargetCPU)-$(TargetOS)/"/>
+        <OtherUnitFiles Value="$(LazarusDir)/units/$(TargetCPU)-$(TargetOS)/$(LCLWidgetType);$LazarusDir()/components/codetools/units/$(TargetCPU)-$(TargetOS);$LazarusDir()/components/synedit/units/$(TargetCPU)-$(TargetOS)/$(LCLWidgetType)"/>
         <UnitOutputDirectory Value="units/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
           <CStyleOperator Value="False"/>
+          <UseAnsiStrings Value="False"/>
         </SyntaxOptions>
       </Parsing>
       <Other>
@@ -21,7 +21,7 @@
     </CompilerOptions>
     <Description Value="Adds ExtPascal Application and Form to File | New"/>
     <License Value="Modified LGPL"/>
-    <Version Minor="1" Release="4"/>
+    <Version Minor="1" Release="5"/>
     <Files Count="1">
       <Item1>
         <Filename Value="extp_proj_intf.pas"/>
@@ -42,7 +42,7 @@
       </Item3>
     </RequiredPkgs>
     <UsageOptions>
-      <UnitPath Value="$(PkgOutDir)/"/>
+      <UnitPath Value="$(PkgOutDir)"/>
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>

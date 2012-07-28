@@ -1,3 +1,11 @@
+Version 0.1.8, converter (28-Jul-2012 SVN):
+
+- Changes to ExtP_Ctrls and ExtP_Proj packages so they compile with 
+  Lazarus 0.9.31. Do not use with earlier versions of Lazarus.
+- (Also: Changes to Orpheus in SVN so it compiles with Lazarus 0.9.31.
+   Package ExtP_Grid depends on Orpheus.)
+
+
 Version 0.1.8, converter (18-Apr-2010 SVN):
 
 - Eliminated published event handlers from thread class and now using form
