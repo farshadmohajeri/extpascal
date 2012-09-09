@@ -33,7 +33,7 @@
         <UnitName Value="ExtP_Design_Ctrls"/>
       </Item1>
     </Files>
-    <Type Value="DesignTime"/>
+    <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
       <Item1>
         <PackageName Value="LCL"/>
