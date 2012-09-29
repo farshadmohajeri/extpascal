@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <Name Value="fcgiapp_pkg"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <SearchPaths>
+        <UnitOutputDirectory Value="units/$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <SyntaxMode Value="Delphi"/>
+          <CStyleOperator Value="False"/>
+          <AllowLabel Value="False"/>
+          <CPPInline Value="False"/>
+          <CStyleMacros Value="True"/>
+          <UseAnsiStrings Value="False"/>
+        </SyntaxOptions>
+      </Parsing>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Description Value="Base files for creating an FCGI Web server app; obtain files from ExtPascal project: http://code.google.com/p/extpascal/"/>
+    <License Value="Same as ExtPascal."/>
+    <Version Major="1"/>
+    <Files Count="4">
+      <Item1>
+        <Filename Value="FCGIApp.pas"/>
+        <UnitName Value="FCGIApp"/>
+      </Item1>
+      <Item2>
+        <Filename Value="BlockSocket.pas"/>
+        <UnitName Value="BlockSocket"/>
+      </Item2>
+      <Item3>
+        <Filename Value="ExtPascalClasses.pas"/>
+        <UnitName Value="ExtPascalClasses"/>
+      </Item3>
+      <Item4>
+        <Filename Value="ExtPascalUtils.pas"/>
+        <UnitName Value="ExtPascalUtils"/>
+      </Item4>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>
