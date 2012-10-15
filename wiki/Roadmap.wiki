@@ -27,8 +27,8 @@
  * 0.9.6. Wrap Ext JS 3.0
  * 0.9.7. Wrap Draw2D
  * 0.9.8. Wrap Ext JS 3.2.1
- * 0.9.9. Convert all Ext JS demos to ExtPascal
+ * 0.9.9. Wrap Ext JS 4.1.1a, using the all new parser
+ * 0.9.10. Wrap SmartClient 8.3 (LGPL)
+ * 0.9.11. XE3 integration: Form designer, source editor for events and online help
+ * 0.9.12. DB aware controls 
  * 1.0. Release
- * 1.1. Use JSON from [http://www.screencast.com/users/JackSlocum/folders/Default/media/f7450651-778b-4bbc-9fc4-4e921a7a2705 Ext JS 3.1 GUI Designer]
- * 2.0. Blaise (Form Designer, Source Editor, Compiler (FPC/Delphi) integration and remote deployment)
- * 3.0. Blaise (Debugger and help on-line)
