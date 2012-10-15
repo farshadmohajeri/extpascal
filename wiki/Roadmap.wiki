@@ -1,5 +1,4 @@
-====This roadmap is sync with [http://extjs.com/products/extjs/roadmap.php Ext JS Roadmap]====
-
+#labels Featured
  * 0.1. Implement wrapper
  * 0.2. Wrapper tested
  * 0.3. ObjectPascal to JavaScript self-translating
@@ -27,7 +26,7 @@
  * 0.9.6. Wrap Ext JS 3.0
  * 0.9.7. Wrap Draw2D
  * 0.9.8. Wrap Ext JS 3.2.1
- * 0.9.9. Wrap Ext JS 4.1.1a, using the all new parser
+ * 0.9.9. Wrap Ext JS 4.1.1a using the all new parser, fix memory leaks
  * 0.9.10. Wrap SmartClient 8.3 (LGPL)
  * 0.9.11. XE3 integration: Form designer, source editor for events and online help
  * 0.9.12. DB aware controls 
