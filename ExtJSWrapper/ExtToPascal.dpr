@@ -467,13 +467,12 @@ begin
   Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
+  Extract(['/**', '*/'], Line, Matches);
   while true do begin
     case State of
       Initial : begin
         if Before('@private', '*/', Line) or Before('@ignore', '*/', Line) then break;
         Singleton := Before('@singleton', '*/', Line);
-        if pos('extend', Line) <> 0 then
-            writeln;
         if Extract(['Ext.define(' + AP, AP, 'extend: ' + AP, AP], Line, Matches) then begin
           JSName := FixIdent(Matches[0], true);
           if Singleton then JSName := JSName + 'Singleton';
@@ -508,6 +507,8 @@ begin
         if Ci = -1 then
           Package.Classes.AddObject(PackName, CurClass);
         if Matches.Count = 3 then CurClass.Parent := FixIdent(Matches[2], true);
+        if AllClasses.IndexOf(CurClass.Name) = -1 then
+          AllClasses.AddObject(CurClass.Name, CurClass);
         State := InProperties;
         continue;
       end;
@@ -576,9 +577,9 @@ begin
       InMethods : begin
         if Before('@private', '*/', Line) or Before('@protected', '*/', Line) then continue;
         IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
-        if IsEvent or Extract(['/**', '*/', ': function'], Line, Matches) then begin
+        if IsEvent or Extract(['/**', '*/', ': function('], Line, Matches) then begin
           JSName := IfThen(IsEvent, Matches[0], Matches[1]);
-          if JSName = '' then continue; // Doc fault
+          if (JSName = '') or (length(JSName) > 30) then continue; // Doc fault
           if JSName = 'create' then begin
             CurClass.AltCreate := true;
             continue;
@@ -606,7 +607,7 @@ begin
           while pos('@param', Params) <> 0 do begin
             Extract(['@param', '{', '} ', ' ', ' '], Params, Matches);
             Optional := pos('[', Matches[2]) = 1;
-            if Matches.Count = 4 then 
+            if Matches.Count = 4 then
               Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
             Matches[2] := Unique(FixIdent(Matches[2]), Args);
             if IsEvent and SameText(Matches[2], 'This') then
@@ -625,8 +626,6 @@ begin
       end;
     end;
   end;
-  if (CurClass <> nil) and (AllClasses.IndexOf(CurClass.Name) = -1) then
-    AllClasses.AddObject(CurClass.Name, CurClass);
   Matches.Free;
 end;
 
@@ -1284,54 +1283,42 @@ begin
     end;
 end;
 
-procedure WrapJS(const ADir : String);
+var
+  Files : integer;
+
+procedure WrapJSDir(const ADir : String);
 var
   F : TSearchrec;
-  T : TDateTime;
-  I : integer;
 begin
   if FindFirst(ADir + '/*.js', faAnyFile, F) = 0 then begin
-    T := now;
-    AllClasses := TStringList.Create;
-    try
-      AllClasses.Sorted := true;
-      Units := TStringList.Create;
-      try
-        Units.Sorted := true;
-        writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
-        writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
-        writeln('http://extpascal.googlecode.com/'^M^J);
-        writeln('Reading Ext JS source files...');
-        I := 0;
-        repeat
-          write('  > ');
-          ReadJS(ADir + '/' + F.Name);
-          Inc(I);
-        until FindNext(F) <> 0;
-        FindClose(F);
-        writeln(I, ' .js files found.');
-        writeln('Fixing event prototypes...');
-        FixEvents;
-        LoadFixes;
-        writeln('Writing unit file(s)...');
-        WriteUnits;
-        writeln(AllClasses.Count, ' Ext JS classes wrapped.');
-        writeln(Units.Count, ' unit file(s) generated.');
-        writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
-        writeln('Done. Press Enter.');
-      finally
-        FreeStringList(Units);
-      end;
-    finally
-      FreeStringList(AllClasses);
-      Flush(Output);
-    end
-    end
-  else begin
-    writeln('Ext JS source files not found at ' + ADir + '/*.js');
-    writeln('Aborted! Press Enter.');
+    repeat
+      write('  > ');
+      ReadJS(ADir + '/' + F.Name);
+      Inc(Files);
+    until FindNext(F) <> 0;
+    FindClose(F);
   end;
-  readln;
+end;
+
+var
+  T : TDateTime;
+
+procedure DoTree(Tree : string);
+var
+  F : TSearchRec;
+begin
+  WrapJSDir(Tree);
+  try
+    if FindFirst(Tree + '/*', faDirectory, F) = 0 then begin
+      while pos('.', F.Name) <> 0 do
+        if FindNext(F) <> 0 then exit;
+      repeat
+        if pos('.', F.Name) = 0 then DoTree(Tree + '/' + F.Name);
+      until FindNext(F) <> 0;
+    end;
+  finally
+    FindClose(F)
+  end;
 end;
 
 begin
@@ -1341,7 +1328,43 @@ begin
     Writeln('  inputdir directory with Ext JS 4.x sources');
     Halt(1);
   end;
-  WrapJS(AnsiReplaceStr(ParamStr(1), '\', '/'));
+  T := now;
+  AllClasses := TStringList.Create;
+  try
+    AllClasses.Sorted := true;
+    Units := TStringList.Create;
+    try
+      Units.Sorted := true;
+      writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+      writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
+      writeln('http://extpascal.googlecode.com/'^M^J);
+      writeln('Reading Ext JS source files...');
+      Files := 0;
+      DoTree(AnsiReplaceStr(ParamStr(1), '\', '/'));
+      if Files <> 0 then begin
+        writeln(Files, ' .js files found.');
+        writeln('Fixing event prototypes...');
+        FixEvents;
+        LoadFixes;
+        writeln('Writing unit file(s)...');
+        WriteUnits;
+        writeln(AllClasses.Count, ' Ext JS classes wrapped.');
+        writeln('Unit file generated.');
+        writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
+        writeln('Done. Press Enter.');
+      end
+      else begin
+        writeln('Ext JS source files not found at ' + ParamStr(1) + '/*.js');
+        writeln('Aborted! Press Enter.');
+      end;
+      readln;
+    finally
+      FreeStringList(Units);
+    end;
+  finally
+    FreeStringList(AllClasses);
+    Flush(Output);
+  end;
 end.
         Matches := TRegEx.Matches(Line,
           '.*Ext.define.*''''(?P<ClassName>)''''' +
