@@ -144,7 +144,7 @@ function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Le
   Header : boolean = false) : string;
 
 // Returns true if BeforesS string occurs before AfterS string in S string
-function Before(const BeforeS, AfterS, S : string) : boolean;
+function Before(const BeforeS, AfterS : string; var S : string; Remove : boolean = true) : boolean;
 
 // Returns true if all chars in S are uppercase
 function IsUpperCase(S : string) : boolean;
@@ -272,22 +272,34 @@ function Extract(const Delims : array of string; var S : string; var Matches : T
 var
   I, J : integer;
   Points : array of integer;
+  Rest : string;
 begin
   Result := false;
   if Matches <> nil then Matches.Clear;
   SetLength(Points, length(Delims));
   J := 1;
+  Rest := '';
   for I := 0 to high(Delims) do begin
     J := PosEx(Delims[I], S, J);
-    if J = 0 then exit;
+    if J = 0 then begin
+      for J := I to High(Delims) do
+        Rest := Rest + Delims[J];
+      if Trim(Rest) = '' then begin
+        Points[I] := length(S)+1;
+        SetLength(Points, I + 1);
+        break
+      end
+      else
+        exit;
+    end;
     Points[I] := J;
     inc(J, length(Delims[I]));
   end;
-  for I := 0 to high(Delims)-1 do begin
+  for I := 0 to high(Points)-1 do begin
     J := Points[I] + length(Delims[I]);
     Matches.Add(trim(copy(S, J, Points[I+1]-J)));
   end;
-  if Remove then S := copy(S, Points[high(Delims)] + length(Delims[high(Delims)]), length(S));
+  if Remove then S := copy(S, Points[high(Points)] + length(Delims[high(Points)]), length(S));
   Result := true
 end;
 
@@ -419,12 +431,13 @@ begin
     EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
-function Before(const BeforeS, AfterS, S : string) : boolean;
+function Before(const BeforeS, AfterS : string; var S : string; Remove : boolean = true) : boolean;
 var
   I : integer;
 begin
   I := pos(BeforeS, S);
-  Result := (I <> 0) and (I < pos(AfterS, S))
+  Result := (I <> 0) and (I < pos(AfterS, S));
+  if Remove then delete(S, 1, I + length(BeforeS));
 end;
 
 function IsUpperCase(S : string) : boolean;
