@@ -1,7 +1,7 @@
 {
-ExtToPascal is a parser that scans Ext documentation, in HTML format, and that creates a Object Pascal wrapper upon Ext classes and widgets
+ExtToPascal is a parser that scans Ext JS sources and that creates a Object Pascal wrapper upon Ext classes and widgets
 Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
-Date: apr-2008, dec-2011 (Ext JS 4.x)
+Date: apr-2008, mar-2013 (Ext JS 4.x)
 License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 program ExtToPascal;
@@ -11,13 +11,12 @@ program ExtToPascal;
 {$J+}
 
 uses
-  Ext,
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
 
 {.$DEFINE USES_PUBLISHED}
 
-var
-  OutputDir : string;
+const
+  AP = '''';
 
 function FixReserved(S : string) : string;
 const
@@ -34,9 +33,12 @@ end;
 
 function FixIdent(Ident : string; IsType : boolean = false) : string;
 var
-  I : integer;
+  I, J : integer;
+  Words : array[0..9] of integer;
 begin
   Result := '';
+  Words[0] := 1;
+  J := 0;
   for I := 1 to length(Ident) do
     if Ident[I] in ['0'..'9', 'A'..'Z', 'a'..'z', '_'] then
       if I = 1 then
@@ -47,7 +49,14 @@ begin
       if (I <> 1) and (I <> length(Ident)) and (Ident[I] in ['(', '[', '{', ')', ']', '}', '=']) then
         break
       else
-        if I < length(Ident) then Ident[I+1] := UpCase(Ident[I+1]);
+        if I < length(Ident) then begin
+          inc(J);
+          Words[J]   := I+1;
+          Ident[I+1] := UpCase(Ident[I+1]);
+        end;
+  // Remove final dup word
+  if copy(Ident, Words[J-1], Words[J] - Words[J-1]) = copy(Ident, Words[J], Length(Ident)) then 
+    delete(Ident, Words[J], length(Ident));
   if IsType then begin
     if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result;
     Result := AnsiReplaceText(Result, 'MethodConstructor', '');
@@ -221,7 +230,7 @@ procedure TUnit.ReviewTypes;
 var
   I, J, K : integer;
 begin
-  writeln('  > ', OutputDir, Name, '.pas');
+  writeln('  > ', Name, '.pas');
   UsesList := InitUsesList;
   for I := 0 to Classes.Count-1 do
     with TClass(Classes.Objects[I]) do begin
@@ -402,7 +411,7 @@ procedure SetDefault(Prop : TProp; Def : string; var Match : TStringList);
 var
   I : integer;
 begin
-  Def := trim(AnsiReplaceText(Def, '"', ''''));
+  Def := trim(AnsiReplaceText(Def, '"', AP));
   if (Def = '') or (Def = '''''') then exit;
   with Prop do begin
     if Default <> '' then exit;
@@ -449,28 +458,28 @@ const
   Config    : boolean     = false;
 var
   State : (Initial, InClass, InProperties, InMethods);
-  PackName, Return, JSName : string;
+  PackName, Return, JSName, Params : string;
   Matches, Args : TStringList;
-  IsEvent, Optional, Static, Singleton  : boolean;
+  IsEvent, Optional, Static, Singleton: boolean;
   Package : TUnit;
   I, Ci   : integer;
 begin
+  Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
   while true do begin
     case State of
-      Initial :
-        if Extract(['span id=''', ''''], Line, Matches) then begin
-          if Before('@private', '*/', Line) or Before('@ignore', '*/', Line) then break;
-          if Before('@singleton', '*/', Line) then begin
-             Singleton := true;
-             Matches[0] := Matches[0] + 'Singleton';
-          end
-          else
-            Singleton := false;
-          Ci := AllClasses.IndexOf(FixIdent(Matches[0], true));
+      Initial : begin
+        if Before('@private', '*/', Line) or Before('@ignore', '*/', Line) then break;
+        Singleton := Before('@singleton', '*/', Line);
+        if pos('extend', Line) <> 0 then
+            writeln;
+        if Extract(['Ext.define(' + AP, AP, 'extend: ' + AP, AP], Line, Matches) then begin
+          JSName := FixIdent(Matches[0], true);
+          if Singleton then JSName := JSName + 'Singleton';
+          Ci := AllClasses.IndexOf(JSName);
           if Ci = -1 then
-            CurClass := TClass.Create(Matches[0])
+            CurClass := TClass.Create(JSName)
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
@@ -479,9 +488,10 @@ begin
         end
         else
           break;
+      end;
       InClass : begin
         PackName := 'Ext';
-        if CurClass.Name = 'Ext' then // Pascal requires this exception: move Ext class to Unit class
+        if CurClass.Name = 'Ext' then
           CurClass.Name := 'TExt';
 (*        else begin
           PackName := FixIdent(copy(Matches[0], 1, LastDelimiter('-', Matches[0]) - 1));
@@ -497,16 +507,16 @@ begin
           Package := TUnit(Units.Objects[I]);
         if Ci = -1 then
           Package.Classes.AddObject(PackName, CurClass);
-        if ((pos('@class', Line) = 0) and Extract(['@extends ', ' '], Line, Matches)) or
-           ((pos('Ext.define(', Line) = 0) and Extract(['extend: ''', ''''], Line, Matches)) then
-          CurClass.Parent := FixIdent(Matches[0], true);
+        if Matches.Count = 3 then CurClass.Parent := FixIdent(Matches[2], true);
         State := InProperties;
         continue;
       end;
       InProperties : begin
         Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
-        if Config or Extract(['@property ', ' ', '@type {' , '}'], Line, Matches) then begin
-          PropName := IfThen(Config, Matches[1], Matches[0]);
+        if Before('@hide', '*/', Line) then continue;
+        // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
+        if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
+          PropName := Matches[1];
           I := LastDelimiter('.', PropName);
           if (I <> 0) and (I <> length(PropName)) then begin
             PropName := copy(PropName, I+1, length(PropName));
@@ -515,7 +525,7 @@ begin
           else
             Static := false;
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
-          if Before('@static', '*/', lowercase(Line)) then Static := true;
+          if Before('@static', '*/', Line) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(FixIdent(PropName), CurClass.Properties);
           if not Static then PropName[1] := LowerCase(PropName)[1];
@@ -523,10 +533,7 @@ begin
             State := InMethods;
             continue; // Discard duplicates
           end;
-          if Config then
-            PropTypes := Explode('/', Matches[0])
-          else
-            PropTypes := Explode('/', Matches[2]);
+          PropTypes := Explode('/', Matches[0]);
           I := FirstDelimiter(' <>', PropTypes[0]);
           if I <> 0 then // doc fault
             PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
@@ -540,8 +547,8 @@ begin
                 CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
                                               TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
           //if Extract([PropName, ':', ','], Line, Matches) then begin
-          if (Before('Default to',  '*/', LowerCase(Line)) and Extract(['Default to',  '.'], Line, Matches)) or
-             (Before('Defaults to', '*/', LowerCase(Line)) and Extract(['Defaults to', '.'], Line, Matches)) then begin
+          if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
+             (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
             SetDefault(CurProp, Matches[0], Matches);
             if (CurProp.Default <> '') and not CurClass.Defaults then begin
               CurClass.Defaults := true;
@@ -567,16 +574,16 @@ begin
         continue;
       end;
       InMethods : begin
-        IsEvent := Extract(['-event-', ''''], Line, Matches);
-        if IsEvent or Extract(['-method-', ''''], Line, Matches) then begin
-          if Before('@private', '*/', Line) or Before('@protected', '*/', Line) then continue;
-          JSName := Matches[0];
+        if Before('@private', '*/', Line) or Before('@protected', '*/', Line) then continue;
+        IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
+        if IsEvent or Extract(['/**', '*/', ': function'], Line, Matches) then begin
+          JSName := IfThen(IsEvent, Matches[0], Matches[1]);
           if JSName = '' then continue; // Doc fault
           if JSName = 'create' then begin
             CurClass.AltCreate := true;
             continue;
           end;
-          Static := Before('@static', '*/', Line);
+          Static := pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
           if IsEvent then
             MetName := Unique(Unique('On' + FixIdent(JSName), CurClass.Properties), CurClass.Methods)
           else begin
@@ -595,9 +602,12 @@ begin
               if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
           end;
           Args := TStringList.Create;
-          while Before('@param', '*/', Line) do begin
-            Extract(['@param', '{', '} ', ' ', ' '], Line, Matches);
-            Optional := (pos('[', Matches[2]) = 1) or (pos('(optional)', LowerCase(Matches[3])) <> 0);
+          Params := IfThen(IsEvent, Matches[1], Matches[0]);
+          while pos('@param', Params) <> 0 do begin
+            Extract(['@param', '{', '} ', ' ', ' '], Params, Matches);
+            Optional := pos('[', Matches[2]) = 1;
+            if Matches.Count = 4 then 
+              Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
             Matches[2] := Unique(FixIdent(Matches[2]), Args);
             if IsEvent and SameText(Matches[2], 'This') then
               Matches[1] := CurClass.Name;
@@ -620,39 +630,21 @@ begin
   Matches.Free;
 end;
 
-function FixHtml(H : string) : string;
+procedure ReadJS(FileName : string);
 var
-  I, J : integer;
-begin
-  Result := H;
-  I := pos('&', Result);
-  while I <> 0 do begin
-    J := posex(';', Result, I);
-    if J = 0 then exit;
-    if (J-I) > 15 then J := I+1;
-    delete(Result, I, J-I);
-    Result[I] := ' ';
-    I := pos('&', Result);
-  end;
-  I := pos('|', Result);
-  if I <> 0 then Result := AnsiReplaceText(Result, '|', '/');
-end;
-
-procedure ReadHtml(FileName : string);
-var
-  Html : text;
+  JS : text;
   L, Line : string;
 begin
   writeln(copy(FileName, LastDelimiter('/', FileName) + 1, 100));
-  assign(Html, FileName);
-  reset(Html);
+  assign(JS, FileName);
+  reset(JS);
   Line := '';
   repeat
-    readln(Html, L);
+    readln(JS, L);
     Line := Line + ' ' + trim(L)
-  until SeekEOF(Html);
-  LoadElements(FixHtml(Line));
-  close(Html);
+  until SeekEOF(JS);
+  LoadElements(Line);
+  close(JS);
 end;
 
 procedure LoadFixes;
@@ -1107,7 +1099,7 @@ begin
   for I := 0 to Units.Count-1 do
     with TUnit(Units.Objects[I]) do begin
       ReviewTypes;
-      assign(Pas, OutputDir + Name + '.pas');
+      assign(Pas, Name + '.pas');
       rewrite(Pas);
       writeln(Pas, 'unit ', Name, ';'^M^J);
       writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
@@ -1292,13 +1284,13 @@ begin
     end;
 end;
 
-procedure ScanDir(const ADir : String);
+procedure WrapJS(const ADir : String);
 var
   F : TSearchrec;
   T : TDateTime;
   I : integer;
 begin
-  if FindFirst(ADir + '/*.html', faAnyFile, F) = 0 then begin
+  if FindFirst(ADir + '/*.js', faAnyFile, F) = 0 then begin
     T := now;
     AllClasses := TStringList.Create;
     try
@@ -1306,24 +1298,24 @@ begin
       Units := TStringList.Create;
       try
         Units.Sorted := true;
-        writeln('ExtToPascal - Ext JS docs to Pascal units wrapper, version ', ExtPascalVersion);
-        writeln('(c) 2008-2011 by Wanderlan Santos dos Anjos, BSD license');
+        writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+        writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
         writeln('http://extpascal.googlecode.com/'^M^J);
-        writeln('Reading Ext JS HTML files...');
+        writeln('Reading Ext JS source files...');
         I := 0;
         repeat
           write('  > ');
-          ReadHtml(ADir + '/' + F.Name);
+          ReadJS(ADir + '/' + F.Name);
           Inc(I);
         until FindNext(F) <> 0;
         FindClose(F);
-        writeln(I, ' HTML files found.');
+        writeln(I, ' .js files found.');
         writeln('Fixing event prototypes...');
         FixEvents;
         LoadFixes;
         writeln('Writing unit file(s)...');
         WriteUnits;
-        writeln(AllClasses.Count, ' ExtJS classes wrapped.');
+        writeln(AllClasses.Count, ' Ext JS classes wrapped.');
         writeln(Units.Count, ' unit file(s) generated.');
         writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
         writeln('Done. Press Enter.');
@@ -1336,30 +1328,23 @@ begin
     end
     end
   else begin
-    writeln('ExtJS HTML files not found at ' + ADir + '/*.html');
+    writeln('Ext JS source files not found at ' + ADir + '/*.js');
     writeln('Aborted! Press Enter.');
   end;
   readln;
 end;
 
-procedure Usage; begin
-  Writeln('Usage: ', ChangeFileExt(ExtractFileName(ParamStr(0)),''), ' inputdir [outputdir]');
-  Writeln('where');
-  Writeln('  inputdir    directory with extjs documentation output');
-  Writeln('  outputdir   directory to write ExtPascal classes (optional, default current)');
-  Halt(1);
-end;
-
 begin
-  if (ParamCount=0) or (ParamCount>2) or (ParamStr(1)='-h') or (ParamStr(1)='/?') then
-    Usage;
-  if ParamCount=2 then begin
-    OutputDir := IncludeTrailingPathDelimiter(ParamStr(2));
-    OutputDir := AnsiReplaceStr(OutputDir, '\', '/');
-    if not ForceDirectories(OutputDir) then begin
-      Writeln('Failed to create output directory "', OutputDir, '"');
-      Halt(1);
-    end;
+  if (ParamCount = 0) or (ParamCount > 1) or (ParamStr(1) = '-h') or (ParamStr(1) = '/?') then begin
+    Writeln('Usage: ', ChangeFileExt(ExtractFileName(ParamStr(0)), ''), ' inputdir');
+    Writeln('where');
+    Writeln('  inputdir directory with Ext JS 4.x sources');
+    Halt(1);
   end;
-  ScanDir(AnsiReplaceStr(ParamStr(1), '\', '/'));
+  WrapJS(AnsiReplaceStr(ParamStr(1), '\', '/'));
 end.
+        Matches := TRegEx.Matches(Line,
+          '.*Ext.define.*''''(?P<ClassName>)''''' +
+          '.*extend.*''''(?P<Parent>)''''' +
+          '.*alternateClassName(?P<ClassName2>)''''');
+
