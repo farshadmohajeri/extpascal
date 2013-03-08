@@ -437,7 +437,7 @@ var
 begin
   I := pos(BeforeS, S);
   Result := (I <> 0) and (I < pos(AfterS, S));
-  if Remove then delete(S, 1, I + length(BeforeS));
+  if Remove and Result then delete(S, 1, pos(AfterS, S) + length(AfterS));
 end;
 
 function IsUpperCase(S : string) : boolean;
