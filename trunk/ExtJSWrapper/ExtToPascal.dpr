@@ -37,6 +37,7 @@ var
   Words : array[0..9] of integer;
 begin
   Result := '';
+  if Ident = '' then exit;
   Words[0] := 1;
   J := 0;
   for I := 1 to length(Ident) do
@@ -51,14 +52,14 @@ begin
       else
         if I < length(Ident) then begin
           inc(J);
-          Words[J]   := I+1;
+          Words[J]   := I;
           Ident[I+1] := UpCase(Ident[I+1]);
         end;
   // Remove final dup word
-  if copy(Ident, Words[J-1], Words[J] - Words[J-1]) = copy(Ident, Words[J], Length(Ident)) then 
-    delete(Ident, Words[J], length(Ident));
+  if copy(Result, Words[J-1], Words[J] - Words[J-1]-1) = copy(Result, Words[J]-1, Length(Result)) then
+    delete(Result, Words[J]-1, length(Result));
   if IsType then begin
-    if (Result <> '') and (pos('TExt', Result) = 0) then Result := 'T' + Result;
+    if Result <> '' then Result := 'T' + Result;
     Result := AnsiReplaceText(Result, 'MethodConstructor', '');
     Result := AnsiReplaceText(Result, 'cfghideMode', '');
   end
@@ -99,7 +100,10 @@ begin
             Result := Ident;
           exit;
         end;
-        Result := FixIdent(Ident, true);
+        if pos('TExt', Ident) = 1 then
+          Result := Ident
+        else
+          Result := FixIdent(Ident, true);
       end;
     end
   else
@@ -125,7 +129,6 @@ type
     Singleton, Defaults, Arrays, Objects, AltCreate : boolean;
     Properties, Methods, Events : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
-    function InheritLevel : integer;
     procedure AddCreate;
     destructor Destroy; override;
   end;
@@ -273,24 +276,6 @@ end;
 procedure TClass.AddCreate; begin
   if not Singleton and (Methods.IndexOf('Create') = -1) then
     Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
-end;
-
-function TClass.InheritLevel : integer;
-var
-  P : string;
-  I : integer;
-begin
-  Result := 0;
-  P := Parent;
-  while P <> '' do begin
-    I := AllClasses.IndexOf(P);
-    if I = -1 then begin
-      writeln('Parent: ', P, ' not found at class: ', Name);
-      exit;
-    end;
-    inc(Result);
-    P := TClass(AllClasses.Objects[I]).Parent;
-  end;
 end;
 
 function IsUpper(S : string) : boolean;
@@ -464,24 +449,30 @@ var
   Package : TUnit;
   I, Ci   : integer;
 begin
+  if Before('@private', '*/', Line, false) or
+     Before('@ignore',  '*/', Line, false) or
+     Before('@tag',     '*/', Line, false) then exit;
   Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
-  Extract(['/**', '*/'], Line, Matches);
   while true do begin
     case State of
       Initial : begin
-        if Before('@private', '*/', Line) or Before('@ignore', '*/', Line) then break;
-        Singleton := Before('@singleton', '*/', Line);
-        if Extract(['Ext.define(' + AP, AP, 'extend: ' + AP, AP], Line, Matches) then begin
-          JSName := FixIdent(Matches[0], true);
-          if Singleton then JSName := JSName + 'Singleton';
+        JSName := '';
+        Singleton := Before('@singleton', '*/', Line, false);
+        if Before('@define', '*/', Line, false) then
+          if Extract(['@define ', ' '], Line, Matches) then
+            JSName := Matches[0];
+        Extract(['/**', '*/'], Line, Matches);
+        if (JSName <> '') or Extract(['Ext.define(' + AP, AP], Line, Matches) then begin
+          if JSName = '' then JSName := Matches[0];
           Ci := AllClasses.IndexOf(JSName);
           if Ci = -1 then
             CurClass := TClass.Create(JSName)
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
+          if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
           CurClass.Singleton := Singleton;
           continue;
         end
@@ -490,12 +481,6 @@ begin
       end;
       InClass : begin
         PackName := 'Ext';
-        if CurClass.Name = 'Ext' then
-          CurClass.Name := 'TExt';
-(*        else begin
-          PackName := FixIdent(copy(Matches[0], 1, LastDelimiter('-', Matches[0]) - 1));
-          if pos('Ext', PackName) <> 1 then PackName := 'Ext' + PackName;
-        end;*)
         CurClass.UnitName := PackName;
         I := Units.IndexOf(PackName);
         if I = -1 then begin
@@ -506,7 +491,8 @@ begin
           Package := TUnit(Units.Objects[I]);
         if Ci = -1 then
           Package.Classes.AddObject(PackName, CurClass);
-        if Matches.Count = 3 then CurClass.Parent := FixIdent(Matches[2], true);
+        if Extract(['extend: ' + AP, AP], Line, Matches) then
+          CurClass.Parent := FixIdent(Matches[0], true);
         if AllClasses.IndexOf(CurClass.Name) = -1 then
           AllClasses.AddObject(CurClass.Name, CurClass);
         State := InProperties;
@@ -514,7 +500,9 @@ begin
       end;
       InProperties : begin
         Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
-        if Before('@hide', '*/', Line) then continue;
+        if Before('@hide',      '*/', Line) or
+           Before('@private',   '*/', Line) or
+           Before('@protected', '*/', Line) then continue;
         // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
         if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
           PropName := Matches[1];
@@ -526,7 +514,7 @@ begin
           else
             Static := false;
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
-          if Before('@static', '*/', Line) then Static := true;
+          if Before('@static', '*/', Line, false) then Static := true;
           if IsUppercase(PropName) then Static := true;
           PropName := Unique(FixIdent(PropName), CurClass.Properties);
           if not Static then PropName[1] := LowerCase(PropName)[1];
@@ -605,7 +593,8 @@ begin
           Args := TStringList.Create;
           Params := IfThen(IsEvent, Matches[1], Matches[0]);
           while pos('@param', Params) <> 0 do begin
-            Extract(['@param', '{', '} ', ' ', ' '], Params, Matches);
+            if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
+              break;
             Optional := pos('[', Matches[2]) = 1;
             if Matches.Count = 4 then
               Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
@@ -988,10 +977,6 @@ begin
     Result := IfThen(Config, '({});', '();');
 end;
 
-function SortByInheritLevel(List : Classes.TStringList; I, J : integer) : integer; begin
-  Result := TClass(List.Objects[I]).InheritLevel - TClass(List.Objects[J]).InheritLevel
-end;
-
 procedure DeclareSingletons(pUnit : TUnit);
 var
   I : integer;
@@ -1110,7 +1095,6 @@ begin
       end;
       {$IFDEF USES_PUBLISHED}writeln(Pas, '{$M+}');{$ENDIF}
       writeln(Pas, 'type');
-      Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;'^M^J'TExtSliderThumb = class(TExtObject);'^M^J'TExtUtilOffset = class(TExtObject);');
@@ -1366,8 +1350,4 @@ begin
     Flush(Output);
   end;
 end.
-        Matches := TRegEx.Matches(Line,
-          '.*Ext.define.*''''(?P<ClassName>)''''' +
-          '.*extend.*''''(?P<Parent>)''''' +
-          '.*alternateClassName(?P<ClassName2>)''''');
 
