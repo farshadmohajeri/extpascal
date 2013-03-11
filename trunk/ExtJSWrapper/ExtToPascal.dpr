@@ -11,7 +11,9 @@ program ExtToPascal;
 {$J+}
 
 uses
-  SysUtils, StrUtils, Classes, Math, ExtPascalUtils;
+  SysUtils, StrUtils, Classes, Math, ExtPascalUtils
+  , Ext
+  ;
 
 {.$DEFINE USES_PUBLISHED}
 
@@ -55,8 +57,9 @@ begin
           Words[J]   := I;
           Ident[I+1] := UpCase(Ident[I+1]);
         end;
+  if Result = '' then exit;
   // Remove final dup word
-  if copy(Result, Words[J-1], Words[J] - Words[J-1]-1) = copy(Result, Words[J]-1, Length(Result)) then
+  if (J > 0) and (copy(Result, Words[J-1], Words[J] - Words[J-1]-1) = copy(Result, Words[J]-1, Length(Result))) then
     delete(Result, Words[J]-1, length(Result));
   if IsType then begin
     if Result <> '' then Result := 'T' + Result;
@@ -72,9 +75,9 @@ var
   I : integer;
 begin
   if Ident <> '' then
-    case CaseOf(Ident, ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed', 'array', 'object...',
-                        'date', 'float', 'int', 'bool', 'double', 'object.']) of
-      0, 6     : Result := 'String';
+    case CaseOf(LowerCase(Ident), ['string', 'number', 'integer', 'object', 'boolean', 'function', 'mixed',
+                'array', 'object...', 'date', 'float', 'int', 'bool', 'double', 'object.', 'string...']) of
+      0, 6, 15 : Result := 'String';
       1, 2, 11 : Result := 'Integer';
       3, 14    : Result := 'TExtObject';
       4, 12    : Result := 'Boolean';
@@ -100,6 +103,8 @@ begin
             Result := Ident;
           exit;
         end;
+        if pos('MenuMenu', Ident) <> 0 then
+        writeln;
         if pos('TExt', Ident) = 1 then
           Result := Ident
         else
@@ -130,6 +135,8 @@ type
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     procedure AddCreate;
     destructor Destroy; override;
+  private
+    function InheritLevel: integer;
   end;
 
   TProp = class
@@ -143,7 +150,7 @@ type
     Params : TStringList;
 		Static, Overload : boolean;
 	  constructor Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
-	  constructor Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean); overload;
+	  constructor Create(pName, pJSName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
     function CreateOverloadParams(P : integer; NewType : string) : TStringList;
     destructor Destroy; override;
   end;
@@ -219,6 +226,21 @@ procedure TClass.AddCreate; begin
     Methods.AddObject('Create', TMethod.Create('Create', '', TStringList.Create, false, false));
 end;
 
+function TClass.InheritLevel : integer;
+var
+  P : string;
+  I : integer;
+begin
+  Result := 0;
+  P := Parent;
+  while P <> '' do begin
+    I := AllClasses.IndexOf(P);
+    if I = -1 then exit;
+    inc(Result);
+    P := TClass(AllClasses.Objects[I]).Parent;
+  end;
+end;
+
 function IsUpper(S : string) : boolean;
 var
   I : integer;
@@ -275,7 +297,7 @@ constructor TMethod.Create(pName, pReturn : string; pParams : TStringList; pStat
   Overload := pOverload;
 end;
 
-constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pOverload : boolean);
+constructor TMethod.Create(pName, pJSName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean);
 var
   I : integer;
 begin
@@ -283,10 +305,11 @@ begin
   JSName := FixJSName(pJSName);
   Params := pParams;
   Return := pReturn;
+  Static := pStatic;
   Overload := pOverload;
   I := LastDelimiter('.', Name);
   if I <> 0 then Name := copy(Name, I+1, length(Name));
-  Static := I <> 0;
+  if not Static then Static := I <> 0;
 end;
 
 destructor TMethod.Destroy; begin
@@ -391,9 +414,10 @@ var
   Package : TUnit;
   I, Ci   : integer;
 begin
-  if Before('@private', '*/', Line, false) or
-     Before('@ignore',  '*/', Line, false) or
-     Before('@tag',     '*/', Line, false) then exit;
+  if Before('@private',   '*/', Line, false) or
+     Before('@protected', '*/', Line, false) or
+     Before('@ignore',    '*/', Line, false) or
+     Before('@tag',       '*/', Line, false) then exit;
   Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
@@ -406,7 +430,9 @@ begin
           if Extract(['@define ', ' '], Line, Matches) then
             JSName := Matches[0];
         Extract(['/**', '*/'], Line, Matches);
-        if (JSName <> '') or Extract(['Ext.define(' + AP, AP], Line, Matches) then begin
+        if (JSName <> '') or
+           Extract(['Ext.define(' + AP, AP], Line, Matches) or
+           Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
           if JSName = '' then JSName := Matches[0];
           Ci := AllClasses.IndexOf(JSName);
           if Ci = -1 then
@@ -441,25 +467,19 @@ begin
         continue;
       end;
       InProperties : begin
-        Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
         if Before('@hide',      '*/', Line) or
            Before('@private',   '*/', Line) or
            Before('@protected', '*/', Line) then continue;
+        Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
         // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
         if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
           PropName := Matches[1];
+          Static := false;
           I := pos('=', PropName);
           if I <> 0 then
             PropName := copy(PropName, 1, I-1)
-          else begin
-            I := LastDelimiter('.', PropName);
-            if (I <> 0) and (I <> length(PropName)) then begin
-              PropName := copy(PropName, I+1, length(PropName));
-              Static   := true;
-            end
-            else
-              Static := false;
-          end;
+          else
+            if pos('.', PropName) <> 0 then continue; // doc fault
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('@static', '*/', Line, false) then Static := true;
           if IsUppercase(PropName) then Static := true;
@@ -510,18 +530,28 @@ begin
         continue;
       end;
       InMethods : begin
-        if Before('@private', '*/', Line) or Before('@protected', '*/', Line) then continue;
+        if Before('@private', '*/', Line) or Before('@protected', '*/', Line) or
+           Before('@template', '*/', Line) then continue;
         IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
         if IsEvent or Extract(['/**', '*/', ': function('], Line, Matches) then begin
           JSName := IfThen(IsEvent, Matches[0], Matches[1]);
-          if (JSName = '') or (length(JSName) > 30) then continue; // Doc fault
+          if (length(JSName) > 30) or (FixIdent(JSName) = '') or (JSName = 'destroy') then continue; // Doc fault
           if JSName = 'create' then CurClass.AltCreate := true;
           Static := pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
-          if IsEvent then
-            MetName := Unique(Unique('On' + FixIdent(JSName), CurClass.Properties), CurClass.Methods)
+          if IsEvent then begin
+            MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
+            if MetName <> Unique(MetName, CurClass.Events) then continue;
+          end
           else begin
             MetName := Unique(FixIdent(JSName), CurClass.Properties);
+            if MetName <> Unique(MetName, CurClass.Methods) then continue;
             if MetName <> 'Create' then MetName := Unique(MetName, CurClass.Methods);
+            if pos(MetName, 'ConstructorJS.Create.') <> 0 then begin
+              MetName := 'Create';
+              Return := ''
+            end
+            else
+              Return := 'TExtFunction';
             if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
           end;
           Args := TStringList.Create;
@@ -537,12 +567,11 @@ begin
               Matches[1] := CurClass.Name;
             Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
           end;
-          CurMethod := TMethod.Create(MetName, JSName, Return, Args, false);
+          CurMethod := TMethod.Create(MetName, JSName, Return, Args, Static, false);
           if IsEvent then
             CurClass.Events.AddObject(CurMethod.Name, CurMethod)
           else
             DoOverloads(CurClass, CurMethod);
-          CurMethod.Static := Static;
           continue;
         end;
         break;
@@ -740,12 +769,16 @@ begin
     while P <> '' do begin
       J := AllClasses.IndexOf(P);
       if J = -1 then begin
+        writeln('Parent: ', P, ' not found at class: ', C.Name);
         C.Parent := '';
         break;
       end;
       C := TClass(AllClasses.Objects[J]);
-      if P = C.Parent then
+      if P = C.Parent then begin
+        writeln('Parent: ', P, ' is the same at class: ', C.Name, ' and its descendent' );
+        C.Parent := '';
         break
+      end
       else
         P := C.Parent;
     end;
@@ -936,6 +969,10 @@ begin
     Result := IfThen(Config, '({});', '();');
 end;
 
+function SortByInheritLevel(List : Classes.TStringList; I, J : integer) : integer; begin
+  Result := TClass(List.Objects[I]).InheritLevel - TClass(List.Objects[J]).InheritLevel
+end;
+
 procedure DeclareSingletons(pUnit : TUnit);
 var
   I : integer;
@@ -1053,6 +1090,7 @@ begin
       end;
       {$IFDEF USES_PUBLISHED}writeln(Pas, '{$M+}');{$ENDIF}
       writeln(Pas, 'type');
+      Classes.CustomSort(SortByInheritLevel);
       for J := 0 to Classes.Count-1 do // forward classes
         writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
       writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;');
@@ -1281,7 +1319,7 @@ begin
         writeln('Fixing event prototypes...');
         FixHeritage;
         FixEvents;
-        LoadFixes;
+//        LoadFixes;
         writeln('Writing unit file(s)...');
         WriteUnits;
         writeln(AllClasses.Count, ' Ext JS classes wrapped.');

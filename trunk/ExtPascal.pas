@@ -276,6 +276,11 @@ type
   TXMLElement = TExtObject; // doc fault Ext 3.1
   TExtListView = TExtObject; // doc fault Ext 3.1
   TExtSlider = TExtObject; // doc fault Ext 3.2
+  TExtSliderThumb = class(TExtObject);
+  TExtUtilOffset = class(TExtObject);
+  TExtClass = class(TExtObject);
+  TExtElement = class(TExtObject);
+  TExtResizerResizeTracker = class(TExtObject);
 //DOM-IGNORE-END*)
 
 const
