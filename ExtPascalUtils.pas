@@ -444,6 +444,19 @@ begin
   if Remove and Result then delete(S, 1, pos(AfterS, S) + length(AfterS));
 end;
 
+function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
+var
+  I : integer;
+begin
+  Result := false;
+  I := pos(BeforeS, T);
+  if I <> 0 then begin
+    J := posx(AfterS, T, I);
+    Result := (I <> 0) and (I < pos(AfterS, S));
+    if Remove and Result then delete(S, 1, pos(AfterS, S) + length(AfterS));
+  end;
+end;
+
 function IsUpperCase(S : string) : boolean;
 var
   I : integer;

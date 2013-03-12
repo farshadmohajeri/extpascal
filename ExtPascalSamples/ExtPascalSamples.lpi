@@ -21,7 +21,7 @@
       <Item1 Name="Debug" Default="True"/>
       <Item2 Name="Release">
         <CompilerOptions>
-          <Version Value="10"/>
+          <Version Value="11"/>
           <PathDelim Value="\"/>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -42,6 +42,7 @@
           </CodeGeneration>
           <Linking>
             <Debugging>
+              <GenerateDebugInfo Value="False"/>
               <UseLineInfoUnit Value="False"/>
               <StripSymbols Value="True"/>
               <UseExternalDbgSyms Value="True"/>
@@ -103,7 +104,7 @@
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
-        <Filename Value="..\..\lazarus\fpc\2.2.4\source\rtl\objpas\strutils.pp"/>
+        <Filename Value="E:\lazarus\fpc\2.2.4\source\rtl\objpas\strutils.pp"/>
         <UnitName Value="strutils"/>
         <WindowIndex Value="0"/>
         <TopLine Value="73"/>
@@ -112,7 +113,7 @@
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
-        <Filename Value="..\..\lazarus\fpc\2.2.4\source\rtl\inc\wstringh.inc"/>
+        <Filename Value="E:\lazarus\fpc\2.2.4\source\rtl\inc\wstringh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="2"/>
         <CursorPos X="10" Y="24"/>
@@ -140,10 +141,12 @@
       <Unit7>
         <Filename Value="..\ExtPascal.pas"/>
         <UnitName Value="ExtPascal"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1287"/>
-        <CursorPos X="52" Y="1310"/>
+        <TopLine Value="650"/>
+        <CursorPos X="9" Y="681"/>
         <UsageCount Value="13"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
@@ -161,7 +164,7 @@
         <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
-        <CursorPos X="19" Y="6"/>
+        <CursorPos X="1" Y="1"/>
         <UsageCount Value="15"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -206,10 +209,10 @@
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
         <UnitName Value="Ext"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="14"/>
-        <CursorPos X="14" Y="38"/>
+        <TopLine Value="3836"/>
+        <CursorPos X="17" Y="3865"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -262,46 +265,42 @@
       <Unit20>
         <Filename Value="..\ExtPascalClasses.pas"/>
         <UnitName Value="ExtPascalClasses"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="34"/>
-        <CursorPos X="1" Y="61"/>
+        <TopLine Value="85"/>
+        <CursorPos X="20" Y="115"/>
         <UsageCount Value="10"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\ext-4.0.7\docs\source\Spinner.html"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="116" Y="11"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="HTML"/>
       </Unit21>
       <Unit22>
         <Filename Value="..\ext-4.0.7\docs\extjs\ext-all-debug.js"/>
-        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
         <TopLine Value="108236"/>
         <CursorPos X="55" Y="108265"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="JScript"/>
       </Unit22>
       <Unit23>
         <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
         <TopLine Value="108765"/>
         <CursorPos X="23" Y="108789"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="JScript"/>
       </Unit23>
       <Unit24>
         <Filename Value="BasicTabPanel.pas"/>
         <UnitName Value="BasicTabPanel"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
@@ -310,131 +309,111 @@
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit24>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="25" HistoryIndex="24">
       <Position1>
-        <Filename Value="..\ext-4.0.7\docs\extjs\ext-all-debug.js"/>
-        <Caret Line="103123" Column="27" TopLine="103099"/>
+        <Filename Value="Session.pas"/>
+        <Caret Line="6" Column="19" TopLine="1"/>
       </Position1>
       <Position2>
-        <Filename Value="..\ext-4.0.7\docs\extjs\ext-all-debug.js"/>
-        <Caret Line="103834" Column="16" TopLine="103810"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="29" Column="91" TopLine="1"/>
       </Position2>
       <Position3>
-        <Filename Value="..\ext-4.0.7\docs\extjs\ext-all-debug.js"/>
-        <Caret Line="107996" Column="62" TopLine="107972"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="36" Column="20" TopLine="23"/>
       </Position3>
       <Position4>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="440" Column="19" TopLine="440"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="24" Column="17" TopLine="5"/>
       </Position4>
       <Position5>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="103181" Column="27" TopLine="103157"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="97" Column="52" TopLine="87"/>
       </Position5>
       <Position6>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
         <Caret Line="1" Column="1" TopLine="1"/>
       </Position6>
       <Position7>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="103181" Column="27" TopLine="103157"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="23" Column="14" TopLine="1"/>
       </Position7>
       <Position8>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="29" Column="14" TopLine="5"/>
       </Position8>
       <Position9>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="103181" Column="27" TopLine="103157"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="38" Column="14" TopLine="14"/>
       </Position9>
       <Position10>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="103874" Column="27" TopLine="103850"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="83" Column="14" TopLine="59"/>
       </Position10>
       <Position11>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="104585" Column="16" TopLine="104561"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="102" Column="14" TopLine="78"/>
       </Position11>
       <Position12>
-        <Filename Value="..\ext-4.0.7\ext-all-dev.js"/>
-        <Caret Line="108756" Column="62" TopLine="108732"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="127" Column="14" TopLine="103"/>
       </Position12>
       <Position13>
-        <Filename Value="Session.pas"/>
-        <Caret Line="6" Column="19" TopLine="1"/>
+        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
+        <Caret Line="167" Column="14" TopLine="143"/>
       </Position13>
       <Position14>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="29" Column="91" TopLine="1"/>
+        <Caret Line="192" Column="14" TopLine="168"/>
       </Position14>
       <Position15>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="36" Column="20" TopLine="23"/>
+        <Caret Line="242" Column="14" TopLine="218"/>
       </Position15>
       <Position16>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="24" Column="17" TopLine="5"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position16>
       <Position17>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="97" Column="52" TopLine="87"/>
+        <Caret Line="23" Column="14" TopLine="1"/>
       </Position17>
       <Position18>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Caret Line="29" Column="14" TopLine="5"/>
       </Position18>
       <Position19>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="23" Column="14" TopLine="1"/>
+        <Filename Value="ExtPascalSamples.dpr"/>
+        <Caret Line="11" Column="55" TopLine="1"/>
       </Position19>
       <Position20>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="29" Column="14" TopLine="5"/>
+        <Filename Value="Session.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position20>
       <Position21>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="38" Column="14" TopLine="14"/>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="64" Column="42" TopLine="55"/>
       </Position21>
       <Position22>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="83" Column="14" TopLine="59"/>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="652" Column="84" TopLine="621"/>
       </Position22>
       <Position23>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="102" Column="14" TopLine="78"/>
+        <Filename Value="..\ExtPascal.pas"/>
+        <Caret Line="681" Column="9" TopLine="650"/>
       </Position23>
       <Position24>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="127" Column="14" TopLine="103"/>
+        <Filename Value="..\ExtPascalClasses.pas"/>
+        <Caret Line="115" Column="14" TopLine="80"/>
       </Position24>
       <Position25>
         <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="167" Column="14" TopLine="143"/>
+        <Caret Line="38" Column="14" TopLine="1"/>
       </Position25>
-      <Position26>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="192" Column="14" TopLine="168"/>
-      </Position26>
-      <Position27>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="242" Column="14" TopLine="218"/>
-      </Position27>
-      <Position28>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
-      </Position28>
-      <Position29>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="23" Column="14" TopLine="1"/>
-      </Position29>
-      <Position30>
-        <Filename Value="..\ExtJSWrapper\Ext.pas"/>
-        <Caret Line="29" Column="14" TopLine="5"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="10"/>
+    <Version Value="11"/>
     <PathDelim Value="\"/>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
@@ -459,8 +438,7 @@
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <GenerateDebugInfo Value="True"/>
-        <GenerateDwarf Value="True"/>
+        <DebugInfoType Value="dsDwarf2Set"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
     </Linking>

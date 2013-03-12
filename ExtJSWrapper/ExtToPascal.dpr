@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils
-  , Ext
+//  , Ext
   ;
 
 {.$DEFINE USES_PUBLISHED}
@@ -103,8 +103,6 @@ begin
             Result := Ident;
           exit;
         end;
-        if pos('MenuMenu', Ident) <> 0 then
-        writeln;
         if pos('TExt', Ident) = 1 then
           Result := Ident
         else
@@ -417,7 +415,7 @@ begin
   if Before('@private',   '*/', Line, false) or
      Before('@protected', '*/', Line, false) or
      Before('@ignore',    '*/', Line, false) or
-     Before('@tag',       '*/', Line, false) then exit;
+     Before('@abstract',  '*/', Line, false) then exit;
   Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
@@ -425,6 +423,8 @@ begin
     case State of
       Initial : begin
         JSName := '';
+        if pos('Ext.define(''Ext.util.Observable''', Line) <> 0 then
+        writeln;
         Singleton := Before('@singleton', '*/', Line, false);
         if Before('@define', '*/', Line, false) then
           if Extract(['@define ', ' '], Line, Matches) then
@@ -512,6 +512,7 @@ begin
             end;
           end;
           FreeAndNil(PropTypes);
+          Extract([' ', '*/'], Line, Matches);
           continue;
         end;
         for I := 0 to CurClass.Properties.Count-1 do
