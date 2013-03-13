@@ -147,8 +147,11 @@ instead
 function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Left : integer = 0; CSSUnit : TCSSUnit = cssNone;
   Header : boolean = false) : string;
 
-// Returns true if BeforesS string occurs before AfterS string in S string
+// Returns true if BeforeS string occurs before AfterS string in S string
 function Before(const BeforeS, AfterS : string; var S : string; Remove : boolean = true) : boolean;
+
+// Returns true if S string occurs between BeforeS and AfterS strings in T string
+function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
 
 // Returns true if all chars in S are uppercase
 function IsUpperCase(S : string) : boolean;
@@ -446,14 +449,14 @@ end;
 
 function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
 var
-  I : integer;
+  I, J : integer;
 begin
   Result := false;
   I := pos(BeforeS, T);
   if I <> 0 then begin
-    J := posx(AfterS, T, I);
-    Result := (I <> 0) and (I < pos(AfterS, S));
-    if Remove and Result then delete(S, 1, pos(AfterS, S) + length(AfterS));
+    J := PosEx(AfterS, T, I);
+    Result := pos(S, copy(T, I+1, J-I)) <> 0;
+    if Remove and Result then delete(T, I, J-I+length(AfterS));
   end;
 end;
 

@@ -12,13 +12,17 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils
-//  , Ext
+ , Ext
   ;
 
 {.$DEFINE USES_PUBLISHED}
 
 const
   AP = '''';
+  UNIT_NAME = 'Ext';
+  
+var
+  AllClasses, AbstractTypes : TStringList;
 
 function FixReserved(S : string) : string;
 const
@@ -103,7 +107,7 @@ begin
             Result := Ident;
           exit;
         end;
-        if pos('TExt', Ident) = 1 then
+        if pos('TExt', Ident) = 1 then 
           Result := Ident
         else
           Result := FixIdent(Ident, true);
@@ -118,14 +122,6 @@ function FixJSName(JSName : string) : string; begin
 end;
 
 type
-  TUnit = class
-    Name, UsesList : string;
-    Classes : TStringList;
-    constructor Create(pName : string);
-    destructor Destroy; override;
-    function InitUsesList : string;
-  end;
-
   TClass = class
     Name, JSName, Parent, UnitName, SimpleName : string;
     Singleton, Defaults, Arrays, Objects, AltCreate : boolean;
@@ -166,38 +162,6 @@ var
 begin
   for I := 0 to L.Count-1 do L.Objects[I].Free;
   L.Free;
-end;
-
-var
-  AllClasses, Units : TStringList;
-
-constructor TUnit.Create(pName : string); begin
-  Name    := FixIdent(pName);
-  Classes := TStringList.Create;
-end;
-
-destructor TUnit.Destroy; begin
-  FreeAndNil(Classes); // AllClasses frees class instances.
-  inherited;
-end;
-
-function TUnit.InitUsesList: string;
-var
-  I, J : integer;
-  UName : string;
-begin
-  Result := '';
-  for I := 0 to Classes.Count-1 do
-    with TClass(Classes.Objects[I]) do
-      if Parent <> '' then begin
-        J := AllClasses.IndexOf(Parent);
-        if J <> -1 then begin
-          UName := TClass(AllClasses.Objects[J]).UnitName;
-          if (Self.Name = 'Ext') and (UName = 'ExtData') then continue; // remove circular reference
-          if (UName <> UnitName) and (pos(', ' + UName + ',', Result + ',') = 0) then
-            Result := Result + ', ' + UName
-        end;
-      end;
 end;
 
 constructor TClass.Create(pName, pParent, pUnitName : string); begin
@@ -406,29 +370,25 @@ const
   Config    : boolean     = false;
 var
   State : (Initial, InClass, InProperties, InMethods);
-  PackName, Return, JSName, Params : string;
+  Return, JSName, Params : string;
   Matches, Args : TStringList;
   IsEvent, Optional, Static, Singleton: boolean;
-  Package : TUnit;
-  I, Ci   : integer;
+  I, Ci : integer;
 begin
   if Before('@private',   '*/', Line, false) or
      Before('@protected', '*/', Line, false) or
      Before('@ignore',    '*/', Line, false) or
      Before('@abstract',  '*/', Line, false) then exit;
-  Ci := -1;
   State := Initial;
   Matches := TStringList.Create;
   while true do begin
     case State of
       Initial : begin
         JSName := '';
-        if pos('Ext.define(''Ext.util.Observable''', Line) <> 0 then
-        writeln;
         Singleton := Before('@singleton', '*/', Line, false);
-        if Before('@define', '*/', Line, false) then
+        (*if Before('@define', '*/', Line, false) then
           if Extract(['@define ', ' '], Line, Matches) then
-            JSName := Matches[0];
+            JSName := Matches[0];*)
         Extract(['/**', '*/'], Line, Matches);
         if (JSName <> '') or
            Extract(['Ext.define(' + AP, AP], Line, Matches) or
@@ -448,28 +408,17 @@ begin
           break;
       end;
       InClass : begin
-        PackName := 'Ext';
-        CurClass.UnitName := PackName;
-        I := Units.IndexOf(PackName);
-        if I = -1 then begin
-          Package := TUnit.Create(PackName);
-          Units.AddObject(PackName, Package)
-        end
-        else
-          Package := TUnit(Units.Objects[I]);
-        if Ci = -1 then
-          Package.Classes.AddObject(PackName, CurClass);
-        if Extract(['extend: ' + AP, AP], Line, Matches) then
-          CurClass.Parent := FixIdent(Matches[0], true);
+        if Extract(['extend:', AP, AP], Line, Matches) then
+          CurClass.Parent := FixIdent(Matches[1], true);
         if AllClasses.IndexOf(CurClass.Name) = -1 then
           AllClasses.AddObject(CurClass.Name, CurClass);
         State := InProperties;
         continue;
       end;
       InProperties : begin
-        if Before('@hide',      '*/', Line) or
-           Before('@private',   '*/', Line) or
-           Before('@protected', '*/', Line) then continue;
+        if Between('@hide',      '/**', '*/', Line) or
+           Between('@private',   '/**', '*/', Line) or
+           Between('@protected', '/**', '*/', Line) then continue;
         Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
         // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
         if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
@@ -531,14 +480,15 @@ begin
         continue;
       end;
       InMethods : begin
-        if Before('@private', '*/', Line) or Before('@protected', '*/', Line) or
-           Before('@template', '*/', Line) then continue;
+        if Between('@private',   '/**', '*/', Line) or
+           Between('@protected', '/**', '*/', Line) or
+           Between('@template',  '/**', '*/', Line) then continue;
         IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
         if IsEvent or Extract(['/**', '*/', ': function('], Line, Matches) then begin
           JSName := IfThen(IsEvent, Matches[0], Matches[1]);
           if (length(JSName) > 30) or (FixIdent(JSName) = '') or (JSName = 'destroy') then continue; // Doc fault
           if JSName = 'create' then CurClass.AltCreate := true;
-          Static := pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
+          Static := false;// pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
           if IsEvent then begin
             MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
             if MetName <> Unique(MetName, CurClass.Events) then continue;
@@ -699,15 +649,9 @@ begin
                   end;
                 end
           else begin // Create new Class
-            I := Units.IndexOf(Fields[2]);
-            if I <> -1 then begin
-              NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-              NewClass.JSName := Fields[3];
-              AllClasses.AddObject(NewClass.Name, NewClass);
-              TUnit(Units.Objects[I]).Classes.AddObject(NewClass.Name, NewClass)
-            end
-            else
-              writeln('Unit: ', Fields[2], ' not found. Fix record: ', Fix);
+            NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+            NewClass.JSName := Fields[3];
+            AllClasses.AddObject(NewClass.Name, NewClass);
           end;
         finally
           Fields.Free;
@@ -759,29 +703,70 @@ end;
 
 procedure FixHeritage;
 var
-  P : string;
-  I, J : integer;
+  P, T : string;
+  I, J, K : integer;
   C : TClass;
+  Prop : TProp;
+  Met : TMethod;
+  Par : TParam;
 begin
   for I := 0 to AllClasses.Count - 1 do begin
     C := TClass(AllClasses.Objects[I]);
     P := C.Parent;
     write(I, ^M);
-    while P <> '' do begin
-      J := AllClasses.IndexOf(P);
-      if J = -1 then begin
-        writeln('Parent: ', P, ' not found at class: ', C.Name);
-        C.Parent := '';
-        break;
-      end;
-      C := TClass(AllClasses.Objects[J]);
-      if P = C.Parent then begin
-        writeln('Parent: ', P, ' is the same at class: ', C.Name, ' and its descendent' );
-        C.Parent := '';
-        break
-      end
-      else
+    if C.Name <> 'TExtUtilObservable' then begin
+      if P = '' then C.Parent := 'TExtUtilObservable';
+      while P <> '' do begin
+        J := AllClasses.IndexOf(P);
+        if J = -1 then begin
+          writeln('Parent: ', P, ' not found at class: ', C.Name);
+          C.Parent := 'TExtUtilObservable';
+          break;
+        end;
+        C := TClass(AllClasses.Objects[J]);
+        if P = C.Parent then begin
+          writeln('Parent: ', P, ' is the same at class: ', C.Name, ' and its descendent' );
+          C.Parent := 'TExtUtilObservable';
+          break
+        end;
         P := C.Parent;
+      end;
+    end;
+  end;
+  for I := 0 to AllClasses.Count - 1 do begin
+    C := TClass(AllClasses.Objects[I]);
+    for J := 0 to C.Properties.Count - 1 do begin
+      Prop := TProp(C.Properties.Objects[J]);
+      T := Prop.Typ;
+      if pos('TExt', T) = 1 then
+        if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
+          if AllClasses.IndexOf(T) = -1 then
+            AbstractTypes.Add(T);
+    end;
+    for J := 0 to C.Methods.Count - 1 do begin
+      Met := TMethod(C.Methods.Objects[J]);
+      for K := 0 to Met.Params.Count - 1 do begin
+        Par := TParam(Met.Params.Objects[K]);
+        T := Par.Typ;
+        if pos('TExt', T) = 1 then
+          if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
+            if AllClasses.IndexOf(T) = -1 then
+              AbstractTypes.Add(T);
+      end;
+    end;
+
+    for J := 0 to C.Events.Count - 1 do begin
+      Met := TMethod(C.Events.Objects[J]);
+      for K := 0 to Met.Params.Count - 1 do begin
+        Par := TParam(Met.Params.Objects[K]);
+        T := Par.Typ;
+        if pos('thumb', T) <> 0 then
+          writeln;
+        if pos('TExt', T) = 1 then
+          if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
+            if AllClasses.IndexOf(T) = -1 then
+              AbstractTypes.Add(T);
+      end;
     end;
   end;
 end;
@@ -974,64 +959,61 @@ function SortByInheritLevel(List : Classes.TStringList; I, J : integer) : intege
   Result := TClass(List.Objects[I]).InheritLevel - TClass(List.Objects[J]).InheritLevel
 end;
 
-procedure DeclareSingletons(pUnit : TUnit);
+procedure DeclareSingletons;
 var
   I : integer;
   HasSingleton : boolean;
 begin
   HasSingleton := false;
-  with pUnit do
-    for I := 0 to Classes.Count-1 do
-      with TClass(Classes.Objects[I]) do begin
-        if Singleton then begin
-          if not HasSingleton then begin
-            writeln(Pas, 'var');
-            HasSingleton := true
-          end;
-          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' : ', Name, ';');
+  for I := 0 to AllClasses.Count-1 do
+    with TClass(AllClasses.Objects[I]) do begin
+      if Singleton then begin
+        if not HasSingleton then begin
+          writeln(Pas, 'var');
+          HasSingleton := true
         end;
+        writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' : ', Name, ';');
       end;
+    end;
   if HasSingleton then writeln(Pas);
 end;
 
-procedure CreateSingletons(pUnit : TUnit);
+procedure CreateSingletons;
 var
   I : integer;
   HasSingleton : boolean;
 begin
   HasSingleton := false;
-  with pUnit do
-    for I := 0 to Classes.Count-1 do
-      with TClass(Classes.Objects[I]) do
-        if Singleton then begin
-          if not HasSingleton then begin
-            writeln(Pas, 'initialization');
-            HasSingleton := true
-          end;
-          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' := ', Name, '.CreateSingleton;');
+  for I := 0 to AllClasses.Count-1 do
+    with TClass(AllClasses.Objects[I]) do
+      if Singleton then begin
+        if not HasSingleton then begin
+          writeln(Pas, 'initialization');
+          HasSingleton := true
         end;
+        writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), ' := ', Name, '.CreateSingleton;');
+      end;
 end;
 
-procedure FreeSingletons(pUnit : TUnit);
+procedure FreeSingletons;
 var
   I : integer;
   HasSingleton : boolean;
 begin
   HasSingleton := false;
-  with pUnit do
-    for I := Classes.Count-1 downto 0 do
-      with TClass(Classes.Objects[I]) do
-        if Singleton then begin
-          if not HasSingleton then begin
-            writeln(Pas);
-            writeln(Pas, 'finalization');
-            HasSingleton := true
-          end;
-          writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), '.Destroy;');
+  for I := AllClasses.Count-1 downto 0 do
+    with TClass(AllClasses.Objects[I]) do
+      if Singleton then begin
+        if not HasSingleton then begin
+          writeln(Pas);
+          writeln(Pas, 'finalization');
+          HasSingleton := true
         end;
+        writeln(Pas, Tab, copy(Name, 2, length(Name) - length('Singleton') - 1), '.Destroy;');
+      end;
 end;
 
-procedure WriteUnits;
+procedure WriteUnit;
 
   procedure WriteEventParamsAdapter(Event : TMethod);
   var
@@ -1073,188 +1055,193 @@ procedure WriteUnits;
     write(Pas, ')');
   end;
 
+  procedure WriteAbstractTypes;
+  var
+    I : Integer;
+  begin
+    for I := 0 to AbstractTypes.Count - 1 do
+      writeln(Pas, Tab, AbstractTypes[I] + ' = class(TExtObject);');
+  end;
+
 var
   I, J, K, M : integer;
   CName, CJSName, BoolParam, RegExParam : string;
 begin
-  for I := 0 to Units.Count-1 do
-    with TUnit(Units.Objects[I]) do begin
-      assign(Pas, Name + '.pas');
-      rewrite(Pas);
-      writeln(Pas, 'unit ', Name, ';'^M^J);
-      writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
-      writeln(Pas, '// from "', paramstr(1), ^M^J);
-      writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal, ExtPascalUtils', UsesList, ';'^M^J);
-      if Name = 'Ext' then begin
-        writeln(Pas, 'const');
-        writeln(Pas, Tab, 'SourcePath = ''/src'';'^M^J);
-      end;
-      {$IFDEF USES_PUBLISHED}writeln(Pas, '{$M+}');{$ENDIF}
-      writeln(Pas, 'type');
-      Classes.CustomSort(SortByInheritLevel);
-      for J := 0 to Classes.Count-1 do // forward classes
-        writeln(Pas, Tab, TClass(Classes.Objects[J]).Name, ' = class;');
-      writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;');
-      writeln(Pas);
-      for J := 0 to Classes.Count-1 do
-        WriteClassType(TClass(Classes.Objects[J]));
-      DeclareSingletons(TUnit(Units.Objects[I]));
-      writeln(Pas, 'implementation'^M^J);
-      for J := 0 to Classes.Count-1 do
-        with TClass(Classes.Objects[J]) do begin
-          CName   := Name;
-          CJSName := JSName;
-          for K := 0 to Properties.Count-1 do // Write Set procedures implementation
-            with TProp(Properties.Objects[K]) do begin
-              if not Static then begin
-                writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
-                writeln(Pas, Tab, 'F', Name, ' := Value;');
-                RegExParam := IfThen(LowerCase(Typ) = 'tregexp', '#3 +', '');
-                BoolParam  := AddBoolParam(Typ);
-                if (BoolParam = ', false') and not Enum and (RegExParam = '') then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
-                if Config then begin
-                  // If there is an alternative method, and its parameters are
-                  // compatible, implement an workaround to reconfig objects created in a previous request
-                  M := Methods.IndexOf('Set' + Name);
-                  if (M <> -1) and (TMethod(Methods.Objects[M]).Params.Count > 0) and
-                    (SameText(Typ, TParam(TMethod(Methods.Objects[M]).Params.Objects[0]).Typ)) then begin
-                    writeln(Pas, Tab, 'if not ConfigAvailable(JSName) then');
-                    with TMethod(Methods.Objects[M]) do begin
-                      write(Pas, Tab(2), Name, '(Value');
-                      for M := 1 to Params.Count - 1 do
-                        if TParam(Params.Objects[M]).Optional then
-                          break
-                        else
-                          Write(Pas, ', ', DefValue(TParam(Params.Objects[M]).Typ));
-                      writeln(Pas, ')');
-                      writeln(Pas, Tab, 'else');
-                    end;
-                    write(Pas, Tab);
-                  end;
-                  if not Enum then
-                    writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + ',
-                      IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), '));')
-                  else
-                    writeln(Pas, Tab, 'JSCode(''', JSName, ':"'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''"'');');
-                end
-                else
-                  if not Enum then
-                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + ',
-                      IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), ') + '';'');')
-                  else
-                    writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '="'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''";'');');
-                writeln(Pas, 'end;'^M^J);
-              end;
-            end;
-
-            for K := 0 to Events.Count-1 do // Write Set procedures implementation
-              with TMethod(Events.Objects[K]) do
-                if not Static then begin
-                  writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', CName, Name, '); begin');
-                  writeln(Pas, Tab, 'if Assigned(F', Name, ') then');
-                  writeln(Pas, Tab(2), 'JSCode(JSName+'+'''.events ["'+JSName+'"].listeners=[];'');');
-                  writeln(Pas, Tab, 'if Assigned(Value) then');
-                  write(Pas, Tab(2), 'On(''', JSName, ''', Ajax(''', JSName, ''', ');
-                  WriteEventParamsAdapter(TMethod(Events.Objects[K]));
-                  writeln(Pas, ', true));');
-                  writeln(Pas, Tab, 'F', Name, ' := Value;');
-                  writeln(Pas, 'end;'^M^J);
-                end;
-          writeln(Pas, 'function ' + Name + '.JSClassName : string; begin');
-          writeln(Pas, Tab, 'Result := ''' + JSName + ''';');
-          writeln(Pas, 'end;'^M^J);
-          for K := 0 to Properties.Count-1 do // Write class properties implementation
-            with TProp(Properties.Objects[K]) do
-              if Static then begin
-                write(Pas, 'class function ', CName, '.', Name, ' : ', Typ, ';');
-                if WriteOptional(true, Typ, '') = 'nil' then begin
-                  writeln(Pas, ^M^J'const');
-                  writeln(Pas, Tab, 'l', Name, ' : ', Typ, ' = nil;');
-                  writeln(Pas, 'begin');
-                  writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''' + CJSName + '.', JSName, ''');');
-                  writeln(Pas, Tab, 'Result := l', Name);
-                end
-                else begin
-                  writeln(Pas, ' begin');
-                  writeln(Pas, Tab, 'Result := ', IfThen(Default <> '', Default, WriteOptional(true, Typ, '')));
-                end;
-                writeln(Pas, 'end;'^M^J);
-              end;
-          if Defaults or Arrays or Objects then begin // write Init method
-            writeln(Pas, 'procedure ', CName, '.InitDefaults; begin');
-            writeln(Pas, Tab, 'inherited;');
-            for K := 0 to Properties.Count-1 do
-              with TProp(Properties.Objects[K]) do
-                if not Static then
-                  if (Default <> '') and not Enum then
-                    writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
-                  else
-                    if Typ = 'TExtObjectList' then
-                      writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
+  assign(Pas, UNIT_NAME + '.pas');
+  rewrite(Pas);
+  writeln(Pas, 'unit ', UNIT_NAME, ';'^M^J);
+  writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
+  writeln(Pas, '// from "', paramstr(1), ^M^J);
+  writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal, ExtPascalUtils;'^M^J);
+  writeln(Pas, 'const');
+  writeln(Pas, Tab, 'SourcePath = ''/src'';'^M^J);
+  {$IFDEF USES_PUBLISHED}writeln(Pas, '{$M+}');{$ENDIF}
+  writeln(Pas, 'type');
+  for J := 0 to AllClasses.Count-1 do // forward classes
+    writeln(Pas, Tab, TClass(AllClasses.Objects[J]).Name, ' = class;');
+//  writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;');
+  WriteAbstractTypes;
+  writeln(Pas);
+  AllClasses.Sorted := false;
+  AllClasses.CustomSort(SortByInheritLevel);
+  for J := 0 to AllClasses.Count-1 do
+    WriteClassType(TClass(AllClasses.Objects[J]));
+  DeclareSingletons;
+  writeln(Pas, 'implementation'^M^J);
+  for J := 0 to AllClasses.Count-1 do
+    with TClass(AllClasses.Objects[J]) do begin
+      CName   := Name;
+      CJSName := JSName;
+      for K := 0 to Properties.Count-1 do // Write Set procedures implementation
+        with TProp(Properties.Objects[K]) do begin
+          if not Static then begin
+            writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', Typ, '); begin');
+            writeln(Pas, Tab, 'F', Name, ' := Value;');
+            RegExParam := IfThen(LowerCase(Typ) = 'tregexp', '#3 +', '');
+            BoolParam  := AddBoolParam(Typ);
+            if (BoolParam = ', false') and not Enum and (RegExParam = '') then writeln(Pas, Tab, 'Value.DeleteFromGarbage;');
+            if Config then begin
+              // If there is an alternative method, and its parameters are
+              // compatible, implement an workaround to reconfig objects created in a previous request
+              M := Methods.IndexOf('Set' + Name);
+              if (M <> -1) and (TMethod(Methods.Objects[M]).Params.Count > 0) and
+                (SameText(Typ, TParam(TMethod(Methods.Objects[M]).Params.Objects[0]).Typ)) then begin
+                writeln(Pas, Tab, 'if not ConfigAvailable(JSName) then');
+                with TMethod(Methods.Objects[M]) do begin
+                  write(Pas, Tab(2), Name, '(Value');
+                  for M := 1 to Params.Count - 1 do
+                    if TParam(Params.Objects[M]).Optional then
+                      break
                     else
-                      if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
-                        writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
-            writeln(Pas, 'end;'^M^J);
-          end;
-          writeln(Pas, '{$IFDEF FPC}constructor ' + CName + '.AddTo(List : TExtObjectList);begin inherited end;{$ENDIF}'^M^J);
-          for K := 0 to Methods.Count-1 do // Write methods
-            if WriteMethodSignature(TMethod(Methods.Objects[K]), Name) then begin
-              writeln(Pas, ' begin');
-              with TMethod(Methods.Objects[K]) do
-                if Return = '' then begin // Write constructors
-                  if AltCreate then // ExtJS fault
-                    writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
-                  else begin
-                    if (Params.Count = 1) and (TParam(Params.Objects[0]).Name = 'Config') and (TParam(Params.Objects[0]).Typ = 'TExtObject') then
-                      writeln(Pas, Tab, 'if Config = nil then CreateVar(JSClassName + ''({});'') else');
-                    writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''');');
-                  end;
-                  writeln(Pas, Tab, 'InitDefaults;');
-                end
-                else begin // Write class and instance methods
-                  writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
-                    ''', ''' + CName + ''');');
-                  if Return <> 'TVoid' then
-                    writeln(Pas, Tab, 'Result := Self;')
+                      Write(Pas, ', ', DefValue(TParam(Params.Objects[M]).Typ));
+                  writeln(Pas, ')');
+                  writeln(Pas, Tab, 'else');
                 end;
-              writeln(Pas, 'end;'^M^J);
-            end;
-          if Arrays or Objects then begin // Write destructor
-            writeln(Pas, 'destructor ', CName, '.Destroy; begin');
-            writeln(Pas, Tab, 'try');
-            for K := 0 to Properties.Count-1 do
-              with TProp(Properties.Objects[K]) do
-                if not Static and not Enum and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
-                  writeln(Pas, Tab(2), 'F' + Name + '.Free;');
-            writeln(Pas, Tab, 'except end;');
-            writeln(Pas, Tab, 'inherited;');
-            writeln(Pas, 'end;'^M^J);
-          end;
-          if Events.Count > 0 then begin // write Event handler
-            writeln(Pas, 'procedure ', CName, '.HandleEvent(const AEvtName : string); begin');
-            writeln(Pas, Tab, 'inherited;');
-            for K := 0 to Events.Count - 1 do
-              with TMethod(Events.Objects[K]) do begin
-                if K > 0 then
-                  write(Pas, Tab, 'else ')
-                else
-                  write(Pas, Tab);
-                writeln(Pas, 'if (AEvtName = ''', JSName, ''') and Assigned(F', Name, ') then');
-                write(Pas, Tab(2), 'F', Name);
-                WriteEventParamsConverter(TMethod(Events.Objects[K]));
-                if K = Events.Count - 1 then
-                  writeln(Pas, ';')
-                else
-                  writeln(Pas);
+                write(Pas, Tab);
               end;
+              if not Enum then
+                writeln(Pas, Tab, 'JSCode(''', JSName, ':'' + ',
+                  IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), '));')
+              else
+                writeln(Pas, Tab, 'JSCode(''', JSName, ':"'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''"'');');
+            end
+            else
+              if not Enum then
+                writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '='' + ',
+                  IfThen(pos('TArrayOf', Typ) = 0, 'VarToJSON([' + RegExParam + 'Value' + BoolParam + ']', 'ArrayToJSON(' + RegExParam + 'Value'), ') + '';'');')
+              else
+                writeln(Pas, Tab, 'JSCode(JSName + ''.', JSName, '="'' + EnumToJSString(TypeInfo(' + Typ + '), ord(Value)) + ''";'');');
             writeln(Pas, 'end;'^M^J);
           end;
         end;
-      CreateSingletons(TUnit(Units.Objects[I]));
-      FreeSingletons(TUnit(Units.Objects[I]));
-      write(Pas, 'end.');
-      close(Pas);
+
+        for K := 0 to Events.Count-1 do // Write Set procedures implementation
+          with TMethod(Events.Objects[K]) do
+            if not Static then begin
+              writeln(Pas, 'procedure ', CName, '.SetF', Name, '(Value : ', CName, Name, '); begin');
+              writeln(Pas, Tab, 'if Assigned(F', Name, ') then');
+              writeln(Pas, Tab(2), 'JSCode(JSName+'+'''.events ["'+JSName+'"].listeners=[];'');');
+              writeln(Pas, Tab, 'if Assigned(Value) then');
+              write(Pas, Tab(2), 'AddListener(''', JSName, ''', Ajax(''', JSName, ''', ');
+              WriteEventParamsAdapter(TMethod(Events.Objects[K]));
+              writeln(Pas, ', true));');
+              writeln(Pas, Tab, 'F', Name, ' := Value;');
+              writeln(Pas, 'end;'^M^J);
+            end;
+      writeln(Pas, 'function ' + Name + '.JSClassName : string; begin');
+      writeln(Pas, Tab, 'Result := ''' + JSName + ''';');
+      writeln(Pas, 'end;'^M^J);
+      for K := 0 to Properties.Count-1 do // Write class properties implementation
+        with TProp(Properties.Objects[K]) do
+          if Static then begin
+            write(Pas, 'class function ', CName, '.', Name, ' : ', Typ, ';');
+            if WriteOptional(true, Typ, '') = 'nil' then begin
+              writeln(Pas, ^M^J'const');
+              writeln(Pas, Tab, 'l', Name, ' : ', Typ, ' = nil;');
+              writeln(Pas, 'begin');
+              writeln(Pas, Tab, 'if l', Name, ' = nil then l', Name, ' := ', Typ, '.CreateSingleton(''' + CJSName + '.', JSName, ''');');
+              writeln(Pas, Tab, 'Result := l', Name);
+            end
+            else begin
+              writeln(Pas, ' begin');
+              writeln(Pas, Tab, 'Result := ', IfThen(Default <> '', Default, WriteOptional(true, Typ, '')));
+            end;
+            writeln(Pas, 'end;'^M^J);
+          end;
+      if Defaults or Arrays or Objects then begin // write Init method
+        writeln(Pas, 'procedure ', CName, '.InitDefaults; begin');
+        writeln(Pas, Tab, 'inherited;');
+        for K := 0 to Properties.Count-1 do
+          with TProp(Properties.Objects[K]) do
+            if not Static then
+              if (Default <> '') and not Enum then
+                writeln(Pas, Tab, 'F', Name, ' := ', Default, ';')
+              else
+                if Typ = 'TExtObjectList' then
+                  writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
+                else
+                  if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
+                    writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
+        writeln(Pas, 'end;'^M^J);
+      end;
+      writeln(Pas, '{$IFDEF FPC}constructor ' + CName + '.AddTo(List : TExtObjectList);begin inherited end;{$ENDIF}'^M^J);
+      for K := 0 to Methods.Count-1 do // Write methods
+        if WriteMethodSignature(TMethod(Methods.Objects[K]), Name) then begin
+          writeln(Pas, ' begin');
+          with TMethod(Methods.Objects[K]) do
+            if Return = '' then begin // Write constructors
+              if AltCreate then // ExtJS fault
+                writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
+              else begin
+                if (Params.Count = 1) and (TParam(Params.Objects[0]).Name = 'Config') and (TParam(Params.Objects[0]).Typ = 'TExtObject') then
+                  writeln(Pas, Tab, 'if Config = nil then CreateVar(JSClassName + ''({});'') else');
+                writeln(Pas, Tab, 'CreateVar(JSClassName + ''', ParamsToJSON(Params), ''');');
+              end;
+              writeln(Pas, Tab, 'InitDefaults;');
+            end
+            else begin // Write class and instance methods
+              writeln(Pas, Tab, 'JSCode(', IfThen(Static, 'JSClassName', 'JSName'), ' + ''.', JSName, ParamsToJSON(Params, false),
+                ''', ''' + CName + ''');');
+              if Return <> 'TVoid' then
+                writeln(Pas, Tab, 'Result := Self;')
+            end;
+          writeln(Pas, 'end;'^M^J);
+        end;
+      if Arrays or Objects then begin // Write destructor
+        writeln(Pas, 'destructor ', CName, '.Destroy; begin');
+        writeln(Pas, Tab, 'try');
+        for K := 0 to Properties.Count-1 do
+          with TProp(Properties.Objects[K]) do
+            if not Static and not Enum and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
+              writeln(Pas, Tab(2), 'F' + Name + '.Free;');
+        writeln(Pas, Tab, 'except end;');
+        writeln(Pas, Tab, 'inherited;');
+        writeln(Pas, 'end;'^M^J);
+      end;
+      if Events.Count > 0 then begin // write Event handler
+        writeln(Pas, 'procedure ', CName, '.HandleEvent(const AEvtName : string); begin');
+        writeln(Pas, Tab, 'inherited;');
+        for K := 0 to Events.Count - 1 do
+          with TMethod(Events.Objects[K]) do begin
+            if K > 0 then
+              write(Pas, Tab, 'else ')
+            else
+              write(Pas, Tab);
+            writeln(Pas, 'if (AEvtName = ''', JSName, ''') and Assigned(F', Name, ') then');
+            write(Pas, Tab(2), 'F', Name);
+            WriteEventParamsConverter(TMethod(Events.Objects[K]));
+            if K = Events.Count - 1 then
+              writeln(Pas, ';')
+            else
+              writeln(Pas);
+          end;
+        writeln(Pas, 'end;'^M^J);
+      end;
     end;
+  CreateSingletons;
+  FreeSingletons;
+  write(Pas, 'end.');
+  close(Pas);
 end;
 
 var
@@ -1304,38 +1291,34 @@ begin
   end;
   T := now;
   AllClasses := TStringList.Create;
+  AbstractTypes := TStringList.Create;
   try
     AllClasses.Sorted := true;
-    Units := TStringList.Create;
-    try
-      Units.Sorted := true;
-      writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
-      writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
-      writeln('http://extpascal.googlecode.com/'^M^J);
-      writeln('Reading Ext JS source files...');
-      Files := 0;
-      DoTree(AnsiReplaceStr(ParamStr(1), '\', '/'));
-      if Files <> 0 then begin
-        writeln(Files, ' .js files found.');
-        writeln('Fixing event prototypes...');
-        FixHeritage;
-        FixEvents;
+    AbstractTypes.Sorted := true;
+    writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+    writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
+    writeln('http://extpascal.googlecode.com/'^M^J);
+    writeln('Reading Ext JS source files...');
+    Files := 0;
+    DoTree(AnsiReplaceStr(ParamStr(1), '\', '/'));
+    if Files <> 0 then begin
+      writeln(Files, ' .js files found.');
+      writeln('Fixing event prototypes...');
+      FixEvents;
+      FixHeritage;
 //        LoadFixes;
-        writeln('Writing unit file(s)...');
-        WriteUnits;
-        writeln(AllClasses.Count, ' Ext JS classes wrapped.');
-        writeln('Unit file generated.');
-        writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
-        writeln('Done. Press Enter.');
-      end
-      else begin
-        writeln('Ext JS source files not found at ' + ParamStr(1) + '/*.js');
-        writeln('Aborted! Press Enter.');
-      end;
-      readln;
-    finally
-      FreeStringList(Units);
+      writeln('Writing unit file...');
+      WriteUnit;
+      writeln(AllClasses.Count, ' Ext JS classes wrapped.');
+      writeln('Unit file generated.');
+      writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
+      writeln('Done. Press Enter.');
+    end
+    else begin
+      writeln('Ext JS source files not found at ' + ParamStr(1) + '/*.js');
+      writeln('Aborted! Press Enter.');
     end;
+    readln;
   finally
     FreeStringList(AllClasses);
     Flush(Output);
