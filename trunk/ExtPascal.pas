@@ -232,8 +232,12 @@ type
   They are usually JS basic classes without reference in Ext JS documentation by omission or fault.
   }
   THTMLElement = class(TExtObject);
-  TStyleSheet = class(TExtObject);
   TRegExp = type string;
+  TEvent = class(TExtObject);
+  TId = TExtObject; // doc fault
+
+(*  TStyleSheet = class(TExtObject);
+
   TTextNode = class(TExtObject);
   TCSSRule = class(TExtObject);
   TXMLDocument = class(TExtObject);
@@ -242,7 +246,6 @@ type
   TRegion = type string;
   TNativeMenu = TExtObject;
   Tel = type string; // doc fault
-  TEvent = class(TExtObject);
   TEventObject = TEvent;
   TExtEventObject = TEventObject;
   THTMLNode = TExtObject;
@@ -256,7 +259,6 @@ type
   TN1 = TExtObject; // doc fault
   TN2 = TExtObject; // doc fault
   TLayout = TExtObject; // Poor hierarchy definition
-  TId = TExtObject; // doc fault
   TiPageX = TExtObject; // doc fault
   TiPageY = TExtObject; // doc fault
   TExtGridGrid = TExtObject; // doc fault
@@ -276,10 +278,8 @@ type
   TXMLElement = TExtObject; // doc fault Ext 3.1
   TExtListView = TExtObject; // doc fault Ext 3.1
   TExtSlider = TExtObject; // doc fault Ext 3.2
-//  TExtSliderThumb = class(TExtObject);
   TExtUtilOffset = class(TExtObject);
-//  TExtClass = class(TExtObject);
-  TExtResizerResizeTracker = class(TExtObject);
+//  TExtResizerResizeTracker = class(TExtObject);
 //DOM-IGNORE-END*)
 
 const
@@ -291,7 +291,7 @@ const
 implementation
 
 uses
-  SysUtils, StrUtils, Math, Ext, ExtUtil, ExtGrid, ExtForm;
+  SysUtils, StrUtils, Math, Ext;//, ExtUtil, ExtGrid, ExtForm;
 
 threadvar
   InJSFunction : boolean;
@@ -989,7 +989,7 @@ Uses dynamic JS in browser.
 @return Pixels used by browser to render these Chars
 }
 function TExtObject.CharsToPixels(Chars : integer) : integer; begin
-  Result := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
+  Result := JSExpression('%s * %d', [TExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
 end;
 
 {
