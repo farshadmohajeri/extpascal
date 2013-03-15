@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, Math, ExtPascalUtils
- , Ext
+//, Ext
   ;
 
 {.$DEFINE USES_PUBLISHED}
@@ -58,13 +58,13 @@ begin
       else
         if I < length(Ident) then begin
           inc(J);
-          Words[J]   := I;
+          Words[J]   := length(Result) + 1;
           Ident[I+1] := UpCase(Ident[I+1]);
         end;
   if Result = '' then exit;
   // Remove final dup word
-  if (J > 0) and (copy(Result, Words[J-1], Words[J] - Words[J-1]-1) = copy(Result, Words[J]-1, Length(Result))) then
-    delete(Result, Words[J]-1, length(Result));
+  if (J > 0) and (copy(Result, Words[J-1], Words[J] - Words[J-1]) = copy(Result, Words[J], Length(Result))) then
+    delete(Result, Words[J], length(Result));
   if IsType then begin
     if Result <> '' then Result := 'T' + Result;
     Result := AnsiReplaceText(Result, 'MethodConstructor', '');
@@ -135,14 +135,14 @@ type
 
   TProp = class
     Name, JSName, Typ, Default : string;
-    Static, Config, Enum : boolean;
+    &Static, Config, Enum : boolean;
     constructor Create(pName, pJSName, pType : string; pStatic, pConfig : boolean; pDefault : string = '');
   end;
 
   TMethod = class
     Name, JSName, Return : string;
     Params : TStringList;
-		Static, Overload : boolean;
+		&Static, Overload : boolean;
 	  constructor Create(pName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
 	  constructor Create(pName, pJSName, pReturn : string; pParams : TStringList; pStatic, pOverload : boolean); overload;
     function CreateOverloadParams(P : integer; NewType : string) : TStringList;
@@ -760,8 +760,6 @@ begin
       for K := 0 to Met.Params.Count - 1 do begin
         Par := TParam(Met.Params.Objects[K]);
         T := Par.Typ;
-        if pos('thumb', T) <> 0 then
-          writeln;
         if pos('TExt', T) = 1 then
           if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
             if AllClasses.IndexOf(T) = -1 then
