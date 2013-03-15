@@ -234,52 +234,7 @@ type
   THTMLElement = class(TExtObject);
   TRegExp = type string;
   TEvent = class(TExtObject);
-  TId = TExtObject; // doc fault
-
-(*  TStyleSheet = class(TExtObject);
-
-  TTextNode = class(TExtObject);
-  TCSSRule = class(TExtObject);
-  TXMLDocument = class(TExtObject);
-  TNodeList = class(TExtObjectList);
-  TExtDataNode = class(TExtObject);
-  TRegion = type string;
-  TNativeMenu = TExtObject;
-  Tel = type string; // doc fault
-  TEventObject = TEvent;
-  TExtEventObject = TEventObject;
-  THTMLNode = TExtObject;
-  TConstructor = class(TExtObject);
-  TExtLibRegion = class(TExtObject); //doc fault
-  TvisMode = Integer; // doc fault
-  TThe = TExtObject; // doc fault
-  TThis = TExtObject; // doc fault
-  TairNativeMenu = TExtObject;
-  TX = TExtObject; // doc fault
-  TN1 = TExtObject; // doc fault
-  TN2 = TExtObject; // doc fault
-  TLayout = TExtObject; // Poor hierarchy definition
-  TiPageX = TExtObject; // doc fault
-  TiPageY = TExtObject; // doc fault
-  TExtGridGrid = TExtObject; // doc fault
-  TTreeSelectionModel = TExtObject; // doc fault
-  TSelectionModel = TExtObject; // doc fault
-  TDataSource = TExtObject; // doc fault
-  TAirNotificationType = TExtObject; // doc fault
-  TIterable = TExtObjectList; // doc fault
-  TAnything = TExtObject; // doc fault
-  TNodeLists = class(TExtObjectList); // doc fault
-  TArrays = TExtObjectList; // doc fault
-  TDOMElement = TExtObject; // doc fault Ext 3.0
-  TRecord = TExtObject; // Ext 3.0 RC2
-  TNull = TExtObject; // Ext 3.0 RC2
-  TMisc = TExtObject; // doc fault Ext 3.0
-  THash = TExtObject; // doc fault Ext 3.1
-  TXMLElement = TExtObject; // doc fault Ext 3.1
-  TExtListView = TExtObject; // doc fault Ext 3.1
-  TExtSlider = TExtObject; // doc fault Ext 3.2
-  TExtUtilOffset = class(TExtObject);
-//  TExtResizerResizeTracker = class(TExtObject);
+  TId = TExtObject;
 //DOM-IGNORE-END*)
 
 const
@@ -295,6 +250,9 @@ uses
 
 threadvar
   InJSFunction : boolean;
+
+var
+  ExtUtilTextMetrics : TExtUtilTextMetrics;
 
 { TExtThread }
 
@@ -989,7 +947,7 @@ Uses dynamic JS in browser.
 @return Pixels used by browser to render these Chars
 }
 function TExtObject.CharsToPixels(Chars : integer) : integer; begin
-  Result := JSExpression('%s * %d', [TExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
+  Result := JSExpression('%s * %d', [ExtUtilTextMetrics.GetWidth('g'), Chars + 1]);
 end;
 
 {
@@ -1633,11 +1591,11 @@ begin
   S := '';
   for I := 0 to high(Forms) do begin
     if Forms[I] is TExtFormField then begin
-      S := S + '"' + TExtFormField(Forms[I]).ID + '="+';
+      S := S + '"' + TExtFormField(Forms[I]).GetID + '="+';
       TExtFormField(Forms[I]).GetValue;
     end
     else
-      TExtFormBasicForm(TExtFormFormPanel(Forms[I]).GetForm).GetValues(true);
+      TExtFormBasic(TExtFormPanel(Forms[I]).GetForm).GetValues(true);
     S := S + TExtObject(Forms[I]).ExtractJSCommand;
     if I <> high(Forms) then S := S + '+"&"+';
   end;
@@ -1654,9 +1612,9 @@ begin
   with TExtThread(CurrentWebSession) do begin
     CurrentResponse := Response;
     Response := '';
-    with TExtGridRowSelectionModel(SelectionModel) do begin
+    with TExtSelectionRowModel(SelectionModel) do begin
       JSCode('var Sel=[];');
-      Each(JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'));
+      JSCode(JSName + '.each(' + VarToJSON([JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'), true, nil, false]) + ');');
       FindMethod(Method, MetName, ObjName);
       AjaxCode(MetName, FormatParams(MetName, [TargetQuery, '%Sel.toString()', 'Obj', ObjName]), Params);
     end;
@@ -1942,5 +1900,6 @@ function TExtObject.ParamAsObject(ParamName : string) : TExtObject; begin
 end;
 
 begin
+  ExtUtilTextMetrics := TExtUtilTextMetrics.Create;
   ExtUtilTextMetrics.FJSName := 'TextMetrics';
 end.
