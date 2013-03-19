@@ -1,7 +1,7 @@
 {
-ExtToPascal is a parser that scans Ext JS sources and that creates a Object Pascal wrapper upon Ext classes and widgets
+JSToPascal is a parser that scans JS sources and that creates a Object Pascal wrapper upon JS classes and widgets
 Author: Wanderlan Santos dos Anjos (wanderlan.anjos@gmail.com)
-Date: apr-2008, mar-2013 (Ext JS 4.x)
+Date: apr-2008, mar-2013
 License: BSD<extlink http://www.opensource.org/licenses/bsd-license.php>BSD</extlink>
 }
 program ExtToPascal;
@@ -19,10 +19,11 @@ uses
 
 const
   AP = '''';
-  UNIT_NAME = 'Ext';
-  
+  JSLIB = 'Ext';
+  BASECLASS = 'TExtUtilObservable';
+
 var
-  AllClasses, AbstractTypes : TStringList;
+  AllClasses, Unresolved : TStringList;
 
 function FixReserved(S : string) : string;
 const
@@ -107,7 +108,7 @@ begin
             Result := Ident;
           exit;
         end;
-        if pos('TExt', Ident) = 1 then 
+        if pos('T' + JSLIB, Ident) = 1 then
           Result := Ident
         else
           Result := FixIdent(Ident, true);
@@ -472,7 +473,7 @@ begin
                 CurClass.AddCreate;
               end
               else
-                if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then begin
+                if (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') then begin
                   CurClass.Objects := true;
                   CurClass.AddCreate;
                 end;
@@ -557,7 +558,7 @@ var
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  FixesFile := 'ExtFixes.txt';
+  FixesFile := JSLIB + 'Fixes.txt';
   writeln('Loading custom fixes...');
   writeln('  > ' + FixesFile);
   if FileExists(FixesFile) then begin
@@ -703,68 +704,63 @@ end;
 
 procedure FixHeritage;
 var
-  P, T : string;
-  I, J, K : integer;
+  P : string;
+  I, J : integer;
   C : TClass;
-  Prop : TProp;
-  Met : TMethod;
-  Par : TParam;
 begin
   for I := 0 to AllClasses.Count - 1 do begin
     C := TClass(AllClasses.Objects[I]);
     P := C.Parent;
     write(I, ^M);
-    if C.Name <> 'TExtUtilObservable' then begin
-      if P = '' then C.Parent := 'TExtUtilObservable';
+    if C.Name <> BASECLASS then begin
+      if P = '' then C.Parent := BASECLASS;
       while P <> '' do begin
         J := AllClasses.IndexOf(P);
         if J = -1 then begin
           writeln('Parent: ', P, ' not found at class: ', C.Name);
-          C.Parent := 'TExtUtilObservable';
+          C.Parent := BASECLASS;
           break;
         end;
         C := TClass(AllClasses.Objects[J]);
         if P = C.Parent then begin
           writeln('Parent: ', P, ' is the same at class: ', C.Name, ' and its descendent' );
-          C.Parent := 'TExtUtilObservable';
+          C.Parent := BASECLASS;
           break
         end;
         P := C.Parent;
       end;
     end;
   end;
+end;
+
+// Collect unresolved classes in properties, method parameters and event parameters
+procedure CollectUnresolvedClasses;
+
+  procedure AddUnresolved(T : string); begin
+    if pos('T' + JSLIB, T) = 1 then
+      if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
+        if AllClasses.IndexOf(T) = -1 then
+          Unresolved.Add(T);
+  end;
+
+var
+  I, J, K : Integer;
+  C   : TClass;
+  Met : TMethod;
+begin
   for I := 0 to AllClasses.Count - 1 do begin
     C := TClass(AllClasses.Objects[I]);
-    for J := 0 to C.Properties.Count - 1 do begin
-      Prop := TProp(C.Properties.Objects[J]);
-      T := Prop.Typ;
-      if pos('TExt', T) = 1 then
-        if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
-          if AllClasses.IndexOf(T) = -1 then
-            AbstractTypes.Add(T);
-    end;
+    for J := 0 to C.Properties.Count - 1 do
+      AddUnresolved(TProp(C.Properties.Objects[J]).Typ);
     for J := 0 to C.Methods.Count - 1 do begin
       Met := TMethod(C.Methods.Objects[J]);
-      for K := 0 to Met.Params.Count - 1 do begin
-        Par := TParam(Met.Params.Objects[K]);
-        T := Par.Typ;
-        if pos('TExt', T) = 1 then
-          if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
-            if AllClasses.IndexOf(T) = -1 then
-              AbstractTypes.Add(T);
-      end;
+      for K := 0 to Met.Params.Count - 1 do
+        AddUnresolved(TParam(Met.Params.Objects[K]).Typ);
     end;
-
     for J := 0 to C.Events.Count - 1 do begin
       Met := TMethod(C.Events.Objects[J]);
-      for K := 0 to Met.Params.Count - 1 do begin
-        Par := TParam(Met.Params.Objects[K]);
-        T := Par.Typ;
-        if pos('TExt', T) = 1 then
-          if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
-            if AllClasses.IndexOf(T) = -1 then
-              AbstractTypes.Add(T);
-      end;
+      for K := 0 to Met.Params.Count - 1 do
+        AddUnresolved(TParam(Met.Params.Objects[K]).Typ);
     end;
   end;
 end;
@@ -1053,22 +1049,23 @@ procedure WriteUnit;
     write(Pas, ')');
   end;
 
-  procedure WriteAbstractTypes;
+  procedure WriteUnresolvedClasses;
   var
     I : Integer;
   begin
-    for I := 0 to AbstractTypes.Count - 1 do
-      writeln(Pas, Tab, AbstractTypes[I] + ' = class(TExtObject);');
+    writeln(Pas);
+    for I := 0 to Unresolved.Count - 1 do
+      writeln(Pas, Tab, Unresolved[I] + ' = class(TExtObject);');
   end;
 
 var
   I, J, K, M : integer;
   CName, CJSName, BoolParam, RegExParam : string;
 begin
-  assign(Pas, UNIT_NAME + '.pas');
+  assign(Pas, JSLIB + '.pas');
   rewrite(Pas);
-  writeln(Pas, 'unit ', UNIT_NAME, ';'^M^J);
-  writeln(Pas, '// Generated by ExtToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
+  writeln(Pas, 'unit ', JSLIB, ';'^M^J);
+  writeln(Pas, '// Generated by JSToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
   writeln(Pas, '// from "', paramstr(1), ^M^J);
   writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal, ExtPascalUtils;'^M^J);
   writeln(Pas, 'const');
@@ -1078,7 +1075,7 @@ begin
   for J := 0 to AllClasses.Count-1 do // forward classes
     writeln(Pas, Tab, TClass(AllClasses.Objects[J]).Name, ' = class;');
 //  writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;');
-  WriteAbstractTypes;
+  WriteUnresolvedClasses;
   writeln(Pas);
   AllClasses.Sorted := false;
   AllClasses.CustomSort(SortByInheritLevel);
@@ -1188,7 +1185,7 @@ begin
           writeln(Pas, ' begin');
           with TMethod(Methods.Objects[K]) do
             if Return = '' then begin // Write constructors
-              if AltCreate then // ExtJS fault
+              if AltCreate then // JS fault
                 writeln(Pas, Tab, 'CreateVarAlt(JSClassName + ''.create', ParamsToJSON(Params), ''');')
               else begin
                 if (Params.Count = 1) and (TParam(Params.Objects[0]).Name = 'Config') and (TParam(Params.Objects[0]).Typ = 'TExtObject') then
@@ -1210,7 +1207,7 @@ begin
         writeln(Pas, Tab, 'try');
         for K := 0 to Properties.Count-1 do
           with TProp(Properties.Objects[K]) do
-            if not Static and not Enum and (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') then
+            if not Static and not Enum and (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') then
               writeln(Pas, Tab(2), 'F' + Name + '.Free;');
         writeln(Pas, Tab, 'except end;');
         writeln(Pas, Tab, 'inherited;');
@@ -1284,19 +1281,19 @@ begin
   if (ParamCount = 0) or (ParamCount > 1) or (ParamStr(1) = '-h') or (ParamStr(1) = '/?') then begin
     Writeln('Usage: ', ChangeFileExt(ExtractFileName(ParamStr(0)), ''), ' inputdir');
     Writeln('where');
-    Writeln('  inputdir directory with Ext JS 4.x sources');
+    Writeln('  inputdir directory with ' + JSLIB + ' JS sources');
     Halt(1);
   end;
   T := now;
   AllClasses := TStringList.Create;
-  AbstractTypes := TStringList.Create;
+  Unresolved := TStringList.Create;
   try
     AllClasses.Sorted := true;
-    AbstractTypes.Sorted := true;
-    writeln('ExtToPascal - Ext JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+    Unresolved.Sorted := true;
+    writeln('JSToPascal - ' + JSLIB + ' JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
     writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
     writeln('http://extpascal.googlecode.com/'^M^J);
-    writeln('Reading Ext JS source files...');
+    writeln('Reading JS source files...');
     Files := 0;
     DoTree(AnsiReplaceStr(ParamStr(1), '\', '/'));
     if Files <> 0 then begin
@@ -1304,16 +1301,17 @@ begin
       writeln('Fixing event prototypes...');
       FixEvents;
       FixHeritage;
+      CollectUnresolvedClasses;
 //        LoadFixes;
       writeln('Writing unit file...');
       WriteUnit;
-      writeln(AllClasses.Count, ' Ext JS classes wrapped.');
+      writeln(AllClasses.Count, ' JS classes wrapped.');
       writeln('Unit file generated.');
       writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
       writeln('Done. Press Enter.');
     end
     else begin
-      writeln('Ext JS source files not found at ' + ParamStr(1) + '/*.js');
+      writeln('JS source files not found at ' + ParamStr(1) + '/*.js');
       writeln('Aborted! Press Enter.');
     end;
     readln;
