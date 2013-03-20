@@ -235,6 +235,7 @@ type
   TRegExp = type string;
   TEvent = class(TExtObject);
   TId = TExtObject;
+  TCSSStyleSheet = class(TExtObject);
 //DOM-IGNORE-END*)
 
 const
