@@ -20,7 +20,7 @@ uses
 const
   AP = '''';
   JSLIB = 'Ext';
-  BASECLASS = 'TExtUtilObservable';
+  BASECLASS = 'TExtAbstractComponent';// 'TExtUtilObservable';
 
 var
   AllClasses, Unresolved : TStringList;
@@ -68,8 +68,6 @@ begin
     delete(Result, Words[J], length(Result));
   if IsType then begin
     if Result <> '' then Result := 'T' + Result;
-    Result := AnsiReplaceText(Result, 'MethodConstructor', '');
-    Result := AnsiReplaceText(Result, 'cfghideMode', '');
   end
   else
     Result := FixReserved(Result);
@@ -174,7 +172,6 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
-  if pos('Ext.form.Action', JSName) <> 0 then JSName := ''; // Anonymous classes
 end;
 
 destructor TClass.Destroy; begin
@@ -360,6 +357,17 @@ function Unique(S : string; List : TStringList) : string; begin
   while List.IndexOf(Result) <> -1 do Result := Result + '_'
 end;
 
+function DoEnumeration(PropName : string; PropEnums : TStringList) : string;
+var
+  Prefix : string;
+  I : integer;
+begin
+  Prefix := LowerCase(copy(PropName, 1, 2));
+  for I := 0 to PropEnums.Count - 1 do
+    PropEnums[I] := UpCase(PropEnums[I][1]) + copy(PropEnums[I], 2, 100);
+  Result := '(' + Prefix + ReplaceStr(PropEnums.DelimitedText, '/', ', ' + Prefix) + ')';
+end;
+
 procedure LoadElements(Line : string);
 const
   CurClass  : TClass      = nil;
@@ -376,7 +384,7 @@ var
   IsEvent, Optional, Static, Singleton: boolean;
   I, Ci : integer;
 begin
-  if Before('@private',   '*/', Line, false) or
+  if //Before('@private',   '*/', Line, false) or
      Before('@protected', '*/', Line, false) or
      Before('@ignore',    '*/', Line, false) or
      Before('@abstract',  '*/', Line, false) then exit;
@@ -386,21 +394,20 @@ begin
     case State of
       Initial : begin
         JSName := '';
-        Singleton := Before('@singleton', '*/', Line, false);
-        (*if Before('@define', '*/', Line, false) then
-          if Extract(['@define ', ' '], Line, Matches) then
-            JSName := Matches[0];*)
+        Singleton := Before('@singleton', 'Ext.define(', Line, false);
         Extract(['/**', '*/'], Line, Matches);
         if (JSName <> '') or
            Extract(['Ext.define(' + AP, AP], Line, Matches) or
            Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
           if JSName = '' then JSName := Matches[0];
+          if pos(JSLIB, JSName) <> 1 then exit;
           Ci := AllClasses.IndexOf(JSName);
           if Ci = -1 then
             CurClass := TClass.Create(JSName)
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
+          if not Singleton then Singleton := Before('singleton:', '}', Line, false);
           if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
           CurClass.Singleton := Singleton;
           continue;
@@ -409,8 +416,9 @@ begin
           break;
       end;
       InClass : begin
-        if Extract(['extend:', AP, AP], Line, Matches) then
-          CurClass.Parent := FixIdent(Matches[1], true);
+        if not Before('/* ', 'extend:', Line, false) then // if CurClass.Name <> BASECLASS then
+          if Extract(['extend:', AP, AP], Line, Matches) then
+            CurClass.Parent := FixIdent(Matches[1], true);
         if AllClasses.IndexOf(CurClass.Name) = -1 then
           AllClasses.AddObject(CurClass.Name, CurClass);
         State := InProperties;
@@ -427,9 +435,7 @@ begin
           Static := false;
           I := pos('=', PropName);
           if I <> 0 then
-            PropName := copy(PropName, 1, I-1)
-          else
-            if pos('.', PropName) <> 0 then continue; // doc fault
+            PropName := copy(PropName, 1, I-1); // Default value ****
           if FixIdent(PropName) = '' then continue; // Discard properties nameless
           if Before('@static', '*/', Line, false) then Static := true;
           if IsUppercase(PropName) then Static := true;
@@ -440,18 +446,22 @@ begin
             continue; // Discard duplicates
           end;
           PropTypes := Explode('/', Matches[0]);
-          I := FirstDelimiter(' <>', PropTypes[0]);
-          if I <> 0 then // doc fault
-            PropTypes.DelimitedText := copy(PropTypes[0], 1, I-1);
-          for I := 0 to PropTypes.Count-1 do
-            if I = 0 then begin
-              CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
-              CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-            end
-            else
-              if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
-                CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
-                                              TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
+          if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
+            CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
+            CurProp.Typ := DoEnumeration(PropName, PropTypes);
+            CurProp.Enum := true;
+            CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+          end
+          else
+            for I := 0 to PropTypes.Count-1 do
+              if I = 0 then begin
+                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
+                CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+              end
+              else
+                if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
+                  CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
+                                                TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
           //if Extract([PropName, ':', ','], Line, Matches) then begin
           if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
              (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
@@ -650,9 +660,13 @@ begin
                   end;
                 end
           else begin // Create new Class
-            NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
-            NewClass.JSName := Fields[3];
-            AllClasses.AddObject(NewClass.Name, NewClass);
+            if Fields.Count = 4 then begin
+              NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+              NewClass.JSName := Fields[3];
+              AllClasses.AddObject(NewClass.Name, NewClass);
+            end
+            else
+              writeln(^M^J'*** WARNING: Class ', Fields[0], ' does not exist. ***'^M^J);
           end;
         finally
           Fields.Free;
@@ -672,21 +686,18 @@ procedure FixEvents;
     I : Integer;
     TypFrom : string;
   begin
-    if SameText(ATypTo, 'TError') then
-      ATypTo := 'string'
+    if pos('/', ATypTo) > 0 then
+      ATypTo := FixType(copy(ATypTo, 1, pos('/', ATypTo)-1))
     else
-      if pos('/', ATypTo) > 0 then
-        ATypTo := FixType(copy(ATypTo, 1, pos('/', ATypTo)-1))
-      else
-        if (CaseOf(ATypTo, ['integer', 'string', 'boolean', 'double', 'TDateTime', 'TExtObject', 'TExtObjectList', 'TArray', 'TExtObject']) = -1) and
-           (AllClasses.IndexOf(ATypTo) < 0) then begin
-          TypFrom := copy(ATypTo, 2, Maxint);
-          for I := 0 to AllClasses.Count - 1 do
-            if SameText(TClass(AllClasses.Objects[I]).SimpleName, TypFrom) then begin
-              ATypTo := TClass(AllClasses.Objects[I]).Name;
-              exit;
-            end;
-        end;
+      if (CaseOf(ATypTo, ['integer', 'string', 'boolean', 'double', 'TDateTime', 'TExtObject', 'TExtObjectList', 'TArray', 'TExtObject']) = -1) and
+         (AllClasses.IndexOf(ATypTo) < 0) then begin
+        TypFrom := copy(ATypTo, 2, Maxint);
+        for I := 0 to AllClasses.Count - 1 do
+          if SameText(TClass(AllClasses.Objects[I]).SimpleName, TypFrom) then begin
+            ATypTo := TClass(AllClasses.Objects[I]).Name;
+            exit;
+          end;
+      end;
   end;
 
 var
@@ -694,12 +705,11 @@ var
 begin
   for I := 0 to AllClasses.Count - 1 do
     with TClass(AllClasses.Objects[I]) do
-      if Parent <> '' then
-        for J := 0 to Events.Count - 1 do
-          with TMethod(Events.Objects[J]) do
-            for K := 0 to Params.Count - 1 do
-              with TParam(Params.Objects[K]) do
-                ChangeSimpleClassToFinalClass(Typ);
+      for J := 0 to Events.Count - 1 do
+        with TMethod(Events.Objects[J]) do
+          for K := 0 to Params.Count - 1 do
+            with TParam(Params.Objects[K]) do
+              ChangeSimpleClassToFinalClass(Typ);
 end;
 
 procedure FixHeritage;
@@ -832,6 +842,8 @@ begin
 end;
 
 procedure WriteClassType(Cls : TClass);
+const
+  Enums : string = '';
 var
   I : integer;
   HasEnum : boolean;
@@ -852,10 +864,13 @@ begin
     for I := 0 to Properties.Count-1 do
       with TProp(Properties.Objects[I]) do
         if Enum and (Typ[1] = '(') then begin
-          if not HasEnum then writeln(Pas, Tab, '// Enumerated types for properties');
-          HasEnum := true;
-          writeln(Pas, Tab, Cls.Name, Name, ' = ', Typ, ';');
-          Typ := Cls.Name + Name;
+          if pos('T' + Name + 'Enum.', Enums) = 0 then begin
+            if not HasEnum then writeln(Pas, Tab, '// Enumerated types for properties');
+            HasEnum := true;
+            writeln(Pas, Tab, 'T' + Name, 'Enum = ', Typ, ';');
+          end;
+          Typ := 'T' + Name + 'Enum';
+          Enums := Enums + Typ + '.';
         end;
     if HasEnum then writeln(Pas);
     writeln(Pas, Tab, Name, ' = class(', IfThen(Parent = '', 'TExtFunction', Parent), ')');
@@ -1175,7 +1190,7 @@ begin
                 if Typ = 'TExtObjectList' then
                   writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
                 else
-                  if (pos('TExt', Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
+                  if (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
                     writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
         writeln(Pas, 'end;'^M^J);
       end;
@@ -1302,7 +1317,7 @@ begin
       FixEvents;
       FixHeritage;
       CollectUnresolvedClasses;
-//        LoadFixes;
+//      LoadFixes;
       writeln('Writing unit file...');
       WriteUnit;
       writeln(AllClasses.Count, ' JS classes wrapped.');
