@@ -120,7 +120,7 @@ ExtContainer, layout, (lyAuto, lyAbsolute, lyAccordion, lyAnchor, lyBorder, lyCa
 ExtBoxComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
 ExtComponent, xtype, (xtBox, xtButton, xtButtonGroup, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtFlash, xtGrid, xtListView, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSpacer, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtMenu, xtColorMenu, xtDateMenu, xtMenuBaseItem, xtMenuCheckItem, xtMenuItem, xtMenuSeparator, xtMenuTextItem, xtForm, xtCheckBox, xtCheckBoxGroup, xtCombo, xtDateField, xtDisplayField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtRadioGroup, xtTextArea, xtTextField, xtTimeField, xtTrigger, xtChart, xtBarChart, xtCartesianChart, xtColumnChart, xtLineChart, xtPieChart)
 ExtContainer, defaultType, (ExtComponentXType)
-ExtElement, defaultUnit, (CSSUnit)
+ExtDomElement, defaultUnit, (CSSUnit)
 ExtGridColumn, align, (alInherit, alLeft, alRight, alCenter, alJustify)
 ExtPanel, buttonAlign, (baRight, baLeft, baCenter)
 ExtFormFormPanel, buttonAlign, (ExtPanelButtonAlign)
