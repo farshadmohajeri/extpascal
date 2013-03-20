@@ -64,7 +64,7 @@ Mimics preg_match php function. Searches S for a match to delimiter strings give
 @param Remove matches strings from S, default is true
 @return True if some match hit, false otherwise
 }
-function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList; EndCom : string = '*/'; Remove : boolean = true) : boolean;
 
 {
 Mimics explode php function.
@@ -275,9 +275,9 @@ function DetermineBrowser(const UserAgentStr : string) : TBrowser; begin
     Result := brMobileSafari
 end;
 
-function Extract(const Delims : array of string; var S : string; var Matches : TStringList; Remove : boolean = true) : boolean;
+function Extract(const Delims : array of string; var S : string; var Matches : TStringList; EndCom : string = '*/'; Remove : boolean = true) : boolean;
 var
-  I, J : integer;
+  I, J, K : integer;
   Points : array of integer;
   Rest : string;
 begin
@@ -287,7 +287,10 @@ begin
   J := 1;
   Rest := '';
   for I := 0 to high(Delims) do begin
+    K := J;
     J := PosEx(Delims[I], S, J);
+    if (I > 0) and (Delims[I] <> EndCom) and
+       (Delims[I] <> ' ') and ((J - K) > 100) then exit;
     if J = 0 then begin
       for J := I to High(Delims) do
         Rest := Rest + Delims[J];
