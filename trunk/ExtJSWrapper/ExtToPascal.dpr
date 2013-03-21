@@ -15,12 +15,13 @@ uses
 //, Ext
   ;
 
-{.$DEFINE USES_PUBLISHED}
+  {.$DEFINE USES_PUBLISHED}
 
 const
   AP = '''';
-  JSLIB = 'Ext';
-  BASECLASS = 'TExtAbstractComponent';// 'TExtUtilObservable';
+  JS_LIB = 'Ext';
+  BASE_CLASS = 'TExtAbstractComponent';
+  BASE_MIXIN = 'TExtUtilObservable';
 
 var
   AllClasses, Unresolved : TStringList;
@@ -106,7 +107,7 @@ begin
             Result := Ident;
           exit;
         end;
-        if pos('T' + JSLIB, Ident) = 1 then
+        if pos('T' + JS_LIB, Ident) = 1 then
           Result := Ident
         else
           Result := FixIdent(Ident, true);
@@ -124,7 +125,7 @@ type
   TClass = class
     Name, JSName, Parent, UnitName, SimpleName : string;
     Singleton, Defaults, Arrays, Objects, AltCreate : boolean;
-    Properties, Methods, Events : TStringList;
+    Properties, Methods, Events, Mixins : TStringList;
     constructor Create(pName : string; pParent : string = ''; pUnitName : string = '');
     procedure AddCreate;
     destructor Destroy; override;
@@ -172,12 +173,14 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Properties := TStringList.Create;
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
+  Mixins     := TStringList.Create;
 end;
 
 destructor TClass.Destroy; begin
   FreeStringList(Properties);
   FreeStringList(Methods);
   FreeStringList(Events);
+  FreeStringList(Mixins);
   inherited;
 end;
 
@@ -284,7 +287,7 @@ begin
   Result := TStringList.Create;
   for I := 0 to Params.Count-1 do
     with TParam(Params.Objects[I]) do begin
-      Result.AddObject(Name, TParam.Create(Name, IfThen(I = P, FixType(NewType), Typ), Optional));
+      Result.AddObject(Name, TParam.Create(Name, IfThen(I = P, NewType, Typ), Optional));
       if (I = P) and Optional then // Remove unnecessary optional params
         for J := P downto 0 do TParam(Result.Objects[J]).Optional := false;
     end;
@@ -292,7 +295,7 @@ end;
 
 procedure DoOverloads(Cls : TClass; Method : TMethod);
 var
-  Types : TStringList;
+  Types, ETypes : TStringList;
   I, J : integer;
 begin
   if Method.Name = 'Create' then begin
@@ -308,12 +311,17 @@ begin
       with TParam(Params.Objects[I]) do
         if pos('/', Typ) <> 0 then begin
           Overload := true;
-          Types := Explode('/', Typ);
-          Typ   := FixType(Types[0]);
+          ETypes := Explode('/', Typ);
+          Types := TStringList.Create;
+          Types.Sorted := true;
+          Types.Duplicates := dupIgnore;
+          for J := 0 to ETypes.Count-1 do // Discard Duplicates
+            Types.Add(FixType(ETypes[J]));
+          Typ := Types[0];
           for J := 1 to Types.Count-1 do
-            if FixType(Types[J]) <> FixType(Types[J-1]) then // Discard Duplicates
-              DoOverloads(Cls, TMethod.Create(Method.Name, Return, CreateOverloadParams(I, Types[J]), Static, true));
+            DoOverloads(Cls, TMethod.Create(Method.Name, Return, CreateOverloadParams(I, Types[J]), Static, true));
           Types.Free;
+          ETypes.Free;
         end;
 end;
 
@@ -368,6 +376,23 @@ begin
   Result := '(' + Prefix + ReplaceStr(PropEnums.DelimitedText, '/', ', ' + Prefix) + ')';
 end;
 
+procedure ReadMixins(var MixinList : TStringList; Mixins : string);
+var
+  I, J : integer;
+begin
+  J := 0;
+  I := pos(AP, Mixins);
+  while I <> 0 do begin
+    delete(Mixins, J + 1, I - J);
+    J := pos(AP, Mixins);
+    delete(Mixins, J, 1);
+    I := pos(AP, Mixins);
+  end;
+  MixinList.DelimitedText := Mixins;
+  for I := 0 to MixinList.Count - 1 do
+    MixinList[I] := FixType(MixinList[I])
+end;
+
 procedure LoadElements(Line : string);
 const
   CurClass  : TClass      = nil;
@@ -384,8 +409,7 @@ var
   IsEvent, Optional, Static, Singleton: boolean;
   I, Ci : integer;
 begin
-  if //Before('@private',   '*/', Line, false) or
-     Before('@protected', '*/', Line, false) or
+  if Before('@protected', '*/', Line, false) or
      Before('@ignore',    '*/', Line, false) or
      Before('@abstract',  '*/', Line, false) then exit;
   State := Initial;
@@ -400,7 +424,7 @@ begin
            Extract(['Ext.define(' + AP, AP], Line, Matches) or
            Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
           if JSName = '' then JSName := Matches[0];
-          if pos(JSLIB, JSName) <> 1 then exit;
+          if pos(JS_LIB, JSName) <> 1 then exit;
           Ci := AllClasses.IndexOf(JSName);
           if Ci = -1 then
             CurClass := TClass.Create(JSName)
@@ -416,9 +440,11 @@ begin
           break;
       end;
       InClass : begin
-        if not Before('/* ', 'extend:', Line, false) then // if CurClass.Name <> BASECLASS then
+        if not Before('/* ', 'extend:', Line, false) then
           if Extract(['extend:', AP, AP], Line, Matches) then
             CurClass.Parent := FixIdent(Matches[1], true);
+        if Extract(['mixins: {', '}'], Line, Matches) then
+          ReadMixins(CurClass.Mixins, Matches[0]);
         if AllClasses.IndexOf(CurClass.Name) = -1 then
           AllClasses.AddObject(CurClass.Name, CurClass);
         State := InProperties;
@@ -428,52 +454,54 @@ begin
         if Between('@hide',      '/**', '*/', Line) or
            Between('@private',   '/**', '*/', Line) or
            Between('@protected', '/**', '*/', Line) then continue;
-        Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
-        // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
-        if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
-          PropName := Matches[1];
-          Static := false;
-          I := pos('=', PropName);
-          if I <> 0 then
-            PropName := copy(PropName, 1, I-1); // Default value ****
-          if FixIdent(PropName) = '' then continue; // Discard properties nameless
-          if Before('@static', '*/', Line, false) then Static := true;
-          if IsUppercase(PropName) then Static := true;
-          PropName := Unique(FixIdent(PropName), CurClass.Properties);
-          if not Static then PropName[1] := LowerCase(PropName)[1];
-          if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
-            State := InMethods;
-            continue; // Discard duplicates
-          end;
-          PropTypes := Explode('/', Matches[0]);
-          if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
-            CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
-            CurProp.Typ := DoEnumeration(PropName, PropTypes);
-            CurProp.Enum := true;
-            CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-          end
-          else
-            for I := 0 to PropTypes.Count-1 do
-              if I = 0 then begin
-                CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
-                CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-              end
-              else
-                if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
-                  CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
-                                                TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
-          //if Extract([PropName, ':', ','], Line, Matches) then begin
-          if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
-             (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
-            SetDefault(CurProp, Matches[0], Matches);
-            if (CurProp.Default <> '') and not CurClass.Defaults then begin
-              CurClass.Defaults := true;
-              CurClass.AddCreate;
+        begin
+          Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
+          // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
+          if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
+            PropName := Matches[1];
+            Static := false;
+            I := pos('=', PropName);
+            if I <> 0 then
+              PropName := copy(PropName, 1, I-1); // Default value ****
+            if FixIdent(PropName) = '' then continue; // Discard properties nameless
+            if Before('@static', '*/', Line, false) then Static := true;
+            if IsUppercase(PropName) then Static := true;
+            PropName := Unique(FixIdent(PropName), CurClass.Properties);
+            if not Static then PropName[1] := LowerCase(PropName)[1];
+            if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
+              State := InMethods;
+              continue; // Discard duplicates
             end;
+            PropTypes := Explode('/', Matches[0]);
+            if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
+              CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
+              CurProp.Typ := DoEnumeration(PropName, PropTypes);
+              CurProp.Enum := true;
+              CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+            end
+            else
+              for I := 0 to PropTypes.Count-1 do
+                if I = 0 then begin
+                  CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
+                  CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+                end
+                else
+                  if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
+                    CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
+                                                  TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
+            //if Extract([PropName, ':', ','], Line, Matches) then begin
+            if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
+               (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
+              SetDefault(CurProp, Matches[0], Matches);
+              if (CurProp.Default <> '') and not CurClass.Defaults then begin
+                CurClass.Defaults := true;
+                CurClass.AddCreate;
+              end;
+            end;
+            FreeAndNil(PropTypes);
+            Extract([' ', '*/'], Line, Matches);
+            continue;
           end;
-          FreeAndNil(PropTypes);
-          Extract([' ', '*/'], Line, Matches);
-          continue;
         end;
         for I := 0 to CurClass.Properties.Count-1 do
           with TProp(CurClass.Properties.Objects[I]) do
@@ -483,7 +511,7 @@ begin
                 CurClass.AddCreate;
               end
               else
-                if (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') then begin
+                if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then begin
                   CurClass.Objects := true;
                   CurClass.AddCreate;
                 end;
@@ -514,7 +542,6 @@ begin
             end
             else
               Return := 'TExtFunction';
-            if pos('Instance', Return) > 1 then Return := copy(Return, 1, length(Return) - length('Instance')); // doc fault
           end;
           Args := TStringList.Create;
           Params := IfThen(IsEvent, Matches[1], Matches[0]);
@@ -568,7 +595,7 @@ var
   I, J, K  : integer;
   NewClass : TClass;
 begin
-  FixesFile := JSLIB + 'Fixes.txt';
+  FixesFile := JS_LIB + 'Fixes.txt';
   writeln('Loading custom fixes...');
   writeln('  > ' + FixesFile);
   if FileExists(FixesFile) then begin
@@ -722,19 +749,19 @@ begin
     C := TClass(AllClasses.Objects[I]);
     P := C.Parent;
     write(I, ^M);
-    if C.Name <> BASECLASS then begin
-      if P = '' then C.Parent := BASECLASS;
+    if C.Name <> BASE_CLASS then begin
+      if P = '' then C.Parent := BASE_CLASS;
       while P <> '' do begin
         J := AllClasses.IndexOf(P);
         if J = -1 then begin
           writeln('Parent: ', P, ' not found at class: ', C.Name);
-          C.Parent := BASECLASS;
+          C.Parent := BASE_CLASS;
           break;
         end;
         C := TClass(AllClasses.Objects[J]);
         if P = C.Parent then begin
           writeln('Parent: ', P, ' is the same at class: ', C.Name, ' and its descendent' );
-          C.Parent := BASECLASS;
+          C.Parent := BASE_CLASS;
           break
         end;
         P := C.Parent;
@@ -747,7 +774,7 @@ end;
 procedure CollectUnresolvedClasses;
 
   procedure AddUnresolved(T : string); begin
-    if pos('T' + JSLIB, T) = 1 then
+    if pos('T' + JS_LIB, T) = 1 then
       if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
         if AllClasses.IndexOf(T) = -1 then
           Unresolved.Add(T);
@@ -773,6 +800,33 @@ begin
         AddUnresolved(TParam(Met.Params.Objects[K]).Typ);
     end;
   end;
+end;
+
+procedure MixInto(C, M : TClass);
+var
+  I : integer;
+begin
+  for I := 0 to M.Properties.Count - 1 do
+    if C.Properties.IndexOf(M.Properties[I]) = -1 then
+      C.Properties.AddObject(M.Properties[I], M.Properties.Objects[I]);
+  for I := 0 to M.Methods.Count - 1 do
+    if C.Methods.IndexOf(M.Methods[I]) = -1 then
+      C.Methods.AddObject(M.Methods[I], M.Methods.Objects[I]);
+  for I := 0 to M.Events.Count - 1 do
+    if C.Events.IndexOf(M.Events[I]) = -1 then
+      C.Events.AddObject(M.Events[I], M.Events.Objects[I]);
+end;
+
+procedure IncludeMixins;
+var
+  I, J, K : integer;
+begin
+  for I := 0 to AllClasses.Count-1 do
+    for J := 0 to TClass(AllClasses.Objects[I]).Mixins.Count - 1 do begin
+      K := AllClasses.IndexOf(TClass(AllClasses.Objects[I]).Mixins[J]);
+      if K <> -1 then
+        MixInto(TClass(AllClasses.Objects[I]), TClass(AllClasses.Objects[K]));
+    end;
 end;
 
 function Tab(I : integer = 1) : string;
@@ -1074,12 +1128,12 @@ procedure WriteUnit;
   end;
 
 var
-  I, J, K, M : integer;
+  J, K, M : integer;
   CName, CJSName, BoolParam, RegExParam : string;
 begin
-  assign(Pas, JSLIB + '.pas');
+  assign(Pas, JS_LIB + '.pas');
   rewrite(Pas);
-  writeln(Pas, 'unit ', JSLIB, ';'^M^J);
+  writeln(Pas, 'unit ', JS_LIB, ';'^M^J);
   writeln(Pas, '// Generated by JSToPascal v.', ExtPascalVersion, ', at ', DateTimeToStr(Now));
   writeln(Pas, '// from "', paramstr(1), ^M^J);
   writeln(Pas, 'interface'^M^J^M^J'uses'^M^J, Tab, 'StrUtils, ExtPascal, ExtPascalUtils;'^M^J);
@@ -1190,7 +1244,7 @@ begin
                 if Typ = 'TExtObjectList' then
                   writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
                 else
-                  if (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
+                  if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
                     writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
         writeln(Pas, 'end;'^M^J);
       end;
@@ -1222,7 +1276,7 @@ begin
         writeln(Pas, Tab, 'try');
         for K := 0 to Properties.Count-1 do
           with TProp(Properties.Objects[K]) do
-            if not Static and not Enum and (pos('T' + JSLIB, Typ) = 1) and (Typ <> 'TExtFunction') then
+            if not Static and not Enum and (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then
               writeln(Pas, Tab(2), 'F' + Name + '.Free;');
         writeln(Pas, Tab, 'except end;');
         writeln(Pas, Tab, 'inherited;');
@@ -1271,9 +1325,6 @@ begin
   end;
 end;
 
-var
-  T : TDateTime;
-
 procedure DoTree(Tree : string);
 var
   F : TSearchRec;
@@ -1296,16 +1347,15 @@ begin
   if (ParamCount = 0) or (ParamCount > 1) or (ParamStr(1) = '-h') or (ParamStr(1) = '/?') then begin
     Writeln('Usage: ', ChangeFileExt(ExtractFileName(ParamStr(0)), ''), ' inputdir');
     Writeln('where');
-    Writeln('  inputdir directory with ' + JSLIB + ' JS sources');
+    Writeln('  inputdir directory with ' + JS_LIB + ' JS sources');
     Halt(1);
   end;
-  T := now;
   AllClasses := TStringList.Create;
   Unresolved := TStringList.Create;
   try
     AllClasses.Sorted := true;
     Unresolved.Sorted := true;
-    writeln('JSToPascal - ' + JSLIB + ' JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+    writeln('JSToPascal - ' + JS_LIB + ' JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
     writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
     writeln('http://extpascal.googlecode.com/'^M^J);
     writeln('Reading JS source files...');
@@ -1317,12 +1367,12 @@ begin
       FixEvents;
       FixHeritage;
       CollectUnresolvedClasses;
+      IncludeMixins;
 //      LoadFixes;
       writeln('Writing unit file...');
       WriteUnit;
       writeln(AllClasses.Count, ' JS classes wrapped.');
       writeln('Unit file generated.');
-      writeln(FormatDateTime('ss.zzz', Now-T), ' seconds elapsed.');
       writeln('Done. Press Enter.');
     end
     else begin
@@ -1331,7 +1381,7 @@ begin
     end;
     readln;
   finally
-    FreeStringList(AllClasses);
+//    FreeStringList(AllClasses);
     Flush(Output);
   end;
 end.
