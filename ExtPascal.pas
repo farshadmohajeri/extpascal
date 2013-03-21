@@ -234,8 +234,8 @@ type
   THTMLElement = class(TExtObject);
   TRegExp = type string;
   TEvent = class(TExtObject);
-  TId = TExtObject;
   TCSSStyleSheet = class(TExtObject);
+  TTextNode = class(TExtObject);
 //DOM-IGNORE-END*)
 
 const
@@ -1592,7 +1592,7 @@ begin
   S := '';
   for I := 0 to high(Forms) do begin
     if Forms[I] is TExtFormField then begin
-      S := S + '"' + TExtFormField(Forms[I]).GetID + '="+';
+      S := S + '"' + TExtFormField(Forms[I]).ID + '="+';
       TExtFormField(Forms[I]).GetValue;
     end
     else
@@ -1615,7 +1615,9 @@ begin
     Response := '';
     with TExtSelectionRowModel(SelectionModel) do begin
       JSCode('var Sel=[];');
-      JSCode(JSName + '.each(' + VarToJSON([JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'), true, nil, false]) + ');');
+      TExtDataStore(TExtSelectionRowModel(SelectionModel).GetStore).Each(
+        JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'));
+//      JSCode(JSName + '.each(' + VarToJSON([JSFunction('Rec','Sel.push(Rec.get("' + Attribute + '"));'), true, nil, false]) + ');');
       FindMethod(Method, MetName, ObjName);
       AjaxCode(MetName, FormatParams(MetName, [TargetQuery, '%Sel.toString()', 'Obj', ObjName]), Params);
     end;
