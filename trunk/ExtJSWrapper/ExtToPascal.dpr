@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, ExtPascalUtils
-//, Ext
+, Ext
   ;
 
   {.$DEFINE USES_PUBLISHED}
@@ -436,6 +436,9 @@ begin
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
+          if CurClass.Name = 'TExtDataField' then
+          writeln;
+
           if not Singleton then Singleton := Before('singleton:', '}', Line, false);
           if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
           CurClass.Singleton := Singleton;
@@ -445,7 +448,7 @@ begin
           break;
       end;
       InClass : begin
-        if not Before('/* ', 'extend:', Line, false) then
+        if not Between('extend:', '/*', '*/', Line, false) then
           if Extract(['extend:', AP, AP], Line, Matches) then
             CurClass.Parent := FixIdent(Matches[1], true);
         if Extract(['mixins: {', '}'], Line, Matches) then

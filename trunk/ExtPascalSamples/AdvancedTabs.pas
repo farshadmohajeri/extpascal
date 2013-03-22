@@ -9,7 +9,7 @@ type
   TAdvancedTabs = class(TExtTabPanel)
   private
     TabIndex, Tabs : integer;
-    procedure HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton);
+    procedure HandleExtButtonClick(This: TExtButton; E: TExtDirectEvent);
   public
     constructor Create;
   published

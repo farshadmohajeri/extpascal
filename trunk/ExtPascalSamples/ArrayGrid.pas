@@ -3,13 +3,13 @@ unit ArrayGrid;
 interface
 
 uses
-  Ext, ExtGrid, ExtData;
+  Ext;
 
 type
-  TArrayGrid = class(TExtGridGridPanel)
+  TArrayGrid = class(TExtGridPanel)
   private
-    RowSelect : TExtGridRowSelectionModel;
-    procedure RowSelectOnRowselect(This : TExtGridRowSelectionModel; RowIndex : Integer; R : TExtDataRecord);
+    RowSelect : TExtSelectionRowModel;
+    procedure RowSelectOnRowselect(This : TExtSelectionRowModel; RowIndex : Integer; R : TExtDataRecord);
   public
     constructor Create;
   end;
@@ -17,7 +17,7 @@ type
 implementation
 
 uses
-  SysUtils, Session, ExtPascal, ExtState, ExtUtil;
+  SysUtils, Session, ExtPascal;
 
 constructor TArrayGrid.Create;
 var

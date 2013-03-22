@@ -3,14 +3,14 @@ unit EditableGrid;
 interface
 
 uses
-  Ext, ExtGrid, ExtData;
+  Ext;
 
 type
-  TEditableGrid = class(TExtGridEditorGridPanel)
+  TEditableGrid = class(TExtGridPanel)
   private
     Plant : TExtDataRecord;
     DataStore : TExtDataStore;
-    Grid : TExtGridEditorGridPanel;
+    Grid : TExtGridPanel;
   public
     constructor Create;
   published
@@ -20,7 +20,7 @@ type
 implementation
 
 uses
-  Session, ExtPascal, ExtForm, ExtUtil;
+  Session, ExtPascal;
 
 constructor TEditableGrid.Create;
 var

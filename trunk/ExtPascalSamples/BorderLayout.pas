@@ -6,7 +6,7 @@ uses
   Ext;
 
 type
-  TBorderLayout = class(TExtViewport)
+  TBorderLayout = class(TExtContainerViewport)
   private
     procedure SelectNodeEventBrowserSide;
   public
@@ -18,7 +18,7 @@ type
 implementation
 
 uses
-  ExtPascalUtils, Session, ExtTree, ExtGrid;
+  ExtPascalUtils, Session, Ext;
 
 constructor TBorderLayout.Create;
 var
