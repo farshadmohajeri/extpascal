@@ -11,8 +11,8 @@ program ExtToPascal;
 {$J+}
 
 uses
-  SysUtils, StrUtils, Classes, Math, ExtPascalUtils
-//, Ext
+  SysUtils, StrUtils, Classes, ExtPascalUtils
+, Ext
   ;
 
   {.$DEFINE USES_PUBLISHED}
@@ -28,7 +28,7 @@ var
 
 function FixReserved(S : string) : string;
 const
-  Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.destroy.dispinterface.div.do.downto.else.end.except.exports.'+
+  Reserved = '.and.array.as.asm.begin.case.class.const.constructor.destructor.dispinterface.div.do.downto.else.end.except.exports.'+
     'false.file.finalization.finally.for.function.goto.if.implementation.in.inherited.initialization.inline.interface.is.label.library.'+
     'mod.nil.not.object.of.or.out.packed.procedure.program.property.raise.record.repeat.resourcestring.result.set.shl.shr.string.then.'+
     'threadvar.to.try.true.type.unit.until.uses.var.while.with.xor.';
@@ -174,6 +174,10 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Methods    := TStringList.Create;
   Events     := TStringList.Create;
   Mixins     := TStringList.Create;
+  Properties.Sorted := true;
+  Properties.Duplicates := dupIgnore;
+  Methods.Sorted := true;
+  Events.Sorted := true;
 end;
 
 destructor TClass.Destroy; begin
@@ -411,6 +415,7 @@ var
 begin
   if Before('@protected', '*/', Line, false) or
      Before('@ignore',    '*/', Line, false) or
+     Before('@deprecated','*/', Line, false) or
      Before('@abstract',  '*/', Line, false) then exit;
   State := Initial;
   Matches := TStringList.Create;
@@ -453,6 +458,7 @@ begin
       InProperties : begin
         if Between('@hide',      '/**', '*/', Line) or
            Between('@private',   '/**', '*/', Line) or
+           Between('@deprecated','/**', '*/', Line) or
            Between('@protected', '/**', '*/', Line) then continue;
         begin
           Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
@@ -521,11 +527,13 @@ begin
       InMethods : begin
         if Between('@private',   '/**', '*/', Line) or
            Between('@protected', '/**', '*/', Line) or
+           Between('@deprecated', '/**', '*/', Line) or
            Between('@template',  '/**', '*/', Line) then continue;
         IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
-        if IsEvent or Extract(['/**', '*/', ': function('], Line, Matches) then begin
+        if IsEvent or Extract(['/**', '*/', ': function'], Line, Matches) then begin
           JSName := IfThen(IsEvent, Matches[0], Matches[1]);
-          if (length(JSName) > 30) or (FixIdent(JSName) = '') or (JSName = 'destroy') then continue; // Doc fault
+          if (length(JSName) > 30) or (FixIdent(JSName) = '') or // Doc fault
+             ((JSName = 'destroy') and not IsEvent) then continue;
           if JSName = 'create' then CurClass.AltCreate := true;
           Static := false;// pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
           if IsEvent then begin
