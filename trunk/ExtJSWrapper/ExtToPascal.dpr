@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, ExtPascalUtils
-, Ext
+//, Ext
   ;
 
   {.$DEFINE USES_PUBLISHED}
