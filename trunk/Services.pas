@@ -188,7 +188,7 @@ Starts the service
 }
 function TService.Start : integer;
 const
-	Param : pchar = nil;
+	Param : pansichar = nil;
 begin
 	Result := 0;
   if FService = 0 then FService := OpenService(FManager, FName, SERVICE_ALL_ACCESS);
