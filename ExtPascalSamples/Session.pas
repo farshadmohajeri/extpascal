@@ -41,7 +41,7 @@ function SelfSession : TSession;
 implementation
 
 uses
-  SysUtils, ExtPascalUtils, Ext, ExtForm, StrUtils,
+  SysUtils, ExtPascalUtils, Ext, StrUtils,
   {$IFNDEF WebServer}FCGIApp;{$ELSE}IdExtHTTPServer;{$ENDIF}
 
 function SelfSession : TSession; begin

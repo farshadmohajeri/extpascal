@@ -26,10 +26,16 @@ const
   ServerName = 'ExtPascalSamples';
 
 begin
-  DateSeparator := '/'; ShortDateFormat := 'd/M/yyyy';
-  TimeSeparator := ':'; ShortTimeFormat := 'hh:mm';
+  {$IFDEF VER240}
+  with TFormatSettings do begin
+  {$ENDIF}
+    DateSeparator := '/'; ShortDateFormat := 'd/M/yyyy';
+    TimeSeparator := ':'; ShortTimeFormat := 'hh:mm';
+    DecimalSeparator := '.';
+  {$IFDEF VER240}
+  end;
+  {$ENDIF}
   FileMode      := fmShareDenyWrite + fmOpenReadWrite;
-  DecimalSeparator := '.';
 {$IFDEF DEFAULT}
   Service := TService.Create(ServerName, ExtPascalVersion);
   with Service do try
