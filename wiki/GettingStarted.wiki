@@ -16,12 +16,12 @@ The main advantages are:
 
  * Windows, Linux, Mac OS X or FreeBSD machine. It was tested using Intel/AMD 32/64 bits and PowerPC, but should work with other processors supported by Free Pascal.
  * A web browser: IE 6+, Firefox 3.6+, Chrome 10+, Safari 4+, Opera 11+ or compatibles. JavaScript and Cookies should be enabled.
- * Download and install [http://httpd.apache.org/download.cgi Apache 2.2] or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package, see below.
+ * Download and install [http://www.apachelounge.com/download/win64/ Apache 2.4.4 64 bit for Windows] or later, but Apache 1.3 and IIS works using CGIGateway included in ExtPascal package, see below.
  * For native FastCGI operation download and install [http://www.fastcgi.com FastCGI for Apache 2.2]. See details below. For setting FastCGI thru CGIGateway on Apache or IIS see details below too.
  * Download [http://extjs.com/products/extjs/download.php ExtJS 3.2.1]. 
- * Install ExtJS below Apache's Document Root (usually htdocs) at folder *ext*
- * For Windows install Delphi (7..2010) or FreePascal 2.4+ with Lazarus 0.9.30+ or [http://sourceforge.net/projects/mseide-msegui MSEide 2.0+]. I use Lazarus 0.9.31.
- * For Posix systems (Linux, MacOS X, BSDs, Solaris, etc.) install FreePascal 2.4+ with Lazarus 0.9.30+. I use Lazarus 0.9.31.
+ * Install Ext JS below Apache's Document Root (usually htdocs) at folder *ext*
+ * For Windows install Delphi (7..XE3) or FreePascal 2.6+ with Lazarus 1.0+ or [http://sourceforge.net/projects/mseide-msegui MSEide 2.0+]. I use DXE3 and Lazarus 1.1 64 bit (CodeTyphon edition).
+ * For Posix systems (Linux, Mac OS X, BSDs, Solaris, etc) install FreePascal 2.6+ with Lazarus 1.0+. 
  * Download [http://extpascal.googlecode.com/files/ExtPascal-0.9.8.zip ExtPascal 0.9.8] to a working directory, for example: C:\ExtPascal.
  * Copy *codepress* folder, which is in ExtPascal package, underneath the *htdocs* folder. 
 
