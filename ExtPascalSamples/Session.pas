@@ -75,7 +75,7 @@ begin
   with TExtPanel.Create do begin
     Title       := 'ExtPascal Samples ' + SamplesVersion + ' - Web Server is ' + WebServer;
     RenderTo    := 'body';
-    AutoWidth   := true;
+    //AutoWidth   := true;
     Frame       := true;
     Collapsible := true;
     if not(Browser in [brChrome, brSafari, brMobileSafari]) then
