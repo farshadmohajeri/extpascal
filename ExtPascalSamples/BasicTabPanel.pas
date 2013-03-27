@@ -19,13 +19,13 @@ constructor TBasicTabPanel.Create; begin
   inherited;
   SelfSession.SetCodePress;
   Title  := 'Hello Dialog';
-  Layout := lyFit;
+  Layout := laFit;
   Plain  := true;
   Width  := 500;
   Height := 300;
   CloseAction := 'hide';
   with TExtTabPanel.AddTo(Items) do begin
-    ActiveTabNumber := 0;
+    ActiveTabInteger := 0;
     with TExtPanel.AddTo(Items) do begin
       Title := 'Hello World 1';
       Html  := 'Hello...';

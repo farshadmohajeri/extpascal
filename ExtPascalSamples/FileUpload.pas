@@ -15,7 +15,7 @@ type
 implementation
 
 uses
-  SysUtils, Session, ExtForm;
+  SysUtils, Session;
 
 procedure TFileUpload.Process; begin
   // process your file here, by example loading a database table with it
@@ -27,7 +27,7 @@ end;
 
 constructor TFileUpload.Create;
 var
-  F : TExtFormFormPanel;
+  F : TExtFormPanel;
   SubmitAction : TExtFormActionSubmit;
 begin
   inherited;
@@ -35,11 +35,11 @@ begin
   SelfSession.SetCodePress;
   Modal := true;
   Title := 'File Upload Window';
-  F     := TExtFormFormPanel.Create;
+  F     := TExtFormPanel.Create;
   with F.AddTo(Items) do begin
     FileUpload := true;
     Frame      := true;
-    AutoHeight := true;
+//    AutoHeight := true;
     Width      := 300;
     LabelWidth := 20;
     with TExtFormTextField.AddTo(Items) do begin
