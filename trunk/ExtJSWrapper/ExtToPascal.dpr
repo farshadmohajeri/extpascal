@@ -436,9 +436,6 @@ begin
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
-          if CurClass.Name = 'TExtDataField' then
-          writeln;
-
           if not Singleton then Singleton := Before('singleton:', '}', Line, false);
           if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
           CurClass.Singleton := Singleton;
@@ -601,7 +598,7 @@ end;
 procedure LoadFixes;
 var
   Fixes : text;
-  Fix, FixesFile : string;
+  Fix, FixesFile, Enum : string;
   Fields, Params : TStringList;
   I, J, K  : integer;
   NewClass : TClass;
@@ -636,6 +633,19 @@ begin
                     else
                       Typ := FixIdent(Fields[2], true);
                   end;
+              end
+              else
+              if pos('(', Fields[1]) = 1 then begin // Unresolved Enums
+                J := Unresolved.IndexOf(Fields[0]);
+                if J = -1 then begin
+                  Enum := Fields[0] + ' = ';
+                  for K := 1 to Fields.Count-1 do begin
+                    Enum := Enum + Fields[K];
+                    if K <> Fields.Count-1 then
+                      Enum = Enum + ', '
+                  end;
+                  Unresolved.Add(Enum);
+                end;
               end
               else
                 if Fields.Count = 6 then // props
@@ -799,7 +809,11 @@ begin
   for I := 0 to AllClasses.Count - 1 do begin
     C := TClass(AllClasses.Objects[I]);
     for J := 0 to C.Properties.Count - 1 do
-      AddUnresolved(TProp(C.Properties.Objects[J]).Typ);
+      with TProp(C.Properties.Objects[J]) do begin
+        K := Unresolved.IndexOf(Typ);
+        if Unresolved. then
+
+      end;
     for J := 0 to C.Methods.Count - 1 do begin
       Met := TMethod(C.Methods.Objects[J]);
       for K := 0 to Met.Params.Count - 1 do
@@ -1377,9 +1391,9 @@ begin
       writeln('Fixing event prototypes...');
       FixEvents;
       FixHeritage;
+      LoadFixes;
       CollectUnresolvedClasses;
       IncludeMixins;
-//      LoadFixes;
       writeln('Writing unit file...');
       WriteUnit;
       writeln(AllClasses.Count, ' JS classes wrapped.');
