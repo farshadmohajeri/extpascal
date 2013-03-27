@@ -397,6 +397,19 @@ begin
     MixinList[I] := FixType(MixinList[I])
 end;
 
+function Sufix(S : string) : string;
+var
+  I : Integer;
+begin
+  if pos('TExt', S) = 1 then
+    for I := length(S) downto 1 do
+      if S[I] in ['A'..'Z'] then begin
+        Result := copy(S, I, Length(S));
+        exit;
+      end;
+  Result := S;
+end;
+
 procedure LoadElements(Line : string);
 const
   CurClass  : TClass      = nil;
@@ -478,6 +491,7 @@ begin
               State := InMethods;
               continue; // Discard duplicates
             end;
+            Matches[0] := ReplaceStr(Matches[0], 'Object/Object[]', 'Object[]');
             PropTypes := Explode('/', Matches[0]);
             if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
               CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
@@ -492,9 +506,9 @@ begin
                   CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
                 end
                 else
-                  if CurClass.Properties.IndexOf(FixIdent(PropName + FixType(PropTypes[I]))) = -1 then
-                    CurClass.Properties.AddObject(FixIdent(PropName + FixType(PropTypes[I])),
-                                                  TProp.Create(PropName + FixType(PropTypes[I]), PropName, PropTypes[I], Static, Config));
+                  if CurClass.Properties.IndexOf(FixIdent(PropName + Sufix(FixType(PropTypes[I])))) = -1 then
+                    CurClass.Properties.AddObject(FixIdent(PropName + Sufix(FixType(PropTypes[I]))),
+                                                  TProp.Create(PropName + Sufix(FixType(PropTypes[I])), PropName, PropTypes[I], Static, Config));
             //if Extract([PropName, ':', ','], Line, Matches) then begin
             if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
                (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
@@ -635,19 +649,6 @@ begin
                   end;
               end
               else
-              if pos('(', Fields[1]) = 1 then begin // Unresolved Enums
-                J := Unresolved.IndexOf(Fields[0]);
-                if J = -1 then begin
-                  Enum := Fields[0] + ' = ';
-                  for K := 1 to Fields.Count-1 do begin
-                    Enum := Enum + Fields[K];
-                    if K <> Fields.Count-1 then
-                      Enum = Enum + ', '
-                  end;
-                  Unresolved.Add(Enum);
-                end;
-              end
-              else
                 if Fields.Count = 6 then // props
                   if lowercase(Fields[5]) = 'forceadd' then
                     Properties.AddObject(Fields[1] + Fields[2],
@@ -707,15 +708,30 @@ begin
                       end;
                   end;
                 end
-          else begin // Create new Class
+          else // Create new Class
+            if pos('(', Fields[1]) = 1 then begin // Unresolved Enums
+              Fields[0] := 'T' + Fields[0];
+              J := Unresolved.IndexOfName(Fields[0]);
+              if J = -1 then begin
+                Enum := Fields[0] + '=';
+                for K := 1 to Fields.Count-1 do begin
+                  Enum := Enum + Fields[K];
+                  if K <> Fields.Count-1 then
+                    Enum := Enum + ', '
+                end;
+                Unresolved.Add(Enum);
+              end;
+            end
+            else
             if Fields.Count = 4 then begin
-              NewClass := TClass.Create(Fields[0], Fields[1], Fields[2]);
+              NewClass := TClass.Create(Fields[0], Fields[1], 'Ext');
               NewClass.JSName := Fields[3];
+              NewClass.Singleton := LowerCase(Fields[2]) = 'singleton';
+              if NewClass.Singleton then NewClass.Name := NewClass.Name + 'Singleton';
               AllClasses.AddObject(NewClass.Name, NewClass);
             end
             else
               writeln(^M^J'*** WARNING: Class ', Fields[0], ' does not exist. ***'^M^J);
-          end;
         finally
           Fields.Free;
         end;
@@ -797,7 +813,7 @@ procedure CollectUnresolvedClasses;
   procedure AddUnresolved(T : string); begin
     if pos('T' + JS_LIB, T) = 1 then
       if pos(T, 'TExtObject,TExtFunction,TExtObjectList') = 0 then
-        if AllClasses.IndexOf(T) = -1 then
+        if (AllClasses.IndexOf(T) = -1) and (Unresolved.IndexOfName(T) = -1) then
           Unresolved.Add(T);
   end;
 
@@ -810,9 +826,11 @@ begin
     C := TClass(AllClasses.Objects[I]);
     for J := 0 to C.Properties.Count - 1 do
       with TProp(C.Properties.Objects[J]) do begin
-        K := Unresolved.IndexOf(Typ);
-        if Unresolved. then
-
+        K := Unresolved.IndexOfName(Typ);
+        if K = -1 then
+          AddUnresolved(Typ)
+        else
+          Enum := Unresolved.Values[Unresolved.Names[K]] <> ''
       end;
     for J := 0 to C.Methods.Count - 1 do begin
       Met := TMethod(C.Methods.Objects[J]);
@@ -1146,10 +1164,17 @@ procedure WriteUnit;
   procedure WriteUnresolvedClasses;
   var
     I : Integer;
+    V : string;
   begin
     writeln(Pas);
-    for I := 0 to Unresolved.Count - 1 do
-      writeln(Pas, Tab, Unresolved[I] + ' = class(TExtObject);');
+    for I := 0 to Unresolved.Count - 1 do begin
+      V := Unresolved.ValueFromIndex[I];
+      if V = '' then
+        V := ' = class(TExtObject)'
+      else
+        V := '';
+      writeln(Pas, Tab, ReplaceStr(Unresolved[I], '=', ' = ') + V + ';');
+    end;
   end;
 
 var
@@ -1380,7 +1405,7 @@ begin
   try
     AllClasses.Sorted := true;
     Unresolved.Sorted := true;
-    writeln('JSToPascal - ' + JS_LIB + ' JS classes to Pascal unit wrapper, version ', ExtPascalVersion);
+    Unresolved.Duplicates := dupIgnore;
     writeln('(c) 2008-2013 by Wanderlan Santos dos Anjos, BSD license');
     writeln('http://extpascal.googlecode.com/'^M^J);
     writeln('Reading JS source files...');
@@ -1398,13 +1423,12 @@ begin
       WriteUnit;
       writeln(AllClasses.Count, ' JS classes wrapped.');
       writeln('Unit file generated.');
-      writeln('Done. Press Enter.');
+      writeln('Done.');
     end
     else begin
       writeln('JS source files not found at ' + ParamStr(1) + '/*.js');
       writeln('Aborted! Press Enter.');
     end;
-    readln;
   finally
 //    FreeStringList(AllClasses);
     Flush(Output);

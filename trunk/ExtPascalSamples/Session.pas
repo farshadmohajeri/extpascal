@@ -79,13 +79,13 @@ begin
     Frame       := true;
     Collapsible := true;
     if not(Browser in [brChrome, brSafari, brMobileSafari]) then
-      Layout := lyColumn;  // Webkit doesn't support Column layout correctly
-    AddShowSourceButton(TBarArray, 'ExtPascalSamples.dpr', '', 'Show Main Program');
-    TExtToolbarSeparator.AddTo(TBarArray);
-    AddShowSourceButton(TBarArray, 'Session');
+      Layout := laColumn;  // Webkit doesn't support Column layout correctly
+    AddShowSourceButton(TBar, 'ExtPascalSamples.dpr', '', 'Show Main Program');
+    TExtToolbarSeparator.AddTo(TBar);
+    AddShowSourceButton(TBar, 'Session');
     for I := 0 to high(Examples) do
       with Examples[I], TExtPanel.AddTo(Items) do begin
-        if Layout <> lyColumn then
+        if Layout <> laColumn then
           Width := 380;
         Title := Name;
         Frame := true;
