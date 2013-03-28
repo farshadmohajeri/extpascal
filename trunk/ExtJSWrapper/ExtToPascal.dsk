@@ -1,40 +1,45 @@
 ﻿[Closed Files]
-File_0=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\source\rtl\common\System.Classes.pas',0,1,6619,1,6644,0,0,,
-File_1=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,22820,1,22860,0,0,,
-File_2=TSourceModule,'E:\extpascal\ExtJSWrapper\ExtUtil.pas',0,1,1050,37,1073,0,0,,
-File_3=TSourceModule,'E:\extpascal\ext-4.1.1a\src\grid\plugin\Editing.js',0,1,147,33,196,0,0,,
-File_4=TSourceModule,'E:\extpascal\ExtJSWrapper\ExtDd.pas',0,1,285,32,308,0,0,,
-File_5=TSourceModule,'E:\extpascal\FCGIApp.pas',0,1,210,28,231,0,0,,
-File_6=TSourceModule,'E:\extpascal\ext-4.1.1a\src\Ajax.js',0,1,1,4,2,0,0,,
-File_7=TSourceModule,'E:\extpascal\ext-4.1.1a\src\AbstractManager.js',0,1,70,24,19,0,0,,
-File_8=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\class\Loader.js',0,1,1,22,1261,0,0,,
-File_9=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\lang\Error.js',0,1,68,28,127,0,0,,
-File_10=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\class\ClassManager.js',0,1,1482,32,1505,0,0,,
-File_11=TSourceModule,'E:\extpascal\ext-4.1.1a\src\util\MixedCollection.js',0,1,1,4,2,0,0,,
-File_12=TSourceModule,'E:\extpascal\ext-4.1.1a\src\view\AbstractView.js',0,1,1,4,2,0,0,,
-File_13=TSourceModule,'E:\extpascal\ext-4.1.1a\src\window\MessageBox.js',0,1,867,8,890,0,0,,
-File_14=TSourceModule,'E:\extpascal\ext-4.1.1a\src\ZIndexManager.js',0,1,499,8,522,0,0,,
-File_15=TSourceModule,'E:\extpascal\ext-4.1.1a\src\util\HashMap.js',0,1,1,14,33,0,0,,
-File_16=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\dom\AbstractElement.insertion.js',0,1,1,12,2,0,0,,
-File_17=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\EventManager.js',0,1,1,1,1,0,0,,
+File_0=TSourceModule,'E:\extpascal\ext-4.2.0\src\AbstractComponent.js',0,1,7,23,583,0,0,,
+File_1=TSourceModule,'E:\Temp\Surface.js',0,1,19,36,308,0,0,,
+File_2=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\source\rtl\common\System.Classes.pas',0,1,6619,1,6644,0,0,,
+File_3=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,22820,1,22860,0,0,,
+File_4=TSourceModule,'E:\extpascal\ExtJSWrapper\ExtUtil.pas',0,1,1050,37,1073,0,0,,
+File_5=TSourceModule,'E:\extpascal\ext-4.1.1a\src\grid\plugin\Editing.js',0,1,147,33,196,0,0,,
+File_6=TSourceModule,'E:\extpascal\ExtJSWrapper\ExtDd.pas',0,1,285,32,308,0,0,,
+File_7=TSourceModule,'E:\extpascal\FCGIApp.pas',0,1,210,28,231,0,0,,
+File_8=TSourceModule,'E:\extpascal\ext-4.1.1a\src\Ajax.js',0,1,1,4,2,0,0,,
+File_9=TSourceModule,'E:\extpascal\ext-4.1.1a\src\AbstractManager.js',0,1,70,24,19,0,0,,
+File_10=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\class\Loader.js',0,1,1,22,1261,0,0,,
+File_11=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\lang\Error.js',0,1,68,28,127,0,0,,
+File_12=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\class\ClassManager.js',0,1,1482,32,1505,0,0,,
+File_13=TSourceModule,'E:\extpascal\ext-4.1.1a\src\util\MixedCollection.js',0,1,1,4,2,0,0,,
+File_14=TSourceModule,'E:\extpascal\ext-4.1.1a\src\view\AbstractView.js',0,1,1,4,2,0,0,,
+File_15=TSourceModule,'E:\extpascal\ext-4.1.1a\src\window\MessageBox.js',0,1,867,8,890,0,0,,
+File_16=TSourceModule,'E:\extpascal\ext-4.1.1a\src\ZIndexManager.js',0,1,499,8,522,0,0,,
+File_17=TSourceModule,'E:\extpascal\ext-4.1.1a\src\util\HashMap.js',0,1,1,14,33,0,0,,
+File_18=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\dom\AbstractElement.insertion.js',0,1,1,12,2,0,0,,
+File_19=TSourceModule,'E:\extpascal\ext-4.1.1a\src\core\src\EventManager.js',0,1,1,1,1,0,0,,
 
 [Modules]
-Module0=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
-Module1=E:\extpascal\ExtJSWrapper\Ext.pas
-Module2=E:\extpascal\ExtJSWrapper\ExtFixes.txt
-Module3=E:\extpascal\ExtPascal.pas
-Module4=E:\Temp\Surface.js
-Module5=E:\extpascal\ExtPascalUtils.pas
-Module6=E:\extpascal\ext-4.2.0\src\AbstractComponent.js
-Module7=E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js
-Module8=E:\extpascal\ExtJSWrapper\ExtOld.pas
-Count=9
+Module0=E:\extpascal\ExtJSWrapper\Ext.pas
+Module1=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
+Module2=E:\extpascal\ExtPascalUtils.pas
+Module3=E:\extpascal\ExtJSWrapper\ExtFixes.txt
+Module4=E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js
+Module5=E:\extpascal\ExtPascal.pas
+Module6=E:\extpascal\ExtJSWrapper\ExtOld.pas
+Count=7
 EditWindowCount=1
+
+[E:\extpascal\ExtJSWrapper\Ext.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
 
 [E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
 ModuleType=TBaseProject
 
-[E:\extpascal\ExtJSWrapper\Ext.pas]
+[E:\extpascal\ExtPascalUtils.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
@@ -42,24 +47,13 @@ FormOnTop=0
 [E:\extpascal\ExtJSWrapper\ExtFixes.txt]
 ModuleType=TSourceModule
 
+[E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js]
+ModuleType=TSourceModule
+
 [E:\extpascal\ExtPascal.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
-
-[E:\Temp\Surface.js]
-ModuleType=TSourceModule
-
-[E:\extpascal\ExtPascalUtils.pas]
-ModuleType=TSourceModule
-FormState=0
-FormOnTop=0
-
-[E:\extpascal\ext-4.2.0\src\AbstractComponent.js]
-ModuleType=TSourceModule
-
-[E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js]
-ModuleType=TSourceModule
 
 [E:\extpascal\ExtJSWrapper\ExtOld.pas]
 ModuleType=TSourceModule
@@ -67,8 +61,8 @@ FormState=0
 FormOnTop=0
 
 [EditWindow0]
-ViewCount=9
-CurrentEditView=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
+ViewCount=7
+CurrentEditView=E:\extpascal\ExtJSWrapper\Ext.pas
 View0=0
 View1=1
 View2=2
@@ -76,8 +70,6 @@ View3=3
 View4=4
 View5=5
 View6=6
-View7=7
-View8=8
 PercentageSizes=1
 Create=1
 Visible=1
@@ -108,9 +100,9 @@ BottomMiddelPanelData=0000080001020200000009000000446F636B5369746530100000004772
 [View0]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\Ext.pas
-CursorX=39
-CursorY=45980
-TopLine=45954
+CursorX=3
+CursorY=12711
+TopLine=12757
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -121,7 +113,7 @@ CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
 CursorX=1
 CursorY=15
-TopLine=1
+TopLine=13
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -151,17 +143,6 @@ EditViewName=E:\extpascal\ExtJSWrapper\ExtFixes.txt
 
 [View4]
 CustomEditViewType=TEditView
-Module=E:\extpascal\ext-4.2.0\src\AbstractComponent.js
-CursorX=23
-CursorY=583
-TopLine=7
-LeftCol=1
-Elisions=
-Bookmarks=
-EditViewName=E:\extpascal\ext-4.2.0\src\AbstractComponent.js
-
-[View5]
-CustomEditViewType=TEditView
 Module=E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js
 CursorX=20
 CursorY=625
@@ -171,21 +152,10 @@ Elisions=
 Bookmarks=
 EditViewName=E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js
 
-[View6]
-CustomEditViewType=TEditView
-Module=E:\Temp\Surface.js
-CursorX=36
-CursorY=308
-TopLine=19
-LeftCol=1
-Elisions=
-Bookmarks=
-EditViewName=E:\Temp\Surface.js
-
-[View7]
+[View5]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtPascalUtils.pas
-CursorX=44
+CursorX=43
 CursorY=293
 TopLine=284
 LeftCol=1
@@ -193,7 +163,7 @@ Elisions=
 Bookmarks=
 EditViewName=E:\extpascal\ExtPascalUtils.pas
 
-[View8]
+[View6]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtOld.pas
 CursorX=52
@@ -777,5 +747,5 @@ Dockable=1
 StayOnTop=0
 TabPosition=1
 ActiveTabID=ProjectManager
-TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,TFileExplorerForm,TemplateView,ClassBrowserTool
+TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,ClassBrowserTool,TemplateView,TFileExplorerForm
 

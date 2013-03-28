@@ -39,10 +39,9 @@ begin
   with F.AddTo(Items) do begin
     FileUpload := true;
     Frame      := true;
-//    AutoHeight := true;
     Width      := 300;
     LabelWidth := 20;
-    with TExtFormTextField.AddTo(Items) do begin
+    with TExtFormFieldText.AddTo(Items) do begin
       FieldLabel := 'File';
       InputType  := itFile;
     end;
@@ -56,11 +55,11 @@ begin
         Success   := ExtMessageBox.Alert('Success', 'File: %1.result.file uploaded on /uploads folder');
         Failure   := ExtMessageBox.Alert('Upload Error', '%1.result.message')
       end;
-      Handler := TExtFormBasicForm(GetForm).Submit(SubmitAction);
+      Handler := TExtFormBasic(GetForm).Submit(SubmitAction);
     end;
     with TExtButton.AddTo(Buttons) do begin
       Text    := 'Reset';
-      Handler := TExtFormBasicForm(GetForm).Reset;
+      Handler := TExtFormBasic(GetForm).Reset;
     end;
     SelfSession.AddShowSourceButton(Buttons, 'FileUpload');
   end;
