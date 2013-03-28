@@ -290,7 +290,7 @@ begin
     K := J;
     J := PosEx(Delims[I], S, J);
     if ((J - K) > 15000) or ((I > 0) and (Delims[I] <> EndCom) and
-       (Delims[I] <> ' ') and ((J - K) > 1800)) then exit;
+       (Delims[I] <> ' ') and ((J - K) > 2800)) then exit;
     if J = 0 then begin
       for J := I to High(Delims) do
         Rest := Rest + Delims[J];
