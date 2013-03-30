@@ -148,7 +148,7 @@ function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Le
   Header : boolean = false) : string;
 
 // Returns true if BeforeS string occurs before AfterS string in S string
-function Before(const BeforeS, AfterS : string; var S : string; Remove : boolean = true) : boolean;
+function Before(const BeforeS, AfterS : string; var S : string) : boolean;
 
 // Returns true if S string occurs between BeforeS and AfterS strings in T string
 function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
@@ -441,13 +441,13 @@ begin
     EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
-function Before(const BeforeS, AfterS : string; var S : string; Remove : boolean = true) : boolean;
+function Before(const BeforeS, AfterS : string; var S : string) : boolean;
 var
-  I : integer;
+  I, J : integer;
 begin
   I := pos(BeforeS, S);
-  Result := (I <> 0) and (I < pos(AfterS, S));
-  if Remove and Result then delete(S, 1, pos(AfterS, S) + length(AfterS));
+  J := pos(AfterS, S);
+  Result := (I <> 0) and (((J <> 0) and (I < J)) or (J = 0));
 end;
 
 function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;

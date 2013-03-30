@@ -136,11 +136,12 @@ begin
     Width  := 600;
     Height := 400;
     Modal  := true;
-    with TExtUxCodePress.AddTo(Items) do begin
+(*    with
+    TExtUxCodePress.AddTo(Items) do begin
       ReadOnly := true;
       Code     := Lines;
     end;
-    if Proc <> 'ShowSource' then
+*)    if Proc <> 'ShowSource' then
       AddShowSourceButton(Buttons, 'Session', 'ShowSource');
     Show;
     Free;

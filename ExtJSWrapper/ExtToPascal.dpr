@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, ExtPascalUtils
-, Ext
+//, Ext
   ;
 
   {.$DEFINE USES_PUBLISHED}
@@ -426,17 +426,17 @@ var
   IsEvent, Optional, Static, Singleton: boolean;
   I, Ci : integer;
 begin
-  if Before('@protected', '*/', Line, false) or
-     Before('@ignore',    '*/', Line, false) or
-     Before('@deprecated','*/', Line, false) or
-     Before('@abstract',  '*/', Line, false) then exit;
+  if Before('@protected', '*/', Line) or
+     Before('@ignore',    '*/', Line) or
+     Before('@deprecated','*/', Line) or
+     Before('@abstract',  '*/', Line) then exit;
   State := Initial;
   Matches := TStringList.Create;
   while true do begin
     case State of
       Initial : begin
         JSName := '';
-        Singleton := Before('@singleton', 'Ext.define(', Line, false);
+        Singleton := Before('@singleton', 'Ext.define(', Line);
         Extract(['/**', '*/'], Line, Matches);
         if (JSName <> '') or
            Extract(['Ext.define(' + AP, AP], Line, Matches) or
@@ -449,7 +449,7 @@ begin
           else
             CurClass := TClass(AllClasses.Objects[Ci]);
           State := InClass;
-          if not Singleton then Singleton := Before('singleton:', '}', Line, false);
+          if not Singleton then Singleton := Before('singleton:', '}', Line);
           if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
           CurClass.Singleton := Singleton;
           continue;
@@ -474,7 +474,10 @@ begin
            Between('@deprecated','/**', '*/', Line) or
            Between('@protected', '/**', '*/', Line) then continue;
         begin
-          Config := Extract(['@cfg {', '} ', ' '], Line, Matches);
+          if Before('@cfg {', '@property {', Line) then
+            Config := Extract(['@cfg {', '} ', ' '], Line, Matches)
+          else
+            Config := False;
           // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
           if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
             PropName := Matches[1];
@@ -483,7 +486,7 @@ begin
             if I <> 0 then
               PropName := copy(PropName, 1, I-1); // Default value ****
             if FixIdent(PropName) = '' then continue; // Discard properties nameless
-            if Before('@static', '*/', Line, false) then Static := true;
+            if Before('@static', '*/', Line) then Static := true;
             if IsUppercase(PropName) then Static := true;
             PropName := Unique(FixIdent(PropName), CurClass.Properties);
             if not Static then PropName[1] := LowerCase(PropName)[1];
@@ -492,6 +495,7 @@ begin
               continue; // Discard duplicates
             end;
             Matches[0] := ReplaceStr(Matches[0], 'Object/Object[]', 'Object[]');
+            Matches[0] := ReplaceStr(Matches[0], 'String/Number', 'Number/String');
             PropTypes := Explode('/', Matches[0]);
             if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
               CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
@@ -510,8 +514,8 @@ begin
                     CurClass.Properties.AddObject(FixIdent(PropName + Sufix(FixType(PropTypes[I]))),
                                                   TProp.Create(PropName + Sufix(FixType(PropTypes[I])), PropName, PropTypes[I], Static, Config));
             //if Extract([PropName, ':', ','], Line, Matches) then begin
-            if (Before('Default to',  '*/', Line, false) and Extract(['Default to',  '.'], Line, Matches)) or
-               (Before('Defaults to', '*/', Line, false) and Extract(['Defaults to', '.'], Line, Matches)) then begin
+            if (Before('Default to',  '*/', Line) and Extract(['Default to',  '.'], Line, Matches)) or
+               (Before('Defaults to', '*/', Line) and Extract(['Defaults to', '.'], Line, Matches)) then begin
               SetDefault(CurProp, Matches[0], Matches);
               if (CurProp.Default <> '') and not CurClass.Defaults then begin
                 CurClass.Defaults := true;
@@ -543,7 +547,13 @@ begin
            Between('@protected', '/**', '*/', Line) or
            Between('@deprecated', '/**', '*/', Line) or
            Between('@template',  '/**', '*/', Line) then continue;
-        IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
+        if Before('@event ', ': function', Line) then
+          IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches)
+        else
+          if Before('/**', ': function', Line) then
+            IsEvent := False
+          else
+            IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
         if IsEvent or Extract(['/**', '*/', ': function'], Line, Matches) then begin
           JSName := IfThen(IsEvent, Matches[0], Matches[1]);
           if (length(JSName) > 30) or (FixIdent(JSName) = '') or // Doc fault
@@ -729,6 +739,12 @@ begin
               NewClass.Singleton := LowerCase(Fields[2]) = 'singleton';
               if NewClass.Singleton then NewClass.Name := NewClass.Name + 'Singleton';
               AllClasses.AddObject(NewClass.Name, NewClass);
+            end
+            else
+            if Fields.Count = 2 then begin // Aliasing a type
+              Fields[0] := 'T' + Fields[0];
+              if Unresolved.IndexOfName(Fields[0]) = -1 then
+                Unresolved.Add(Fields[0] + '=' + Fields[1]);
             end
             else
               writeln(^M^J'*** WARNING: Class ', Fields[0], ' does not exist. ***'^M^J);
@@ -1193,7 +1209,6 @@ begin
   writeln(Pas, 'type');
   for J := 0 to AllClasses.Count-1 do // forward classes
     writeln(Pas, Tab, TClass(AllClasses.Objects[J]).Name, ' = class;');
-//  writeln(Pas, Tab, 'TExtDataRecord = TExtDataModel;');
   WriteUnresolvedClasses;
   writeln(Pas);
   AllClasses.Sorted := false;

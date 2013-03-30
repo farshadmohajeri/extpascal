@@ -28,7 +28,7 @@ begin
     Region   := rgCenter;
     Margins  := SetMargins(3, 3, 3);
     Defaults := JSObject('autoScroll:true');
-    ActiveTabNumber := 0;
+    ActiveTab := 0;
     OnTabChange := ExtTabPanelOnTabchange;
     with TExtPanel.AddTo(Items) do begin
       Title := 'Bogus Tab';
