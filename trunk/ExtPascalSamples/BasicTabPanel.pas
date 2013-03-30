@@ -25,7 +25,7 @@ constructor TBasicTabPanel.Create; begin
   Height := 300;
   CloseAction := 'hide';
   with TExtTabPanel.AddTo(Items) do begin
-    ActiveTabInteger := 0;
+    ActiveTab := 0;
     with TExtPanel.AddTo(Items) do begin
       Title := 'Hello World 1';
       Html  := 'Hello...';

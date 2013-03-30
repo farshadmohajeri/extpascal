@@ -1,4 +1,4 @@
-* For Ext JS 3.0 and later
+* For Ext JS 4.0 and later
 * USED FORMATS in ExtFixes.txt
 *
 * Adding new classes:
@@ -9,6 +9,12 @@
 *
 * Changing a property type to enumeration
 <class name>,<JavaScript property name>,<(enumerated list)>
+*
+* Changing a type to enumeration
+<type name>,<(enumerated list)>
+*
+* Aliasing a type
+<type name>,<alias>
 *
 * Adding and updating methods:
 <class name>,<JavaScript method name>,<return type or void>,<if is a static method>,<if is a overload method>
@@ -22,8 +28,66 @@
 * For each event parameter:
 <parameter name>,<type>
 *
+ExtComponent, split, Boolean, false, true,
+ExtComponent, cmargins, string, false, true,
+ExtComponent, minSize, Integer, false, true,
+ExtComponent, maxSize, Integer, false, true,
+ExtComponent, anchor, string, false, true,
+ExtDataRecord, TExtDataModel
+ExtDataModel, Create,, true, false, Data, ExtObjectList, false
+
 ExtEnumsLayout, (laAbsolute, laAccordion, laAnchor, laAutocomponent, laAutocontainer, laBorder, laBox, laCard, laCheckboxgroup, laColumn, laContainer, laFit, laForm, laHbox, laTable, laVbox)
 ExtMessageBox, ExtWindowMessageBox, singleton, Ext.MessageBox
+
+ExtWindowMessageBox, show, ExtFunction, false, false, Config, ExtShowConfig, false
+
+ExtMessageBoxSingleton, ERROR, string, true, false, 'ext-mb-error'
+ExtMessageBoxSingleton, INFO, string, true, false, 'ext-mb-info'
+ExtMessageBoxSingleton, QUESTION, string, true, false, 'ext-mb-question'
+ExtMessageBoxSingleton, WARNING, string, true, false, 'ext-mb-warning'
+ExtMessageBoxSingleton, OK, Integer, true, false, 1
+ExtMessageBoxSingleton, YES, Integer, true, false, 2
+ExtMessageBoxSingleton, NO, Integer, true, false, 4
+ExtMessageBoxSingleton, CANCEL, Integer, true, false, 8
+ExtMessageBoxSingleton, OKCANCEL, Integer, true, false, 9
+ExtMessageBoxSingleton, YESNO, Integer, true, false, 6
+ExtMessageBoxSingleton, YESNOCANCEL, Integer, true, false, 14
+
+ExtShowConfig,, Ext, Object
+ExtShowConfig, animTarget, string, false, true,
+ExtShowConfig, buttons, Integer, false, true,
+ExtShowConfig, closable, Boolean, false, true, true
+ExtShowConfig, cls, string, false, true,
+ExtShowConfig, defaultTextHeight, Integer, false, true, 75
+ExtShowConfig, fn, ExtFunction, false, true,
+ExtShowConfig, scope, ExtObject, false, true,
+ExtShowConfig, icon, string, false, true,
+ExtShowConfig, iconCls, string, false, true,
+ExtShowConfig, defaultFocus, string, false, true,
+ExtShowConfig, maxWidth, Integer, false, true, 600
+ExtShowConfig, minWidth, Integer, false, true, 100
+ExtShowConfig, modal, Boolean, false, true, true
+ExtShowConfig, msg, string, false, true,
+ExtShowConfig, multiline, Boolean, false, true,
+ExtShowConfig, progress, Boolean, false, true,
+ExtShowConfig, progressText, string, false, true,
+ExtShowConfig, prompt, Boolean, false, true,
+ExtShowConfig, proxyDrag, Boolean, false, true,
+ExtShowConfig, title, string, false, true,
+ExtShowConfig, value, string, false, true,
+ExtShowConfig, wait, Boolean, false, true,
+ExtShowConfig, waitConfig, ExtProgressWaitConfig, false, true,
+ExtShowConfig, width, Integer, false, true,
+ExtProgressWaitConfig,, Ext, Object
+ExtProgressWaitConfig, duration, Integer, false, true,
+ExtProgressWaitConfig, interval, Integer, false, true, 1000
+ExtProgressWaitConfig, animate, Boolean, false, true,
+ExtProgressWaitConfig, increment, Integer, false, true, 10
+ExtProgressWaitConfig, text, string, false, true,
+ExtProgressWaitConfig, fn, ExtFunction, false, true,
+ExtProgressWaitConfig, scope, ExtObject, false, true,
+
+
 
 *ExtBoxComponent, region, (rgCenter, rgNorth, rgEast, rgSouth, rgWest)
 *ExtComponent, xtype, (xtBox, xtButton, xtButtonGroup, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtFlash, xtGrid, xtListView, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSpacer, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtMenu, xtColorMenu, xtDateMenu, xtMenuBaseItem, xtMenuCheckItem, xtMenuItem, xtMenuSeparator, xtMenuTextItem, xtForm, xtCheckBox, xtCheckBoxGroup, xtCombo, xtDateField, xtDisplayField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtRadioGroup, xtTextArea, xtTextField, xtTimeField, xtTrigger, xtChart, xtBarChart, xtCartesianChart, xtColumnChart, xtLineChart, xtPieChart)
