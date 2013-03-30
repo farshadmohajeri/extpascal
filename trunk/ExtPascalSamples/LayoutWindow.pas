@@ -8,7 +8,7 @@ uses
 type
   TLayoutWindow = class(TExtWindow)
     constructor Create;
-    procedure ExtTabPanelOnTabchange(AThis : TExtTabPanel; ATab : TExtPanel);
+    procedure ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtPanel);
   end;
 
 implementation
@@ -25,8 +25,8 @@ begin
   SelfSession.SetCodePress;
   Tabs := TExtTabPanel.AddTo(Items);
   with Tabs do begin
-    Region   := rgCenter;
-    Margins  := SetMargins(3, 3, 3);
+    Region   := reCenter;
+    Margin   := 3;
     Defaults := JSObject('autoScroll:true');
     ActiveTab := 0;
     OnTabChange := ExtTabPanelOnTabchange;
@@ -47,25 +47,25 @@ begin
   Nav := TExtPanel.Create;
   with Nav do begin
     Title       := 'Navigation';
-    Region      := rgWest;
+    Region      := reWest;
     Split       := true;
     Width       := 200;
     Collapsible := true;
-    Margins     := SetMargins(3, 0, 3, 3);
+    MarginString:= SetMargins(3, 0, 3, 3);
   end;
   Title    := 'Layout Window';
   Closable := true;
   Width    := 600;
   Height   := 350;
   Plain    := true;
-  Layout   := lyBorder;
+  Layout   := laBorder;
   Modal    := true;
   Nav.AddTo(Items);
   SelfSession.AddShowSourceButton(Buttons, 'LayoutWindow');
 end;
 
-procedure TLayoutWindow.ExtTabPanelOnTabchange(AThis : TExtTabPanel; ATab : TExtPanel); begin
-   ExtMessageBox.Alert('Active Tab is', ATab.Title);
+procedure TLayoutWindow.ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtPanel); begin
+   ExtMessageBox.Alert('Active Tab is', NewTab.Title);
 end;
 
 end.

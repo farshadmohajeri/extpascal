@@ -18,12 +18,12 @@ type
 implementation
 
 uses
-  ExtPascalUtils, Session, Ext;
+  ExtPascalUtils, Session;
 
 constructor TBorderLayout.Create;
 var
- Tree : TExtTreeTreePanel;
- Node : TExtTreeTreeNode;
+ Tree : TExtTreePanel;
+ Node : TExtDataNodeInterface;
 begin
   inherited;
   with SelfSession do begin
@@ -33,60 +33,61 @@ begin
       '.settings{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_wrench.png)}' +
       '.nav{background:url(' + ExtPath + '/examples/shared/icons/fam/folder_go.png)}');
   end;
-  Tree := TExtTreeTreePanel.Create;
-  Tree.Border := false;
+  Tree := TExtTreePanel.Create;
+  Tree.Border := 0;
   //set root node
-  Tree.Root := TExtTreeTreeNode.Create;
-  with Tree.Root do begin
+  Node := TExtDataNodeInterface.Create;
+  with Node do begin
     Text := 'Root';
-    AllowChildren := True;
+    Root := True;
     Expandable := True;
     Expanded := True;
     Leaf := False;
-    on('click', JSFunction(SelectNodeEventBrowserSide));
+    AddListener('click', JSFunction(SelectNodeEventBrowserSide));
   end;
+  Tree.Root := Node;
   //set child node
-  Node := TExtTreeTreeNode.Create;
+  Node := TExtDataNodeInterface.Create;
   with Node do begin
     Text := 'child0';
-    on('click', Ajax(SelectNodeEventServerSide, ['Name', '%0.text']));
+    AddListener('click', Ajax(SelectNodeEventServerSide, ['Name', '%0.text']));
   end;
-  Tree.Root_.AppendChild(Node);
+  Tree.Root.AppendChild(Node);
 
-  Layout := lyBorder;
+  Layout := laBorder;
   with TExtPanel.AddTo(Items) do begin
-    Region := rgNorth;
+    Region := reNorth;
     Height := 64;
     Frame  := true;
     Html   := '<p>north - generally for menus, toolbars and/or advertisements</p>';
-    SelfSession.AddShowSourceButton(TbarArray, 'BorderLayout');
+    SelfSession.AddShowSourceButton(Tbar, 'BorderLayout');
   end;
   with TExtPanel.AddTo(Items) do begin
-    Region  := rgSouth;
+    Region  := reSouth;
     Html    := '<p>south - generally for informational stuff, also could be for status bar</p>';
     Split   := true;
     Height  := 100;
     Title   := 'South';
-    Margins := SetMargins(0);
+    Margin  := 0;
     MinSize := 100;
     MaxSize := 200;
     Collapsible := true;
   end;
   with TExtPanel.AddTo(Items) do begin
-    Region  := rgEast;
+    Region  := reEast;
     Split   := true;
     Height  := 100;
     Title   := 'East Side';
-    Margins := SetMargins(0, 5);
+    MarginString := SetMargins(0, 5);
     Width   := 225;
-    Layout  := lyFit;
+    Layout  := laFit;
     MinSize := 175;
     MaxSize := 400;
     Collapsible := true;
     with TExtTabPanel.AddTo(Items) do begin
-      Border := false;
-      TabPosition := 'bottom';
-      ActiveTabNumber := 1;
+      Border := 0;
+      TabPosition := taBottom;
+      ActiveTab := 1;
       with TExtPanel.AddTo(Items) do begin
         Html  := '<p>A TabPanel component can be a region.</p>';
         Title := 'A Tab';
@@ -101,35 +102,35 @@ begin
     end;
   end;
   with TExtPanel.AddTo(Items) do begin
-    Region  := rgWest;
+    Region  := reWest;
     Id      := 'west-panel';
     Split   := true;
     Width   := 200;
     Title   := 'West';
-    Margins := SetMargins(0, 0, 0, 5);
-    Layout  := lyAccordion;
+    MarginString := SetMargins(0, 0, 0, 5);
+    Layout  := laAccordion;
     MinSize := 175;
     MaxSize := 400;
     Collapsible  := true;
-    LayoutConfig := JSObject('animate:true');
+    AnimCollapse := true;
     with TExtPanel.AddTo(Items) do begin
       Title   := 'Navigation';
       Html    := '<p>Hi. I''m the west panel.</p>';
-      Border  := false;
+      Border  := 0;
       IconCls := 'nav';
       Tree.AddTo(Items);
     end;
     with TExtPanel.AddTo(Items) do begin
       Title   := 'Settings';
       Html    := '<p>Some settings in here.</p>';
-      Border  := false;
+      Border  := 0;
       IconCls := 'settings';
     end;
   end;
   with TExtTabPanel.AddTo(Items) do begin
-    Region := rgCenter;
+    Region := reCenter;
     DeferredRender  := false;
-    ActiveTabNumber := 0;
+    ActiveTab := 0;
     with TExtPanel.AddTo(Items) do begin
       Title      := 'Close Me';
       Html       := '<p><b>Done reading me? Close me by clicking the X in the top right corner.</b></p>';

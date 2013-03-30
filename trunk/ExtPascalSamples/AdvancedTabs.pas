@@ -54,15 +54,13 @@ begin
     Handler  := Ajax(AddTab);
     OnClick  := HandleExtButtonClick; // Delphi style event handler
   end;
-  RenderTo        := 'body';
-  ActiveTabNumber := 0;
-  ResizeTabs      := true; // turn on tab resizing
-  MinTabWidth     := 115;
-  TabWidth        := 135;
-  Width           := 600;
-  Height          := 150;
-  Defaults        := JSObject('autoScroll:true');
-  EnableTabScroll := true;
+  RenderTo    := 'body';
+  ActiveTab   := 0;
+  Resizable   := true; // turn on tab resizing
+  MinTabWidth := 115;
+  Width       := 600;
+  Height      := 150;
+  AutoScroll  := true;
   if Tabs = 0 then
     Tabs := 7
   else
@@ -71,7 +69,7 @@ begin
   SelfSession.AddShowSourceButton(Buttons, 'AdvancedTabs');
 end;
 
-procedure TAdvancedTabs.HandleExtButtonClick(This: TExtButton; E: TExtEventObjectSingleton); begin
+procedure TAdvancedTabs.HandleExtButtonClick(This: TExtButton; E: TExtDirectEvent); begin
   ExtMessageBox.Alert('alert', 'event handled successfully');
 end;
 
