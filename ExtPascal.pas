@@ -234,8 +234,9 @@ type
   THTMLElement = class(TExtObject);
   TRegExp = type string;
   TEvent = class(TExtObject);
-  TCSSStyleSheet = class(TExtObject);
+  TCSSStyleSheet = type string;
   TTextNode = class(TExtObject);
+  TXMLHttpRequest = string;
 //DOM-IGNORE-END*)
 
 const
@@ -1903,6 +1904,6 @@ function TExtObject.ParamAsObject(ParamName : string) : TExtObject; begin
 end;
 
 begin
-  ExtUtilTextMetrics := TExtUtilTextMetrics.Create;
+  ExtUtilTextMetrics := TExtUtilTextMetrics.Create('body');
   ExtUtilTextMetrics.FJSName := 'TextMetrics';
 end.

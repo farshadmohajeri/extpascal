@@ -498,7 +498,6 @@ var
     CurProp   : TProp;
     PropTypes : TStringList;
   begin
-    // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
     PropName := Matches[1];
     Static := false;
     I := pos('=', PropName);
@@ -554,6 +553,7 @@ var
       ParseField(False)
     else
       Delete(Line, 1, pos('@property', Line) + 10);
+    // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
   end;
 
   procedure SetArraysAndObjects;
@@ -597,7 +597,7 @@ var
     end
     else
       Abort;
-    if not Between('extend:', '/*', '*/', Line, false) then
+    if not Before('/**', 'extend:', Line) and not Between('extend:', '/*', '*/', Line, false) then
       if Extract(['extend:', AP, AP], Line, Matches) then
         CurClass.Parent := FixIdent(Matches[1], true);
     if Extract(['mixins: {', '}'], Line, Matches) then
