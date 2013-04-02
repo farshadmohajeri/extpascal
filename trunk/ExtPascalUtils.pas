@@ -153,6 +153,10 @@ function Before(const BeforeS, AfterS : string; var S : string) : boolean;
 // Returns true if S string occurs between BeforeS and AfterS strings in T string
 function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
 
+function GetBetween(const A, B, Line : string) : string;
+
+function First(const A : array of string; const S : string) : integer;
+
 // Returns true if all chars in S are uppercase
 function IsUpperCase(S : string) : boolean;
 
@@ -450,6 +454,28 @@ begin
   Result := (I <> 0) and (((J <> 0) and (I < J)) or (J = 0));
 end;
 
+function First(const A : array of string; const S : string) : integer;
+var
+  I, J : integer;
+  M : array of integer;
+begin
+  SetLength(M, Length(A));
+  for I := 0 to High(A) do begin
+    M[I] := pos(A[I], S);
+    if M[I] = 0 then
+      M[I] := MAXINT;
+  end;
+  J := MinIntValue(M);
+  if (J = 0) or (J = MAXINT) then
+    Result := -1
+  else
+    for I := 0 to High(M) do
+      if J = M[I] then begin
+        Result := I;
+        exit;
+      end;
+end;
+
 function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
 var
   I, J : integer;
@@ -461,6 +487,18 @@ begin
     Result := pos(S, copy(T, I+1, J-I)) <> 0;
     if Remove and Result then delete(T, 1, J+length(AfterS));
   end;
+end;
+
+function GetBetween(const A, B, Line : string) : string;
+var
+  I, J : integer;
+begin
+  I := pos(A, Line);
+  J := posex(B, Line, I + length(A));
+  if (I = 0) or (J = 0) then
+    Result := ''
+  else
+    Result := Trim(copy(Line, I + length(A), J- (I + length(A))));
 end;
 
 function IsUpperCase(S : string) : boolean;

@@ -12,7 +12,7 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, ExtPascalUtils
-//, Ext
+, Ext
   ;
 
   {.$DEFINE USES_PUBLISHED}
@@ -118,7 +118,7 @@ begin
 end;
 
 function FixJSName(JSName : string) : string; begin
-  Result := AnsiReplaceStr(JSName, '_', '')
+  Result := AnsiReplaceStr(JSName, AP, '');
 end;
 
 type
@@ -410,196 +410,227 @@ begin
   Result := S;
 end;
 
-procedure LoadElements(Line : string);
-const
-  CurClass  : TClass      = nil;
-  CurProp   : TProp       = nil;
-  CurMethod : TMethod     = nil;
-  PropName  : string      = '';
-  MetName   : string      = '';
-  PropTypes : TStringList = nil;
-  Config    : boolean     = false;
+procedure ParseClassFile(Line : string);
 var
-  State : (Initial, InClass, InProperties, InMethods);
-  Return, JSName, Params : string;
-  Matches, Args : TStringList;
-  IsEvent, Optional, Static, Singleton: boolean;
-  I, Ci : integer;
-begin
-  if Before('@protected', '*/', Line) or
-     Before('@ignore',    '*/', Line) or
-     Before('@deprecated','*/', Line) or
-     Before('@abstract',  '*/', Line) then exit;
-  State := Initial;
-  Matches := TStringList.Create;
-  while true do begin
-    case State of
-      Initial : begin
-        JSName := '';
-        Singleton := Before('@singleton', 'Ext.define(', Line);
-        Extract(['/**', '*/'], Line, Matches);
-        if (JSName <> '') or
-           Extract(['Ext.define(' + AP, AP], Line, Matches) or
-           Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
-          if JSName = '' then JSName := Matches[0];
-          if pos(JS_LIB, JSName) <> 1 then exit;
-          Ci := AllClasses.IndexOf(JSName);
-          if Ci = -1 then
-            CurClass := TClass.Create(JSName)
-          else
-            CurClass := TClass(AllClasses.Objects[Ci]);
-          State := InClass;
-          if not Singleton then Singleton := Before('singleton:', '}', Line);
-          if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
-          CurClass.Singleton := Singleton;
-          continue;
+  CurClass : TClass;
+  Matches  : TStringList;
+
+  procedure ParseFunction(IsEvent : boolean);
+  var
+    JSName, Params, MetName, Return : string;
+    Static, Optional : boolean;
+    CurMethod : TMethod;
+    Args : TStringList;
+  begin
+    JSName := IfThen(IsEvent, Matches[0], Matches[1]);
+    Params := IfThen(IsEvent, Matches[1], Matches[0]);
+    if (length(JSName) > 30) or (FixIdent(JSName) = '') or // Doc fault
+       ((JSName = 'destroy') and not IsEvent) then exit;
+    if JSName = 'create' then CurClass.AltCreate := true;
+    Static := false;// pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
+    if IsEvent then begin
+      MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
+      if MetName <> Unique(MetName, CurClass.Events) then exit;
+    end
+    else begin
+      MetName := Unique(FixIdent(JSName), CurClass.Properties);
+      if MetName <> Unique(MetName, CurClass.Methods) then exit;
+      if MetName <> 'Create' then MetName := Unique(MetName, CurClass.Methods);
+      if pos(MetName, 'ConstructorJS.Create.') <> 0 then begin
+        MetName := 'Create';
+        Return := ''
+      end
+      else
+        Return := 'TExtFunction';
+    end;
+    Args := TStringList.Create;
+    while pos('@param', Params) <> 0 do begin
+      if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
+        break;
+      Optional := pos('[', Matches[2]) = 1;
+      if Matches.Count = 4 then
+        Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
+      Matches[2] := Unique(FixIdent(Matches[2]), Args);
+      if IsEvent and SameText(Matches[2], 'This') then
+        Matches[1] := CurClass.Name;
+      Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
+    end;
+    CurMethod := TMethod.Create(MetName, JSName, Return, Args, Static, false);
+    if IsEvent then
+      CurClass.Events.AddObject(CurMethod.Name, CurMethod)
+    else
+      DoOverloads(CurClass, CurMethod);
+  end;
+
+  procedure ParseEvent;
+  var
+    IsEvent : boolean;
+  begin
+    if GetBetween('@event', '*', Line) = '' then begin
+      IsEvent := Extract(['@event', '*/', AP, AP], Line, Matches); // Alternate syntax
+      if IsEvent then begin
+        Matches[1] := Matches[0];
+        Matches[0] := Matches[2];
+      end;
+    end
+    else
+      IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
+    if IsEvent then
+      ParseFunction(True)
+    else
+      Delete(Line, 1, pos('@event', Line) + 6);
+  end;
+
+  procedure ParseMethod; begin
+    if Before('/**', ': function', Line) then
+      if Extract(['/**', '*/', ': function'], Line, Matches) then begin
+        ParseFunction(False);
+        exit;
+      end;
+    Delete(Line, 1, pos(': function', Line) + 10);
+  end;
+
+  procedure ParseField(Config : boolean);
+  var
+    PropName  : string;
+    Static    : boolean;
+    I         : integer;
+    CurProp   : TProp;
+    PropTypes : TStringList;
+  begin
+    // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
+    PropName := Matches[1];
+    Static := false;
+    I := pos('=', PropName);
+    if I <> 0 then
+      PropName := copy(PropName, 1, I-1); // Default value ****
+    if FixIdent(PropName) = '' then exit; // Discard properties nameless
+    if Before('@static', '*/', Line) then Static := true;
+    if IsUppercase(PropName) then Static := true;
+    PropName := Unique(FixIdent(PropName), CurClass.Properties);
+    if not Static then PropName[1] := LowerCase(PropName)[1];
+    if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then
+      exit; // Discard duplicates
+    Matches[0] := ReplaceStr(Matches[0], 'Object/Object[]', 'Object[]');
+    Matches[0] := ReplaceStr(Matches[0], 'String/Number', 'Number/String');
+    PropTypes  := Explode('/', Matches[0]);
+    if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
+      CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
+      CurProp.Typ := DoEnumeration(PropName, PropTypes);
+      CurProp.Enum := true;
+      CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
+    end
+    else
+      for I := 0 to PropTypes.Count-1 do
+        if I = 0 then begin
+          CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
+          CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
         end
         else
-          break;
-      end;
-      InClass : begin
-        if not Between('extend:', '/*', '*/', Line, false) then
-          if Extract(['extend:', AP, AP], Line, Matches) then
-            CurClass.Parent := FixIdent(Matches[1], true);
-        if Extract(['mixins: {', '}'], Line, Matches) then
-          ReadMixins(CurClass.Mixins, Matches[0]);
-        if AllClasses.IndexOf(CurClass.Name) = -1 then
-          AllClasses.AddObject(CurClass.Name, CurClass);
-        State := InProperties;
-        continue;
-      end;
-      InProperties : begin
-        if Between('@hide',      '/**', '*/', Line) or
-           Between('@private',   '/**', '*/', Line) or
-           Between('@deprecated','/**', '*/', Line) or
-           Between('@protected', '/**', '*/', Line) then continue;
-        begin
-          if Before('@cfg {', '@property {', Line) then
-            Config := Extract(['@cfg {', '} ', ' '], Line, Matches)
-          else
-            Config := False;
-          // To do Extract(['@property ', ' ', '@type ', ' '], Line, Matches) PropName = Matches[0]; PropType = Matches[2]
-          if Config or Extract(['@property {', '} ', ' '], Line, Matches) then begin
-            PropName := Matches[1];
-            Static := false;
-            I := pos('=', PropName);
-            if I <> 0 then
-              PropName := copy(PropName, 1, I-1); // Default value ****
-            if FixIdent(PropName) = '' then continue; // Discard properties nameless
-            if Before('@static', '*/', Line) then Static := true;
-            if IsUppercase(PropName) then Static := true;
-            PropName := Unique(FixIdent(PropName), CurClass.Properties);
-            if not Static then PropName[1] := LowerCase(PropName)[1];
-            if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then begin
-              State := InMethods;
-              continue; // Discard duplicates
-            end;
-            Matches[0] := ReplaceStr(Matches[0], 'Object/Object[]', 'Object[]');
-            Matches[0] := ReplaceStr(Matches[0], 'String/Number', 'Number/String');
-            PropTypes := Explode('/', Matches[0]);
-            if (pos('"', Matches[0]) <> 0) and (PropTypes.Count <> 0) then begin // Enumeration
-              CurProp := TProp.Create(PropName, PropName, 'string', Static, Config);
-              CurProp.Typ := DoEnumeration(PropName, PropTypes);
-              CurProp.Enum := true;
-              CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-            end
-            else
-              for I := 0 to PropTypes.Count-1 do
-                if I = 0 then begin
-                  CurProp := TProp.Create(PropName, PropName, PropTypes[I], Static, Config);
-                  CurClass.Properties.AddObject(FixIdent(PropName), CurProp);
-                end
-                else
-                  if CurClass.Properties.IndexOf(FixIdent(PropName + Sufix(FixType(PropTypes[I])))) = -1 then
-                    CurClass.Properties.AddObject(FixIdent(PropName + Sufix(FixType(PropTypes[I]))),
-                                                  TProp.Create(PropName + Sufix(FixType(PropTypes[I])), PropName, PropTypes[I], Static, Config));
-            //if Extract([PropName, ':', ','], Line, Matches) then begin
-            if (Before('Default to',  '*/', Line) and Extract(['Default to',  '.'], Line, Matches)) or
-               (Before('Defaults to', '*/', Line) and Extract(['Defaults to', '.'], Line, Matches)) then begin
-              SetDefault(CurProp, Matches[0], Matches);
-              if (CurProp.Default <> '') and not CurClass.Defaults then begin
-                CurClass.Defaults := true;
-                CurClass.AddCreate;
-              end;
-            end;
-            FreeAndNil(PropTypes);
-            Extract([' ', '*/'], Line, Matches);
-            continue;
-          end;
-        end;
-        for I := 0 to CurClass.Properties.Count-1 do
-          with TProp(CurClass.Properties.Objects[I]) do
-            if not Static then
-              if Typ = 'TExtObjectList' then begin
-                CurClass.Arrays := true;
-                CurClass.AddCreate;
-              end
-              else
-                if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then begin
-                  CurClass.Objects := true;
-                  CurClass.AddCreate;
-                end;
-        State := InMethods;
-        continue;
-      end;
-      InMethods : begin
-        if Between('@private',   '/**', '*/', Line) or
-           Between('@protected', '/**', '*/', Line) or
-           Between('@deprecated', '/**', '*/', Line) or
-           Between('@template',  '/**', '*/', Line) then continue;
-        if Before('@event ', ': function', Line) then
-          IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches)
-        else
-          if Before('/**', ': function', Line) then
-            IsEvent := False
-          else
-            IsEvent := Extract(['@event ', ' ', '*/'], Line, Matches);
-        if IsEvent or Extract(['/**', '*/', ': function'], Line, Matches) then begin
-          JSName := IfThen(IsEvent, Matches[0], Matches[1]);
-          if (length(JSName) > 30) or (FixIdent(JSName) = '') or // Doc fault
-             ((JSName = 'destroy') and not IsEvent) then continue;
-          if JSName = 'create' then CurClass.AltCreate := true;
-          Static := false;// pos('@static', IfThen(IsEvent, Matches[1], Matches[0])) <> 0;
-          if IsEvent then begin
-            MetName := Unique('On' + FixIdent(JSName), CurClass.Properties);
-            if MetName <> Unique(MetName, CurClass.Events) then continue;
-          end
-          else begin
-            MetName := Unique(FixIdent(JSName), CurClass.Properties);
-            if MetName <> Unique(MetName, CurClass.Methods) then continue;
-            if MetName <> 'Create' then MetName := Unique(MetName, CurClass.Methods);
-            if pos(MetName, 'ConstructorJS.Create.') <> 0 then begin
-              MetName := 'Create';
-              Return := ''
-            end
-            else
-              Return := 'TExtFunction';
-          end;
-          Args := TStringList.Create;
-          Params := IfThen(IsEvent, Matches[1], Matches[0]);
-          while pos('@param', Params) <> 0 do begin
-            if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
-              break;
-            Optional := pos('[', Matches[2]) = 1;
-            if Matches.Count = 4 then
-              Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
-            Matches[2] := Unique(FixIdent(Matches[2]), Args);
-            if IsEvent and SameText(Matches[2], 'This') then
-              Matches[1] := CurClass.Name;
-            Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
-          end;
-          CurMethod := TMethod.Create(MetName, JSName, Return, Args, Static, false);
-          if IsEvent then
-            CurClass.Events.AddObject(CurMethod.Name, CurMethod)
-          else
-            DoOverloads(CurClass, CurMethod);
-          continue;
-        end;
-        break;
+          if CurClass.Properties.IndexOf(FixIdent(PropName + Sufix(FixType(PropTypes[I])))) = -1 then
+            CurClass.Properties.AddObject(FixIdent(PropName + Sufix(FixType(PropTypes[I]))),
+                                          TProp.Create(PropName + Sufix(FixType(PropTypes[I])), PropName, PropTypes[I], Static, Config));
+    //if Extract([PropName, ':', ','], Line, Matches) then begin
+    if (Before('Default to',  '*/', Line) and Extract(['Default to',  '.'], Line, Matches)) or
+       (Before('Defaults to', '*/', Line) and Extract(['Defaults to', '.'], Line, Matches)) then begin
+      SetDefault(CurProp, Matches[0], Matches);
+      if (CurProp.Default <> '') and not CurClass.Defaults then begin
+        CurClass.Defaults := true;
+        CurClass.AddCreate;
       end;
     end;
+    FreeAndNil(PropTypes);
   end;
-  Matches.Free;
+
+  procedure ParseCfg; begin
+    if Extract(['@cfg {', '} ', ' '], Line, Matches) then
+      ParseField(True)
+    else
+      Delete(Line, 1, pos('@cfg', Line) + 4);
+  end;
+
+  procedure ParseProperty; begin
+    if Extract(['@property {', '} ', ' '], Line, Matches) then
+      ParseField(False)
+    else
+      Delete(Line, 1, pos('@property', Line) + 10);
+  end;
+
+  procedure SetArraysAndObjects;
+  var
+    I : integer;
+  begin
+    for I := 0 to CurClass.Properties.Count-1 do
+      with TProp(CurClass.Properties.Objects[I]) do
+        if not Static then
+          if Typ = 'TExtObjectList' then begin
+            CurClass.Arrays := true;
+            CurClass.AddCreate;
+          end
+          else
+            if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then begin
+              CurClass.Objects := true;
+              CurClass.AddCreate;
+            end;
+  end;
+
+  procedure ParseClass;
+  var
+    JSName : string;
+    Ci : integer;
+    Singleton : boolean;
+  begin
+    Singleton := Before('@singleton', 'Ext.define(', Line);
+    Extract(['/**', '*/'], Line, Matches);
+    if Extract(['Ext.define(' + AP, AP], Line, Matches) or
+       Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
+      JSName := Matches[0];
+      if pos(JS_LIB, JSName) <> 1 then Abort;
+      Ci := AllClasses.IndexOf(JSName);
+      if Ci = -1 then
+        CurClass := TClass.Create(JSName)
+      else
+        CurClass := TClass(AllClasses.Objects[Ci]);
+      if not Singleton then Singleton := Before('singleton:', '}', Line);
+      if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
+      CurClass.Singleton := Singleton;
+    end
+    else
+      Abort;
+    if not Between('extend:', '/*', '*/', Line, false) then
+      if Extract(['extend:', AP, AP], Line, Matches) then
+        CurClass.Parent := FixIdent(Matches[1], true);
+    if Extract(['mixins: {', '}'], Line, Matches) then
+      ReadMixins(CurClass.Mixins, Matches[0]);
+    if AllClasses.IndexOf(CurClass.Name) = -1 then
+      AllClasses.AddObject(CurClass.Name, CurClass);
+  end;
+
+begin
+  if Before('@protected', '*/', Line) or Before('@ignore',   '*/', Line) or
+     Before('@deprecated','*/', Line) or Before('@abstract', '*/', Line) then
+    exit;
+  Matches := TStringList.Create;
+  try
+    ParseClass;
+    while true do
+      if not(Between('@hide',  '/**', '*/', Line) or
+         Between('@private',   '/**', '*/', Line) or
+         Between('@deprecated','/**', '*/', Line) or
+         Between('@protected', '/**', '*/', Line) or
+         Between('@template',  '/**', '*/', Line)) then
+        case First(['@cfg', '@property', '@event', ': function'], Line) of
+          0 : ParseCfg;
+          1 : ParseProperty;
+          2 : ParseEvent;
+          3 : ParseMethod;
+        else
+          break;
+        end;
+    SetArraysAndObjects;
+  finally
+    Matches.Free;
+  end;
 end;
 
 procedure ReadJS(FileName : string);
@@ -615,7 +646,9 @@ begin
     readln(JS, L);
     Line := Line + ' ' + trim(L)
   until SeekEOF(JS);
-  LoadElements(Line);
+  try
+    ParseClassFile(Line);
+  except end;
   close(JS);
 end;
 
