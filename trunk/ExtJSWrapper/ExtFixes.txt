@@ -87,9 +87,6 @@ ExtProgressWaitConfig, text, string, false, true,
 ExtProgressWaitConfig, fn, ExtFunction, false, true,
 ExtProgressWaitConfig, scope, ExtObject, false, true,
 
-*ExtTabPanel, beforetabchange, Event, tabPanel, ExtTabPanel, newCard, ExtPanel, oldCard, ExtPanel
-*ExtTabPanel, tabchange, Event, tabPanel, ExtTabPanel, newCard, ExtPanel, oldCard, ExtPanel
-
 *ExtComponent, xtype, (xtBox, xtButton, xtButtonGroup, xtColorPalette, xtComponent, xtContainer, xtCycle, xtDataView, xtDatePicker, xtEditor, xtEditorGrid, xtFlash, xtGrid, xtListView, xtPaging, xtPanel, xtProgress, xtPropertyGrid, xtSlider, xtSpacer, xtSplitButton, xtStatusBar, xtTabPanel, xtTreePanel, xtViewPort, xtWindow, xtToolbar, xtTBButton, xtTBFill, xtTBItem, xtTBSeparator, xtTBSpacer, xtTBSplit, xtTBText, xtMenu, xtColorMenu, xtDateMenu, xtMenuBaseItem, xtMenuCheckItem, xtMenuItem, xtMenuSeparator, xtMenuTextItem, xtForm, xtCheckBox, xtCheckBoxGroup, xtCombo, xtDateField, xtDisplayField, xtField, xtFieldSet, xtHidden, xtHTMLEditor, xtLabel, xtNumberField, xtRadio, xtRadioGroup, xtTextArea, xtTextField, xtTimeField, xtTrigger, xtChart, xtBarChart, xtCartesianChart, xtColumnChart, xtLineChart, xtPieChart)
 *ExtContainer, defaultType, (ExtComponentXType)
 *ExtDomElement, defaultUnit, (CSSUnit)
