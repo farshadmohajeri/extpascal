@@ -1,34 +1,37 @@
 ﻿[Closed Files]
-File_0=TSourceModule,'E:\extpascal\ext-4.2.0\src\window\MessageBox.js',0,1,353,1,148,0,0,,
-File_1=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\reader\Reader.js',0,1,280,23,302,0,0,,
-File_2=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Sprite.js',0,1,133,25,160,0,0,,
-File_3=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\proxy\JsonP.js',0,1,145,16,180,0,0,,
-File_4=TSourceModule,'E:\extpascal\ext-4.2.0\src\view\View.js',0,1,389,27,390,0,0,,
-File_5=TSourceModule,'E:\extpascal\ext-4.2.0\src\selection\Model.js',0,1,76,16,89,0,0,,
-File_6=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\SortTypes.js',0,1,44,24,65,0,0,,
-File_7=TSourceModule,'E:\extpascal\ext-4.2.0\src\Ext.js',0,1,1,14,6,0,0,,
-File_8=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\Model.js',0,1,692,12,689,0,0,,
-File_9=TSourceModule,'E:\extpascal\ext-4.2.0\src\util\History.js',0,1,22,8,51,0,0,,
-File_10=TSourceModule,'E:\extpascal\ext-4.2.0\src\form\action\Action.js',0,1,269,12,292,0,0,,
-File_11=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,22052,1,22073,0,0,,
-File_12=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Surface.js',0,1,211,16,216,0,0,,
-File_13=TSourceModule,'E:\extpascal\ext-4.2.0\src\tab\Panel.js',0,1,413,47,415,0,0,,
-File_14=TSourceModule,'E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js',0,1,5,46,9,0,0,,
-File_15=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Component.js',0,1,261,60,262,0,0,,
-File_16=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\CompositeSprite.js',0,1,69,70,70,0,0,,
-File_17=TSourceModule,'E:\extpascal\ext-4.2.0\docs\resources\prettify\prettify.css',0,1,1,59,2,0,0,,
-File_18=TSourceModule,'E:\extpascal\ext-4.2.0\examples\build\KitchenSink\ext-theme-access\lib\prettify\prettify.css',0,1,16,5,35,0,0,,
-File_19=TSourceModule,'E:\extpascal\ext-4.2.0\examples\build\KitchenSink\ext-theme-access\resources\KitchenSink-example.css',0,1,15618,24,15641,0,0,,
+File_0=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,22052,1,22073,0,0,,
+File_1=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\source\rtl\common\System.Classes.pas',0,1,6619,1,6644,0,0,,
+File_2=TSourceModule,'E:\extpascal\ext-4.2.0\src\window\MessageBox.js',0,1,353,1,148,0,0,,
+File_3=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\reader\Reader.js',0,1,280,23,302,0,0,,
+File_4=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Sprite.js',0,1,133,25,160,0,0,,
+File_5=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\proxy\JsonP.js',0,1,145,16,180,0,0,,
+File_6=TSourceModule,'E:\extpascal\ext-4.2.0\src\view\View.js',0,1,389,27,390,0,0,,
+File_7=TSourceModule,'E:\extpascal\ext-4.2.0\src\selection\Model.js',0,1,76,16,89,0,0,,
+File_8=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\SortTypes.js',0,1,44,24,65,0,0,,
+File_9=TSourceModule,'E:\extpascal\ext-4.2.0\src\Ext.js',0,1,1,14,6,0,0,,
+File_10=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\Model.js',0,1,692,12,689,0,0,,
+File_11=TSourceModule,'E:\extpascal\ext-4.2.0\src\util\History.js',0,1,22,8,51,0,0,,
+File_12=TSourceModule,'E:\extpascal\ext-4.2.0\src\form\action\Action.js',0,1,269,12,292,0,0,,
+File_13=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Surface.js',0,1,211,16,216,0,0,,
+File_14=TSourceModule,'E:\extpascal\ext-4.2.0\src\tab\Panel.js',0,1,413,47,415,0,0,,
+File_15=TSourceModule,'E:\extpascal\ext-4.2.0\src\dom\AbstractElement.js',0,1,5,46,9,0,0,,
+File_16=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\Component.js',0,1,261,60,262,0,0,,
+File_17=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\CompositeSprite.js',0,1,69,70,70,0,0,,
+File_18=TSourceModule,'E:\extpascal\ext-4.2.0\docs\resources\prettify\prettify.css',0,1,1,59,2,0,0,,
+File_19=TSourceModule,'E:\extpascal\ext-4.2.0\examples\build\KitchenSink\ext-theme-access\lib\prettify\prettify.css',0,1,16,5,35,0,0,,
 
 [Modules]
-Module0=E:\extpascal\ExtJSWrapper\ExtFixes.txt
-Module1=E:\extpascal\ExtJSWrapper\Ext.pas
-Module2=E:\extpascal\ExtPascal.pas
-Module3=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
+Module0=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
+Module1=E:\extpascal\ExtJSWrapper\ExtFixes.txt
+Module2=E:\extpascal\ExtJSWrapper\Ext.pas
+Module3=E:\extpascal\ExtPascal.pas
 Module4=E:\extpascal\ExtPascalUtils.pas
 Module5=E:\extpascal\ExtJSWrapper\ExtOld.pas
 Count=6
 EditWindowCount=1
+
+[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
+ModuleType=TBaseProject
 
 [E:\extpascal\ExtJSWrapper\ExtFixes.txt]
 ModuleType=TSourceModule
@@ -43,9 +46,6 @@ ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
-ModuleType=TBaseProject
-
 [E:\extpascal\ExtPascalUtils.pas]
 ModuleType=TSourceModule
 FormState=0
@@ -58,7 +58,7 @@ FormOnTop=0
 
 [EditWindow0]
 ViewCount=6
-CurrentEditView=E:\extpascal\ExtJSWrapper\ExtFixes.txt
+CurrentEditView=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
 View0=0
 View1=1
 View2=2
@@ -95,9 +95,9 @@ BottomMiddelPanelData=0000080001020200000009000000446F636B5369746530100000004772
 [View0]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\Ext.pas
-CursorX=19
-CursorY=6052
-TopLine=5913
+CursorX=18
+CursorY=491
+TopLine=472
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -106,9 +106,9 @@ EditViewName=E:\extpascal\ExtJSWrapper\Ext.pas
 [View1]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
-CursorX=1
-CursorY=15
-TopLine=1
+CursorX=32
+CursorY=746
+TopLine=726
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -117,9 +117,9 @@ EditViewName=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
 [View2]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtPascal.pas
-CursorX=27
-CursorY=239
-TopLine=1896
+CursorX=1
+CursorY=815
+TopLine=794
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -128,9 +128,9 @@ EditViewName=E:\extpascal\ExtPascal.pas
 [View3]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtFixes.txt
-CursorX=1
-CursorY=35
-TopLine=16
+CursorX=24
+CursorY=37
+TopLine=28
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -159,12 +159,11 @@ Bookmarks=
 EditViewName=E:\extpascal\ExtJSWrapper\ExtOld.pas
 
 [Watches]
-Count=5
-Watch0='V',256,0,18,1,0,'Watches',1
-Watch1='Result',256,0,18,1,0,'Watches',1
-Watch2='I',256,0,18,1,0,'Watches',1
-Watch3='J',256,0,18,1,0,'Watches',1
-Watch4='CurClass.Name',256,0,18,1,0,'Watches',1
+Count=4
+Watch0='Matches[2]',256,0,18,1,0,'Watches',1
+Watch1='CurClass.Name',256,0,18,1,0,'Watches',1
+Watch2='M.Methods[I]',256,0,18,1,0,'Watches',1
+Watch3='TMethod(M.Methods.Objects[I]).Overload',256,0,18,1,0,'Watches',1
 
 [WatchWindow]
 WatchColumnWidth=120
@@ -730,5 +729,5 @@ Dockable=1
 StayOnTop=0
 TabPosition=1
 ActiveTabID=ProjectManager
-TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,TFileExplorerForm,TemplateView,ClassBrowserTool
+TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,ClassBrowserTool,TemplateView,TFileExplorerForm
 
