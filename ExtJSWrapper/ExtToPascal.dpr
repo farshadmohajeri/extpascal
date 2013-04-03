@@ -302,6 +302,9 @@ begin
   if Method.Name = 'Create' then begin
     I := Cls.Methods.IndexOf('Create');
     if I <> -1 then begin
+      if (Method.Params.Count = 0) or
+         ((Method.Params.Count = 1) and TParam(Method.Params.Objects[0]).Optional) then
+         exit;
       TMethod(Cls.Methods.Objects[I]).Overload := True;
       Method.Overload := True;
     end;
