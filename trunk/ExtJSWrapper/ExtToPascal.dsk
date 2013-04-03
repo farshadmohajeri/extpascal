@@ -1,5 +1,5 @@
 ﻿[Closed Files]
-File_0=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,22052,1,22073,0,0,,
+File_0=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\SOURCE\RTL\SYS\System.pas',0,1,15025,1,15046,0,0,,
 File_1=TSourceModule,'c:\program files (x86)\embarcadero\rad studio\10.0\source\rtl\common\System.Classes.pas',0,1,6619,1,6644,0,0,,
 File_2=TSourceModule,'E:\extpascal\ext-4.2.0\src\window\MessageBox.js',0,1,353,1,148,0,0,,
 File_3=TSourceModule,'E:\extpascal\ext-4.2.0\src\data\reader\Reader.js',0,1,280,23,302,0,0,,
@@ -21,50 +21,43 @@ File_18=TSourceModule,'E:\extpascal\ext-4.2.0\docs\resources\prettify\prettify.c
 File_19=TSourceModule,'E:\extpascal\ext-4.2.0\examples\build\KitchenSink\ext-theme-access\lib\prettify\prettify.css',0,1,16,5,35,0,0,,
 
 [Modules]
-Module0=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
-Module1=E:\extpascal\ExtJSWrapper\ExtFixes.txt
-Module2=E:\extpascal\ExtJSWrapper\Ext.pas
-Module3=E:\extpascal\ExtPascal.pas
+Module0=E:\extpascal\ExtJSWrapper\Ext.pas
+Module1=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
+Module2=E:\extpascal\ExtPascal.pas
+Module3=E:\extpascal\ExtJSWrapper\ExtFixes.txt
 Module4=E:\extpascal\ExtPascalUtils.pas
-Module5=E:\extpascal\ExtJSWrapper\ExtOld.pas
-Count=6
+Count=5
 EditWindowCount=1
-
-[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
-ModuleType=TBaseProject
-
-[E:\extpascal\ExtJSWrapper\ExtFixes.txt]
-ModuleType=TSourceModule
 
 [E:\extpascal\ExtJSWrapper\Ext.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
+[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
+ModuleType=TBaseProject
+
 [E:\extpascal\ExtPascal.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
+
+[E:\extpascal\ExtJSWrapper\ExtFixes.txt]
+ModuleType=TSourceModule
 
 [E:\extpascal\ExtPascalUtils.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[E:\extpascal\ExtJSWrapper\ExtOld.pas]
-ModuleType=TSourceModule
-FormState=0
-FormOnTop=0
-
 [EditWindow0]
-ViewCount=6
-CurrentEditView=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
+ViewCount=5
+CurrentEditView=E:\extpascal\ExtJSWrapper\Ext.pas
 View0=0
 View1=1
 View2=2
 View3=3
 View4=4
-View5=5
 PercentageSizes=1
 Create=1
 Visible=1
@@ -83,7 +76,7 @@ BorlandEditorCodeExplorer=BorlandEditorCodeExplorer@EditWindow0
 TopPanelSize=0
 LeftPanelSize=1648
 LeftPanelClients=DockSite2
-LeftPanelData=00000800010100000000C11D00000000000001700600000000000001000000003125000009000000446F636B5369746532FFFFFFFF
+LeftPanelData=000008000100000000009A1D00000000000000000000000000000001000000009A1D000009000000446F636B5369746532FFFFFFFF
 RightPanelSize=0
 BottomPanelSize=0
 BottomPanelClients=DockSite1
@@ -95,9 +88,9 @@ BottomMiddelPanelData=0000080001020200000009000000446F636B5369746530100000004772
 [View0]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\Ext.pas
-CursorX=18
-CursorY=491
-TopLine=472
+CursorX=23
+CursorY=3040
+TopLine=3018
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -106,9 +99,9 @@ EditViewName=E:\extpascal\ExtJSWrapper\Ext.pas
 [View1]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
-CursorX=32
-CursorY=746
-TopLine=726
+CursorX=3
+CursorY=15
+TopLine=1
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -128,9 +121,9 @@ EditViewName=E:\extpascal\ExtPascal.pas
 [View3]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtFixes.txt
-CursorX=24
-CursorY=37
-TopLine=28
+CursorX=17
+CursorY=93
+TopLine=73
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -147,21 +140,10 @@ Elisions=
 Bookmarks=
 EditViewName=E:\extpascal\ExtPascalUtils.pas
 
-[View5]
-CustomEditViewType=TEditView
-Module=E:\extpascal\ExtJSWrapper\ExtOld.pas
-CursorX=52
-CursorY=35805
-TopLine=35799
-LeftCol=1
-Elisions=
-Bookmarks=
-EditViewName=E:\extpascal\ExtJSWrapper\ExtOld.pas
-
 [Watches]
 Count=4
-Watch0='Matches[2]',256,0,18,1,0,'Watches',1
-Watch1='CurClass.Name',256,0,18,1,0,'Watches',1
+Watch0='Result',256,0,18,1,0,'Watches',1
+Watch1='Ident',256,0,18,1,0,'Watches',1
 Watch2='M.Methods[I]',256,0,18,1,0,'Watches',1
 Watch3='TMethod(M.Methods.Objects[I]).Overload',256,0,18,1,0,'Watches',1
 
@@ -729,5 +711,5 @@ Dockable=1
 StayOnTop=0
 TabPosition=1
 ActiveTabID=ProjectManager
-TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,ClassBrowserTool,TemplateView,TFileExplorerForm
+TabDockClients=ProjectManager,ToolForm,PropertyInspector,StructureView,DataExplorerContainer,ModelViewTool,TFileExplorerForm,TemplateView,ClassBrowserTool
 

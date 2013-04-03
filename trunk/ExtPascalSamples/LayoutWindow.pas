@@ -8,7 +8,7 @@ uses
 type
   TLayoutWindow = class(TExtWindow)
     constructor Create;
-    procedure ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtPanel);
+    procedure ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtComponent);
   end;
 
 implementation
@@ -64,8 +64,8 @@ begin
   SelfSession.AddShowSourceButton(Buttons, 'LayoutWindow');
 end;
 
-procedure TLayoutWindow.ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtPanel); begin
-   ExtMessageBox.Alert('Active Tab is', NewTab.Title);
+procedure TLayoutWindow.ExtTabPanelOnTabchange(AThis : TExtTabPanel; NewTab, OldTab : TExtComponent); begin
+   ExtMessageBox.Alert('Active Tab is', TExtTabPanel(NewTab).Title);
 end;
 
 end.
