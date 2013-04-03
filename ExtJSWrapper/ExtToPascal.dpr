@@ -12,10 +12,10 @@ program ExtToPascal;
 
 uses
   SysUtils, StrUtils, Classes, ExtPascalUtils
-, Ext
+//, Ext
   ;
 
-  {.$DEFINE USES_PUBLISHED}
+{.$DEFINE USES_PUBLISHED}
 
 const
   AP = '''';
@@ -90,28 +90,24 @@ begin
       9        : Result := 'TDateTime';
       10, 13   : Result := 'Double';
     else
-      if pos('mixedcollection', lowercase(Ident)) <> 0 then
-        Result := 'TExtObjectList'
-      else begin
-        I := pos('/', Ident);
-        if I = 0 then I := LastDelimiter('[:', Ident);
-        if I <> 0 then begin
-          if Ident[I] <> '/' then begin
-            Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
-            if (Result <> 'Integer') and (Result <> 'string') then
-              Result := 'TExtObjectList'
-            else
-              Result := 'TArrayOf' + Result;
-          end
+      I := pos('/', Ident);
+      if I = 0 then I := LastDelimiter('[:', Ident);
+      if I <> 0 then begin
+        if Ident[I] <> '/' then begin
+          Result := FixType(copy(Ident, 1, I-1)); // for alternative types at methods' return choose first option
+          if (Result <> 'Integer') and (Result <> 'String') then
+            Result := 'TExtObjectList'
           else
-            Result := Ident;
-          exit;
-        end;
-        if pos('T' + JS_LIB, Ident) = 1 then
-          Result := Ident
+            Result := 'TArrayOf' + Result;
+        end
         else
-          Result := FixIdent(Ident, true);
+          Result := Ident;
+        exit;
       end;
+      if pos('T' + JS_LIB, Ident) = 1 then
+        Result := Ident
+      else
+        Result := FixIdent(Ident, true);
     end
   else
     Result := ''
@@ -177,6 +173,7 @@ constructor TClass.Create(pName, pParent, pUnitName : string); begin
   Properties.Sorted := true;
   Properties.Duplicates := dupIgnore;
   Methods.Sorted := true;
+  Methods.Duplicates := dupAccept;
   Events.Sorted := true;
 end;
 
@@ -447,6 +444,8 @@ var
     while pos('@param', Params) <> 0 do begin
       if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
         break;
+      if (Trim(Matches[2]) = '') or (pos('.', Matches[2]) <> 0) then
+        continue; // Discard embedded config objects
       Optional := pos('[', Matches[2]) = 1;
       if Matches.Count = 4 then
         Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
@@ -508,7 +507,7 @@ var
     if IsUppercase(PropName) then Static := true;
     PropName := Unique(FixIdent(PropName), CurClass.Properties);
     if not Static then PropName[1] := LowerCase(PropName)[1];
-    if pos('__', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then
+    if pos('_', Unique(FixIdent(PropName), CurClass.Properties)) <> 0 then
       exit; // Discard duplicates
     Matches[0] := ReplaceStr(Matches[0], 'Object/Object[]', 'Object[]');
     Matches[0] := ReplaceStr(Matches[0], 'String/Number', 'Number/String');
@@ -742,9 +741,10 @@ begin
                     end
                     else // Update
                       with TMethod(Methods.Objects[J]) do begin
-                        Return   := FixType(Fields[2]);
-                        Static   := lowercase(Fields[3]) = 'true';
-                        Overload := lowercase(Fields[4]) = 'true';
+                        Return := FixType(Fields[2]);
+                        Static := lowercase(Fields[3]) = 'true';
+                        if not Overload then
+                          Overload := LowerCase(Fields[4]) = 'true';
                         Params.Clear;
                         for K := 0 to ((Fields.Count-4) div 3)-1 do
                           Params.AddObject(Fields[K*3+5], TParam.Create(Fields[K*3+5], FixType(Fields[K*3+6]), lowercase(Fields[K*3+7]) = 'true'))
@@ -879,7 +879,7 @@ begin
         if K = -1 then
           AddUnresolved(Typ)
         else
-          Enum := Unresolved.Values[Unresolved.Names[K]] <> ''
+          Enum := pos('(', Unresolved.Values[Unresolved.Names[K]]) <> 0
       end;
     for J := 0 to C.Methods.Count - 1 do begin
       Met := TMethod(C.Methods.Objects[J]);
@@ -896,16 +896,22 @@ end;
 
 procedure MixInto(C, M : TClass);
 var
-  I : integer;
+  I, J : integer;
 begin
   for I := 0 to M.Properties.Count - 1 do
     if C.Properties.IndexOf(M.Properties[I]) = -1 then
       C.Properties.AddObject(M.Properties[I], M.Properties.Objects[I]);
-  for I := 0 to M.Methods.Count - 1 do
-    if C.Methods.IndexOf(M.Methods[I]) = -1 then
+  for I := 0 to M.Methods.Count - 1 do begin
+    J := C.Methods.IndexOf(M.Methods[I]);
+    if (M.Methods[I] <> 'Create') and
+       ((J = -1) or TMethod(M.Methods.Objects[I]).Overload) then begin
+      if J <> -1 then
+        TMethod(C.Methods.Objects[J]).Overload := True;
       C.Methods.AddObject(M.Methods[I], M.Methods.Objects[I]);
+    end;
+  end;
   for I := 0 to M.Events.Count - 1 do
-    if C.Events.IndexOf(M.Events[I]) = -1 then
+    if (C.Events.IndexOf(M.Events[I]) = -1) or TMethod(M.Events.Objects[I]).Overload then
       C.Events.AddObject(M.Events[I], M.Events.Objects[I]);
 end;
 
@@ -1066,10 +1072,18 @@ begin
   end;
 end;
 
+function Alias(Type_ : string) : boolean;
+var
+  I : integer;
+begin
+  I := Unresolved.IndexOfName(Type_);
+  Alias := (I <> -1) and (Unresolved.Values[Unresolved.Names[I]] <> '');
+end;
+
 // Add boolean additional param to identify TExtFunction param type
 function AddBoolParam(Type_ : string) : string; begin
   Result := '';
-  if (Type_ <> '') and (Type_[1] = 'T') and (pos('TArrayOf', Type_) = 0) and
+  if (Type_ <> '') and not Alias(Type_) and (Type_[1] = 'T') and (pos('TArrayOf', Type_) = 0) and
      (pos('.' + Type_ + '.', '.TDateTime.TRegExp.TRegion.Tel.TVisMode.') = 0) then
     if Type_ = 'TExtFunction' then
       Result := ', true'
@@ -1342,7 +1356,7 @@ begin
                 if Typ = 'TExtObjectList' then
                   writeln(Pas, Tab, 'F', Name, ' := TExtObjectList.Create(Self, ''', JSName, ''');')
                 else
-                  if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') and not Enum then
+                  if (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') and not Enum and not Alias(Typ) then
                     writeln(Pas, Tab, 'F', Name, ' := ', Typ, '.CreateInternal(Self, ''', JSName, ''');');
         writeln(Pas, 'end;'^M^J);
       end;
@@ -1374,7 +1388,7 @@ begin
         writeln(Pas, Tab, 'try');
         for K := 0 to Properties.Count-1 do
           with TProp(Properties.Objects[K]) do
-            if not Static and not Enum and (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then
+            if not Static and not Enum and not Alias(Typ) and (pos('T' + JS_LIB, Typ) = 1) and (Typ <> 'TExtFunction') then
               writeln(Pas, Tab(2), 'F' + Name + '.Free;');
         writeln(Pas, Tab, 'except end;');
         writeln(Pas, Tab, 'inherited;');
