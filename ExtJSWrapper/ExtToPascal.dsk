@@ -21,19 +21,19 @@ File_18=TSourceModule,'E:\extpascal\ext-4.2.0\src\draw\CompositeSprite.js',0,1,6
 File_19=TSourceModule,'E:\extpascal\ext-4.2.0\docs\resources\prettify\prettify.css',0,1,1,59,2,0,0,,
 
 [Modules]
-Module0=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
-Module1=E:\extpascal\ExtJSWrapper\ExtFixes.txt
+Module0=E:\extpascal\ExtJSWrapper\ExtFixes.txt
+Module1=E:\extpascal\ExtJSWrapper\ExtToPascal.dproj
 Module2=E:\extpascal\ExtJSWrapper\Ext.pas
 Module3=E:\extpascal\ExtPascalUtils.pas
 Module4=E:\extpascal\ExtPascal.pas
 Count=5
 EditWindowCount=1
 
-[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
-ModuleType=TBaseProject
-
 [E:\extpascal\ExtJSWrapper\ExtFixes.txt]
 ModuleType=TSourceModule
+
+[E:\extpascal\ExtJSWrapper\ExtToPascal.dproj]
+ModuleType=TBaseProject
 
 [E:\extpascal\ExtJSWrapper\Ext.pas]
 ModuleType=TSourceModule
@@ -52,7 +52,7 @@ FormOnTop=0
 
 [EditWindow0]
 ViewCount=5
-CurrentEditView=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
+CurrentEditView=E:\extpascal\ExtJSWrapper\ExtFixes.txt
 View0=0
 View1=1
 View2=2
@@ -87,8 +87,8 @@ TabDockLeftClients=DockSite2=0
 [View0]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\ExtToPascal.dpr
-CursorX=19
-CursorY=7
+CursorX=1
+CursorY=1533
 TopLine=1
 LeftCol=1
 Elisions=
@@ -109,9 +109,9 @@ EditViewName=E:\extpascal\ExtJSWrapper\ExtFixes.txt
 [View2]
 CustomEditViewType=TEditView
 Module=E:\extpascal\ExtJSWrapper\Ext.pas
-CursorX=23
-CursorY=17306
-TopLine=17276
+CursorX=136
+CursorY=3
+TopLine=1
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -169,7 +169,7 @@ StayOnTop=0
 
 [Breakpoints]
 Count=1
-Breakpoint0='E:\extpascal\ExtJSWrapper\ExtToPascal.dpr',824,'',0,1,'',1,0,0,'',1,'','','',0,''
+Breakpoint0='E:\extpascal\ExtJSWrapper\ExtToPascal.dpr',827,'',0,1,'',1,0,0,'',1,'','','',0,''
 
 [EmbarcaderoWin32Debugger_AddressBreakpoints]
 Count=0
