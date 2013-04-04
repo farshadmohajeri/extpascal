@@ -73,34 +73,34 @@ begin
     'return V;');
   with TExtGridColumn.AddTo(Columns) do begin
     Id        := 'company';
-    Header    := 'Company';
+    Text      := 'Company';
     Width     := 160;
     Sortable  := true;
     DataIndex := Id;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
-    Header    := 'Price';
+    Text    := 'Price';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'price';
     Renderer  := 'usMoney';
   end;
   with TExtGridColumn.AddTo(Columns) do begin
-    Header    := 'Change';
+    Text      := 'Change';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'change';
     RendererExtFunction := ColorValue;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
-    Header    := '% Change';
+    Text      := '% Change';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'pctchange';
     RendererExtFunction := ColorValue;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
-    Header    := 'Last Updated';
+    Text      := 'Last Updated';
     Width     := 85;
     Sortable  := true;
     DataIndex := 'lastchange';

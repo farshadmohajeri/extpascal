@@ -52,7 +52,7 @@ begin
       Width     := 300;
       Buttons   := ExtMessageBox.OKCANCEL;
       Multiline := true;
-      AnimTarget:= 'ButtonMultiline';
+      AnimateTarget := 'ButtonMultiline';
       Fn        := JSFunction(ReadButtonJS);
     end;
     Handler := ExtMessageBox.Show(ShowConfig);
@@ -67,7 +67,7 @@ begin
       Msg        := 'You are closing a tab that has unsaved changes.<br/>Would you like to save your changes?';
       Icon       := ExtMessageBox.QUESTION;
       Buttons    := ExtMessageBox.YESNOCANCEL;
-      AnimTarget := Id;
+      AnimateTarget := Id;
       Fn         := Ajax(ReadButtonAjax, ['ButtonID', '%0']);
     end;
     Handler := ExtMessageBox.Show(ShowConfig);
@@ -83,9 +83,9 @@ begin
       Progress := true;
       Msg      := 'Loading items...';
       Wait     := true;
-      AnimTarget   := Id;
+      AnimateTarget   := Id;
       ProgressText := 'Loading...';
-      WaitConfig   := TExtProgressWaitConfig.Create;
+      WaitConfig   := TExtWaitConfig.Create;
       with WaitConfig do begin
         Duration  := 5000;
         Interval  := 500;
@@ -108,9 +108,9 @@ begin
       Width  := 300;
       Wait   := true;
       Icon   := 'ext-mb-download';
-      AnimTarget := Id;
+      AnimateTarget := Id;
       ProgressText := 'Saving...';
-      WaitConfig   := TExtProgressWaitConfig.Create;
+      WaitConfig   := TExtWaitConfig.Create;
       with WaitConfig do begin
         Duration := 5000;
         Interval := 500;
