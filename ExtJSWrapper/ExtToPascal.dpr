@@ -415,15 +415,69 @@ var
   CurClass : TClass;
   Matches  : TStringList;
 
+  procedure ParseConfigEmbedded(MetName, ConfigName, PropName, Type_ : string; LastParam : TParam);
+  var
+    I : Integer;
+    ConfigClass : TClass;
+  begin
+    ConfigName := FixIdent(JS_LIB + MetName + FixIdent(ConfigName));
+    I := AllClasses.IndexOf('T' + ConfigName);
+    if I = -1 then begin
+      ConfigClass := TClass.Create(ConfigName, 'ExtObject');
+      AllClasses.AddObject(ConfigClass.Name, ConfigClass);
+      LastParam.Typ := ConfigClass.Name;
+    end
+    else
+      ConfigClass := TClass(AllClasses.Objects[I]);
+    PropName := FixIdent(PropName);
+    if pos('/', Type_) <> 0 then
+      case First(['String', 'Number', 'Object'], Type_) of
+        0 : Type_ := 'String';
+        1 : Type_ := 'Number';
+        2 : Type_ := 'Object';
+      end;
+    ConfigClass.Properties.AddObject(PropName, TProp.Create(PropName, PropName, Type_, False, True))
+  end;
+
+  procedure ParseArgs(MetName : string; var Args : TStringList; IsEvent : Boolean);
+  var
+    Params : String;
+    I : Integer;
+    Optional : Boolean;
+    LastParam : TParam;
+  begin
+    Params := IfThen(IsEvent, Matches[1], Matches[0]);
+    Args := TStringList.Create;
+    while pos('@param', Params) <> 0 do begin
+      if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
+        break;
+      if Trim(Matches[2]) = '' then continue;
+      Optional := pos('[', Matches[2]) = 1;
+      if Matches.Count = 4 then
+        Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
+      I := pos('.', Matches[2]);
+      if (I <> 0) and (Args.Count <> 0) then begin
+        LastParam := TParam(Args.Objects[Args.Count-1]);
+        if LastParam.Typ <> 'TExtFunction' then
+          ParseConfigEmbedded(MetName, Copy(Matches[2], 1, I-1), Copy(Matches[2], I+1, 30), Matches[1], LastParam);
+      end
+      else begin
+        Matches[2] := Unique(FixIdent(Matches[2]), Args);
+        if IsEvent and SameText(Matches[2], 'This') then
+          Matches[1] := CurClass.Name;
+        Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
+      end;
+    end;
+  end;
+
   procedure ParseFunction(IsEvent : boolean);
   var
-    JSName, Params, MetName, Return : string;
-    Static, Optional : boolean;
+    JSName, MetName, Return : string;
+    Static : boolean;
     CurMethod : TMethod;
     Args : TStringList;
   begin
     JSName := IfThen(IsEvent, Matches[0], Matches[1]);
-    Params := IfThen(IsEvent, Matches[1], Matches[0]);
     if (length(JSName) > 30) or (FixIdent(JSName) = '') or // Doc fault
        ((JSName = 'destroy') and not IsEvent) then exit;
     if JSName = 'create' then CurClass.AltCreate := true;
@@ -443,20 +497,7 @@ var
       else
         Return := 'TExtFunction';
     end;
-    Args := TStringList.Create;
-    while pos('@param', Params) <> 0 do begin
-      if not Extract(['@param', '{', '} ', ' ', ' '], Params, Matches) then
-        break;
-      if (Trim(Matches[2]) = '') or (pos('.', Matches[2]) <> 0) then
-        continue; // Discard embedded config objects
-      Optional := pos('[', Matches[2]) = 1;
-      if Matches.Count = 4 then
-        Optional := Optional or (pos('(optional)', LowerCase(Matches[3])) <> 0);
-      Matches[2] := Unique(FixIdent(Matches[2]), Args);
-      if IsEvent and SameText(Matches[2], 'This') then
-        Matches[1] := CurClass.Name;
-      Args.AddObject(Matches[2], TParam.Create(Matches[2], FixType(Matches[1]), Optional));
-    end;
+    ParseArgs(MetName, Args, IsEvent);
     CurMethod := TMethod.Create(MetName, JSName, Return, Args, Static, false);
     if IsEvent then
       CurClass.Events.AddObject(CurMethod.Name, CurMethod)
@@ -838,9 +879,9 @@ begin
     C := TClass(AllClasses.Objects[I]);
     P := C.Parent;
     write(I, ^M);
-    if C.Name <> BASE_CLASS then begin
+    if (C.Name <> BASE_CLASS) and (C.Name <> 'TExtObject') then begin
       if P = '' then C.Parent := BASE_CLASS;
-      while P <> '' do begin
+      while (P <> '') and (P <> 'TExtObject') do begin
         J := AllClasses.IndexOf(P);
         if J = -1 then begin
           writeln('Parent: ', P, ' not found at class: ', C.Name);
