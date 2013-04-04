@@ -26,7 +26,7 @@
  * 0.9.6. Wrap Ext JS 3.0
  * 0.9.7. Wrap Draw2D
  * 0.9.8. Wrap Ext JS 3.2.1
- * 0.9.9. Wrap Ext JS 4.2 using a new parser, fix memory leaks. From this release ExtPascal will require Delphi 2005+ or FPC 2.6+
+ * 0.9.9. Wrap Ext JS 4.2 using a new parser, fix memory leaks. 
  * 0.9.10. Wrap SmartClient 9 (LGPL) 
  * 0.9.11. RAD for Lazarus: Form designer, source editor for events and online help
  * 1.0. Release. DB aware controls and RAD for Delphi(2005..XE3)
