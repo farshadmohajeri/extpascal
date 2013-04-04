@@ -34,10 +34,12 @@ ExtComponent, minSize, Integer, false, true,
 ExtComponent, maxSize, Integer, false, true,
 ExtComponent, anchor, string, false, true,
 ExtDataRecord, TExtDataModel
-ExtEnumsWidget, String
 ExtDataModel, Create,, true, false, Data, ExtObjectList, false
 
 ExtEnumsLayout, (laAbsolute, laAccordion, laAnchor, laAutocomponent, laAutocontainer, laBorder, laBox, laCard, laCheckboxgroup, laColumn, laContainer, laFit, laForm, laHbox, laTable, laVbox)
+ExtEnumsWidget, String
+ExtFormFieldBase, inputType, (inText, inButton, inCheckbox, inColor, inDate, inDatetime, inEmail, inFile, inHidden, inImage, inMonth, inNumber, inPassword, inRadio, inRange, inReset, inSearch, inSubmit, inTel, inTime, inUrl, inWeek)
+
 ExtMessageBox, ExtWindowMessageBox, singleton, Ext.MessageBox
 
 ExtWindowMessageBox, show, ExtFunction, false, false, Config, ExtShowConfig, false
@@ -79,6 +81,7 @@ ExtShowConfig, value, string, false, true,
 ExtShowConfig, wait, Boolean, false, true,
 ExtShowConfig, waitConfig, ExtProgressWaitConfig, false, true,
 ExtShowConfig, width, Integer, false, true,
+
 ExtProgressWaitConfig,, Ext, Object
 ExtProgressWaitConfig, duration, Integer, false, true,
 ExtProgressWaitConfig, interval, Integer, false, true, 1000
