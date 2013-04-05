@@ -148,10 +148,13 @@ function SetMargins(Top : integer; Right : integer = 0; Bottom : integer = 0; Le
   Header : boolean = false) : string;
 
 // Returns true if BeforeS string occurs before AfterS string in S string
-function Before(const BeforeS, AfterS : string; var S : string) : boolean;
+function Before(const BeforeS, AfterS, S : string) : boolean;
 
 // Returns true if S string occurs between BeforeS and AfterS strings in T string
-function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
+function Between(const S, BeforeS, AfterS : string; var T : string) : boolean;
+
+// Returns true if S string occurs between the first occurrence of BeforeS and AfterS strings in T string
+function BetweenFirst(const S, BeforeS, AfterS : string; var T : string) : boolean;
 
 function GetBetween(const A, B, Line : string) : string;
 
@@ -445,7 +448,7 @@ begin
     EnumToJSString(TypeInfo(TCSSUnit), ord(CSSUnit))])
 end;
 
-function Before(const BeforeS, AfterS : string; var S : string) : boolean;
+function Before(const BeforeS, AfterS, S : string) : boolean;
 var
   I, J : integer;
 begin
@@ -476,7 +479,21 @@ begin
       end;
 end;
 
-function Between(const S, BeforeS, AfterS : string; var T : string; Remove : boolean = true) : boolean;
+function Between(const S, BeforeS, AfterS : string; var T : string) : boolean;
+var
+  I, J, K : integer;
+begin
+  Result := false;
+  I := pos(S, T);
+  if I <> 0 then begin
+    J := PosEx(AfterS, T, I);
+    K := RPosEx(BeforeS, copy(T, 1, J));
+    if K <> 0 then
+      Result := K < I;
+  end;
+end;
+
+function BetweenFirst(const S, BeforeS, AfterS : string; var T : string) : boolean;
 var
   I, J : integer;
 begin
@@ -485,7 +502,6 @@ begin
   if I <> 0 then begin
     J := PosEx(AfterS, T, I);
     Result := pos(S, copy(T, I+1, J-I)) <> 0;
-    if Remove and Result then delete(T, 1, J+length(AfterS));
   end;
 end;
 

@@ -624,10 +624,16 @@ var
     Singleton : boolean;
   begin
     Singleton := Before('@singleton', 'Ext.define(', Line);
-    Extract(['/**', '*/'], Line, Matches);
-    if Extract(['Ext.define(' + AP, AP], Line, Matches) or
+    if Before('@class', 'Ext.define(', Line) and Extract(['@class ', ' '], Line, Matches) then
+      JSName := Matches[0]
+    else begin
+      JSName := '';
+      Extract(['/**', '*/'], Line, Matches);
+    end;
+    if (JSName <> '') or
+       Extract(['Ext.define(' + AP, AP], Line, Matches) or
        Extract(['Ext.define(' + '"', '"'], Line, Matches) then begin
-      JSName := Matches[0];
+      if JSName = '' then JSName := Matches[0];
       if pos(JS_LIB, JSName) <> 1 then Abort;
       Ci := AllClasses.IndexOf(JSName);
       if Ci = -1 then
@@ -635,12 +641,16 @@ var
       else
         CurClass := TClass(AllClasses.Objects[Ci]);
       if not Singleton then Singleton := Before('singleton:', '}', Line);
-      if Singleton then CurClass.Name := CurClass.Name + 'Singleton';
+      if Singleton then begin
+        if CurClass.Name = 'T' + JS_LIB then
+          CurClass.Name := CurClass.Name + '_';
+        CurClass.Name := CurClass.Name + 'Singleton';
+      end;
       CurClass.Singleton := Singleton;
     end
     else
       Abort;
-    if not Before('/**', 'extend:', Line) and not Between('extend:', '/*', '*/', Line, false) then
+    if not Between('extend:', '/*', '*/', Line) then
       if Extract(['extend:', AP, AP], Line, Matches) then
         CurClass.Parent := FixIdent(Matches[1], true);
     if Extract(['mixins: {', '}'], Line, Matches) then
@@ -657,11 +667,11 @@ begin
   try
     ParseClass;
     while true do
-      if not(Between('@hide',  '/**', '*/', Line) or
-         Between('@private',   '/**', '*/', Line) or
-         Between('@deprecated','/**', '*/', Line) or
-         Between('@protected', '/**', '*/', Line) or
-         Between('@template',  '/**', '*/', Line)) then
+      if not(BetweenFirst('@hide',  '/**', '*/', Line) or
+         BetweenFirst('@private',   '/**', '*/', Line) or
+         BetweenFirst('@deprecated','/**', '*/', Line) or
+         BetweenFirst('@protected', '/**', '*/', Line) or
+         BetweenFirst('@template',  '/**', '*/', Line)) then
         case First(['@cfg', '@property', '@event', ': function'], Line) of
           0 : ParseCfg;
           1 : ParseProperty;
@@ -669,7 +679,9 @@ begin
           3 : ParseMethod;
         else
           break;
-        end;
+        end
+      else
+        if not Extract(['/**', '*/'], Line, Matches) then break;
     SetArraysAndObjects;
   finally
     Matches.Free;
