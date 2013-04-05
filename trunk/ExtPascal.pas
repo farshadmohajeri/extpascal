@@ -236,7 +236,10 @@ type
   TEvent = class(TExtObject);
   TCSSStyleSheet = type string;
   TTextNode = class(TExtObject);
-  TXMLHttpRequest = string;
+  TXMLHttpRequest = type string;
+  TWindow = type string;
+  TNodeList = type string;
+  TMixed = TExtObjectList;
 //DOM-IGNORE-END*)
 
 const

@@ -79,34 +79,34 @@ begin
     DataIndex := Id;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
-    Text    := 'Price';
+    Text      := 'Price';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'price';
-    Renderer  := 'usMoney';
+    RendererString := 'usMoney';
   end;
   with TExtGridColumn.AddTo(Columns) do begin
     Text      := 'Change';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'change';
-    RendererExtFunction := ColorValue;
+    Renderer  := ColorValue;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
     Text      := '% Change';
     Width     := 75;
     Sortable  := true;
     DataIndex := 'pctchange';
-    RendererExtFunction := ColorValue;
+    Renderer  := ColorValue;
   end;
   with TExtGridColumn.AddTo(Columns) do begin
     Text      := 'Last Updated';
     Width     := 85;
     Sortable  := true;
     DataIndex := 'lastchange';
-    RendererExtFunction := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
+    Renderer  := ExtUtilFormat.Date('%0', 'm/d/Y'); // %0..%9 get event parameters
   end;
-  with TExtButton.AddTo(TBarArray) do begin
+  with TExtButton.AddTo(TBar) do begin
     Text    := 'Show modal dialog using Ajax';
     Handler := Ajax(SelfSession.ShowLayoutWindow);
   end;
