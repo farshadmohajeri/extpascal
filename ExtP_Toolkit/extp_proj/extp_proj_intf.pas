@@ -15,7 +15,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, Forms, Dialogs,
-  LazIDEIntf, ProjectIntf, FormEditingIntf, Project,
+  LazIDEIntf, ProjectIntf, FormEditingIntf, Project, ModeMatrixOpts,
   ExtP_Design_Ctrls;
 
 type
@@ -112,6 +112,7 @@ function TExtPApplicationDescriptor.InitProject(AProject: TLazProject): TModalRe
 var
   NewSource: string;
   MainFile: TLazProjectFile;
+  BMOptions: TBuildMatrixOption;
 begin
   inherited InitProject(AProject);
 
@@ -193,7 +194,12 @@ begin
      Note that Laz IDE might warn about a missing "nogui" folder
      when close compiler options dialog if this widgetset has not
      been built yet.}
-  TProject(AProject).CompilerOptions.BuildMode.MacroValues.Values['LCLWidgetType'] := 'nogui';
+//  TProject(AProject).CompilerOptions.BuildMode.MacroValues.Values['LCLWidgetType'] := 'nogui';  //Laz 1.0
+   //Laz 1.2:
+  BMOptions := TProject(AProject).BuildModes.SharedMatrixOptions.Add(bmotIDEMacro);
+  BMOptions.Modes := 'Default';
+  BMOptions.MacroName := 'LCLWidgetType';
+  BMOptions.Value := 'nogui';
 
    {This config file will be created by converter and signals to FPC to
      compile with ExtPascal runtime units, not Extp_Design_Ctrls unit.}
