@@ -1,0 +1,71 @@
+Este projeto permite usar Web 2.0 (Ajax) em programas Delphi/FreePascal.
+
+Para isso após várias pesquisas resolvi usar o framework JavaScript:
+ExtJS, que considero, no momento:
+
+  * O mais completo (possui todos widgets presentes numa GUI nativa: poderosos Grids, Toolbars, Treeviews, Statusbars, etc),
+  * Mais performático (considerando seu tamanho),
+  * Mais bonito (implementa uma interface similar ao Aero do Windows Vista),
+  * Com uma excelente documentação em HTML,
+  * Agnóstico em relação à tecnologia do server (pode ser qualquer coisa: PHP, Coldfusion, .NET, Java, Ruby, CGI, FCGI, etc),
+  * Usa qualquer Web Server (IIS, Apache, IPlanet, etc),
+  * Em desenvolvimento ativo, última versão, 2.1, lançada dia 20/04/2008,
+  * Transparentemente compatível com todos os browsers em uso pelo mercado: IE 6+, Firefox 1.5+, Safari 2+, Opera 9+ e Konqueror,
+  * Funciona em qualquer plataforma client: Windows, Linux, FreeBSD, MacOS, WindowsCE, Symbian e vários PDAs e Smartphones independentemente de sistemas operacionais e processadores.
+
+Poderia ter usado Flex, Flash ou outra biblioteca JavaScript, mas
+todas que vi (mais de 50) eram lentas e/ou tinham poucos widgets ou
+widgets pouco poderosos e/ou eram difíceis de programar e/ou amarradas
+a alguma tecnologia como Java ou .NET, entre outros problemas.
+
+Também adotei FastCGI ao invés de CGI, ISAPI, NSAPI ou Apache modules.
+Porque FastCGI possui todas as vantagens do CGI e do ISAPI/NSAPI sem
+suas desvantagens e com vantagens adicionais.
+
+Vantagens do CGI:
+  * Aceito por qualquer Web Server e
+  * por qualquer empresa de Hosting sem restrições e a preços baixos.
+  * Fácil de entender e implementar o protocolo
+  * Falhas na aplicação não corrompem o Web Server
+  * Troca de versão não requer restartar o Web Server
+
+Desvantagens do CGI:
+  * Stateless, horrível de programar, executávies fragmentados
+  * Performance e escalabilidade prejudicados quando há muitos clientes
+
+Vantagens do ISAPI/NSAPI e Apache modules:
+  * Alta performance
+  * Statefull, possível programar usando multithread com um único executável
+
+Desvantagens do ISAPI/NSAPI e Apache modules:
+  * Proprietário e despadronizado, cada Web Server tem uma API diferente
+  * "Difícil" de implementar o protocolo
+  * Falhas na aplicação podem corromper o Web Server
+  * Várias empresas de Hosting não aceitam rodar essas aplicações por causa do item anterior
+  * Troca de versão requer restartar o Web Server
+
+Vantagem adicional do FastCGI:
+  * Permite que a aplicação rode em uma máquina diferente do Web Server
+  * Permite esquemas adicionais de load balance, fail over e segurança com firewall.
+
+Para isso implementei a unit FCGIApp, que não existia para Pascal. Já
+testei e funciona perfeitamente com Apache, IE e Firefox, vou testar
+com IIS.
+
+Para usar o ExtJS criei um parser em Pascal, baseado num parser em PHP
+usado pelo projeto ExtPHP, que varre a documentação HTML do ExtJS e
+cria todas as units e classes em ObjectPascal respeitando todas as
+exigências da linguagem Pascal. Essas classes podem ser usadas em um
+programa FastCGI do lado server. A medida que você programa usando
+essas classes do ExtJS convertidas para Pascal elas criam o JSON
+correspondente
+por detrás dos panos e enviam para o client como resposta.
+
+Adotei o JSON ao invés do XML porque:
+  * É mais fácil de gerar
+  * É menos verborrágico
+  * Consome menos rede
+  * O parser é muito mais rápido
+  * O código em JavaScript para interpretá-lo é muito menor e fácil de entender
+  * É mais flexível, pois permite execução dinâmica usando o interpretador do JavaScript
+  * Também é padrão como XML
