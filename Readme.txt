@@ -1,3 +1,6 @@
+Update: 18-Apr-2015
+License model changed from BSD To GPLv3
+
 Ext JS wrapper for Object Pascal
 
 0.9.8 Ext JS 3.2.1 support, 03-may-2010
@@ -6,13 +9,15 @@ ExtPascal is an Ext JS wrapper.
 ExtPascal lets you use the Ext JS from Object Pascal commands issued by the server using FastCGI or FastCGI thru CGI gateway. 
 That brings the structure and strict syntax of the Object Pascal for programming the web browser.
 
-Author: Wanderlan Santos dos Anjos. wanderlan.anjos@gmail.com
+Original Author: Wanderlan Santos dos Anjos. wanderlan.anjos@gmail.com
 
 Home: http://extpascal.googlecode.com
 Getting Started: http://code.google.com/p/extpascal/wiki/GettingStarted
 Live demos: http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi
 Forum: http://groups.google.com/group/extpascal
-License: BSD, http://www.opensource.org/licenses/bsd-license.php
+
+License: GPLv3
+For non-GPL usage a license should be obtained from info@fmsoft.net
 
 0.9.8 Ext JS 3.2.1 support, 03-may-2010
 
