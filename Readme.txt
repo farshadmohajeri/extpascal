@@ -11,10 +11,7 @@ That brings the structure and strict syntax of the Object Pascal for programming
 
 Original Author: Wanderlan Santos dos Anjos. wanderlan.anjos@gmail.com
 
-Home: http://extpascal.googlecode.com
-Getting Started: http://code.google.com/p/extpascal/wiki/GettingStarted
-Live demos: http://extpascal.call.inf.br/cgi-bin/extpascalsamples.cgi
-Forum: http://groups.google.com/group/extpascal
+https://github.com/farshadmohajeri/extpascal
 
 License: GPLv3
 For non-GPL usage a license should be obtained from info@fmsoft.net
