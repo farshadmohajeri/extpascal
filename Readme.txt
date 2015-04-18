@@ -15,7 +15,7 @@ https://github.com/farshadmohajeri/extpascal
 
 License: GPLv3
 http://www.gnu.org/licenses/gpl-3.0.html
-For non-GPL usage a license should be obtained from info@fmsoft.net
+For non-GPL usage a license should be obtained from farshad@fmsoft.net
 
 0.9.8 Ext JS 3.2.1 support, 03-may-2010
 
